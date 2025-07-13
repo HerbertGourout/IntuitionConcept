@@ -32,6 +32,7 @@ const ProjectActionsMenu: React.FC<ProjectActionsMenuProps> = ({ projectId, proj
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Dupliquer le projet
   const handleDuplicate = async () => {
@@ -89,11 +90,18 @@ const ProjectActionsMenu: React.FC<ProjectActionsMenuProps> = ({ projectId, proj
   };
 
   const confirmDelete = async () => {
+    setIsDeleting(true);
     try {
       await projectContext.deleteProject(projectId);
       setIsDeleteModalOpen(false);
+      setIsDeleting(false);
+      // @ts-expect-error - antd message is dynamically loaded
+      if (window?.antd?.message) window.antd.message.success('Projet supprimé !');
     } catch (error) {
+      setIsDeleting(false);
       console.error('Erreur lors de la suppression du projet:', error);
+      // @ts-expect-error - antd message is dynamically loaded
+      if (window?.antd?.message) window.antd.message.error('Erreur lors de la suppression du projet');
     }
   };
 
@@ -173,9 +181,9 @@ const ProjectActionsMenu: React.FC<ProjectActionsMenuProps> = ({ projectId, proj
       <Modal
         title="Confirmer la suppression"
         open={isDeleteModalOpen}
-        onCancel={() => setIsDeleteModalOpen(false)}
+        onCancel={() => !isDeleting && setIsDeleteModalOpen(false)}
         footer={[
-          <Button key="cancel" onClick={() => setIsDeleteModalOpen(false)}>
+          <Button key="cancel" onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleting}>
             Annuler
           </Button>,
           <Button 
@@ -183,10 +191,14 @@ const ProjectActionsMenu: React.FC<ProjectActionsMenuProps> = ({ projectId, proj
             danger 
             type="primary" 
             onClick={confirmDelete}
+            loading={isDeleting}
+            disabled={isDeleting}
           >
             Supprimer
           </Button>
         ]}
+        maskClosable={!isDeleting}
+        closable={!isDeleting}
       >
         <p>Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.</p>
       </Modal>

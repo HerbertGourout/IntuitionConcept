@@ -168,12 +168,24 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           ...currentHistory
         ].slice(0, 100); // Limite à 100 entrées
       }
+      // Nettoyage de l'historique pour Firestore
+      newHistory = cleanHistory(newHistory);
       await updateDoc(projectRef, { ...updates, history: newHistory });
-      // La mise à jour sera automatiquement reflétée via onSnapshot
+      // Correction : mettre à jour le projet correspondant dans le state local immédiatement
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates, history: newHistory } : p));
     } catch (error) {
       console.error('Erreur lors de la mise à jour du projet:', error);
     }
   };
+
+  // Fonction utilitaire pour nettoyer l'historique
+  const cleanHistory = (historyArr: any[]) =>
+    historyArr.map(entry => ({
+      date: entry.date || new Date().toISOString(),
+      action: entry.action || '',
+      user: entry.user || 'Développeur',
+      details: entry.details || ''
+    }));
 
   const deleteProject = async (id: string, user?: string): Promise<void> => {
     try {
@@ -182,19 +194,19 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       if (projectSnap.exists()) {
         const projectData = projectSnap.data() as Project;
         const currentHistory = Array.isArray(projectData.history) ? projectData.history : [];
-        const newHistory = [
+        const newHistory = cleanHistory([
           {
             date: new Date().toISOString(),
             action: 'Projet supprimé',
-            user: user
+            user: user || 'Développeur',
+            details: ''
           },
           ...currentHistory
-        ].slice(0, 100);
+        ].slice(0, 100));
         await updateDoc(projectRef, { history: newHistory });
       }
-      // Utiliser deleteDoc de Firestore pour supprimer le document
       await deleteDoc(projectRef);
-      // Si le projet supprimé était le projet courant, réinitialiser
+      setProjects(prev => prev.filter(p => p.id !== id));
       if (currentProjectId === id) {
         setCurrentProjectId(null);
       }
@@ -211,24 +223,29 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       if (!projectSnap.exists()) return;
       const projectData = projectSnap.data() as Project;
       const currentHistory = Array.isArray(projectData.history) ? projectData.history : [];
-      const newHistory = [
+      const newHistory = cleanHistory([
         {
           date: new Date().toISOString(),
           action: 'Projet archivé',
-          user: user
+          user: user || 'Développeur',
+          details: ''
         },
         ...currentHistory
-      ].slice(0, 100);
+      ].slice(0, 100));
       await updateDoc(projectRef, {
         status: 'archived',
         archivedAt: new Date().toISOString(),
         history: newHistory
       });
+      setProjects(prev => prev.filter(p => p.id !== id));
     } catch (error) {
       console.error('Erreur lors de l\'archivage du projet:', error);
       throw error;
     }
   };
+
+
+
 
   const addPhase = async (projectId: string, phase: Omit<ProjectPhase, 'id' | 'tasks'>) => {
     const projectRef = doc(db, 'projects', projectId);
