@@ -1,0 +1,638 @@
+import React, { useState, useContext, useEffect } from 'react';
+import { Plus, Edit, User, Calendar, Search, ChevronDown, ChevronRight, Move } from 'lucide-react';
+import ProjectContext, { type ProjectTask } from '../../contexts/ProjectContext';
+import TaskModal from './TaskModal';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+
+const Tasks = () => {
+  const projectContext = useContext(ProjectContext);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [tasks, setTasks] = useState<ProjectTask[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<ProjectTask | null>(null);
+
+  // Récupérer les tâches du projet sélectionné
+  useEffect(() => {
+    if (projectContext?.currentProject) {
+      // Extraire toutes les tâches principales de toutes les phases
+      const allTasks: ProjectTask[] = [];
+      projectContext.currentProject.phases.forEach(phase => {
+        phase.tasks.forEach(task => {
+          allTasks.push(task);
+        });
+      });
+      setTasks(allTasks);
+    }
+  }, [projectContext?.currentProject]);
+
+  const filteredTasks = tasks.filter(task => {
+    const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesSearch;
+  });
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'blocked':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'not_started':
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent':
+        return 'text-red-600';
+      case 'high':
+        return 'text-orange-600';
+      case 'medium':
+        return 'text-yellow-600';
+      case 'low':
+        return 'text-green-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'not_started':
+        return 'Non commencé';
+      case 'in_progress':
+        return 'En cours';
+      case 'completed':
+        return 'Terminé';
+      case 'blocked':
+        return 'Bloqué';
+      default:
+        return status;
+    }
+  };
+
+  const handleEditTask = (task: ProjectTask) => {
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleCreateTask = () => {
+    setSelectedTask(null);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveTask = (taskData: Partial<ProjectTask>, isSubTask?: boolean, parentTaskId?: string) => {
+    if (!projectContext?.currentProject) return;
+    
+    if (selectedTask) {
+      // Mise à jour d'une tâche existante
+      projectContext.currentProject.phases.forEach(phase => {
+        phase.tasks.forEach(task => {
+          if (task.id === selectedTask.id) {
+            projectContext.updateTask(
+              projectContext.currentProject!.id,
+              phase.id,
+              task.id,
+              taskData
+            );
+          }
+        });
+      });
+    } else {
+      // Création d'une nouvelle tâche
+      if (isSubTask && parentTaskId) {
+        // Création d'une sous-tâche
+        projectContext.currentProject.phases.forEach(phase => {
+          phase.tasks.forEach(task => {
+            if (task.id === parentTaskId) {
+              // Ajouter la sous-tâche à la tâche parente
+              const updatedTask = {
+                ...task,
+                subTasks: [...(task.subTasks || []), {
+                  id: `subtask-${Date.now()}`,
+                  name: taskData.name || 'Nouvelle sous-tâche',
+                  description: taskData.description || '',
+                  status: taskData.status || 'not_started',
+                  priority: taskData.priority || 'medium',
+                  startDate: taskData.startDate || new Date().toISOString(),
+                  endDate: taskData.endDate || new Date().toISOString(),
+                  assignedTo: taskData.assignedTo || [],
+                  budget: taskData.budget || 0,
+                  spent: taskData.spent || 0,
+                  precision: taskData.precision || 3,
+                  subTasks: []
+                }]
+              };
+              
+              projectContext.updateTask(
+                projectContext.currentProject!.id,
+                phase.id,
+                task.id,
+                updatedTask
+              );
+            }
+          });
+        });
+      } else {
+        // Création d'une tâche principale
+        if (projectContext.currentProject.phases.length > 0) {
+          const firstPhaseId = projectContext.currentProject.phases[0].id;
+          
+          projectContext.createTask(
+            projectContext.currentProject.id,
+            firstPhaseId,
+            {
+              id: `task-${Date.now()}`,
+              name: taskData.name || 'Nouvelle tâche',
+              description: taskData.description || '',
+              status: taskData.status || 'not_started',
+              priority: taskData.priority || 'medium',
+              startDate: taskData.startDate || new Date().toISOString(),
+              endDate: taskData.endDate || new Date().toISOString(),
+              assignedTo: taskData.assignedTo || [],
+              budget: taskData.budget || 0,
+              spent: taskData.spent || 0,
+              precision: taskData.precision || 3,
+              subTasks: []
+            }
+          );
+        }
+      }
+    }
+    
+    setIsModalOpen(false);
+  };
+
+  // Fonction pour gérer le drag & drop
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+    
+    // Si pas de destination ou si la destination est la même que la source, ne rien faire
+    if (!destination || 
+        (destination.droppableId === source.droppableId && 
+         destination.index === source.index)) {
+      return;
+    }
+    
+    // Trouver la tâche déplacée
+    let draggedTask: ProjectTask | null = null;
+    let sourceParentId: string | null = null;
+    let destParentId: string | null = null;
+    
+    // Déterminer si c'est une tâche principale ou une sous-tâche
+    if (source.droppableId === 'main-tasks') {
+      // C'est une tâche principale
+      draggedTask = tasks[source.index];
+    } else {
+      // C'est une sous-tâche, trouver la tâche parente source
+      const sourceParentTaskId = source.droppableId.replace('droppable-', '');
+      sourceParentId = sourceParentTaskId;
+      
+      // Trouver la tâche parente
+      tasks.forEach(task => {
+        if (task.id === sourceParentTaskId && task.subTasks) {
+          draggedTask = task.subTasks[source.index];
+        }
+      });
+    }
+    
+    if (!draggedTask) return;
+    
+    // Déterminer la destination
+    if (destination.droppableId === 'main-tasks') {
+      // Déplacer vers les tâches principales
+      if (source.droppableId === 'main-tasks') {
+        // Réordonner les tâches principales
+        const newTasks = Array.from(tasks);
+        newTasks.splice(source.index, 1);
+        newTasks.splice(destination.index, 0, draggedTask);
+        
+        // Mettre à jour l'état
+        setTasks(newTasks);
+        
+        // TODO: Mettre à jour dans le contexte
+      } else {
+        // Déplacer une sous-tâche vers les tâches principales
+        // Supprimer de la tâche parente
+        const updatedTasks = tasks.map(task => {
+          if (task.id === sourceParentId && task.subTasks) {
+            return {
+              ...task,
+              subTasks: task.subTasks.filter((_, index) => index !== source.index)
+            };
+          }
+          return task;
+        });
+        
+        // Ajouter aux tâches principales
+        updatedTasks.splice(destination.index, 0, {
+          ...draggedTask,
+          // Assurer que l'ID est unique si nécessaire
+          id: draggedTask.id.startsWith('subtask-') ? `task-${Date.now()}` : draggedTask.id
+        });
+        
+        // Mettre à jour l'état
+        setTasks(updatedTasks);
+        
+        // TODO: Mettre à jour dans le contexte
+      }
+    } else {
+      // Déplacer vers une sous-tâche
+      destParentId = destination.droppableId.replace('droppable-', '');
+      
+      if (source.droppableId === destination.droppableId) {
+        // Réordonner les sous-tâches dans la même tâche parente
+        const updatedTasks = tasks.map(task => {
+          if (task.id === destParentId && task.subTasks) {
+            const newSubTasks = Array.from(task.subTasks);
+            newSubTasks.splice(source.index, 1);
+            newSubTasks.splice(destination.index, 0, draggedTask);
+            
+            return {
+              ...task,
+              subTasks: newSubTasks
+            };
+          }
+          return task;
+        });
+        
+        // Mettre à jour l'état
+        setTasks(updatedTasks);
+        
+        // TODO: Mettre à jour dans le contexte
+      } else if (source.droppableId === 'main-tasks') {
+        // Déplacer une tâche principale vers une sous-tâche
+        // Supprimer des tâches principales
+        const newTasks = Array.from(tasks);
+        newTasks.splice(source.index, 1);
+        
+        // Ajouter à la tâche parente de destination
+        const updatedTasks = newTasks.map(task => {
+          if (task.id === destParentId) {
+            return {
+              ...task,
+              subTasks: [...(task.subTasks || []), {
+                ...draggedTask,
+                // Assurer que l'ID est unique si nécessaire
+                id: draggedTask.id.startsWith('task-') ? `subtask-${Date.now()}` : draggedTask.id
+              }]
+            };
+          }
+          return task;
+        });
+        
+        // Mettre à jour l'état
+        setTasks(updatedTasks);
+        
+        // TODO: Mettre à jour dans le contexte
+      } else {
+        // Déplacer d'une sous-tâche à une autre
+        // Supprimer de la tâche parente source
+        const tasksAfterRemoval = tasks.map(task => {
+          if (task.id === sourceParentId && task.subTasks) {
+            return {
+              ...task,
+              subTasks: task.subTasks.filter((_, index) => index !== source.index)
+            };
+          }
+          return task;
+        });
+        
+        // Ajouter à la tâche parente de destination
+        const updatedTasks = tasksAfterRemoval.map(task => {
+          if (task.id === destParentId && task.subTasks) {
+            const newSubTasks = Array.from(task.subTasks);
+            newSubTasks.splice(destination.index, 0, draggedTask);
+            
+            return {
+              ...task,
+              subTasks: newSubTasks
+            };
+          }
+          return task;
+        });
+        
+        // Mettre à jour l'état
+        setTasks(updatedTasks);
+        
+        // TODO: Mettre à jour dans le contexte
+      }
+    }
+  };
+
+  // Composant pour afficher une tâche avec ses sous-tâches
+  const TaskCard = ({ task, onEdit, level = 0, index }: { 
+    task: ProjectTask; 
+    onEdit: () => void; 
+    level?: number;
+    index: number;
+  }) => {
+    const [expanded, setExpanded] = useState(false);
+    const hasSubTasks = task.subTasks && task.subTasks.length > 0;
+    
+    // Calculer la progression de la tâche en fonction du statut des sous-tâches
+    const calculateProgress = () => {
+      if (task.status === 'completed') return 100;
+      if (!hasSubTasks) return task.status === 'in_progress' ? 50 : 0;
+      
+      const totalSubTasks = task.subTasks!.length;
+      const completedSubTasks = task.subTasks!.filter(st => st.status === 'completed').length;
+      return Math.round((completedSubTasks / totalSubTasks) * 100);
+    };
+    
+    const progress = calculateProgress();
+
+    const toggleExpand = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setExpanded(!expanded);
+    };
+
+    return (
+      <Draggable draggableId={task.id} index={index}>
+        {(provided, snapshot) => (
+          <div 
+            className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4 ${snapshot.isDragging ? 'border-orange-300 shadow-md' : ''}`}
+            style={{ 
+              marginLeft: level > 0 ? `${level * 24}px` : 0,
+              ...provided.draggableProps.style
+            }}
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div {...provided.dragHandleProps} className="cursor-move text-gray-400 hover:text-gray-600">
+                  <Move size={16} />
+                </div>
+                {hasSubTasks && (
+                  <button 
+                    onClick={toggleExpand} 
+                    className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                  >
+                    {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                  </button>
+                )}
+                <div>
+                  <h3 className="font-medium text-gray-900">{task.name}</h3>
+                  <div className="flex items-center text-sm text-gray-500 mt-1">
+                    <Calendar className="w-3 h-3 mr-1" />
+                    <span>
+                      {new Date(task.endDate).toLocaleDateString('fr-FR', { 
+                        day: 'numeric', 
+                        month: 'short'
+                      })}
+                    </span>
+                    {task.assignedTo && task.assignedTo.length > 0 && (
+                      <>
+                        <span className="mx-1">•</span>
+                        <User className="w-3 h-3 mr-1" />
+                        <span>{task.assignedTo.length} assigné(s)</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="relative">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                  className="p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-sm text-gray-600">Progression</span>
+                  <span className="text-sm font-medium text-gray-900">{progress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-orange-500 h-2 rounded-full"
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <User className="w-4 h-4 text-gray-400 mr-2" />
+                  <span className="text-sm text-gray-600">
+                    {task.assignedTo.length > 0 ? `${task.assignedTo.length} assigné(s)` : 'Non assigné'}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                  <span className="text-sm text-gray-600">
+                    {new Date(task.endDate).toLocaleDateString('fr-FR')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className={`text-sm px-3 py-1 rounded-full ${getStatusColor(task.status)}`}>
+                  {getStatusLabel(task.status)}
+                </span>
+                <span className={`text-sm font-medium ${getPriorityColor(task.priority)}`}>
+                  {task.priority === 'high' ? 'Haute' : task.priority === 'medium' ? 'Moyenne' : 'Basse'}
+                </span>
+              </div>
+
+              <div className="pt-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Budget</span>
+                  <span className="text-sm font-medium text-gray-900">{task.budget.toLocaleString('fr-FR')} FCFA</span>
+                </div>
+                {task.spent > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Dépensé</span>
+                    <span className="text-sm font-medium text-gray-900">{task.spent.toLocaleString('fr-FR')} FCFA</span>
+                  </div>
+                )}
+                {task.precision && (
+                  <div className="flex justify-between mt-2">
+                    <span className="text-sm text-gray-600">Précision</span>
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <div 
+                          key={i} 
+                          className={`w-2 h-2 rounded-full mx-0.5 ${i < (task.precision || 0) ? 'bg-orange-500' : 'bg-gray-200'}`}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sous-tâches */}
+            {expanded && hasSubTasks && (
+              <Droppable droppableId={`droppable-${task.id}`}>
+                {(droppableProvided) => (
+                  <div 
+                    className="mt-4 space-y-3"
+                    ref={droppableProvided.innerRef}
+                    {...droppableProvided.droppableProps}
+                  >
+                    {task.subTasks?.map((subTask, subIndex) => (
+                      <TaskCard
+                        key={subTask.id}
+                        task={subTask}
+                        onEdit={() => handleEditTask(subTask)}
+                        level={(level || 0) + 1}
+                        index={subIndex}
+                      />
+                    ))}
+                    {droppableProvided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            )}
+          </div>
+        )}
+      </Draggable>
+    );
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tâches</h1>
+          <p className="text-gray-600">Gérez et suivez les tâches du projet</p>
+        </div>
+        <button
+          onClick={handleCreateTask}
+          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          <Plus className="w-5 h-5" />
+          <span>Nouvelle tâche</span>
+        </button>
+      </div>
+      
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="text-2xl font-bold text-gray-900">{tasks.length}</div>
+          <div className="text-sm text-gray-600">Total tâches</div>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="text-2xl font-bold text-blue-600">
+            {tasks.filter(t => t.status === 'in_progress').length}
+          </div>
+          <div className="text-sm text-gray-600">En cours</div>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="text-2xl font-bold text-green-600">
+            {tasks.filter(t => t.status === 'completed').length}
+          </div>
+          <div className="text-sm text-gray-600">Terminées</div>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="text-2xl font-bold text-red-600">
+            {tasks.filter(t => new Date(t.endDate) < new Date() && t.status !== 'completed').length}
+          </div>
+          <div className="text-sm text-gray-600">En retard</div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Rechercher une tâche..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent w-full sm:w-64"
+              />
+            </div>
+            
+            <select
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              disabled
+            >
+              <option>Tous les statuts</option>
+            </select>
+
+            <select
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              disabled
+            >
+              <option>Toutes les priorités</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Tasks List with Drag & Drop */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="main-tasks">
+          {(provided) => (
+            <div 
+              className="space-y-4"
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
+              {filteredTasks.map((task, index) => (
+                <TaskCard 
+                  key={task.id} 
+                  task={task} 
+                  onEdit={() => handleEditTask(task)}
+                  index={index}
+                />
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+
+      {filteredTasks.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="w-24 h-24 mx-auto mb-4 bg-gray-50 rounded-full flex items-center justify-center">
+            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune tâche trouvée</h3>
+          <p className="text-gray-600 max-w-md mx-auto">
+            Aucune tâche ne correspond à vos critères de recherche. Essayez de modifier vos filtres ou créez une nouvelle tâche.
+          </p>
+        </div>
+      )}
+
+      {/* Modal de modification/création de tâche */}
+      <TaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        task={selectedTask}
+        onSave={handleSaveTask}
+        projectPhases={projectContext?.currentProject?.phases.map(p => ({
+          id: p.id,
+          name: p.name
+        })) || []}
+        teamMembers={[
+          { id: 'user1', name: 'Chef de chantier' },
+          { id: 'user2', name: 'Ouvrier qualifié' },
+          { id: 'user3', name: 'Maçon' },
+          { id: 'user4', name: 'Électricien' },
+          { id: 'user5', name: 'Plombier' }
+        ]}
+        allTasks={tasks}
+      />
+    </div>
+  );
+};
+
+export default Tasks;

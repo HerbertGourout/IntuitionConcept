@@ -1,0 +1,684 @@
+import React, { useState, useContext, useEffect } from 'react';
+import { useUserRole } from '../../hooks/useUserRole';
+import { Plus, User, Calendar, ChevronDown, ChevronRight, ChevronUp, Move } from 'lucide-react';
+import ProjectContext, { type ProjectTask, type ProjectPhase } from '../../contexts/ProjectContext';
+import TaskModal from './TaskModal';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { Button, Input, Radio, Spin, Alert } from 'antd';
+import { SearchOutlined, PlusOutlined } from '@ant-design/icons';
+
+// Types pour les tâches
+type TaskStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked';
+type TaskPriority = 'low' | 'normal' | 'medium' | 'high';
+
+// Interface pour les statistiques des tâches
+interface TaskStats {
+  total: number;
+  completed: number;
+  inProgress: number;
+  notStarted: number;
+  overdue: number;
+}
+
+const Tasks: React.FC = () => {
+  // Récupérer le contexte du projet
+  const projectContext = useContext(ProjectContext);
+  const { role } = useUserRole();
+  
+  // États locaux
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const [taskStats, setTaskStats] = useState<TaskStats>({
+    total: 0,
+    completed: 0,
+    inProgress: 0,
+    notStarted: 0,
+    overdue: 0
+  });
+  const [currentTask, setCurrentTask] = useState<ProjectTask | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Récupérer les tâches du projet courant
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setLoading(true);
+        // Si on a un projet courant, on calcule les statistiques
+        if (projectContext?.currentProject) {
+          const allTasks = getAllTasksFlat(projectContext.currentProject.phases);
+          calculateTaskStats(allTasks);
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error('Erreur lors du chargement des tâches:', err);
+        setError('Erreur lors du chargement des tâches');
+        setLoading(false);
+      }
+    };
+
+    loadTasks();
+  }, [projectContext?.currentProject]);
+
+  // Fonctions utilitaires pour les couleurs et labels
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'not_started': return 'bg-gray-100 text-gray-800';
+      case 'blocked': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPriorityBgColor = (priority: string): string => {
+    switch (priority) {
+      case 'high': return 'border-l-4 border-red-500';
+      case 'medium': return 'border-l-4 border-orange-400';
+      case 'normal': return 'border-l-4 border-blue-400';
+      case 'low': return 'border-l-4 border-green-400';
+      default: return 'border-l-4 border-blue-400';
+    }
+  };
+
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'completed': return 'Terminée';
+      case 'in_progress': return 'En cours';
+      case 'not_started': return 'Non commencée';
+      case 'blocked': return 'Bloquée';
+      default: return 'Inconnue';
+    }
+  };
+
+  // Calculer les statistiques des tâches
+  const calculateTaskStats = (tasks: ProjectTask[]) => {
+    const stats: TaskStats = {
+      total: tasks.length,
+      completed: 0,
+      inProgress: 0,
+      notStarted: 0,
+      overdue: 0
+    };
+
+    tasks.forEach(task => {
+      if (task.status === 'completed') stats.completed++;
+      else if (task.status === 'in_progress') stats.inProgress++;
+      else if (task.status === 'not_started') stats.notStarted++;
+
+      // Vérifier si la tâche est en retard
+      if (task.endDate && new Date(task.endDate) < new Date() && task.status !== 'completed') {
+        stats.overdue++;
+      }
+    });
+
+    setTaskStats(stats);
+  };
+
+  // Récupérer toutes les tâches à plat (pour les statistiques)
+  const getAllTasksFlat = (phases: ProjectPhase[] = []): ProjectTask[] => {
+    let allTasks: ProjectTask[] = [];
+    
+    phases.forEach(phase => {
+      if (phase.tasks) {
+        // Ajouter les tâches principales
+        allTasks = [...allTasks, ...phase.tasks];
+        
+        // Ajouter les sous-tâches récursivement
+        phase.tasks.forEach(task => {
+          if (task.subTasks && task.subTasks.length > 0) {
+            allTasks = [...allTasks, ...getAllSubTasksFlat(task.subTasks)];
+          }
+        });
+      }
+    });
+    
+    return allTasks;
+  };
+  
+  // Récupérer toutes les sous-tâches à plat (récursif)
+  const getAllSubTasksFlat = (tasks: ProjectTask[] = []): ProjectTask[] => {
+    let allSubTasks: ProjectTask[] = [];
+    
+    tasks.forEach(task => {
+      allSubTasks.push(task);
+      
+      if (task.subTasks && task.subTasks.length > 0) {
+        allSubTasks = [...allSubTasks, ...getAllSubTasksFlat(task.subTasks)];
+      }
+    });
+    
+    return allSubTasks;
+  };
+
+  // Helper function to find a task recursively in the project structure
+  const findTaskAndContext = (
+    tasks: ProjectTask[],
+    taskId: string
+  ): { task: ProjectTask | null; parentTask: ProjectTask | null } => {
+    for (const task of tasks) {
+      if (task.id === taskId) {
+        return { task, parentTask: null };
+      }
+
+      if (task.subTasks && task.subTasks.length > 0) {
+        const result = findTaskAndContext(task.subTasks, taskId);
+        if (result.task) {
+          return result.parentTask ? result : { task: result.task, parentTask: task };
+        }
+      }
+    }
+
+    return { task: null, parentTask: null };
+  };
+
+  // Ouvrir le modal pour éditer une tâche
+  const handleEditTask = (task: ProjectTask) => {
+    setCurrentTask(task);
+    setIsModalVisible(true);
+  };
+
+  // Créer une nouvelle tâche
+  const handleCreateTask = () => {
+    setCurrentTask(null); // Nouvelle tâche
+    setIsModalVisible(true);
+  };
+
+  // Supprimer une tâche
+  const handleDeleteTask = async (taskId: string) => {
+    if (!projectContext || !projectContext.currentProject) return;
+
+    try {
+      const phases = projectContext.currentProject.phases || [];
+      if (phases.length === 0) return;
+      
+      // Pour simplifier, on suppose que toutes les tâches sont dans la première phase
+      const phaseId = phases[0].id;
+      
+      // Trouver la tâche et son contexte (parent si sous-tâche)
+      const allTasks: ProjectTask[] = [];
+      phases.forEach(phase => {
+        if (phase.tasks) allTasks.push(...phase.tasks);
+      });
+      
+      const { task, parentTask } = findTaskAndContext(allTasks, taskId);
+      
+      if (!task) return;
+      
+      if (parentTask) {
+        // C'est une sous-tâche
+        await projectContext.removeSubTask(
+          projectContext.currentProject.id,
+          phaseId,
+          parentTask.id,
+          taskId
+        );
+      } else {
+        // C'est une tâche principale
+        await projectContext.removeTask(
+          projectContext.currentProject.id,
+          phaseId,
+          taskId
+        );
+      }
+      
+      setIsModalVisible(false);
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la tâche:', error);
+    }
+  };
+
+  // Sauvegarder une tâche (création ou édition)
+  const handleSaveTask = async (
+    taskData: Partial<ProjectTask>,
+    isSubTask = false,
+    parentTaskId?: string
+  ) => {
+    if (!projectContext || !projectContext.currentProject) return;
+
+    try {
+      const phases = projectContext.currentProject.phases || [];
+      if (phases.length === 0) return;
+      
+      // Pour simplifier, on suppose que toutes les tâches sont dans la première phase
+      const phaseId = phases[0].id;
+      
+      if (taskData.id) {
+        // Édition d'une tâche existante
+        await projectContext.updateTask(
+          projectContext.currentProject.id,
+          phaseId,
+          taskData as ProjectTask
+        );
+      } else {
+        // Création d'une nouvelle tâche
+        if (isSubTask && parentTaskId) {
+          // Création d'une sous-tâche
+          await projectContext.addSubTask(
+            projectContext.currentProject.id,
+            phaseId,
+            parentTaskId,
+            taskData as ProjectTask
+          );
+        } else {
+          // Création d'une tâche principale
+          await projectContext.addTask(
+            projectContext.currentProject.id,
+            phaseId,
+            taskData as ProjectTask
+          );
+        }
+      }
+      
+      setIsModalVisible(false);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la tâche:', error);
+    }
+  };
+
+  // Gérer le drag & drop des tâches
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+    
+    // Si pas de destination ou même position, ne rien faire
+    if (!destination || 
+        (destination.droppableId === source.droppableId && 
+         destination.index === source.index)) {
+      return;
+    }
+    
+    if (!projectContext || !projectContext.currentProject) return;
+    
+    try {
+      const phases = projectContext.currentProject.phases || [];
+      if (phases.length === 0) return;
+      
+      // Pour simplifier, on suppose que toutes les tâches sont dans la première phase
+      const phaseId = phases[0].id;
+      
+      // Vérifier si c'est un drag & drop de tâche principale
+      const isMainTask = source.droppableId === 'tasks-list';
+      
+      if (isMainTask) {
+        // Réordonner les tâches principales
+        await projectContext.reorderTasks(
+          projectContext.currentProject.id,
+          phaseId,
+          draggableId,
+          destination.index
+        );
+      } else {
+        // Réordonner les sous-tâches
+        // Le droppableId contient l'ID de la tâche parente (format: 'subtasks-{parentTaskId}')
+        const parentTaskId = source.droppableId.replace('subtasks-', '');
+        
+        await projectContext.reorderSubTasks(
+          projectContext.currentProject.id,
+          phaseId,
+          parentTaskId,
+          draggableId,
+          destination.index
+        );
+      }
+    } catch (error) {
+      console.error('Erreur lors du réordonnancement des tâches:', error);
+    }
+  };
+
+  // Composant pour afficher une tâche avec ses sous-tâches
+  const TaskCard: React.FC<{
+    task: ProjectTask;
+    onEdit: (task: ProjectTask) => void;
+    level?: number;
+    index: number;
+    canEdit?: boolean;
+  }> = ({ task, onEdit, level = 0, index, canEdit = true }) => {
+    const [expanded, setExpanded] = useState(false);
+    const [showDetails, setShowDetails] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [animateIn, setAnimateIn] = useState(false);
+    
+    // Animation d'entrée
+    useEffect(() => {
+      const timer = setTimeout(() => setAnimateIn(true), 50 * index);
+      return () => clearTimeout(timer);
+    }, [index]);
+    
+    // Calculer le pourcentage de progression
+    useEffect(() => {
+      const calculateProgress = () => {
+        if (!task) return 0;
+        if (task.status === 'completed') return 100;
+        if (task.status === 'not_started') return 0;
+        if (!task.subTasks || task.subTasks.length === 0) {
+          return task.status === 'in_progress' ? 50 : 0;
+        }
+
+        const total = task.subTasks.length;
+        const completed = task.subTasks.filter(st => st && st.status === 'completed').length;
+        return Math.round((completed / total) * 100);
+      };
+      setProgress(calculateProgress());
+    }, [task]);
+    
+    const toggleExpand = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setExpanded(!expanded);
+    };
+    
+    const toggleDetails = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setShowDetails(!showDetails);
+    };
+    
+    // Formatter le montant en FCFA
+    const formatCurrency = (amount: number | undefined) => {
+      if (amount === undefined) return '0 FCFA';
+      return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'XAF',
+        maximumFractionDigits: 0
+      }).format(amount);
+    };
+
+    return (
+      <Draggable draggableId={task.id} index={index}>
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            className={`mb-4 transition-all duration-500 transform ${animateIn ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}
+          >
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300">
+              <div 
+                className={`p-5 cursor-pointer ${getPriorityBgColor(task.priority || 'normal')}`} 
+                onClick={() => onEdit(task)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div
+                      {...provided.dragHandleProps}
+                      className="cursor-move p-1 rounded hover:bg-gray-100"
+                    >
+                      <Move className="w-5 h-5 text-gray-400" />
+                    </div>
+                    
+                    {task.subTasks && task.subTasks.length > 0 ? (
+                      <button
+                        onClick={toggleExpand}
+                        className="p-1 rounded hover:bg-gray-100"
+                      >
+                        {expanded ? (
+                          <ChevronDown className="w-5 h-5 text-gray-600" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-gray-600" />
+                        )}
+                      </button>
+                    ) : (
+                      <div className="w-7"></div>
+                    )}
+                    
+                    <div className="flex-1">
+                      <h3 
+                        className="text-lg font-semibold text-gray-900"
+                        style={{ paddingLeft: `${level * 12}px` }}
+                      >
+                        {task.name}
+                      </h3>
+                      <div className="flex items-center text-sm text-gray-600 mt-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status || 'not_started')}`}>
+                          {getStatusLabel(task.status || 'not_started')}
+                        </span>
+                        <span className="mx-2">•</span>
+                        <User className="w-4 h-4 mr-1" />
+                        <span>{task.assignedTo?.length || 0} assigné(s)</span>
+                        <span className="mx-2">•</span>
+                        <Calendar className="w-4 h-4 mr-1" />
+                        <span>{task.endDate ? new Date(task.endDate).toLocaleDateString() : 'Non définie'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-gray-900">{formatCurrency(task.budget)}</div>
+                      <div className="text-sm text-gray-500">Budget</div>
+                    </div>
+                    
+                    <div className="w-16 h-16 relative">
+                      <svg className="w-full h-full" viewBox="0 0 36 36">
+                        <path
+                          className="stroke-current text-gray-200"
+                          fill="none"
+                          strokeWidth="3"
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path
+                          className="stroke-current text-blue-500"
+                          fill="none"
+                          strokeWidth="3"
+                          strokeDasharray={`${progress}, 100`}
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <text
+                          x="18"
+                          y="20.35"
+                          className="fill-current text-xs font-semibold text-gray-700"
+                          textAnchor="middle"
+                        >
+                          {progress}%
+                        </text>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                
+                {showDetails && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-gray-700">{task.description || 'Aucune description'}</p>
+                    
+                    <div className="mt-3 grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Début</h4>
+                        <p className="text-gray-900">{task.startDate ? new Date(task.startDate).toLocaleDateString() : 'Non défini'}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Fin</h4>
+                        <p className="text-gray-900">{task.endDate ? new Date(task.endDate).toLocaleDateString() : 'Non définie'}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Budget</h4>
+                        <p className="text-gray-900">{formatCurrency(task.budget)}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500">Dépensé</h4>
+                        <p className="text-gray-900">{formatCurrency(task.spent)}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={toggleDetails}
+                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                  >
+                    {showDetails ? (
+                      <>
+                        <ChevronUp className="w-4 h-4 mr-1" />
+                        Moins de détails
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4 mr-1" />
+                        Plus de détails
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Sous-tâches */}
+              {expanded && task.subTasks && task.subTasks.length > 0 && (
+                <div className="bg-gray-50 px-5 py-3">
+                  <Droppable droppableId={`subtasks-${task.id}`} type={`subtasks-${task.id}`}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="space-y-2"
+                      >
+                        {task.subTasks.map((subTask, subIndex) => (
+                          <TaskCard
+                            key={subTask.id}
+                            task={subTask}
+                            onEdit={onEdit}
+                            level={level + 1}
+                            index={subIndex}
+                            canEdit={canEdit}
+                          />
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Draggable>
+    );
+  };
+
+  // Filtrer les tâches en fonction de l'onglet actif
+  const getFilteredTasks = (): ProjectTask[] => {
+    if (!projectContext?.currentProject?.phases || projectContext.currentProject.phases.length === 0) {
+      return [];
+    }
+
+    // Pour simplifier, on prend toutes les tâches de la première phase
+    const phase = projectContext.currentProject.phases[0];
+    const tasks = phase.tasks || [];
+
+    if (activeTab === 'all') return tasks;
+    
+    if (activeTab === 'overdue') {
+      return tasks.filter(task => 
+        task.endDate && 
+        new Date(task.endDate) < new Date() && 
+        task.status !== 'completed'
+      );
+    }
+    
+    if (activeTab === 'completed') return tasks.filter(task => task.status === 'completed');
+    if (activeTab === 'in_progress') return tasks.filter(task => task.status === 'in_progress');
+    if (activeTab === 'not_started') return tasks.filter(task => task.status === 'not_started');
+    
+    return tasks;
+  };
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Gestion des Tâches</h1>
+        <Button 
+          type="primary" 
+          icon={<PlusOutlined />}
+          onClick={handleCreateTask}
+        >
+          Nouvelle Tâche
+        </Button>
+      </div>
+
+      {/* Statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-500">Total des tâches</div>
+          <div className="text-2xl font-bold">{taskStats.total}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-500">Terminées</div>
+          <div className="text-2xl font-bold text-green-600">{taskStats.completed}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-500">En cours</div>
+          <div className="text-2xl font-bold text-blue-600">{taskStats.inProgress}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-500">Non commencées</div>
+          <div className="text-2xl font-bold text-gray-600">{taskStats.notStarted}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-500">En retard</div>
+          <div className="text-2xl font-bold text-red-600">{taskStats.overdue}</div>
+        </div>
+      </div>
+
+      {/* Filtres */}
+      <div className="mb-6">
+        <Radio.Group value={activeTab} onChange={e => setActiveTab(e.target.value)} buttonStyle="solid">
+          <Radio.Button value="all">Toutes ({taskStats.total})</Radio.Button>
+          <Radio.Button value="in_progress">En cours ({taskStats.inProgress})</Radio.Button>
+          <Radio.Button value="completed">Terminées ({taskStats.completed})</Radio.Button>
+          <Radio.Button value="not_started">Non commencées ({taskStats.notStarted})</Radio.Button>
+          <Radio.Button value="overdue">En retard ({taskStats.overdue})</Radio.Button>
+        </Radio.Group>
+      </div>
+
+      {/* Recherche */}
+      <div className="mb-6">
+        <Input 
+          placeholder="Rechercher une tâche..." 
+          prefix={<SearchOutlined />} 
+          onChange={e => setSearchTerm(e.target.value)}
+          className="w-full md:w-1/3"
+        />
+      </div>
+
+      {/* Liste des tâches avec drag & drop */}
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <Spin size="large" />
+        </div>
+      ) : error ? (
+        <Alert message={error} type="error" showIcon />
+      ) : (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="tasks-list" type="tasks-list">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="space-y-4"
+              >
+                {getFilteredTasks().map((task, index) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={handleEditTask}
+                    index={index}
+                  />
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+
+      {/* Modal pour créer/éditer une tâche */}
+      <TaskModal
+        visible={isModalVisible}
+        task={currentTask}
+        onCancel={() => setIsModalVisible(false)}
+        onSave={handleSaveTask}
+        onDelete={currentTask ? handleDeleteTask : undefined}
+        projectId={projectContext?.currentProject?.id}
+      />
+    </div>
+  );
+};
+
+export default Tasks;
