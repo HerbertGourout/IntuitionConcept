@@ -18,6 +18,38 @@ function isValidStatus(value: string): value is EquipmentStatus {
   return statusOptions.includes(value as EquipmentStatus);
 }
 
+// Fonction utilitaire pour nettoyer les données avant Firestore
+function cleanEquipmentData(equipment: Equipment): Equipment {
+  const cleaned: Equipment = {
+    id: equipment.id?.toString() || Date.now().toString(),
+    name: (equipment.name || '').trim(),
+    type: equipment.type || 'other',
+    model: (equipment.model || '').trim(),
+    serialNumber: (equipment.serialNumber || '').trim(),
+    status: equipment.status || 'available',
+    location: (equipment.location || '').trim(),
+    assignedProject: (equipment.assignedProject || '').trim(),
+    lastMaintenance: equipment.lastMaintenance || new Date().toISOString(),
+    nextMaintenance: equipment.nextMaintenance || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    dailyRate: Number(equipment.dailyRate) || 0,
+    operator: (equipment.operator || '').trim()
+  };
+  
+  // Ajouter coordinates seulement si défini et valide
+  if (equipment.coordinates && 
+      typeof equipment.coordinates.lat === 'number' && 
+      typeof equipment.coordinates.lng === 'number' &&
+      !isNaN(equipment.coordinates.lat) &&
+      !isNaN(equipment.coordinates.lng)) {
+    cleaned.coordinates = {
+      lat: equipment.coordinates.lat,
+      lng: equipment.coordinates.lng
+    };
+  }
+  
+  return cleaned;
+}
+
 const Equipment: React.FC = () => {
   const projectContext = useContext(ProjectContext);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -78,38 +110,83 @@ const Equipment: React.FC = () => {
 
   const handleAddEquipment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!projectContext?.currentProject) return;
+    
+    if (!projectContext?.currentProject) {
+      console.error('Aucun projet courant sélectionné');
+      return;
+    }
 
-    const newEquip: Equipment = {
-      ...newEquipment,
-      id: Date.now().toString(),
-      assignedProject: projectContext.currentProject.id,
-      lastMaintenance: new Date().toISOString(),
-      nextMaintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    };
+    if (!projectContext.updateProject) {
+      console.error('Fonction updateProject non disponible dans le contexte');
+      return;
+    }
 
-    const updatedList = [...(projectContext.currentProject.equipment || []), newEquip];
-    await projectContext.updateProject(
-      projectContext.currentProject.id,
-      { equipment: updatedList }
-    );
+    try {
+      console.log('🔧 Ajout d\'équipement:', newEquipment);
+      
+      // Créer un nouvel équipement avec toutes les valeurs définies
+      const newEquip: Equipment = {
+        id: Date.now().toString(),
+        name: newEquipment.name?.trim() || '',
+        type: newEquipment.type || 'other',
+        model: newEquipment.model?.trim() || '',
+        serialNumber: newEquipment.serialNumber?.trim() || '',
+        status: newEquipment.status || 'available',
+        location: newEquipment.location?.trim() || '',
+        assignedProject: projectContext.currentProject.id,
+        lastMaintenance: new Date().toISOString(),
+        nextMaintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        dailyRate: Number(newEquipment.dailyRate) || 0,
+        operator: newEquipment.operator?.trim() || ''
+      };
 
-    setShowAddEquipment(false);
-    setNewEquipment({
-      id: '',
-      name: '',
-      type: 'other',
-      model: '',
-      serialNumber: '',
-      status: 'available',
-      location: '',
-      assignedProject: '',
-      lastMaintenance: '',
-      nextMaintenance: '',
-      dailyRate: 0,
-      operator: '',
-      coordinates: undefined
-    });
+      // Ajouter coordinates seulement si défini et valide
+      if (newEquipment.coordinates && 
+          typeof newEquipment.coordinates.lat === 'number' && 
+          typeof newEquipment.coordinates.lng === 'number') {
+        newEquip.coordinates = newEquipment.coordinates;
+      }
+
+      console.log('🔧 Nouvel équipement créé:', newEquip);
+      
+      // Nettoyer tous les équipements existants pour éviter les undefined
+      const currentEquipment = projectContext.currentProject.equipment || [];
+      const cleanedCurrentEquipment = currentEquipment.map(eq => cleanEquipmentData(eq));
+      const updatedList = [...cleanedCurrentEquipment, newEquip];
+      
+      console.log('🔧 Liste mise à jour (nettoyée):', updatedList);
+      
+      await projectContext.updateProject(
+        projectContext.currentProject.id,
+        { equipment: updatedList },
+        'Équipement ajouté',
+        'Utilisateur',
+        `Ajout de l'équipement: ${newEquip.name} (${newEquip.type})`
+      );
+
+      console.log('✅ Équipement ajouté avec succès');
+      
+      // Réinitialiser le formulaire
+      setShowAddEquipment(false);
+      setNewEquipment({
+        id: '',
+        name: '',
+        type: 'other',
+        model: '',
+        serialNumber: '',
+        status: 'available',
+        location: '',
+        assignedProject: '',
+        lastMaintenance: '',
+        nextMaintenance: '',
+        dailyRate: 0,
+        operator: '',
+        coordinates: undefined
+      });
+      
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'ajout de l\'équipement:', error);
+    }
   };
 
   return (
@@ -221,11 +298,69 @@ const Equipment: React.FC = () => {
               </div>
               <div>
                 <label className="block text-gray-700">Type</label>
-                <input
+                <select
                   className="w-full border px-3 py-2 rounded"
                   value={newEquipment.type}
                   onChange={e => setNewEquipment({ ...newEquipment, type: e.target.value as Equipment['type'] })}
                   required
+                >
+                  <option value="excavator">Pelleteuse</option>
+                  <option value="crane">Grue</option>
+                  <option value="truck">Camion</option>
+                  <option value="concrete-mixer">Toupie béton</option>
+                  <option value="bulldozer">Bulldozer</option>
+                  <option value="other">Autre</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-700">Modèle</label>
+                <input
+                  className="w-full border px-3 py-2 rounded"
+                  value={newEquipment.model}
+                  onChange={e => setNewEquipment({ ...newEquipment, model: e.target.value })}
+                  placeholder="Ex: Caterpillar 320D"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700">Numéro de série</label>
+                <input
+                  className="w-full border px-3 py-2 rounded"
+                  value={newEquipment.serialNumber}
+                  onChange={e => setNewEquipment({ ...newEquipment, serialNumber: e.target.value })}
+                  placeholder="Ex: CAT123456789"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700">Localisation</label>
+                <input
+                  className="w-full border px-3 py-2 rounded"
+                  value={newEquipment.location}
+                  onChange={e => setNewEquipment({ ...newEquipment, location: e.target.value })}
+                  placeholder="Ex: Chantier A, Zone 1"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700">Tarif journalier (€)</label>
+                <input
+                  type="number"
+                  className="w-full border px-3 py-2 rounded"
+                  value={newEquipment.dailyRate}
+                  onChange={e => setNewEquipment({ ...newEquipment, dailyRate: parseFloat(e.target.value) || 0 })}
+                  placeholder="Ex: 450"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700">Opérateur</label>
+                <input
+                  className="w-full border px-3 py-2 rounded"
+                  value={newEquipment.operator}
+                  onChange={e => setNewEquipment({ ...newEquipment, operator: e.target.value })}
+                  placeholder="Nom de l'opérateur"
                 />
               </div>
               <div>
