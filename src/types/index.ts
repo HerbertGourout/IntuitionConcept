@@ -17,6 +17,7 @@ export interface Project {
   team: string[];
   documents: Document[];
   tasks: Task[];
+  equipment?: Equipment[];
 }
 
 export interface Equipment {

@@ -27,7 +27,7 @@ const Dashboard: React.FC = () => {
       tasks: allTasks,
       completedTasks,
     };
-  }, [currentProject]);
+  }, [validProject]);
   
   // Calcul des statistiques basées sur le projet sélectionné
   const stats = useMemo(() => {
@@ -58,12 +58,16 @@ const Dashboard: React.FC = () => {
     
     const budget = currentProjectData.budget || 0;
     // TODO: Implement proper budget tracking with spent amounts per phase
-    const budgetSpent = 0; // Placeholder until budget tracking is implemented
+    // Calcul dynamique du budget utilisé
+    const budgetSpent = (currentProjectData.phases || []).reduce(
+      (sum, phase) => sum + (phase.tasks || []).reduce((tSum, t) => tSum + (t.spent || 0), 0),
+      0
+    );
     const budgetRemaining = Math.max(0, budget - budgetSpent);
     const budgetPercentage = budget > 0 ? Math.round((budgetSpent / budget) * 100) : 0;
     
     // Valeurs factices pour l'équipement et l'équipe
-    const availableEquipment = 12; // À remplacer par des données réelles
+    const availableEquipment = currentProjectData.equipment?.length || 0;
     const teamMembers = currentProjectData.team?.length || 0;
 
     return {

@@ -2,7 +2,21 @@ import React, { useState, useContext } from 'react';
 import { Plus, Filter, Search, MapPin, Calendar } from 'lucide-react';
 import EquipmentCard from './EquipmentCard';
 import ProjectContext from '../../contexts/ProjectContext';
-import type { Project, Equipment } from '../../types';
+import type { Equipment } from '../../types';
+
+// Types pour les statuts d'équipement
+const statusOptions = [
+  "available",
+  "in-use",
+  "maintenance",
+  "out-of-service"
+] as const;
+
+type EquipmentStatus = typeof statusOptions[number];
+
+function isValidStatus(value: string): value is EquipmentStatus {
+  return statusOptions.includes(value as EquipmentStatus);
+}
 
 const Equipment: React.FC = () => {
   const projectContext = useContext(ProjectContext);
@@ -10,8 +24,24 @@ const Equipment: React.FC = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Générer des équipements temporaires basés sur le projet actuel
-  const equipment = projectContext?.currentProject ? generateEquipmentFromProject(projectContext.currentProject) : [];
+  // Utiliser la vraie liste d'équipements du projet courant
+  const equipment: Equipment[] = projectContext?.currentProject?.equipment || [];
+  const [showAddEquipment, setShowAddEquipment] = useState(false);
+  const [newEquipment, setNewEquipment] = useState<Equipment>({
+    id: '',
+    name: '',
+    type: 'other',
+    model: '',
+    serialNumber: '',
+    status: 'available',
+    location: '',
+    lastMaintenance: '',
+    nextMaintenance: '',
+    dailyRate: 0,
+    assignedProject: '',
+    operator: '',
+    coordinates: undefined
+  });
 
   const filteredEquipment = equipment.filter(item => {
     const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
@@ -21,7 +51,7 @@ const Equipment: React.FC = () => {
     return matchesStatus && matchesType && matchesSearch;
   });
 
-  const statusOptions = [
+  const statusFilterOptions = [
     { value: 'all', label: 'Tous les statuts' },
     { value: 'available', label: 'Disponible' },
     { value: 'in-use', label: 'En service' },
@@ -41,9 +71,45 @@ const Equipment: React.FC = () => {
 
   const equipmentStats = {
     total: equipment.length,
-    available: equipment.filter(e => e.status === 'available').length,
-    inUse: equipment.filter(e => e.status === 'in-use').length,
-    maintenance: equipment.filter(e => e.status === 'maintenance').length
+    available: equipment.filter((e: Equipment) => e.status === 'available').length,
+    inUse: equipment.filter((e: Equipment) => e.status === 'in-use').length,
+    maintenance: equipment.filter((e: Equipment) => e.status === 'maintenance').length
+  };
+
+  const handleAddEquipment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectContext?.currentProject) return;
+
+    const newEquip: Equipment = {
+      ...newEquipment,
+      id: Date.now().toString(),
+      assignedProject: projectContext.currentProject.id,
+      lastMaintenance: new Date().toISOString(),
+      nextMaintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    };
+
+    const updatedList = [...(projectContext.currentProject.equipment || []), newEquip];
+    await projectContext.updateProject(
+      projectContext.currentProject.id,
+      { equipment: updatedList }
+    );
+
+    setShowAddEquipment(false);
+    setNewEquipment({
+      id: '',
+      name: '',
+      type: 'other',
+      model: '',
+      serialNumber: '',
+      status: 'available',
+      location: '',
+      assignedProject: '',
+      lastMaintenance: '',
+      nextMaintenance: '',
+      dailyRate: 0,
+      operator: '',
+      coordinates: undefined
+    });
   };
 
   return (
@@ -59,7 +125,10 @@ const Equipment: React.FC = () => {
             <MapPin className="w-4 h-4" />
             Localisation
           </button>
-          <button className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors">
+          <button
+            className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+            onClick={() => setShowAddEquipment(true)}
+          >
             <Plus className="w-4 h-4" />
             Nouvel Équipement
           </button>
@@ -101,29 +170,31 @@ const Equipment: React.FC = () => {
               />
             </div>
 
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              {statusOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-3">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              >
+                {statusFilterOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              {typeOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              >
+                {typeOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <button className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium">
@@ -132,6 +203,56 @@ const Equipment: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Formulaire d'ajout d'équipement */}
+      {showAddEquipment && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Ajouter un équipement</h2>
+            <form onSubmit={handleAddEquipment} className="space-y-4">
+              <div>
+                <label className="block text-gray-700">Nom</label>
+                <input
+                  className="w-full border px-3 py-2 rounded"
+                  value={newEquipment.name}
+                  onChange={e => setNewEquipment({ ...newEquipment, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700">Type</label>
+                <input
+                  className="w-full border px-3 py-2 rounded"
+                  value={newEquipment.type}
+                  onChange={e => setNewEquipment({ ...newEquipment, type: e.target.value as Equipment['type'] })}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700">Statut</label>
+                <select
+                  className="w-full border px-3 py-2 rounded"
+                  value={newEquipment.status}
+                  onChange={e => setNewEquipment({ ...newEquipment, status: isValidStatus(e.target.value) ? e.target.value as EquipmentStatus : 'available' })}
+                >
+                  <option value="available">Disponible</option>
+                  <option value="in-use">En service</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="out-of-service">Hors service</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" className="px-4 py-2" onClick={() => setShowAddEquipment(false)}>
+                  Annuler
+                </button>
+                <button type="submit" className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">
+                  Ajouter
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Equipment Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -159,11 +280,5 @@ const Equipment: React.FC = () => {
   );
 };
 
-// Fonction utilitaire pour générer des équipements temporaires basés sur le projet
-const generateEquipmentFromProject = (_project: Pick<Project, 'budget' | 'location' | 'id'>): Equipment[] => {
-  // Pas de données de démonstration - retourner un tableau vide
-  // Les équipements réels seront chargés depuis la base de données
-  return [];
-};
 
 export default Equipment;

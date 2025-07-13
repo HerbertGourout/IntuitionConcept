@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 
 import type { Project, ProjectPhase, ProjectTask, ProjectContextType } from './projectTypes';
+import type { Equipment } from '../types';
 import { sumTaskBudgets } from './projectUtils';
 
 

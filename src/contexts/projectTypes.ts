@@ -5,6 +5,9 @@ export interface ProjectHistoryEntry {
   details?: string;
 }
 
+// Utilise maintenant l'interface Equipment globale du dossier types
+import type { Equipment } from '../types';
+
 export interface Project {
   id: string;
   name: string;
@@ -24,6 +27,7 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   history?: ProjectHistoryEntry[];
+  equipment?: Equipment[]; // <-- Utilise maintenant l'interface Equipment globale
 }
 
 export interface ProjectPhase {
