@@ -1,6 +1,9 @@
 import React, { useState, useContext } from 'react';
 import { Plus, Filter, Search, MapPin, Calendar } from 'lucide-react';
 import EquipmentCard from './EquipmentCard';
+import EquipmentDetailModal from './EquipmentDetailModal';
+import MaintenancePlanningModal from './MaintenancePlanningModal';
+import EquipmentForm from './EquipmentForm';
 import ProjectContext from '../../contexts/ProjectContext';
 import type { Equipment } from '../../types';
 
@@ -31,7 +34,7 @@ function cleanEquipmentData(equipment: Equipment): Equipment {
     assignedProject: (equipment.assignedProject || '').trim(),
     lastMaintenance: equipment.lastMaintenance || new Date().toISOString(),
     nextMaintenance: equipment.nextMaintenance || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    dailyRate: Number(equipment.dailyRate) || 0,
+
     operator: (equipment.operator || '').trim()
   };
   
@@ -59,6 +62,9 @@ const Equipment: React.FC = () => {
   // Utiliser la vraie liste d'équipements du projet courant
   const equipment: Equipment[] = projectContext?.currentProject?.equipment || [];
   const [showAddEquipment, setShowAddEquipment] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [newEquipment, setNewEquipment] = useState<Equipment>({
     id: '',
     name: '',
@@ -69,11 +75,19 @@ const Equipment: React.FC = () => {
     location: '',
     lastMaintenance: '',
     nextMaintenance: '',
-    dailyRate: 0,
     assignedProject: '',
+
     operator: '',
     coordinates: undefined
   });
+
+  // Statistiques synthétiques
+  const equipmentStats = {
+    total: equipment.length,
+    available: equipment.filter((e: Equipment) => e.status === 'available').length,
+    inUse: equipment.filter((e: Equipment) => e.status === 'in-use').length,
+    maintenance: equipment.filter((e: Equipment) => e.status === 'maintenance').length
+  };
 
   const filteredEquipment = equipment.filter(item => {
     const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
@@ -101,16 +115,7 @@ const Equipment: React.FC = () => {
     { value: 'other', label: 'Autres' }
   ];
 
-  const equipmentStats = {
-    total: equipment.length,
-    available: equipment.filter((e: Equipment) => e.status === 'available').length,
-    inUse: equipment.filter((e: Equipment) => e.status === 'in-use').length,
-    maintenance: equipment.filter((e: Equipment) => e.status === 'maintenance').length
-  };
-
-  const handleAddEquipment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleAddEquipment = async (values: Equipment) => {
     if (!projectContext?.currentProject) {
       console.error('Aucun projet courant sélectionné');
       return;
@@ -136,7 +141,7 @@ const Equipment: React.FC = () => {
         assignedProject: projectContext.currentProject.id,
         lastMaintenance: new Date().toISOString(),
         nextMaintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        dailyRate: Number(newEquipment.dailyRate) || 0,
+    
         operator: newEquipment.operator?.trim() || ''
       };
 
@@ -179,7 +184,7 @@ const Equipment: React.FC = () => {
         assignedProject: '',
         lastMaintenance: '',
         nextMaintenance: '',
-        dailyRate: 0,
+    
         operator: '',
         coordinates: undefined
       });
@@ -212,7 +217,7 @@ const Equipment: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Statistiques synthétiques */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="text-2xl font-bold text-gray-900">{equipmentStats.total}</div>
@@ -274,7 +279,10 @@ const Equipment: React.FC = () => {
             </div>
           </div>
 
-          <button className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium">
+          <button
+            className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
+            onClick={() => setShowMaintenanceModal(true)}
+          >
             <Calendar className="w-4 h-4" />
             Planning Maintenance
           </button>
@@ -284,109 +292,24 @@ const Equipment: React.FC = () => {
       {/* Formulaire d'ajout d'équipement */}
       {showAddEquipment && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+          <div className="bg-white rounded-lg p-6 w-full max-w-xl shadow-lg">
             <h2 className="text-xl font-semibold mb-4">Ajouter un équipement</h2>
-            <form onSubmit={handleAddEquipment} className="space-y-4">
-              <div>
-                <label className="block text-gray-700">Nom</label>
-                <input
-                  className="w-full border px-3 py-2 rounded"
-                  value={newEquipment.name}
-                  onChange={e => setNewEquipment({ ...newEquipment, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700">Type</label>
-                <select
-                  className="w-full border px-3 py-2 rounded"
-                  value={newEquipment.type}
-                  onChange={e => setNewEquipment({ ...newEquipment, type: e.target.value as Equipment['type'] })}
-                  required
-                >
-                  <option value="excavator">Pelleteuse</option>
-                  <option value="crane">Grue</option>
-                  <option value="truck">Camion</option>
-                  <option value="concrete-mixer">Toupie béton</option>
-                  <option value="bulldozer">Bulldozer</option>
-                  <option value="other">Autre</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-gray-700">Modèle</label>
-                <input
-                  className="w-full border px-3 py-2 rounded"
-                  value={newEquipment.model}
-                  onChange={e => setNewEquipment({ ...newEquipment, model: e.target.value })}
-                  placeholder="Ex: Caterpillar 320D"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700">Numéro de série</label>
-                <input
-                  className="w-full border px-3 py-2 rounded"
-                  value={newEquipment.serialNumber}
-                  onChange={e => setNewEquipment({ ...newEquipment, serialNumber: e.target.value })}
-                  placeholder="Ex: CAT123456789"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700">Localisation</label>
-                <input
-                  className="w-full border px-3 py-2 rounded"
-                  value={newEquipment.location}
-                  onChange={e => setNewEquipment({ ...newEquipment, location: e.target.value })}
-                  placeholder="Ex: Chantier A, Zone 1"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700">Tarif journalier (€)</label>
-                <input
-                  type="number"
-                  className="w-full border px-3 py-2 rounded"
-                  value={newEquipment.dailyRate}
-                  onChange={e => setNewEquipment({ ...newEquipment, dailyRate: parseFloat(e.target.value) || 0 })}
-                  placeholder="Ex: 450"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700">Opérateur</label>
-                <input
-                  className="w-full border px-3 py-2 rounded"
-                  value={newEquipment.operator}
-                  onChange={e => setNewEquipment({ ...newEquipment, operator: e.target.value })}
-                  placeholder="Nom de l'opérateur"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700">Statut</label>
-                <select
-                  className="w-full border px-3 py-2 rounded"
-                  value={newEquipment.status}
-                  onChange={e => setNewEquipment({ ...newEquipment, status: isValidStatus(e.target.value) ? e.target.value as EquipmentStatus : 'available' })}
-                >
-                  <option value="available">Disponible</option>
-                  <option value="in-use">En service</option>
-                  <option value="maintenance">Maintenance</option>
-                  <option value="out-of-service">Hors service</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <button type="button" className="px-4 py-2" onClick={() => setShowAddEquipment(false)}>
-                  Annuler
-                </button>
-                <button type="submit" className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">
-                  Ajouter
-                </button>
-              </div>
-            </form>
+            <EquipmentForm
+              initialValues={newEquipment}
+              mode="add"
+              onCancel={() => setShowAddEquipment(false)}
+              onSubmit={handleAddEquipment}
+            />
           </div>
         </div>
+      )}
+
+      {/* Modale planning maintenance */}
+      {showMaintenanceModal && (
+        <MaintenancePlanningModal
+          equipment={equipment}
+          onClose={() => setShowMaintenanceModal(false)}
+        />
       )}
 
       {/* Equipment Grid */}
@@ -395,10 +318,59 @@ const Equipment: React.FC = () => {
           <EquipmentCard
             key={equipment.id}
             equipment={equipment}
-            onClick={() => console.log('Ouvrir équipement', equipment.id)}
+            onClick={() => {
+              setSelectedEquipment(equipment);
+              setShowDetailModal(true);
+            }}
           />
         ))}
       </div>
+
+      {/* Modal fiche détail équipement */}
+      <EquipmentDetailModal
+        equipment={selectedEquipment}
+        onClose={() => {
+          setSelectedEquipment(null);
+          setShowDetailModal(false);
+        }}
+        onEdit={(updated) => {
+          if (!projectContext?.currentProject || !projectContext.updateProject) return;
+          const updatedList = equipment.map(eq => eq.id === updated.id ? { ...updated } : eq);
+          projectContext.updateProject(
+            projectContext.currentProject.id,
+            { equipment: updatedList },
+            'Équipement modifié',
+            'Utilisateur',
+            `Modification de l'équipement ${updated.name}`
+          );
+          setSelectedEquipment(updated);
+        }}
+        onDelete={(toDelete) => {
+          if (!projectContext?.currentProject || !projectContext.updateProject) return;
+          const updatedList = equipment.filter(eq => eq.id !== toDelete.id);
+          projectContext.updateProject(
+            projectContext.currentProject.id,
+            { equipment: updatedList },
+            'Équipement supprimé',
+            'Utilisateur',
+            `Suppression de l'équipement ${toDelete.name}`
+          );
+          setSelectedEquipment(null);
+          setShowDetailModal(false);
+        }}
+        onUpdateMaintenance={(updated) => {
+          if (!projectContext?.currentProject || !projectContext.updateProject) return;
+          const updatedList = equipment.map(eq => eq.id === updated.id ? { ...updated } : eq);
+          projectContext.updateProject(
+            projectContext.currentProject.id,
+            { equipment: updatedList },
+            'Maintenance équipement mise à jour',
+            'Utilisateur',
+            `Mise à jour maintenance pour ${updated.name}`
+          );
+          setSelectedEquipment(updated);
+        }}
+      />
 
       {filteredEquipment.length === 0 && (
         <div className="text-center py-12">

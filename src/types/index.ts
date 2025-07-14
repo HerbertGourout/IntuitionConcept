@@ -31,7 +31,7 @@ export interface Equipment {
   assignedProject?: string;
   lastMaintenance: string;
   nextMaintenance: string;
-  dailyRate: number;
+  dailyRate?: number;
   operator?: string;
   coordinates?: { lat: number; lng: number };
 }

@@ -117,7 +117,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
         {/* Header with controls */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center gap-4">
-            <h3 className="font-semibold text-gray-900 truncate max-w-md">
+            <h3 className="font-semibold text-gray-900 truncate max-w-xl">
               {document.name}
             </h3>
             <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">

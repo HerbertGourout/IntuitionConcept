@@ -5,8 +5,22 @@ export interface ProjectHistoryEntry {
   details?: string;
 }
 
+// --- Ajout gestion maintenance équipements ---
+export interface MaintenanceEvent {
+  id: string;
+  date: string; // ISO
+  type: string; // Ex: "Révision", "Réparation", etc.
+  description: string;
+  operator?: string;
+}
 // Utilise maintenant l'interface Equipment globale du dossier types
-import type { Equipment } from '../types';
+import type { Equipment as EquipmentBase } from '../types';
+
+// Extension locale de Equipment pour ajouter maintenanceHistory
+export interface Equipment extends EquipmentBase {
+  maintenanceHistory?: MaintenanceEvent[];
+}
+
 
 export interface Project {
   id: string;

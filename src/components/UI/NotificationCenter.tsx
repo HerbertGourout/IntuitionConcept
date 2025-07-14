@@ -81,7 +81,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         />
         
         {/* Notification Panel */}
-        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md transform transition-all">
+        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-xl transform transition-all">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center gap-2">
