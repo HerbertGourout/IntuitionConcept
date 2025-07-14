@@ -47,7 +47,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
     e.preventDefault();
     const isValid = validateForm();
     if (isValid) {
-      const newProjectData: Omit<Project, 'id' | 'phases' | 'spent'> = {
+      const newProjectData: Omit<Project, 'id' | 'phases' | 'spent' | 'createdAt' | 'updatedAt'> = {
         name: formData.name,
         description: formData.description,
         location: formData.location,

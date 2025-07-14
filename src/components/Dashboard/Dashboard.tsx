@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 import { useProjects } from '../../hooks/useProjects';
-import StatCard from './StatsCards';
-import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Trash2 } from 'lucide-react';
-import ProjectProgressCard from './ProjectProgressCard';
-import TaskSummaryCard from './TaskSummaryCard';
-import ProjectChart from './ProjectChart';
-import { clearAllData, debugData } from '../../utils/clearData';
+import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap } from 'lucide-react';
+import WeatherWidget from './widgets/WeatherWidget';
+import CircularProgressWidget from './widgets/CircularProgressWidget';
+import ActivityTimelineWidget from './widgets/ActivityTimelineWidget';
+import AnimatedStatsCard from './widgets/AnimatedStatsCard';
+import RealTimeChartWidget from './widgets/RealTimeChartWidget';
+import { AnimatedBackground, GlassCard, AnimatedCounter } from '../UI/VisualEffects';
 
 const Dashboard: React.FC = () => {
   const { currentProject, projects } = useProjects();
@@ -85,16 +86,22 @@ const Dashboard: React.FC = () => {
   // Vérifier si nous avons des données de projet
   if (!currentProjectData) {
     return (
-      <div className="space-y-6">
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-yellow-400" aria-hidden="true" />
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-6">
+        <div className="max-w-2xl mx-auto mt-20">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center border border-orange-200 dark:border-gray-700">
+            <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-orange-500" />
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                Aucun projet n'est actuellement sélectionné. Veuillez en sélectionner un dans le menu latéral.
-              </p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Aucun projet sélectionné
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Sélectionnez un projet dans le menu latéral pour accéder au tableau de bord interactif.
+            </p>
+            <div className="flex justify-center">
+              <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                Créer un nouveau projet
+              </button>
             </div>
           </div>
         </div>
@@ -103,129 +110,170 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header modernisé */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900">
-            {currentProjectData.name}
-          </h1>
-          <p className="text-gray-600 mt-1 text-lg">
-            {`Vue d'ensemble du projet - ${currentProjectData.location}`}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Bouton temporaire pour nettoyer les données */}
-          <button
-            onClick={() => {
-              debugData();
-              if (window.confirm('⚠️ ATTENTION: Ceci va supprimer TOUTES les données (localStorage + Firebase). Continuer ?')) {
-                clearAllData();
-              }
-            }}
-            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
-          >
-            <Trash2 className="h-4 w-4" />
-            Nettoyer toutes les données
-          </button>
-          <span className="text-sm text-gray-500">Dernière mise à jour :</span>
-          <span className="text-base font-semibold text-gray-900">
-            {new Date().toLocaleDateString('fr-FR', { 
-              day: 'numeric', 
-              month: 'long', 
-              year: 'numeric' 
-            })}
-          </span>
-        </div>
-      </div>
-
-      {/* Contenu principal épuré */}
-      <div className="space-y-8">
-        {/* Statistiques clés */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard 
-            title="Tâches actives"
-            value={stats.activeTasks.toString()}
-            change={0}
-            changeType="neutral"
-            icon={<Clock className="h-6 w-6 text-white" />}
-            color="bg-blue-500"
-          />
-          <StatCard 
-            title="Équipements disponibles"
-            value={stats.availableEquipment.toString()}
-            change={0}
-            changeType="neutral"
-            icon={<FolderOpen className="h-6 w-6 text-white" />}
-            color="bg-green-500"
-          />
-          <StatCard 
-            title="Budget utilisé"
-            value={`${stats.budgetPercentage}%`}
-            change={0}
-            changeType={stats.budgetPercentage > 80 ? 'decrease' : 'neutral'}
-            icon={<Euro className="h-6 w-6 text-white" />}
-            color="bg-purple-500"
-            description={`${(stats.budgetSpent / 1000000).toFixed(1)}M / ${(stats.budget / 1000000).toFixed(1)}M FCFA`}
-          />
-          <StatCard 
-            title="Tâches en retard"
-            value={stats.delayedTasks.toString()}
-            change={0}
-            changeType={stats.delayedTasks > 0 ? 'decrease' : 'neutral'}
-            icon={<AlertTriangle className="h-6 w-6 text-white" />}
-            color="bg-red-500"
-          />
+    <AnimatedBackground variant="particles">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50/80 to-blue-50/80 dark:from-gray-900/80 dark:to-gray-800/80 p-6">
+        {/* Header Hero Section */}
+        <div className="mb-8 fade-in-up">
+          <GlassCard className="p-8 hover-lift">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full pulse-glow"></div>
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400">Projet Actif</span>
+                </div>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 text-gradient">
+                  {currentProjectData.name}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-300 text-lg">
+                  {currentProjectData.description}
+                </p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Dernière mise à jour</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {new Date().toLocaleDateString('fr-FR', { 
+                      day: 'numeric', 
+                      month: 'long', 
+                      year: 'numeric' 
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
         </div>
 
-        {/* Avancement & synthèse des tâches */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-          <ProjectProgressCard project={currentProjectData} />
-          <TaskSummaryCard />
-        </div>
+        {/* Main Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+          {/* Animated Stats Cards */}
+          <div className="lg:col-span-8 slide-in-left">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="bounce-in" style={{animationDelay: '0.1s'}}>
+                <AnimatedStatsCard
+                  title="Tâches Actives"
+                  value={stats.activeTasks}
+                  previousValue={stats.activeTasks - 2}
+                  icon={<Clock className="w-6 h-6 text-white" />}
+                  color="text-white"
+                  gradientFrom="from-blue-500"
+                  gradientTo="to-blue-600"
+                />
+              </div>
+              <div className="bounce-in" style={{animationDelay: '0.2s'}}>
+                <AnimatedStatsCard
+                  title="Budget Utilisé"
+                  value={stats.budgetSpent}
+                  previousValue={stats.budgetSpent - 50000}
+                  format="currency"
+                  icon={<Euro className="w-6 h-6 text-white" />}
+                  color="text-white"
+                  gradientFrom="from-green-500"
+                  gradientTo="to-green-600"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bounce-in" style={{animationDelay: '0.3s'}}>
+                <AnimatedStatsCard
+                  title="Progression Globale"
+                  value={currentProjectData.progress}
+                  previousValue={currentProjectData.progress - 5}
+                  format="percentage"
+                  icon={<Target className="w-6 h-6 text-white" />}
+                  color="text-white"
+                  gradientFrom="from-orange-500"
+                  gradientTo="to-orange-600"
+                />
+              </div>
+              <div className="bounce-in" style={{animationDelay: '0.4s'}}>
+                <AnimatedStatsCard
+                  title="Équipe Active"
+                  value={stats.teamMembers || 12}
+                  previousValue={10}
+                  icon={<Users className="w-6 h-6 text-white" />}
+                  color="text-white"
+                  gradientFrom="from-purple-500"
+                  gradientTo="to-purple-600"
+                />
+              </div>
+            </div>
+          </div>
 
-        {/* Actions rapides modernisées */}
-        <div className="bg-white rounded-xl shadow border border-gray-100 p-8 flex flex-col gap-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Actions Rapides</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            <button 
-              onClick={() => {}}
-              className="flex flex-col items-center gap-2 p-4 border border-gray-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors"
-            >
-              <FolderOpen className="w-7 h-7 text-orange-600" />
-              <span className="text-base font-medium text-gray-700">Nouveau Projet</span>
-            </button>
-            <button 
-              onClick={() => {}}
-              className="flex flex-col items-center gap-2 p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
-            >
-              <Clock className="w-7 h-7 text-blue-600" />
-              <span className="text-base font-medium text-gray-700">Planning</span>
-            </button>
-            <button 
-              onClick={() => {}}
-              className="flex flex-col items-center gap-2 p-4 border border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-colors"
-            >
-              <AlertTriangle className="w-7 h-7 text-green-600" />
-              <span className="text-base font-medium text-gray-700">Alertes</span>
-            </button>
-            <button 
-              onClick={() => {}}
-              className="flex flex-col items-center gap-2 p-4 border border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors"
-            >
-              <Euro className="w-7 h-7 text-purple-600" />
-              <span className="text-base font-medium text-gray-700">Budget</span>
-            </button>
+          {/* Weather Widget */}
+          <div className="lg:col-span-4 slide-in-right">
+            <div className="float-animation">
+              <WeatherWidget location={currentProjectData.location} />
+            </div>
           </div>
         </div>
 
-        {/* Graphique d'avancement modernisé */}
-        <div className="bg-white rounded-xl shadow border border-gray-100 p-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Graphique d'avancement</h3>
-          <ProjectChart project={currentProjectData} />
+      {/* Progress and Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <CircularProgressWidget
+          title="Avancement Global"
+          percentage={currentProjectData.progress}
+          value={`${currentProjectData.progress}%`}
+          color="#f97316"
+          icon={<Target className="w-5 h-5" />}
+          subtitle={`${currentProjectData.completedTasks} / ${currentProjectData.tasks?.length || 0} tâches`}
+        />
+        
+        <CircularProgressWidget
+          title="Budget Consommé"
+          percentage={stats.budgetPercentage}
+          value={`${stats.budgetPercentage}%`}
+          color={stats.budgetPercentage > 80 ? '#ef4444' : '#10b981'}
+          icon={<Euro className="w-5 h-5" />}
+          subtitle={`${(stats.budgetSpent / 1000000).toFixed(1)}M / ${(stats.budget / 1000000).toFixed(1)}M FCFA`}
+        />
+        
+        <CircularProgressWidget
+          title="Efficacité Équipe"
+          percentage={85}
+          value="85%"
+          color="#8b5cf6"
+          icon={<Zap className="w-5 h-5" />}
+          subtitle="Performance hebdomadaire"
+        />
+      </div>
+
+      {/* Activity and Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ActivityTimelineWidget />
+        <RealTimeChartWidget />
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mt-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Actions Rapides</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button className="group p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl border border-orange-200 dark:border-orange-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <FolderOpen className="w-8 h-8 text-orange-600 mb-3 group-hover:scale-110 transition-transform" />
+              <p className="font-semibold text-gray-900 dark:text-white">Nouveau Projet</p>
+            </button>
+            
+            <button className="group p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <Calendar className="w-8 h-8 text-blue-600 mb-3 group-hover:scale-110 transition-transform" />
+              <p className="font-semibold text-gray-900 dark:text-white">Planning</p>
+            </button>
+            
+            <button className="group p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-200 dark:border-green-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <AlertTriangle className="w-8 h-8 text-green-600 mb-3 group-hover:scale-110 transition-transform" />
+              <p className="font-semibold text-gray-900 dark:text-white">Alertes</p>
+            </button>
+            
+            <button className="group p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border border-purple-200 dark:border-purple-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <Euro className="w-8 h-8 text-purple-600 mb-3 group-hover:scale-110 transition-transform" />
+              <p className="font-semibold text-gray-900 dark:text-white">Budget</p>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AnimatedBackground>
   );
 };
 

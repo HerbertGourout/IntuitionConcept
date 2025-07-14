@@ -4,8 +4,7 @@ import { ProjectProvider } from './contexts/ProjectContext';
 import type { Project } from './contexts/projectTypes';
 import { useProjects } from './hooks/useProjects';
 
-import Sidebar from './components/Layout/Sidebar';
-import HeaderUpdated from './components/Layout/HeaderUpdated';
+import Layout from './components/Layout/Layout';
 import Dashboard from './components/Dashboard/Dashboard';
 import Projects from './components/Projects/Projects';
 import Equipment from './components/Equipment/Equipment';
@@ -23,6 +22,14 @@ import type { ToastProps } from './components/UI/Toast';
 import { useToast } from './hooks/useToast';
 import ProjectBudget from './pages/ProjectBudget';
 import { Button, Result } from 'antd';
+import { 
+  FocusMode, 
+  QuickCommand, 
+  KeyboardShortcutsPanel, 
+  SmartSearch,
+  useKeyboardShortcuts 
+} from './components/UI/InteractiveFeatures';
+import { Search, Plus, Home, Settings as SettingsIcon, FileText, Users } from 'lucide-react';
 
 // Appliquer les styles globaux
 import './index.css';
@@ -49,8 +56,9 @@ const AnimatedPage: React.FC<{ children: React.ReactNode; pageKey?: string }> = 
 const AppContent: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showQuickCommand, setShowQuickCommand] = useState(false);
 
   const { toasts, success, removeToast } = useToast() as { 
     toasts: ToastProps[]; 
@@ -63,6 +71,79 @@ const AppContent: React.FC = () => {
     setCurrentProject, 
     addProject 
   } = useProjects();
+
+  // Configuration des raccourcis clavier
+  const keyboardShortcuts = [
+    { key: 'Ctrl+D', description: 'Aller au tableau de bord', action: () => handleNavigate('dashboard') },
+    { key: 'Ctrl+P', description: 'Aller aux projets', action: () => handleNavigate('projects') },
+    { key: 'Ctrl+T', description: 'Aller aux tâches', action: () => handleNavigate('tasks') },
+    { key: 'Ctrl+F', description: 'Aller aux finances', action: () => handleNavigate('finances') },
+    { key: 'Ctrl+N', description: 'Nouveau projet', action: () => setIsCreateProjectOpen(true) },
+    { key: 'Ctrl+K', description: 'Commande rapide', action: () => setShowQuickCommand(true) },
+    { key: 'Ctrl+/', description: 'Afficher les raccourcis', action: () => {} }
+  ];
+
+  // Configuration des commandes rapides
+  const quickCommands = [
+    {
+      id: 'dashboard',
+      label: 'Aller au tableau de bord',
+      icon: <Home className="w-4 h-4" />,
+      action: () => handleNavigate('dashboard'),
+      shortcut: 'Ctrl+D'
+    },
+    {
+      id: 'new-project',
+      label: 'Créer un nouveau projet',
+      icon: <Plus className="w-4 h-4" />,
+      action: () => setIsCreateProjectOpen(true),
+      shortcut: 'Ctrl+N'
+    },
+    {
+      id: 'projects',
+      label: 'Gérer les projets',
+      icon: <FileText className="w-4 h-4" />,
+      action: () => handleNavigate('projects'),
+      shortcut: 'Ctrl+P'
+    },
+    {
+      id: 'team',
+      label: 'Gérer l\'équipe',
+      icon: <Users className="w-4 h-4" />,
+      action: () => handleNavigate('team')
+    },
+    {
+      id: 'settings',
+      label: 'Paramètres',
+      icon: <SettingsIcon className="w-4 h-4" />,
+      action: () => handleNavigate('settings')
+    }
+  ];
+
+  // Suggestions de recherche
+  const searchSuggestions = [
+    'Tableau de bord',
+    'Projets',
+    'Tâches',
+    'Équipements',
+    'Planning',
+    'Finances',
+    'Documents',
+    'Rapports',
+    'Équipe',
+    'Localisation',
+    'Paramètres'
+  ];
+
+  // Configuration des raccourcis clavier globaux
+  useKeyboardShortcuts({
+    'ctrl+d': () => handleNavigate('dashboard'),
+    'ctrl+p': () => handleNavigate('projects'),
+    'ctrl+t': () => handleNavigate('tasks'),
+    'ctrl+f': () => handleNavigate('finances'),
+    'ctrl+n': () => setIsCreateProjectOpen(true),
+    'ctrl+k': () => setShowQuickCommand(true)
+  });
 
 
 
@@ -208,62 +289,40 @@ const AppContent: React.FC = () => {
 
   // Afficher l'interface principale avec le projet sélectionné
   return (
-    <div className="app">
-      <div className={`flex h-screen bg-gray-50 ${sidebarCollapsed ? 'pl-16' : 'pl-64'}`}>
-        <Sidebar 
+    <FocusMode>
+      <div className="app">
+        <Layout
           activeSection={activeSection}
           onNavigate={handleNavigate}
-          collapsed={sidebarCollapsed}
-          onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           onCreateProject={() => setIsCreateProjectOpen(true)}
           currentProjectId={currentProject?.id || null}
-          projects={projects.filter(project => {
-            // DÉVELOPPEMENT: Afficher tous les projets non archivés
-            return project?.status !== 'archived';
-          })}
-          onProjectSelect={(id) => {
-            if (id) {
-              setCurrentProject(id);
-            } else {
-              const firstProject = projects[0];
-              if (firstProject) {
-                setCurrentProject(firstProject.id);
-              }
-            }
-          }}
-        />
+          projects={projects.filter(p => p.status !== 'archived')}
+          onProjectSelect={(id: string | null) => id && setCurrentProject(id)}
+        >
+          <AnimatePresence mode="wait">
+            <AnimatedPage pageKey={activeSection}>
+              {renderContent()}
+            </AnimatedPage>
+          </AnimatePresence>
+        </Layout>
         
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <HeaderUpdated 
-            onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-            isMenuCollapsed={sidebarCollapsed}
-            onNavigate={handleNavigate}
-            onCreateProject={() => setIsCreateProjectOpen(true)}
+        {/* Fonctionnalités Interactives */}
+        <QuickCommand commands={quickCommands} />
+        <KeyboardShortcutsPanel shortcuts={keyboardShortcuts} />
+        
+        {/* Modals */}
+        {isCreateProjectOpen && (
+          <CreateProjectModal 
+            isOpen={isCreateProjectOpen}
+            onCancel={() => setIsCreateProjectOpen(false)}
+            onCreate={handleCreateProject}
           />
-          
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
-            <AnimatePresence mode="wait">
-              <AnimatedPage pageKey={activeSection}>
-                {renderContent()}
-              </AnimatedPage>
-            </AnimatePresence>
-          </main>
-        </div>
+        )}
+        
+        {/* Toast Notifications */}
+        <ToastContainer toasts={toasts} onClose={removeToast} />
       </div>
-      
-      {/* Modals */}
-      {isCreateProjectOpen && (
-        <CreateProjectModal 
-          isOpen={isCreateProjectOpen}
-          onCancel={() => setIsCreateProjectOpen(false)}
-          onCreate={handleCreateProject}
-        />
-      )}
-      
-      {/* Toast Notifications */}
-      <ToastContainer toasts={toasts} onClose={removeToast} />
-    </div>
+    </FocusMode>
   );
 }
 
