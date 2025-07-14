@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 
 import type { Project, ProjectPhase, ProjectTask, ProjectContextType } from './projectTypes';
-import type { Equipment } from '../types';
+import type { Equipment, FinancialRecord } from '../types';
 import { sumTaskBudgets } from './projectUtils';
 
 
@@ -33,12 +33,48 @@ function aggregateProjectSpent(phases: ProjectPhase[]): number {
 }
 
 export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // --- Dépenses réelles (FinancialRecord) ---
+  const [expenses, setExpenses] = useState<FinancialRecord[]>([]);
   const [projects, setProjects] = useState<Project[]>(() => {
-  const local = localStorage.getItem('projects');
-  return local ? JSON.parse(local) : [];
-});
+    const local = localStorage.getItem('projects');
+    return local ? JSON.parse(local) : [];
+  });
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [loadingProjects, setLoadingProjects] = useState<boolean>(true);
+
+  // Ecoute en temps réel des dépenses du projet courant
+  useEffect(() => {
+    if (!currentProjectId) {
+      setExpenses([]);
+      return;
+    }
+    const q = collection(db, 'expenses');
+    // Filtre par projet courant
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const filtered = snapshot.docs
+        .map(doc => ({ id: doc.id, ...(doc.data() as Omit<FinancialRecord, 'id'>) }))
+        .filter(exp => exp.projectId === currentProjectId);
+      setExpenses(filtered);
+    });
+    return () => unsubscribe();
+  }, [currentProjectId]);
+
+  // Ajout d'une dépense
+  const addExpense = async (expense: Omit<FinancialRecord, 'id'>) => {
+    await addDoc(collection(db, 'expenses'), expense);
+  };
+
+  // Edition d'une dépense
+  const editExpense = async (id: string, updates: Partial<FinancialRecord>) => {
+    const ref = doc(db, 'expenses', id);
+    await updateDoc(ref, updates);
+  };
+
+  // Suppression d'une dépense
+  const deleteExpense = async (id: string) => {
+    const ref = doc(db, 'expenses', id);
+    await deleteDoc(ref);
+  };
 
   // Persistance locale : sauvegarde à chaque changement
   useEffect(() => {
@@ -274,6 +310,15 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     await updateDoc(projectRef, { phases: updatedPhases });
   };
 
+  const deletePhase = async (projectId: string, phaseId: string) => {
+    const projectRef = doc(db, 'projects', projectId);
+    const projectSnap = await getDoc(projectRef);
+    if (!projectSnap.exists()) return;
+    const projectData = projectSnap.data() as Project;
+    const updatedPhases = (projectData.phases || []).filter(phase => phase.id !== phaseId);
+    await updateDoc(projectRef, { phases: updatedPhases });
+  };
+
   const addTask = async (
     projectId: string,
     phaseId: string,
@@ -457,6 +502,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         archiveProject,
         addPhase,
         updatePhase,
+        deletePhase,
         addTask,
         updateTask,
         removeTask,
@@ -465,7 +511,12 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         removeSubTask,
         reorderSubTasks,
         currentProjectBudget,
-        loadingProjects
+        loadingProjects,
+        // --- Dépenses réelles ---
+        expenses,
+        addExpense,
+        editExpense,
+        deleteExpense
       }}
     >
       {children}

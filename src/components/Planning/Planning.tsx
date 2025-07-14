@@ -1,9 +1,10 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Calendar, Filter, Download, Share2, Settings } from 'lucide-react';
+import { Calendar, Filter, Download, Share2, Settings, Pencil } from 'lucide-react';
 import ProjectContext from '../../contexts/ProjectContext';
-import { ProjectTask, Project } from '../../contexts/projectTypes';
+import { ProjectTask, Project, ProjectPhase } from '../../contexts/projectTypes';
 import GanttChart from './GanttChart';
 import { Task } from '../../types';
+import PhaseModal from './PhaseModal';
 
 const Planning: React.FC = () => {
   const projectContext = useContext(ProjectContext);
@@ -12,6 +13,10 @@ const Planning: React.FC = () => {
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [viewType, setViewType] = useState<ViewType>('gantt');
+  const [isPhaseModalOpen, setIsPhaseModalOpen] = useState(false);
+  const [phaseModalMode, setPhaseModalMode] = useState<'create' | 'edit'>('create');
+  const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null);
+  const [phaseError, setPhaseError] = useState('');
 
   useEffect(() => {
     // Vérifier si le contexte est défini
@@ -53,14 +58,17 @@ const Planning: React.FC = () => {
 
   const handleTaskCreate = (taskData: Omit<ProjectTask, 'id' | 'costItems' | 'spent'>) => {
     if (!projectContext || !projectContext.currentProject) return;
-    
+    const phases = projectContext.currentProject.phases || [];
+    if (phases.length === 0) {
+      alert("Veuillez d'abord créer une phase avant d'ajouter une tâche.");
+      return;
+    }
     // Ajouter la tâche à la première phase disponible
-    const phaseId = projectContext.currentProject.phases[0].id;
+    const phaseId = phases[0].id;
     projectContext.addTask(projectContext.currentProject.id, phaseId, taskData);
-    
     // Rafraîchir les tâches
     const allTasks: ProjectTask[] = [];
-    projectContext.currentProject.phases.forEach(phase => {
+    phases.forEach(phase => {
       phase.tasks.forEach(task => {
         allTasks.push(task);
       });
@@ -150,6 +158,74 @@ const Planning: React.FC = () => {
         </div>
       </div>
 
+      {/* Cartes des phases */}
+      {projectContext?.currentProject?.phases && projectContext.currentProject.phases.length > 0 && (
+        <div className="mt-6">
+          <div className="text-lg font-semibold mb-4">Phases du projet</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {projectContext.currentProject.phases.map((phase) => {
+              const phaseTaskCount = phase.tasks?.length || 0;
+              const completedTasks = phase.tasks?.filter(task => task.status === 'done').length || 0;
+              const progressPercentage = phaseTaskCount > 0 ? Math.round((completedTasks / phaseTaskCount) * 100) : 0;
+              
+              // Calculer la durée de la phase
+              const startDate = new Date(phase.startDate);
+              const endDate = new Date(phase.endDate);
+              const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+              
+              return (
+                <div key={phase.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 text-lg mb-1">{phase.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        {new Date(phase.startDate).toLocaleDateString('fr-FR')} → {new Date(phase.endDate).toLocaleDateString('fr-FR')}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">{durationDays} jour{durationDays > 1 ? 's' : ''}</p>
+                    </div>
+                    <button
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                      title="Éditer la phase"
+                      onClick={() => {
+                        setEditingPhase(phase);
+                        setPhaseModalMode('edit');
+                        setIsPhaseModalOpen(true);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4 text-gray-700" />
+                    </button>
+                  </div>
+                  
+                  {/* Barre de progression */}
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Progression</span>
+                      <span className="font-medium text-gray-900">{progressPercentage}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-orange-500 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${progressPercentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  {/* Statistiques des tâches */}
+                  <div className="flex justify-between text-sm">
+                    <div className="text-gray-600">
+                      <span className="font-medium">{phaseTaskCount}</span> tâche{phaseTaskCount > 1 ? 's' : ''}
+                    </div>
+                    <div className="text-green-600">
+                      <span className="font-medium">{completedTasks}</span> terminée{completedTasks > 1 ? 's' : ''}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Filters and View Controls */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
@@ -170,7 +246,7 @@ const Planning: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-2">
             {[
               { id: 'gantt', label: 'Gantt', icon: Calendar },
               { id: 'calendar', label: 'Calendrier', icon: Calendar },
@@ -192,6 +268,17 @@ const Planning: React.FC = () => {
                 </button>
               );
             })}
+            <button
+              className="ml-2 flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+              onClick={() => {
+                setPhaseModalMode('create');
+                setEditingPhase(null);
+                setIsPhaseModalOpen(true);
+              }}
+              type="button"
+            >
+              + Nouvelle phase
+            </button>
           </div>
         </div>
       </div>
@@ -250,6 +337,52 @@ const Planning: React.FC = () => {
           <p className="text-gray-600">La vue liste sera disponible prochainement.</p>
         </div>
       )}
+
+      {/* Phase Modal */}
+      <PhaseModal
+        isOpen={isPhaseModalOpen}
+        onClose={() => {
+          setIsPhaseModalOpen(false);
+          setPhaseModalMode('create');
+          setEditingPhase(null);
+          setPhaseError('');
+        }}
+        mode={phaseModalMode}
+        initialPhase={editingPhase}
+        onSave={(phaseData) => {
+          if (!projectContext?.currentProject) return;
+          
+          try {
+            if (phaseModalMode === 'create') {
+              projectContext.addPhase(projectContext.currentProject.id, phaseData);
+            } else if (phaseModalMode === 'edit' && editingPhase) {
+              projectContext.updatePhase(projectContext.currentProject.id, editingPhase.id, phaseData);
+            }
+            
+            setIsPhaseModalOpen(false);
+            setPhaseModalMode('create');
+            setEditingPhase(null);
+            setPhaseError('');
+          } catch (error) {
+            console.error('Erreur lors de la sauvegarde de la phase:', error);
+            setPhaseError('Erreur lors de la sauvegarde de la phase');
+          }
+        }}
+        onDelete={phaseModalMode === 'edit' && editingPhase ? async () => {
+          if (!projectContext?.currentProject || !editingPhase) return;
+          
+          try {
+            await projectContext.deletePhase(projectContext.currentProject.id, editingPhase.id);
+            setIsPhaseModalOpen(false);
+            setPhaseModalMode('create');
+            setEditingPhase(null);
+            setPhaseError('');
+          } catch (error) {
+            console.error('Erreur lors de la suppression de la phase:', error);
+            setPhaseError('Erreur lors de la suppression de la phase');
+          }
+        } : undefined}
+      />
     </div>
   );
 };

@@ -28,29 +28,49 @@ const GanttChart: React.FC<GanttChartProps> = ({
   const ganttRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
-  // Calculate date range based on tasks
-  const getDateRange = () => {
-    if (tasks.length === 0) {
-      const start = new Date();
-      const end = new Date();
-      end.setMonth(end.getMonth() + 3);
-      return { start, end };
-    }
+  // Calculate date range based on phases and tasks
+const getDateRange = () => {
+  // Try to get phases from props if available (passed via projectId or context)
+  let phases = [];
+  // Try to get phases from window/projectContext if available (for compatibility)
+  if (typeof window !== 'undefined' && (window as any).projectContext?.currentProject?.phases) {
+    phases = (window as any).projectContext.currentProject.phases;
+  }
+  // Or try to get phases from props if passed (optional, fallback)
+  if (!phases.length && (typeof projectId !== 'undefined')) {
+    // Could add logic to fetch phases by projectId if needed
+  }
 
-    const dates = tasks.flatMap(task => [
-      new Date(task.startDate),
-      new Date(task.dueDate)
+  // If phases exist, use their start/end dates
+  if (phases.length > 0) {
+    const phaseDates = phases.flatMap((phase: any) => [
+      new Date(phase.startDate),
+      new Date(phase.endDate)
     ]);
-
-    const start = new Date(Math.min(...dates.map(d => d.getTime())));
-    const end = new Date(Math.max(...dates.map(d => d.getTime())));
-    
-    // Add padding
+    const start = new Date(Math.min(...phaseDates.map((d: Date) => d.getTime())));
+    const end = new Date(Math.max(...phaseDates.map((d: Date) => d.getTime())));
     start.setDate(start.getDate() - 7);
     end.setDate(end.getDate() + 7);
-    
     return { start, end };
-  };
+  }
+
+  // If no phases, use tasks as fallback
+  if (tasks.length === 0) {
+    const start = new Date();
+    const end = new Date();
+    end.setMonth(end.getMonth() + 3);
+    return { start, end };
+  }
+  const dates = tasks.flatMap(task => [
+    new Date(task.startDate),
+    new Date(task.dueDate)
+  ]);
+  const start = new Date(Math.min(...dates.map((d: Date) => d.getTime())));
+  const end = new Date(Math.max(...dates.map((d: Date) => d.getTime())));
+  start.setDate(start.getDate() - 7);
+  end.setDate(end.getDate() + 7);
+  return { start, end };
+};
 
   const { start: startDate, end: endDate } = getDateRange();
 

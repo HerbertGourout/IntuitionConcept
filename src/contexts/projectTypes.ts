@@ -106,6 +106,8 @@ export interface CostItem {
   notes?: string;
 }
 
+import type { FinancialRecord } from '../types';
+
 export interface ProjectContextType {
   projects: Project[];
   currentProject: Project | null;
@@ -122,6 +124,7 @@ export interface ProjectContextType {
   archiveProject: (id: string) => Promise<void>;
   addPhase: (projectId: string, phase: Omit<ProjectPhase, 'id' | 'tasks'>) => void;
   updatePhase: (projectId: string, phaseId: string, updates: Partial<ProjectPhase>) => void;
+  deletePhase: (projectId: string, phaseId: string) => Promise<void>;
   addTask: (projectId: string, phaseId: string, task: Omit<ProjectTask, 'id'>, parentTaskId?: string) => void;
   updateTask: (projectId: string, phaseId: string, taskId: string, updates: Partial<ProjectTask>) => void;
   reorderTasks: (projectId: string, phaseId: string, taskId: string, newIndex: number) => Promise<void>;
@@ -131,6 +134,12 @@ export interface ProjectContextType {
   reorderSubTasks: (projectId: string, phaseId: string, parentTaskId: string, subTaskId: string, newIndex: number) => Promise<void>;
   currentProjectBudget: number;
   loadingProjects: boolean;
+
+  // --- Dépenses réelles ---
+  expenses: FinancialRecord[];
+  addExpense: (expense: Omit<FinancialRecord, 'id'>) => Promise<void>;
+  editExpense: (id: string, updates: Partial<FinancialRecord>) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
 }
 
 

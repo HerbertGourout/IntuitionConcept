@@ -1,37 +1,73 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BudgetOverview } from '../Costs/BudgetOverview';
+import ExpenseList from '../Budget/ExpenseList';
+import ExpenseForm from '../Budget/ExpenseForm';
+import { useProjectContext } from '../../contexts/ProjectContext';
+import type { FinancialRecord } from '../../types';
 import ProjectBudgetChart from './ProjectBudgetChart';
 import PhaseBudgetChart from './PhaseBudgetChart';
 import TaskBudgetChart from './TaskBudgetChart';
 import { exportProjectBudgetToCSV } from '../../utils/exportBudget';
 
-import type { Project } from '../../types/project';
+import type { Project } from '../../contexts/projectTypes';
 
 interface BudgetSectionProps {
   project: Project;
 }
 
 const BudgetSection: React.FC<BudgetSectionProps> = ({ project }) => {
+  const { expenses, addExpense, editExpense, deleteExpense } = useProjectContext();
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<FinancialRecord | null>(null);
+
+  // Filtrer les dépenses du projet courant
+  const projectExpenses = expenses.filter(e => e.projectId === project.id);
+
+  const handleAdd = () => {
+    setEditingExpense(null);
+    setModalOpen(true);
+  };
+  const handleEdit = (expense: FinancialRecord) => {
+    setEditingExpense(expense);
+    setModalOpen(true);
+  };
+  const handleDelete = async (expenseId: string) => {
+    await deleteExpense(expenseId);
+  };
+  const handleSubmit = async (data: Omit<FinancialRecord, 'id'>) => {
+    if (editingExpense) {
+      await editExpense(editingExpense.id, data);
+    } else {
+      await addExpense(data);
+    }
+    setModalOpen(false);
+    setEditingExpense(null);
+  };
   // Adaptation des données pour BudgetOverview (si besoin)
   const overviewData = {
     name: project.name,
     budget: project.budget,
     actualSpent: project.spent,
-    phases: (project.phases || []).map((ph) => ({
-      id: ph.id,
-      name: ph.name,
-      estimatedCost: ph.budget,
-      actualCost: ph.spent,
-      completion: 0 // À adapter si suivi d'avancement
-    }))
+    phases: (project.phases || []).map((ph) => {
+      // Calculer le budget et les dépenses de la phase à partir des tâches
+      const phaseBudget = ph.tasks.reduce((sum, task) => sum + (task.budget || 0), 0);
+      const phaseSpent = ph.tasks.reduce((sum, task) => sum + (task.spent || 0), 0);
+      return {
+        id: ph.id,
+        name: ph.name,
+        estimatedCost: phaseBudget,
+        actualCost: phaseSpent,
+        completion: phaseBudget > 0 ? (phaseSpent / phaseBudget) * 100 : 0
+      };
+    })
   };
 
   // Récupération des tâches avec nom de phase
   const allTasks = (project.phases || []).flatMap(phase =>
     (phase.tasks || []).map(task => ({
       id: task.id,
-      name: task.title,
-      budget: (task as { budget?: number }).budget ?? 0,
+      name: task.name,
+      budget: task.budget ?? 0,
       spent: task.spent ?? 0,
       phaseName: phase.name
     }))
@@ -51,12 +87,17 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ project }) => {
       <BudgetOverview project={overviewData} />
       <div className="grid md:grid-cols-2 gap-8 mt-8">
         <ProjectBudgetChart budget={project.budget} spent={project.spent} />
-        <PhaseBudgetChart phases={project.phases.map(ph => ({
-          id: ph.id,
-          name: ph.name,
-          budget: ph.budget,
-          spent: ph.spent
-        }))} />
+        <PhaseBudgetChart phases={(project.phases || []).map(ph => {
+          // Calculer le budget et les dépenses de la phase à partir des tâches
+          const phaseBudget = ph.tasks.reduce((sum, task) => sum + (task.budget || 0), 0);
+          const phaseSpent = ph.tasks.reduce((sum, task) => sum + (task.spent || 0), 0);
+          return {
+            id: ph.id,
+            name: ph.name,
+            budget: phaseBudget,
+            spent: phaseSpent
+          };
+        })} />
       </div>
       <TaskBudgetChart tasks={allTasks} />
       <div className="mt-8">
@@ -91,6 +132,35 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ project }) => {
             </tbody>
           </table>
         </div>
+      </div>
+      {/* Dépenses réelles */}
+      <div className="mt-12">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold">Dépenses réelles</h3>
+          <button
+            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
+            onClick={handleAdd}
+          >
+            + Ajouter une dépense
+          </button>
+        </div>
+        <ExpenseList
+          expenses={projectExpenses}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+        {isModalOpen && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+              <ExpenseForm
+                initialValues={editingExpense || undefined}
+                onSubmit={handleSubmit}
+                onCancel={() => { setModalOpen(false); setEditingExpense(null); }}
+                projectId={project.id}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
