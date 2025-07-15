@@ -1,284 +1,326 @@
-import React, { useState, useContext } from 'react';
-import { TrendingUp, TrendingDown, Euro, FileText, Filter, Search } from 'lucide-react';
-import ProjectContext from '../../contexts/ProjectContext';
-import { Project, CostItem } from '../../contexts/projectTypes';
+import React, { useState, useMemo } from 'react';
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Euro,
+  Plus,
+  Calculator,
+  PieChart,
+  BarChart3,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Wrench,
+  FileText,
+  Target
+} from 'lucide-react';
+import { Transaction } from '../../types/finance';
+import { useProjectContext } from '../../contexts/ProjectContext';
+import TransactionTable from './TransactionTable';
+import TransactionModal from './TransactionModal';
+import { v4 as uuidv4 } from 'uuid';
 
-const Finances: React.FC = () => {
-  const projectContext = useContext(ProjectContext);
-  const [filterType, setFilterType] = useState<string>('all');
-  const [filterProject, setFilterProject] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Données financières temporaires basées sur les coûts des tâches du projet
-  const financialRecords = projectContext?.currentProject ? generateFinancialRecordsFromProject(projectContext.currentProject) : [];
-
-  const filteredRecords = financialRecords.filter(record => {
-    const matchesType = filterType === 'all' || record.type === filterType;
-    const matchesProject = filterProject === 'all' || record.projectId === filterProject;
-    const matchesSearch = record.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (record.vendor && record.vendor.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesType && matchesProject && matchesSearch;
-  });
-
-  // Calculs financiers
-  const totalIncome = financialRecords.filter(r => r.type === 'income').reduce((sum, r) => sum + r.amount, 0);
-  const totalExpenses = financialRecords.filter(r => r.type === 'expense').reduce((sum, r) => sum + r.amount, 0);
-  const netProfit = totalIncome - totalExpenses;
-
-
-  const getProjectName = (projectId: string) => {
-    const project = projectContext?.projects.find(p => p.id === projectId);
-    return project ? project.name : 'Projet inconnu';
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'materials': return '🏗️';
-      case 'labor': return '👷';
-      case 'equipment': return '🚜';
-      case 'permits': return '📋';
-      default: return '💼';
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Finances</h1>
-          <p className="text-gray-600 mt-1">Gérez les finances de vos projets</p>
-        </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-            <TrendingUp className="w-4 h-4" />
-            Nouveau Revenu
-          </button>
-          <button className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
-            <TrendingDown className="w-4 h-4" />
-            Nouvelle Dépense
-          </button>
-        </div>
-      </div>
-
-      {/* Financial Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 rounded-lg bg-green-100">
-              <TrendingUp className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Revenus</p>
-              <p className="text-2xl font-bold text-green-600">{totalIncome.toLocaleString('fr-FR')} FCFA</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 rounded-lg bg-red-100">
-              <TrendingDown className="w-6 h-6 text-red-600" />
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Dépenses</p>
-              <p className="text-2xl font-bold text-red-600">{totalExpenses.toLocaleString('fr-FR')} FCFA</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 rounded-lg bg-blue-100">
-              <Euro className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Bénéfice Net</p>
-              <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {(netProfit / 1000).toFixed(0)}k€
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 rounded-lg bg-orange-100">
-              <FileText className="w-6 h-6 text-orange-600" />
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">En attente</p>
-              <p className="text-2xl font-bold text-gray-900">{netProfit.toLocaleString('fr-FR')} FCFA</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Rechercher une transaction..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent w-full sm:w-64"
-              />
-            </div>
-
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="all">Tous les types</option>
-              <option value="income">Revenus</option>
-              <option value="expense">Dépenses</option>
-            </select>
-
-            <select
-              value={filterProject}
-              onChange={(e) => setFilterProject(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="all">Tous les projets</option>
-              {projectContext?.projects.map(project => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Financial Records Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Transactions Récentes</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left py-3 px-6 font-medium text-gray-700">Date</th>
-                <th className="text-left py-3 px-6 font-medium text-gray-700">Description</th>
-                <th className="text-left py-3 px-6 font-medium text-gray-700">Projet</th>
-                <th className="text-left py-3 px-6 font-medium text-gray-700">Catégorie</th>
-                <th className="text-right py-3 px-6 font-medium text-gray-700">Montant</th>
-                <th className="text-center py-3 px-6 font-medium text-gray-700">Statut</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredRecords.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50">
-                  <td className="py-4 px-6 text-sm text-gray-900">
-                    {new Date(record.date).toLocaleDateString('fr-FR')}
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{getCategoryIcon(record.category)}</span>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{record.description}</p>
-                        {record.vendor && (
-                          <p className="text-xs text-gray-500">{record.vendor}</p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-gray-600">
-                    {getProjectName(record.projectId)}
-                  </td>
-                  <td className="py-4 px-6 text-sm text-gray-600 capitalize">
-                    {record.category}
-                  </td>
-                  <td className={`py-4 px-6 text-sm font-semibold text-right ${record.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                    {record.type === 'income' ? '+' : '-'}{record.amount.toLocaleString('fr-FR')} FCFA
-                  </td>
-                  <td className="py-4 px-6 text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${record.approved
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-orange-100 text-orange-800'
-                      }`}>
-                      {record.approved ? 'Approuvé' : 'En attente'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {filteredRecords.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-            <Filter className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune transaction trouvée</h3>
-          <p className="text-gray-600">
-            Essayez de modifier vos critères de recherche ou ajoutez une nouvelle transaction.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Interface pour les enregistrements financiers
-interface FinancialRecord {
-  id: string;
-  type: 'income' | 'expense';
-  category: string;
-  amount: number;
-  description: string;
-  date: string;
-  projectId: string;
-  approved: boolean;
-  vendor?: string;
+interface FinancialSummary {
+  totalBudget: number;
+  totalSpent: number;
+  totalIncome: number;
+  totalExpenses: number;
+  netProfit: number;
+  budgetUtilization: number;
+  equipmentCosts: number;
+  laborCosts: number;
+  materialCosts: number;
+  pendingPayments: number;
 }
 
-// Fonction utilitaire pour générer des données financières à partir des tâches du projet
-const generateFinancialRecordsFromProject = (project: Project) => {
-  const records: FinancialRecord[] = [];
+const Finances: React.FC = () => {
+  const projectContext = useProjectContext();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Transaction | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'budget' | 'equipment' | 'phases'>('overview');
 
-  // Ajouter un revenu global pour le projet (acompte initial)
-  records.push({
-    id: `income-${project.id}-1`,
-    type: 'income',
-    category: 'payment',
-    amount: project.budget * 0.3, // 30% d'acompte
-    description: 'Acompte initial',
-    date: project.startDate,
-    projectId: project.id,
-    approved: true,
-    vendor: project.client || 'Client'
-  });
+  const currentProject = projectContext.currentProject;
 
-  // Ajouter des dépenses basées sur les coûts des tâches
-  project.phases.forEach((phase) => {
-    phase.tasks.forEach((task) => {
-      if (task.costItems && task.costItems.length > 0) {
-        task.costItems.forEach((costItem: CostItem, index: number) => {
-          records.push({
-            id: `expense-${task.id}-${index}`,
-            type: 'expense',
-            category: costItem.type,
-            amount: costItem.estimatedQuantity * costItem.estimatedUnitPrice,
-            description: `${task.name}: ${costItem.name}`,
-            date: task.startDate || task.dueDate || new Date().toISOString().split('T')[0],
-            projectId: project.id,
-            approved: Math.random() > 0.3, // Simulation: 70% approuvés
-            vendor: `Fournisseur ${costItem.type}`
-          });
+  // Calculs financiers simplifiés et sécurisés
+  const financialSummary: FinancialSummary = useMemo(() => {
+    if (!currentProject) {
+      return {
+        totalBudget: 0, totalSpent: 0, totalIncome: 0, totalExpenses: 0,
+        netProfit: 0, budgetUtilization: 0, equipmentCosts: 0,
+        laborCosts: 0, materialCosts: 0, pendingPayments: 0
+      };
+    }
+
+    const totalBudget = currentProject.budget || 0;
+    const totalSpent = currentProject.spent || 0;
+    
+    let equipmentCosts = 0;
+    let laborCosts = 0;
+    let materialCosts = 0;
+
+    // Calcul sécurisé des coûts
+    try {
+      if (currentProject.phases && Array.isArray(currentProject.phases)) {
+        currentProject.phases.forEach(phase => {
+          if (phase.tasks && Array.isArray(phase.tasks)) {
+            phase.tasks.forEach(task => {
+              if (task.costItems && Array.isArray(task.costItems)) {
+                task.costItems.forEach(item => {
+                  const actualCost = item.actualTotal || (item.estimatedQuantity * item.estimatedUnitPrice) || 0;
+                  switch (item.type) {
+                    case 'equipment':
+                      equipmentCosts += actualCost;
+                      break;
+                    case 'labor':
+                      laborCosts += actualCost;
+                      break;
+                    case 'material':
+                      materialCosts += actualCost;
+                      break;
+                  }
+                });
+              }
+            });
+          }
         });
       }
-    });
-  });
 
-  return records;
+      // Coûts des équipements
+      if (currentProject.equipment && Array.isArray(currentProject.equipment)) {
+        const projectDays = Math.max(1, Math.ceil(
+          (new Date(currentProject.endDate).getTime() - new Date(currentProject.startDate).getTime()) 
+          / (1000 * 60 * 60 * 24)
+        ));
+        
+        currentProject.equipment.forEach(eq => {
+          if (eq.dailyRate && typeof eq.dailyRate === 'number') {
+            equipmentCosts += eq.dailyRate * projectDays;
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('Erreur lors du calcul des coûts:', error);
+    }
+
+    const totalIncome = transactions
+      .filter(t => t.amount > 0)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const totalExpenses = Math.abs(transactions
+      .filter(t => t.amount < 0)
+      .reduce((sum, t) => sum + t.amount, 0));
+
+    const netProfit = totalIncome - totalExpenses;
+    const budgetUtilization = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+    
+    const pendingPayments = transactions
+      .filter(t => t.status === 'pending')
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+    return {
+      totalBudget,
+      totalSpent,
+      totalIncome,
+      totalExpenses,
+      netProfit,
+      budgetUtilization,
+      equipmentCosts,
+      laborCosts,
+      materialCosts,
+      pendingPayments
+    };
+  }, [currentProject, transactions]);
+
+  // Handlers CRUD
+  const handleAdd = () => {
+    setEditing(null);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (tx: Transaction) => {
+    setEditing(tx);
+    setModalOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setTransactions(prev => prev.filter(t => t.id !== id));
+  };
+
+  const handleSave = (data: Omit<Transaction, 'id'>) => {
+    if (editing) {
+      setTransactions(prev => prev.map(t => t.id === editing.id ? { ...data, id: editing.id } : t));
+    } else {
+      const newTransaction: Transaction = { ...data, id: uuidv4() };
+      setTransactions(prev => [...prev, newTransaction]);
+    }
+    setModalOpen(false);
+    setEditing(null);
+  };
+
+  if (!currentProject) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="glass-card p-8 rounded-xl text-center">
+            <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Aucun projet sélectionné</h2>
+            <p className="text-gray-600">Sélectionnez un projet pour voir ses informations financières.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="glass-card p-6 rounded-xl">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                <Euro className="w-8 h-8 mr-3 text-green-600" />
+                Finances
+              </h1>
+              <p className="text-gray-600 mt-2">Gestion financière du projet {currentProject.name}</p>
+            </div>
+            <button
+              onClick={handleAdd}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              Nouvelle Transaction
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="glass-card p-2 rounded-xl">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'overview', label: 'Vue d\'ensemble', icon: BarChart3 },
+              { id: 'transactions', label: 'Transactions', icon: DollarSign },
+              { id: 'budget', label: 'Budget', icon: Calculator },
+              { id: 'equipment', label: 'Équipements', icon: Wrench },
+              { id: 'phases', label: 'Par Phase', icon: Target }
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content based on active tab */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="glass-card p-6 rounded-xl text-center hover:shadow-lg transition-all duration-200">
+                <DollarSign className="w-8 h-8 mx-auto mb-3 text-green-600" />
+                <div className="text-2xl font-bold text-gray-900 mb-1">
+                  {financialSummary.totalBudget.toLocaleString('fr-FR')} €
+                </div>
+                <div className="text-sm text-gray-600">Budget Total</div>
+              </div>
+
+              <div className="glass-card p-6 rounded-xl text-center hover:shadow-lg transition-all duration-200">
+                <TrendingDown className="w-8 h-8 mx-auto mb-3 text-red-600" />
+                <div className="text-2xl font-bold text-gray-900 mb-1">
+                  {financialSummary.totalSpent.toLocaleString('fr-FR')} €
+                </div>
+                <div className="text-sm text-gray-600">Dépensé</div>
+              </div>
+
+              <div className="glass-card p-6 rounded-xl text-center hover:shadow-lg transition-all duration-200">
+                <TrendingUp className="w-8 h-8 mx-auto mb-3 text-blue-600" />
+                <div className="text-2xl font-bold text-gray-900 mb-1">
+                  {(financialSummary.totalBudget - financialSummary.totalSpent).toLocaleString('fr-FR')} €
+                </div>
+                <div className="text-sm text-gray-600">Restant</div>
+              </div>
+
+              <div className="glass-card p-6 rounded-xl text-center hover:shadow-lg transition-all duration-200">
+                <Calculator className="w-8 h-8 mx-auto mb-3 text-purple-600" />
+                <div className="text-2xl font-bold text-gray-900 mb-1">
+                  {financialSummary.budgetUtilization.toFixed(1)}%
+                </div>
+                <div className="text-sm text-gray-600">Utilisation</div>
+              </div>
+            </div>
+
+            {/* Budget Progress */}
+            <div className="glass-card p-6 rounded-xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression Budgétaire</h3>
+              <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                <div 
+                  className={`h-4 rounded-full transition-all duration-500 ${
+                    financialSummary.budgetUtilization > 90 ? 'bg-red-500' :
+                    financialSummary.budgetUtilization > 75 ? 'bg-yellow-500' :
+                    'bg-green-500'
+                  }`}
+                  style={{ width: `${Math.min(financialSummary.budgetUtilization, 100)}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>0 €</span>
+                <span>{financialSummary.totalBudget.toLocaleString('fr-FR')} €</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'transactions' && (
+          <div className="glass-card p-6 rounded-xl">
+            <TransactionTable
+              transactions={transactions}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onAdd={handleAdd}
+            />
+          </div>
+        )}
+
+        {/* Autres onglets simplifiés */}
+        {(activeTab === 'budget' || activeTab === 'equipment' || activeTab === 'phases') && (
+          <div className="glass-card p-8 rounded-xl text-center">
+            <PieChart className="w-16 h-16 mx-auto mb-4 text-blue-300" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {activeTab === 'budget' && 'Analyse Budgétaire'}
+              {activeTab === 'equipment' && 'Coûts des Équipements'}
+              {activeTab === 'phases' && 'Finances par Phase'}
+            </h3>
+            <p className="text-gray-600 mb-6">Cette fonctionnalité sera disponible prochainement.</p>
+            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              Activer la fonctionnalité
+            </button>
+          </div>
+        )}
+
+        {/* Modal */}
+        <TransactionModal
+          isOpen={modalOpen}
+          onClose={() => { setModalOpen(false); setEditing(null); }}
+          onSave={handleSave}
+          initialData={editing || undefined}
+        />
+      </div>
+    </div>
+  );
 };
 
 export default Finances;

@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Plus, Filter, Search, MapPin, Calendar } from 'lucide-react';
+import { Plus, Filter, Search, MapPin, Calendar, Wrench, TrendingUp, Settings, BarChart3, CheckCircle, AlertTriangle, Grid3X3, Package } from 'lucide-react';
 import EquipmentCard from './EquipmentCard';
 import EquipmentDetailModal from './EquipmentDetailModal';
 import MaintenancePlanningModal from './MaintenancePlanningModal';
@@ -63,7 +63,7 @@ const Equipment: React.FC = () => {
   const equipment: Equipment[] = projectContext?.currentProject?.equipment || [];
   const [showAddEquipment, setShowAddEquipment] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [, setShowDetailModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [newEquipment, setNewEquipment] = useState<Equipment>({
     id: '',
@@ -195,136 +195,194 @@ const Equipment: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Équipements</h1>
-          <p className="text-gray-600 mt-1">Gérez votre parc d'équipements</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header avec design glassmorphism */}
+        <div className="glass-card p-6 rounded-xl">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl">
+                  <Wrench className="w-8 h-8 text-orange-600" />
+                </div>
+                Équipements
+                <TrendingUp className="w-6 h-6 text-green-500" />
+              </h1>
+              <p className="text-gray-600 mt-2 ml-14">Gérez et supervisez votre parc d'équipements</p>
+            </div>
+            <div className="flex gap-3">
+              <button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-3 rounded-xl hover:from-blue-700 hover:to-cyan-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                <MapPin className="w-4 h-4" />
+                Localisation
+              </button>
+              <button
+                className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-orange-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                onClick={() => setShowAddEquipment(true)}
+              >
+                <Plus className="w-4 h-4" />
+                Nouvel Équipement
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-            <MapPin className="w-4 h-4" />
-            Localisation
-          </button>
-          <button
-            className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-            onClick={() => setShowAddEquipment(true)}
-          >
-            <Plus className="w-4 h-4" />
-            Nouvel Équipement
-          </button>
-        </div>
-      </div>
 
-      {/* Statistiques synthétiques */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-2xl font-bold text-gray-900">{equipmentStats.total}</div>
-          <div className="text-sm text-gray-600">Total équipements</div>
+        {/* Statistiques avec design glassmorphism */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="glass-card p-6 rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <BarChart3 className="w-8 h-8 text-gray-600" />
+              <div className="text-3xl font-bold text-gray-900">{equipmentStats.total}</div>
+            </div>
+            <div className="text-sm font-medium text-gray-600">Total équipements</div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+              <div className="bg-gradient-to-r from-gray-400 to-gray-600 h-2 rounded-full transition-all duration-800" style={{width: '100%'}}></div>
+            </div>
+          </div>
+          
+          <div className="glass-card p-6 rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="text-3xl font-bold text-green-600">{equipmentStats.available}</div>
+            </div>
+            <div className="text-sm font-medium text-gray-600">Disponibles</div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+              <div className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-800" style={{width: `${equipmentStats.total > 0 ? (equipmentStats.available / equipmentStats.total) * 100 : 0}%`}}></div>
+            </div>
+          </div>
+          
+          <div className="glass-card p-6 rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <Settings className="w-8 h-8 text-blue-600" />
+              <div className="text-3xl font-bold text-blue-600">{equipmentStats.inUse}</div>
+            </div>
+            <div className="text-sm font-medium text-gray-600">En service</div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+              <div className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-800" style={{width: `${equipmentStats.total > 0 ? (equipmentStats.inUse / equipmentStats.total) * 100 : 0}%`}}></div>
+            </div>
+          </div>
+          
+          <div className="glass-card p-6 rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <AlertTriangle className="w-8 h-8 text-orange-600" />
+              <div className="text-3xl font-bold text-orange-600">{equipmentStats.maintenance}</div>
+            </div>
+            <div className="text-sm font-medium text-gray-600">Maintenance</div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+              <div className="bg-gradient-to-r from-orange-400 to-orange-600 h-2 rounded-full transition-all duration-800" style={{width: `${equipmentStats.total > 0 ? (equipmentStats.maintenance / equipmentStats.total) * 100 : 0}%`}}></div>
+            </div>
+          </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-2xl font-bold text-green-600">{equipmentStats.available}</div>
-          <div className="text-sm text-gray-600">Disponibles</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-2xl font-bold text-blue-600">{equipmentStats.inUse}</div>
-          <div className="text-sm text-gray-600">En service</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-2xl font-bold text-orange-600">{equipmentStats.maintenance}</div>
-          <div className="text-sm text-gray-600">Maintenance</div>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Rechercher un équipement..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent w-full sm:w-64"
+        {/* Filtres avec design glassmorphism */}
+        <div className="glass-card p-6 rounded-xl">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="w-5 h-5 text-orange-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Filtres et recherche</h3>
+          </div>
+          
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un équipement..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 pr-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 hover:border-orange-300 transition-all duration-300 placeholder-gray-400 w-full sm:w-80"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 hover:border-orange-300 transition-all duration-300"
+                >
+                  {statusFilterOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 hover:border-orange-300 transition-all duration-300"
+                >
+                  {typeOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-4 focus:ring-purple-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
+              onClick={() => setShowMaintenanceModal(true)}
+            >
+              <Calendar className="w-4 h-4" />
+              Planning Maintenance
+            </button>
+          </div>
+        </div>
+
+        {/* Formulaire d'ajout d'équipement avec glassmorphism */}
+        {showAddEquipment && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="glass-card p-8 w-full max-w-2xl shadow-2xl rounded-2xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl">
+                  <Plus className="w-6 h-6 text-orange-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Ajouter un équipement</h2>
+              </div>
+              <EquipmentForm
+                initialValues={newEquipment}
+                mode="add"
+                onCancel={() => setShowAddEquipment(false)}
+                onSubmit={handleAddEquipment}
               />
             </div>
+          </div>
+        )}
 
-            <div className="flex gap-3">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              >
-                {statusFilterOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+        {/* Modale planning maintenance */}
+        {showMaintenanceModal && (
+          <MaintenancePlanningModal
+            equipment={equipment}
+            onClose={() => setShowMaintenanceModal(false)}
+          />
+        )}
 
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              >
-                {typeOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+        {/* Grille d'équipements avec design moderne */}
+        <div className="glass-card p-6 rounded-xl">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="p-2 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl">
+              <Grid3X3 className="w-6 h-6 text-blue-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Parc d'équipements</h3>
+            <div className="ml-auto flex items-center gap-2 text-sm text-gray-600">
+              <span>{filteredEquipment.length} équipement{filteredEquipment.length > 1 ? 's' : ''}</span>
             </div>
           </div>
-
-          <button
-            className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
-            onClick={() => setShowMaintenanceModal(true)}
-          >
-            <Calendar className="w-4 h-4" />
-            Planning Maintenance
-          </button>
-        </div>
-      </div>
-
-      {/* Formulaire d'ajout d'équipement */}
-      {showAddEquipment && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-xl shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">Ajouter un équipement</h2>
-            <EquipmentForm
-              initialValues={newEquipment}
-              mode="add"
-              onCancel={() => setShowAddEquipment(false)}
-              onSubmit={handleAddEquipment}
-            />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredEquipment.map((equipment) => (
+              <EquipmentCard
+                key={equipment.id}
+                equipment={equipment}
+                onClick={() => {
+                  setSelectedEquipment(equipment);
+                  setShowDetailModal(true);
+                }}
+              />
+            ))}
           </div>
         </div>
-      )}
-
-      {/* Modale planning maintenance */}
-      {showMaintenanceModal && (
-        <MaintenancePlanningModal
-          equipment={equipment}
-          onClose={() => setShowMaintenanceModal(false)}
-        />
-      )}
-
-      {/* Equipment Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredEquipment.map((equipment) => (
-          <EquipmentCard
-            key={equipment.id}
-            equipment={equipment}
-            onClick={() => {
-              setSelectedEquipment(equipment);
-              setShowDetailModal(true);
-            }}
-          />
-        ))}
-      </div>
 
       {/* Modal fiche détail équipement */}
       <EquipmentDetailModal
@@ -372,17 +430,26 @@ const Equipment: React.FC = () => {
         }}
       />
 
-      {filteredEquipment.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-            <Filter className="w-8 h-8 text-gray-400" />
+        {/* État vide avec design glassmorphism */}
+        {filteredEquipment.length === 0 && (
+          <div className="glass-card p-12 rounded-xl text-center">
+            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
+              <Settings className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Aucun équipement trouvé</h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Essayez de modifier vos critères de recherche ou ajoutez un nouvel équipement pour commencer.
+            </p>
+            <button
+              onClick={() => setShowAddEquipment(true)}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-orange-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter un équipement
+            </button>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun équipement trouvé</h3>
-          <p className="text-gray-600">
-            Essayez de modifier vos critères de recherche ou ajoutez un nouvel équipement.
-          </p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

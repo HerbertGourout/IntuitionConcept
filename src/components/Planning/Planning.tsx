@@ -1,13 +1,13 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { Calendar, Filter, Download, Share2, Settings, Pencil } from 'lucide-react';
-import ProjectContext from '../../contexts/ProjectContext';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Filter, Download, Share2, Settings, Pencil, Plus, BarChart3, Clock, CheckCircle, AlertTriangle, Target, TrendingUp } from 'lucide-react';
+import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask, Project, ProjectPhase } from '../../contexts/projectTypes';
 import GanttChart from './GanttChart';
 import { Task } from '../../types';
 import PhaseModal from './PhaseModal';
 
 const Planning: React.FC = () => {
-  const projectContext = useContext(ProjectContext);
+  const projectContext = useProjectContext();
   type ViewType = 'gantt' | 'calendar' | 'list';
   
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
@@ -19,17 +19,13 @@ const Planning: React.FC = () => {
   const [phaseError, setPhaseError] = useState('');
 
   useEffect(() => {
-    // Vérifier si le contexte est défini
-    if (!projectContext) {
-      return;
-    }
-    if (projectContext?.currentProject) {
+    if (projectContext.currentProject) {
       const allTasks: ProjectTask[] = [];
       
       // Parcourir toutes les phases du projet
-      projectContext.currentProject.phases.forEach(phase => {
+      (projectContext.currentProject.phases || []).forEach((phase: ProjectPhase) => {
         if (phase.tasks) {
-          phase.tasks.forEach(task => {
+          phase.tasks.forEach((task: ProjectTask) => {
             allTasks.push(task);
           });
         }
@@ -37,7 +33,7 @@ const Planning: React.FC = () => {
       
       setTasks(allTasks);
     }
-  }, [projectContext, projectContext?.currentProject]);
+  }, [projectContext.currentProject]);
 
   const handleTaskUpdate = (taskId: string, updates: Partial<ProjectTask>) => {
     if (!projectContext || !projectContext.currentProject) return;
@@ -114,67 +110,128 @@ const Planning: React.FC = () => {
   }));
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Planning</h1>
-          <p className="text-gray-600 mt-1">Gérez et visualisez vos tâches de projet</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="glass-card p-6 rounded-xl">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                <Calendar className="w-8 h-8 mr-3 text-blue-600" />
+                Planning
+              </h1>
+              <p className="text-gray-600 mt-2">Gérez et visualisez vos tâches de projet</p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 px-4 py-2 glass-card rounded-lg hover:shadow-md transition-all duration-200">
+                <Download className="w-4 h-4" />
+                Exporter
+              </button>
+              <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 px-4 py-2 glass-card rounded-lg hover:shadow-md transition-all duration-200">
+                <Share2 className="w-4 h-4" />
+                Partager
+              </button>
+              <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 px-4 py-2 glass-card rounded-lg hover:shadow-md transition-all duration-200">
+                <Settings className="w-4 h-4" />
+                Paramètres
+              </button>
+            </div>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <Download className="w-4 h-4" />
-            Exporter
-          </button>
-          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <Share2 className="w-4 h-4" />
-            Partager
-          </button>
-          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <Settings className="w-4 h-4" />
-            Paramètres
-          </button>
-        </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-2xl font-bold text-gray-900">{stats.totalTasks}</div>
-          <div className="text-sm text-gray-600">Total tâches</div>
+        {/* Stats avec design glassmorphism moderne */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="glass-card p-6 rounded-xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl">
+                <BarChart3 className="w-6 h-6 text-gray-600" />
+              </div>
+              <TrendingUp className="w-5 h-5 text-gray-400" />
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.totalTasks}</div>
+            <div className="text-sm text-gray-600 font-medium mb-3">Total tâches</div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-gradient-to-r from-gray-400 to-gray-600 h-2 rounded-full transition-all duration-800" style={{ width: '100%' }}></div>
+            </div>
+          </div>
+          
+          <div className="glass-card p-6 rounded-xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <Target className="w-5 h-5 text-green-400" />
+            </div>
+            <div className="text-3xl font-bold text-green-600 mb-1">{stats.completedTasks}</div>
+            <div className="text-sm text-gray-600 font-medium mb-3">Terminées</div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-800" 
+                   style={{ width: `${stats.totalTasks > 0 ? (stats.completedTasks / stats.totalTasks) * 100 : 0}%` }}></div>
+            </div>
+          </div>
+          
+          <div className="glass-card p-6 rounded-xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
+                <Clock className="w-6 h-6 text-blue-600" />
+              </div>
+              <TrendingUp className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="text-3xl font-bold text-blue-600 mb-1">{stats.inProgressTasks}</div>
+            <div className="text-sm text-gray-600 font-medium mb-3">En cours</div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-800" 
+                   style={{ width: `${stats.totalTasks > 0 ? (stats.inProgressTasks / stats.totalTasks) * 100 : 0}%` }}></div>
+            </div>
+          </div>
+          
+          <div className="glass-card p-6 rounded-xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-gradient-to-br from-red-100 to-red-200 rounded-xl">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <Clock className="w-5 h-5 text-red-400" />
+            </div>
+            <div className="text-3xl font-bold text-red-600 mb-1">{stats.overdueTasks}</div>
+            <div className="text-sm text-gray-600 font-medium mb-3">En retard</div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-gradient-to-r from-red-400 to-red-600 h-2 rounded-full transition-all duration-800" 
+                   style={{ width: `${stats.totalTasks > 0 ? (stats.overdueTasks / stats.totalTasks) * 100 : 0}%` }}></div>
+            </div>
+          </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-2xl font-bold text-green-600">{stats.completedTasks}</div>
-          <div className="text-sm text-gray-600">Terminées</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-2xl font-bold text-blue-600">{stats.inProgressTasks}</div>
-          <div className="text-sm text-gray-600">En cours</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-2xl font-bold text-red-600">{stats.overdueTasks}</div>
-          <div className="text-sm text-gray-600">En retard</div>
-        </div>
-      </div>
 
-      {/* Cartes des phases */}
-      {projectContext?.currentProject?.phases && projectContext.currentProject.phases.length > 0 && (
-        <div className="mt-6">
-          <div className="text-lg font-semibold mb-4">Phases du projet</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projectContext.currentProject.phases.map((phase) => {
-              const phaseTaskCount = phase.tasks?.length || 0;
-              const completedTasks = phase.tasks?.filter(task => task.status === 'done').length || 0;
-              const progressPercentage = phaseTaskCount > 0 ? Math.round((completedTasks / phaseTaskCount) * 100) : 0;
-              
-              // Calculer la durée de la phase
-              const startDate = new Date(phase.startDate);
-              const endDate = new Date(phase.endDate);
-              const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-              
-              return (
-                <div key={phase.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+        {/* Cartes des phases */}
+        {projectContext?.currentProject?.phases && projectContext.currentProject.phases.length > 0 && (
+          <div className="glass-card p-6 rounded-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Phases du projet</h2>
+              <button 
+                onClick={() => {
+                  setPhaseModalMode('create');
+                  setEditingPhase(null);
+                  setIsPhaseModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Calendar className="w-4 h-4" />
+                Nouvelle Phase
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projectContext.currentProject.phases.map((phase) => {
+                const phaseTaskCount = phase.tasks?.length || 0;
+                const completedTasks = phase.tasks?.filter(task => task.status === 'done').length || 0;
+                const progressPercentage = phaseTaskCount > 0 ? Math.round((completedTasks / phaseTaskCount) * 100) : 0;
+                
+                // Calculer la durée de la phase
+                const startDate = new Date(phase.startDate);
+                const endDate = new Date(phase.endDate);
+                const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                
+                return (
+                  <div key={phase.id} className="glass-card p-4 rounded-xl hover:shadow-lg transition-all duration-200">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 text-lg mb-1">{phase.name}</h3>
@@ -226,66 +283,74 @@ const Planning: React.FC = () => {
         </div>
       )}
 
-      {/* Filters and View Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                value={selectedProject}
-                onChange={(e) => setSelectedProject(e.target.value)}
-                disabled={!projectContext?.projects || projectContext.projects.length <= 1}
-              >
-                <option value="all">Tous les projets</option>
-                {projectContext?.projects?.map((project: Project) => (
-                  <option key={project.id} value={project.id}>{project.name}</option>
-                ))}
-              </select>
-            </div>
+        {/* Filters and View Controls */}
+        <div className="glass-card p-6 rounded-xl">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-blue-600" />
+                <select
+                  className="px-4 py-2 glass-card border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:shadow-md transition-all duration-200"
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  disabled={!projectContext?.projects || projectContext.projects.length <= 1}
+                >
+                  <option value="all">Tous les projets</option>
+                  {projectContext?.projects?.map((project: Project) => (
+                    <option key={project.id} value={project.id}>{project.name}</option>
+                  ))}
+                </select>
+              </div>
           </div>
 
-          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-2">
-            {[
-              { id: 'gantt', label: 'Gantt', icon: Calendar },
-              { id: 'calendar', label: 'Calendrier', icon: Calendar },
-              { id: 'list', label: 'Liste', icon: Filter }
-            ].map((view) => {
-              const Icon = view.icon;
-              return (
-                <button
-                  key={view.id}
-                  onClick={() => setViewType(view.id as ViewType)}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    viewType === view.id
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {view.label}
-                </button>
-              );
-            })}
-            <button
-              className="ml-2 flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors"
-              onClick={() => {
-                setPhaseModalMode('create');
-                setEditingPhase(null);
-                setIsPhaseModalOpen(true);
-              }}
-              type="button"
-            >
-              + Nouvelle phase
-            </button>
-          </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center glass-card rounded-lg p-1 gap-1">
+                {[
+                  { id: 'gantt', label: 'Gantt', icon: Calendar },
+                  { id: 'calendar', label: 'Calendrier', icon: Calendar },
+                  { id: 'list', label: 'Liste', icon: Filter }
+                ].map((view) => {
+                  const Icon = view.icon;
+                  return (
+                    <button
+                      key={view.id}
+                      onClick={() => setViewType(view.id as ViewType)}
+                      className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                        viewType === view.id
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {view.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                onClick={() => {
+                  setPhaseModalMode('create');
+                  setEditingPhase(null);
+                  setIsPhaseModalOpen(true);
+                }}
+                type="button"
+              >
+                <Plus className="w-4 h-4" />
+                Nouvelle Tâche
+              </button>
+            </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      {viewType === 'gantt' && (
-        <div className="gantt-container">
+        {/* Main Content */}
+        {viewType === 'gantt' && (
+          <div className="glass-card p-6 rounded-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+              Diagramme de Gantt
+            </h3>
+            <div className="gantt-container bg-white rounded-lg p-4">
           <GanttChart 
             tasks={ganttTasks} 
             onTaskUpdate={(taskId, updates) => {
@@ -318,25 +383,36 @@ const Planning: React.FC = () => {
               
               handleTaskCreate(projectTaskData);
             }} 
-          />
-        </div>
-      )}
+            />
+            </div>
+          </div>
+        )}
 
-      {viewType === 'calendar' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-          <Calendar className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Vue Calendrier</h3>
-          <p className="text-gray-600">La vue calendrier sera disponible prochainement.</p>
-        </div>
-      )}
+        {viewType === 'calendar' && (
+          <div className="glass-card p-8 rounded-xl text-center">
+            <Calendar className="w-16 h-16 mx-auto mb-4 text-blue-300" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Vue Calendrier</h3>
+            <p className="text-gray-600">La vue calendrier sera disponible prochainement.</p>
+            <div className="mt-6">
+              <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Activer la vue calendrier
+              </button>
+            </div>
+          </div>
+        )}
 
-      {viewType === 'list' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-          <Filter className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Vue Liste</h3>
-          <p className="text-gray-600">La vue liste sera disponible prochainement.</p>
-        </div>
-      )}
+        {viewType === 'list' && (
+          <div className="glass-card p-8 rounded-xl text-center">
+            <Filter className="w-16 h-16 mx-auto mb-4 text-blue-300" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Vue Liste</h3>
+            <p className="text-gray-600">La vue liste sera disponible prochainement.</p>
+            <div className="mt-6">
+              <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Activer la vue liste
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* Phase Modal */}
       <PhaseModal
@@ -383,6 +459,7 @@ const Planning: React.FC = () => {
           }
         } : undefined}
       />
+      </div>
     </div>
   );
 };
