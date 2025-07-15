@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Tabs, Form, Input, Select, Switch, Button, Divider, Row, Col, Upload, message } from 'antd';
+import { Tabs, Form, Input, Select, Switch, Button, Divider, Row, Col, Upload, message } from 'antd';
 import { 
   SettingOutlined, 
   BellOutlined, 
@@ -118,7 +118,7 @@ const Settings: React.FC = () => {
   };
 
   const generalTab = (
-    <Card>
+    <div className="glass-card p-6 shadow-xl">
       <Form
         form={form}
         layout="vertical"
@@ -208,11 +208,11 @@ const Settings: React.FC = () => {
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+    </div>
   );
 
   const notificationsTab = (
-    <Card>
+    <div className="glass-card p-6 shadow-xl">
       <Form
         layout="vertical"
         initialValues={settings.notifications}
@@ -295,11 +295,11 @@ const Settings: React.FC = () => {
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+    </div>
   );
 
   const securityTab = (
-    <Card>
+    <div className="glass-card p-6 shadow-xl">
       <Form
         layout="vertical"
         initialValues={settings.security}
@@ -373,11 +373,11 @@ const Settings: React.FC = () => {
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+    </div>
   );
 
   const backupTab = (
-    <Card>
+    <div className="glass-card p-6 shadow-xl">
       <Form
         layout="vertical"
         initialValues={settings.backup}
@@ -456,7 +456,7 @@ const Settings: React.FC = () => {
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+    </div>
   );
 
   const items = [
@@ -487,18 +487,26 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Paramètres de l'application</h1>
-        <p className="text-gray-600">Configurez les paramètres généraux, notifications et sécurité</p>
+    <div className="p-6 space-y-8">
+      {/* Header glassmorphism */}
+      <div className="glass-card flex items-center gap-4 mb-6 p-6 bg-gradient-to-r from-blue-50/90 to-purple-50/90 shadow-xl">
+        <SettingOutlined style={{ fontSize: 36, color: '#6366f1', filter: 'drop-shadow(0 2px 8px #a5b4fc)' }} />
+        <div>
+          <h1 className="text-2xl font-bold text-blue-900 tracking-tight">Paramètres de l'application</h1>
+          <p className="text-gray-600">Configurez les paramètres généraux, notifications et sécurité</p>
+        </div>
       </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={items}
-        type="card"
-      />
+      {/* Onglets dans glass-card */}
+      <div className="glass-card p-6 shadow-xl">
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={items}
+          type="card"
+          className="custom-glass-tabs"
+        />
+      </div>
     </div>
   );
 };

@@ -121,27 +121,33 @@ const Documents: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto">
-      {/* En-tête avec titre et actions */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Documents</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {filteredDocuments.length} document{filteredDocuments.length !== 1 ? 's' : ''} trouvé{filteredDocuments.length !== 1 ? 's' : ''}
-          </p>
+    <div className="p-6 space-y-8">
+      {/* Header glassmorphism */}
+      <div className="glass-card flex items-center justify-between mb-8 p-8 bg-gradient-to-r from-blue-50/90 to-purple-50/90 shadow-2xl">
+        <div className="flex items-center gap-3">
+          <Grid className="text-blue-500 w-8 h-8 drop-shadow" />
+          <h1 className="text-2xl font-bold text-blue-900 tracking-tight">Documents du projet</h1>
         </div>
+        <button
+          className="btn-glass bg-gradient-to-r from-blue-600 to-cyan-600 hover:scale-105 transition px-6 py-2 rounded-full text-white font-semibold shadow-xl flex items-center gap-2"
+          onClick={() => setIsUploadOpen(true)}
+        >
+          <Plus className="w-5 h-5" /> Ajouter un document
+        </button>
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[200px]">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
-            </div>
+      {/* Filtres glassmorphism */}
+      <div className="glass-card p-6 mb-8 flex flex-wrap gap-4 items-center shadow-lg">
+        {/* Champs de recherche, tags, sélecteurs, tous stylisés glassmorphism */}
+        <div className="flex flex-wrap gap-4 items-center w-full">
+          <div className="flex items-center gap-2 bg-white/70 backdrop-blur-sm border-2 border-blue-100 rounded-full px-4 py-2">
+            <Search className="w-5 h-5 text-blue-400" />
             <input
               type="text"
-              placeholder="Rechercher..."
-              className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-800 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="bg-transparent outline-none text-blue-900 placeholder:text-blue-300"
+              placeholder="Rechercher un document..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
 
@@ -321,7 +327,6 @@ const Documents: React.FC = () => {
         </div>
       )}
 
-      {/* Liste des documents */}
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>

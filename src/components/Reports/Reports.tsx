@@ -96,22 +96,24 @@ const Reports: React.FC = () => {
 
     const overviewTab = (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Vue d'ensemble des projets</h2>
+            <div className="glass-card flex flex-col md:flex-row md:items-center md:justify-between p-6 bg-gradient-to-r from-blue-50/90 to-purple-50/90 shadow-lg">
+                <h2 className="text-xl font-semibold text-blue-900">Vue d'ensemble des projets</h2>
                 <Space>
                     <Select
                         value={selectedPeriod}
                         onChange={setSelectedPeriod}
                         style={{ width: 120 }}
+                        className="glass-card bg-white/60 backdrop-blur border-2 border-blue-100"
                     >
                         <Option value="week">Semaine</Option>
                         <Option value="month">Mois</Option>
                         <Option value="quarter">Trimestre</Option>
                         <Option value="year">Année</Option>
                     </Select>
-                    <RangePicker />
+                    <RangePicker className="glass-card bg-white/60 backdrop-blur border-2 border-blue-100" />
                     <Button
                         type="primary"
+                        className="btn-glass bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 transition px-6 py-2 rounded-full text-white font-semibold shadow-xl"
                         icon={<DownloadOutlined />}
                         onClick={() => generateReport('overview')}
                     >
@@ -120,74 +122,71 @@ const Reports: React.FC = () => {
                 </Space>
             </div>
 
+            <div className="glass-card p-0 shadow-xl overflow-hidden">
+                <Table
+                    columns={columns}
+                    dataSource={reportData}
+                    rowKey="id"
+                    pagination={false}
+                    className="glass-table bg-white/60 backdrop-blur-md rounded-2xl"
+                    locale={{ emptyText: <div className="flex flex-col items-center py-12"><FileTextOutlined className="text-blue-400 text-5xl mb-2" /><div className="text-blue-900 font-semibold mb-2">Aucun projet trouvé</div></div> }}
+                />
+            </div>
+
             <Row gutter={16}>
                 <Col span={6}>
-                    <Card>
+                    <div className="glass-card p-6 shadow-lg">
                         <Statistic
                             title="Projets actifs"
                             value={projects.filter(p => p.status === 'in_progress').length}
                             prefix={<TeamOutlined />}
                         />
-                    </Card>
+                    </div>
                 </Col>
                 <Col span={6}>
-                    <Card>
+                    <div className="glass-card p-6 shadow-lg">
                         <Statistic
                             title="Budget total"
                             value={projects.reduce((acc, p) => acc + p.budget, 0)}
                             suffix="FCFA"
                             precision={0}
                         />
-                    </Card>
+                    </div>
                 </Col>
                 <Col span={6}>
-                    <Card>
+                    <div className="glass-card p-6 shadow-lg">
                         <Statistic
                             title="Dépenses totales"
                             value={projects.reduce((acc, p) => acc + (p.spent || 0), 0)}
                             suffix="FCFA"
                             precision={0}
                         />
-                    </Card>
+                    </div>
                 </Col>
                 <Col span={6}>
-                    <Card>
+                    <div className="glass-card p-6 shadow-lg">
                         <Statistic
                             title="Progression moyenne"
                             value={Math.round(reportData.reduce((acc, p) => acc + p.progress, 0) / reportData.length)}
                             suffix="%"
                         />
-                    </Card>
+                    </div>
                 </Col>
             </Row>
-
-            <Card title="Détail des projets">
-                <Table
-                    columns={columns}
-                    dataSource={reportData}
-                    rowKey="id"
-                    pagination={{ pageSize: 10 }}
-                />
-            </Card>
         </div>
     );
 
     const financialTab = (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Rapport financier</h2>
-                <Button
-                    type="primary"
-                    icon={<DownloadOutlined />}
-                    onClick={() => generateReport('financial')}
-                >
-                    Exporter PDF
-                </Button>
+            <div className="glass-card flex flex-col items-center justify-center p-8 shadow-lg bg-gradient-to-br from-blue-50/90 to-purple-50/90">
+                <PieChartOutlined style={{ fontSize: 48, marginBottom: 16, color: '#6366f1', filter: 'drop-shadow(0 2px 8px #a5b4fc)' }} />
+                <p className="text-blue-900 font-semibold mb-2">Graphiques financiers détaillés à venir</p>
+                <p className="text-sm text-gray-600">Intégration avec Chart.js ou Recharts prévue</p>
             </div>
 
             <Row gutter={16}>
                 <Col span={8}>
-                    <Card>
+                    <div className="glass-card p-6 shadow-lg">
                         <Statistic
                             title="Revenus totaux"
                             value={projects.reduce((acc, p) => acc + p.budget, 0)}
@@ -195,10 +194,10 @@ const Reports: React.FC = () => {
                             precision={0}
                             valueStyle={{ color: '#3f8600' }}
                         />
-                    </Card>
+                    </div>
                 </Col>
                 <Col span={8}>
-                    <Card>
+                    <div className="glass-card p-6 shadow-lg">
                         <Statistic
                             title="Dépenses totales"
                             value={projects.reduce((acc, p) => acc + (p.spent || 0), 0)}
@@ -206,10 +205,10 @@ const Reports: React.FC = () => {
                             precision={0}
                             valueStyle={{ color: '#cf1322' }}
                         />
-                    </Card>
+                    </div>
                 </Col>
                 <Col span={8}>
-                    <Card>
+                    <div className="glass-card p-6 shadow-lg">
                         <Statistic
                             title="Profit estimé"
                             value={projects.reduce((acc, p) => acc + p.budget - (p.spent || 0), 0)}
@@ -217,26 +216,19 @@ const Reports: React.FC = () => {
                             precision={0}
                             valueStyle={{ color: projects.reduce((acc, p) => acc + p.budget - (p.spent || 0), 0) > 0 ? '#3f8600' : '#cf1322' }}
                         />
-                    </Card>
+                    </div>
                 </Col>
             </Row>
-
-            <Card title="Analyse par projet">
-                <div className="text-center text-gray-500 py-8">
-                    <PieChartOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-                    <p>Graphiques financiers détaillés à venir</p>
-                    <p className="text-sm">Intégration avec Chart.js ou Recharts prévue</p>
-                </div>
-            </Card>
         </div>
     );
 
     const performanceTab = (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Rapport de performance</h2>
+            <div className="glass-card flex flex-col md:flex-row md:items-center md:justify-between p-6 bg-gradient-to-r from-blue-50/90 to-purple-50/90 shadow-lg">
+                <h2 className="text-xl font-semibold text-blue-900">Rapport de performance</h2>
                 <Button
                     type="primary"
+                    className="btn-glass bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 transition px-6 py-2 rounded-full text-white font-semibold shadow-xl"
                     icon={<DownloadOutlined />}
                     onClick={() => generateReport('performance')}
                 >
@@ -246,22 +238,18 @@ const Reports: React.FC = () => {
 
             <Row gutter={16}>
                 <Col span={12}>
-                    <Card title="Efficacité des équipes">
-                        <div className="text-center text-gray-500 py-8">
-                            <BarChartOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-                            <p>Métriques de performance à venir</p>
-                            <p className="text-sm">Analyse des délais, qualité, productivité</p>
-                        </div>
-                    </Card>
+                    <div className="glass-card p-6 shadow-xl h-full flex flex-col items-center justify-center">
+                        <BarChartOutlined style={{ fontSize: 48, marginBottom: 16, color: '#6366f1', filter: 'drop-shadow(0 2px 8px #a5b4fc)' }} />
+                        <p className="text-blue-900 font-semibold mb-2">Métriques de performance à venir</p>
+                        <p className="text-sm text-gray-600">Analyse des délais, qualité, productivité</p>
+                    </div>
                 </Col>
                 <Col span={12}>
-                    <Card title="Respect des délais">
-                        <div className="text-center text-gray-500 py-8">
-                            <CalendarOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-                            <p>Analyse temporelle à venir</p>
-                            <p className="text-sm">Suivi des échéances et retards</p>
-                        </div>
-                    </Card>
+                    <div className="glass-card p-6 shadow-xl h-full flex flex-col items-center justify-center">
+                        <CalendarOutlined style={{ fontSize: 48, marginBottom: 16, color: '#6366f1', filter: 'drop-shadow(0 2px 8px #a5b4fc)' }} />
+                        <p className="text-blue-900 font-semibold mb-2">Analyse temporelle à venir</p>
+                        <p className="text-sm text-gray-600">Suivi des échéances et retards</p>
+                    </div>
                 </Col>
             </Row>
         </div>
@@ -289,18 +277,36 @@ const Reports: React.FC = () => {
     ];
 
     return (
-        <div className="p-6">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Rapports et Analytics</h1>
-                <p className="text-gray-600">Générez et consultez des rapports détaillés sur vos projets</p>
+        <div className="p-6 space-y-8">
+            {/* Header glassmorphism */}
+            <div className="glass-card flex flex-col md:flex-row md:items-center md:justify-between mb-6 p-6 bg-gradient-to-r from-blue-50/90 to-purple-50/90 shadow-xl">
+                <div className="flex items-center gap-3">
+                    <BarChartOutlined style={{ fontSize: 36, color: '#6366f1', filter: 'drop-shadow(0 2px 8px #a5b4fc)' }} />
+                    <div>
+                        <h1 className="text-2xl font-bold text-blue-900 tracking-tight">Rapports & Analytics</h1>
+                        <p className="text-gray-600">Générez et consultez des rapports détaillés sur vos projets</p>
+                    </div>
+                </div>
+                <Button
+                    type="primary"
+                    className="btn-glass bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 transition px-6 py-2 rounded-full text-white font-semibold shadow-xl mt-4 md:mt-0"
+                    icon={<DownloadOutlined />}
+                    onClick={() => generateReport('global')}
+                >
+                    Exporter tout (PDF)
+                </Button>
             </div>
 
-            <Tabs
-                activeKey={activeTab}
-                onChange={setActiveTab}
-                items={items}
-                type="card"
-            />
+            {/* Onglets et contenu dans glass-card */}
+            <div className="glass-card p-6 shadow-xl">
+                <Tabs
+                    activeKey={activeTab}
+                    onChange={setActiveTab}
+                    items={items}
+                    type="card"
+                    className="custom-glass-tabs"
+                />
+            </div>
         </div>
     );
 };

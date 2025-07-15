@@ -374,30 +374,77 @@ const Team: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Gestion d'équipe</h1>
-        <p className="text-gray-600">Gérez les membres de votre équipe et leurs permissions</p>
+    <div className="p-6 space-y-8">
+      {/* Header glassmorphism */}
+      <div className="glass-card flex items-center justify-between mb-6 p-6 bg-gradient-to-r from-blue-50/90 to-purple-50/90 shadow-xl">
+        <div className="flex items-center gap-3">
+          <TeamOutlined style={{ fontSize: 36, color: '#6366f1', filter: 'drop-shadow(0 2px 8px #a5b4fc)' }} />
+          <div>
+            <h1 className="text-2xl font-bold text-blue-900 tracking-tight">Gestion d'équipe</h1>
+            <p className="text-gray-600">Gérez les membres de votre équipe et leurs permissions</p>
+          </div>
+        </div>
+        <Button
+          type="primary"
+          className="btn-glass bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 transition px-6 py-2 rounded-full text-white font-semibold shadow-xl"
+          icon={<UserAddOutlined />}
+          onClick={() => { setEditingMember(null); setIsModalVisible(true); }}
+        >
+          Ajouter un membre
+        </Button>
       </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={items}
-        type="card"
-      />
+      {/* Onglets et contenu dans glass-card */}
+      <div className="glass-card p-6 shadow-xl">
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={items.map(tab => ({
+            ...tab,
+            children: (
+              <div className="space-y-8">
+                {/* Statistiques d'équipe glassmorphism */}
+                <div className="glass-card bg-gradient-to-r from-blue-100/70 to-purple-100/70 shadow-lg p-6 flex flex-wrap gap-6 justify-center mb-6">
+                  <Statistic title={<span className="text-blue-800 font-semibold">Membres</span>} value={teamMembers.length} className="text-2xl" />
+                  <Statistic title={<span className="text-blue-800 font-semibold">Admins</span>} value={teamMembers.filter(m => m.role==='admin').length} className="text-2xl" />
+                  <Statistic title={<span className="text-blue-800 font-semibold">Chefs de projet</span>} value={teamMembers.filter(m => m.role==='project_manager').length} className="text-2xl" />
+                  <Statistic title={<span className="text-blue-800 font-semibold">En congé</span>} value={teamMembers.filter(m => m.status==='on_leave').length} className="text-2xl" />
+                </div>
+                {/* Table des membres glassmorphism */}
+                <div className="glass-card p-0 shadow-xl overflow-hidden">
+                  <Table
+                    columns={columns}
+                    dataSource={teamMembers}
+                    rowKey="id"
+                    pagination={false}
+                    className="glass-table bg-white/60 backdrop-blur-md rounded-2xl"
+                    locale={{ emptyText: <div className="flex flex-col items-center py-12"><UserOutlined className="text-blue-400 text-5xl mb-2" /><div className="text-blue-900 font-semibold mb-2">Aucun membre</div><Button type="primary" className="btn-glass bg-gradient-to-r from-blue-600 to-purple-600 mt-2" icon={<UserAddOutlined />} onClick={()=>{setEditingMember(null);setIsModalVisible(true);}}>Ajouter un membre</Button></div> }}
+                  />
+                </div>
+              </div>
+            )
+          }))}
+          type="card"
+          className="custom-glass-tabs"
+        />
+      </div>
 
+      {/* Modal modernisée */}
       <Modal
         title={editingMember ? 'Modifier le membre' : 'Ajouter un membre'}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
         width={600}
+        className="glass-card !p-0"
+        style={{ borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 32px rgba(99,102,241,0.15)' }}
+        bodyStyle={{ padding: 0, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)' }}
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          className="p-6"
         >
           <Row gutter={16}>
             <Col span={12}>
