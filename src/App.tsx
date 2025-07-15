@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProjectProvider } from './contexts/ProjectContext';
 import type { Project } from './contexts/projectTypes';
@@ -54,7 +54,7 @@ const AnimatedPage: React.FC<{ children: React.ReactNode; pageKey?: string }> = 
 };
 
 const AppContent: React.FC = () => {
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,6 +71,15 @@ const AppContent: React.FC = () => {
     setCurrentProject, 
     addProject 
   } = useProjects();
+
+  // Gérer l'état de chargement
+  useEffect(() => {
+    // Simuler un délai de chargement puis marquer comme chargé
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Configuration des raccourcis clavier
   const keyboardShortcuts = [
