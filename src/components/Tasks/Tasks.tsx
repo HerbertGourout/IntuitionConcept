@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ProjectAccessGuard from '../Projects/ProjectAccessGuard';
-import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, BarChart3, Filter, Grid3X3, Settings } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, BarChart3, Filter, Grid3X3, Settings, Building2 } from 'lucide-react';
 import { ProjectTask, TaskStatus } from '../../contexts/projectTypes';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import TaskModal from './TaskModal';
@@ -60,7 +60,7 @@ const Tasks: React.FC = () => {
     if (!selectedPhase || !project) return;
 
     try {
-      await projectContext?.deleteTask(project.id, selectedPhase.id, taskId);
+      await projectContext?.removeTask(project.id, selectedPhase.id, taskId);
       message.success('Tâche supprimée avec succès');
       setIsModalVisible(false);
       setCurrentTask(null);
@@ -254,8 +254,26 @@ const Tasks: React.FC = () => {
     );
   }
 
+  if (!projectContext.currentProject) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="glass-card rounded-2xl p-6">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Building2 className="w-6 h-6 text-orange-500" />
+              Aucun projet sélectionné
+            </h1>
+            <p className="mt-4 text-gray-600">
+              Veuillez sélectionner un projet dans la liste des projets pour continuer.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ProjectAccessGuard project={projectContext.currentProject}>
+    <ProjectAccessGuard project={projectContext.currentProject!}>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
