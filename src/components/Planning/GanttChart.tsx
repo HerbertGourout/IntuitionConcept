@@ -1,14 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Calendar } from 'lucide-react';
-import { Task } from '../../types';
+import { ProjectTask } from '../../contexts/projectTypes';
 import GanttTask from './GanttTask';
 import GanttTimeline from './GanttTimeline';
 import TaskModal from './TaskModal';
 
 interface GanttChartProps {
-  tasks: Task[];
-  onTaskUpdate: (taskId: string, updates: Partial<Task>) => void;
-  onTaskCreate: (task: Omit<Task, 'id'>) => void;
+  tasks: ProjectTask[];
+  onTaskUpdate: (taskId: string, updates: Partial<ProjectTask>) => void;
+  onTaskCreate: (task: Omit<ProjectTask, 'id'>) => void;
   projectId?: string;
 }
 
@@ -20,7 +20,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
 }) => {
   type ViewMode = 'days' | 'weeks' | 'months';
   const [viewMode, setViewMode] = useState<ViewMode>('weeks');
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<ProjectTask | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -151,9 +151,9 @@ const getDateRange = () => {
   };
 
   // Calculate task position and width
-  const getTaskPosition = (task: Task) => {
-    const taskStart = new Date(task.startDate);
-    const taskEnd = new Date(task.dueDate);
+  const getTaskPosition = (task: ProjectTask) => {
+    const taskStart = task.startDate ? new Date(task.startDate) : new Date();
+    const taskEnd = task.dueDate ? new Date(task.dueDate) : new Date();
     
     const startOffset = Math.floor((taskStart.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const duration = Math.ceil((taskEnd.getTime() - taskStart.getTime()) / (1000 * 60 * 60 * 24));
@@ -289,10 +289,10 @@ const getDateRange = () => {
                   }`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {task.title}
+                      {task.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {task.assignedTo}
+                      {task.assignedTo.join(', ')}
                     </p>
                   </div>
                 </div>
@@ -362,18 +362,10 @@ const getDateRange = () => {
       <TaskModal
         isOpen={isTaskModalOpen}
         onClose={() => setIsTaskModalOpen(false)}
-        onSubmit={(taskData) => {
-          onTaskCreate({
-            ...taskData,
-            projectId: projectId || '',
-            progress: 0,
-            dependencies: [],
-            estimatedHours: 0,
-            actualHours: 0
-          });
-          setIsTaskModalOpen(false);
-        }}
-        task={selectedTask}
+        onTaskCreate={onTaskCreate}
+        onTaskUpdate={onTaskUpdate}
+        selectedTask={selectedTask}
+        projectId={projectId || ''}
       />
     </div>
   );

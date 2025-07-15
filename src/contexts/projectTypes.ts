@@ -50,6 +50,7 @@ export interface ProjectPhase {
   startDate: string;
   endDate: string;
   tasks: ProjectTask[];
+  status: 'planned' | 'in_progress' | 'completed' | 'on_hold';
 }
 
 export type TaskStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked' | 'todo' | 'done';

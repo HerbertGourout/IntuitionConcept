@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, User, Clock, AlertTriangle, Flag } from 'lucide-react';
 import Modal from '../UI/Modal';
-import { Task } from '../../types';
+import { ProjectTask } from '../../contexts/projectTypes';
 import { TaskStatus } from '../../contexts/projectTypes';
 
 interface TaskFormData {
-  title: string;
+  name: string;
   description: string;
-  assignedTo: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  assignedTo: string[];
+  priority: 'low' | 'medium' | 'high';
   status: TaskStatus;
   startDate: string;
   dueDate: string;
@@ -18,15 +18,19 @@ interface TaskFormData {
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (taskData: TaskFormData) => void;
-  task?: Task | null;
+  onTaskCreate: (task: Omit<ProjectTask, 'id'>) => void;
+  onTaskUpdate?: (taskId: string, updates: Partial<ProjectTask>) => void;
+  selectedTask?: ProjectTask;
+  projectId: string;
 }
 
-const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }) => {
+const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onTaskCreate, onTaskUpdate, selectedTask, projectId }) => {
+  // projectId sera utilisé pour des fonctionnalités futures (validation, logging, etc.)
+  console.debug('TaskModal opened for project:', projectId);
   const [formData, setFormData] = useState<TaskFormData>({
-    title: '',
+    name: '',
     description: '',
-    assignedTo: '',
+    assignedTo: [],
     priority: 'medium',
     status: 'todo',
     startDate: '',
@@ -60,22 +64,22 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
   ];
 
   useEffect(() => {
-    if (task) {
+    if (selectedTask) {
       setFormData({
-        title: task.title,
-        description: task.description,
-        assignedTo: task.assignedTo,
-        priority: task.priority,
-        status: task.status,
-        startDate: task.startDate,
-        dueDate: task.dueDate,
-        estimatedHours: task.estimatedHours
+        name: selectedTask.name,
+        description: selectedTask.description || '',
+        assignedTo: selectedTask.assignedTo,
+        priority: selectedTask.priority || 'medium',
+        status: selectedTask.status,
+        startDate: selectedTask.startDate || '',
+        dueDate: selectedTask.dueDate || '',
+        estimatedHours: 0
       });
     } else {
       setFormData({
-        title: '',
+        name: '',
         description: '',
-        assignedTo: '',
+        assignedTo: [],
         priority: 'medium',
         status: 'todo',
         startDate: '',
@@ -84,12 +88,12 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
       });
     }
     setErrors({});
-  }, [task, isOpen]);
+  }, [selectedTask, isOpen]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.title.trim()) newErrors.title = 'Le titre est requis';
+    if (!formData.name.trim()) newErrors.name = 'Le nom est requis';
     if (!formData.description.trim()) newErrors.description = 'La description est requise';
     if (!formData.assignedTo) newErrors.assignedTo = 'L\'assignation est requise';
     if (!formData.startDate) newErrors.startDate = 'La date de début est requise';
@@ -110,8 +114,13 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
     e.preventDefault();
     
     if (validateForm()) {
-      // Pas besoin de convertir estimatedHours car il est déjà du bon type
-      onSubmit(formData);
+      if (selectedTask) {
+        // Mode édition
+        onTaskUpdate?.(selectedTask.id, formData);
+      } else {
+        // Mode création
+        onTaskCreate(formData);
+      }
       onClose();
     }
   };
@@ -153,7 +162,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={task ? 'Modifier la Tâche' : 'Créer une Nouvelle Tâche'} 
+      title={selectedTask ? 'Modifier la Tâche' : 'Créer une Nouvelle Tâche'} 
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -165,17 +174,17 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
             </label>
             <input
               type="text"
-              value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                errors.title ? 'border-red-500' : 'border-gray-300'
+                errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Ex: Installation des fondations"
             />
-            {errors.title && (
+            {errors.name && (
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertTriangle className="w-4 h-4" />
-                {errors.title}
+                {errors.name}
               </p>
             )}
           </div>
@@ -335,7 +344,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
             type="submit"
             className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
-            {task ? 'Modifier' : 'Créer'} la Tâche
+            {selectedTask ? 'Modifier' : 'Créer'} la Tâche
           </button>
         </div>
       </form>
