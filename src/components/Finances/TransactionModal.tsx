@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, Link, FileText } from 'lucide-react';
-import { Transaction, TransactionCategory, PaymentMethod, TransactionStatus } from '../../types/finance';
+import { 
+  X, 
+  DollarSign, 
+  Calendar, 
+  FileText, 
+  Tag, 
+  AlertTriangle, 
+  Link, 
+  CreditCard, 
+  User,
+  Building,
+  Receipt
+} from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { Transaction, TransactionCategory, PaymentMethod, TransactionStatus } from '../../types/finance';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -64,155 +76,189 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
     onSave(formData);
   };
 
-  const categories: { value: TransactionCategory; label: string }[] = [
-    { value: 'materials', label: 'Matériaux' },
-    { value: 'labor', label: 'Main d\'\u0153uvre' },
-    { value: 'equipment', label: 'Équipement' },
-    { value: 'subcontractor', label: 'Sous-traitance' },
-    { value: 'permits', label: 'Permis' },
-    { value: 'utilities', label: 'Services publics' },
-    { value: 'insurance', label: 'Assurance' },
-    { value: 'transport', label: 'Transport' },
-    { value: 'maintenance', label: 'Maintenance' },
-    { value: 'income', label: 'Revenus' },
-    { value: 'client_payment', label: 'Paiement client' },
-    { value: 'other', label: 'Autre' }
+  const categories = [
+    { value: 'materials', label: '🧱 Matériaux', emoji: '🧱' },
+    { value: 'labor', label: '👷 Main d\'œuvre', emoji: '👷' },
+    { value: 'equipment', label: '🚜 Équipement', emoji: '🚜' },
+    { value: 'transport', label: '🚛 Transport', emoji: '🚛' },
+    { value: 'permits', label: '📋 Permis', emoji: '📋' },
+    { value: 'utilities', label: '⚡ Services publics', emoji: '⚡' },
+    { value: 'insurance', label: '🛡️ Assurance', emoji: '🛡️' },
+    { value: 'consulting', label: '💼 Conseil', emoji: '💼' },
+    { value: 'maintenance', label: '🔧 Maintenance', emoji: '🔧' },
+    { value: 'safety', label: '🦺 Sécurité', emoji: '🦺' },
+    { value: 'administrative', label: '📄 Administratif', emoji: '📄' },
+    { value: 'revenue', label: '💰 Revenus', emoji: '💰' },
+    { value: 'other', label: '📦 Autre', emoji: '📦' }
   ];
 
-  const paymentMethods: { value: PaymentMethod; label: string }[] = [
-    { value: 'bank_transfer', label: 'Virement bancaire' },
-    { value: 'check', label: 'Chèque' },
-    { value: 'cash', label: 'Espèces' },
-    { value: 'credit_card', label: 'Carte de crédit' },
-    { value: 'debit_card', label: 'Carte de débit' }
+  const statuses = [
+    { value: 'pending', label: '⏳ En attente', emoji: '⏳' },
+    { value: 'completed', label: '✅ Terminé', emoji: '✅' },
+    { value: 'cancelled', label: '❌ Annulé', emoji: '❌' }
   ];
 
-  const statuses: { value: TransactionStatus; label: string }[] = [
-    { value: 'completed', label: 'Terminée' },
-    { value: 'pending', label: 'En attente' },
-    { value: 'cancelled', label: 'Annulée' },
-    { value: 'refunded', label: 'Remboursée' }
+  const paymentMethods = [
+    { value: 'cash', label: '💵 Espèces' },
+    { value: 'check', label: '📝 Chèque' },
+    { value: 'bank_transfer', label: '🏦 Virement bancaire' },
+    { value: 'credit_card', label: '💳 Carte de crédit' },
+    { value: 'debit_card', label: '💳 Carte de débit' }
   ];
 
-  // Récupérer les phases et tâches du projet actuel
   const phases = currentProject?.phases || [];
-  const selectedPhase = phases.find(p => p.id === formData.phaseId);
-  const tasks = selectedPhase?.tasks || [];
+  // Tasks are nested within phases, so we need to flatten them
+  const tasks = phases.flatMap(phase => phase.tasks || []);
   const equipment = currentProject?.equipment || [];
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            {initialData ? 'Modifier' : 'Nouvelle'} Transaction
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Informations de base */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className={`fixed inset-0 z-50 ${isOpen ? 'block' : 'hidden'}`}>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="glass-card w-full max-w-4xl max-h-[90vh] overflow-y-auto relative border border-white/20 shadow-2xl">
+          
+          {/* Header moderne */}
+          <div className="relative bg-gradient-to-r from-green-600/90 to-blue-600/90 backdrop-blur-xl p-6 rounded-t-xl border-b border-white/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                  <DollarSign className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">
+                    {initialData ? 'Modifier la Transaction' : 'Nouvelle Transaction'}
+                  </h2>
+                  <p className="text-green-100/80 text-sm">
+                    Gérez vos transactions financières
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-white/20"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+            </div>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="p-6 space-y-8">
+            {/* Section Informations de base */}
+            <div className="glass-card p-6 space-y-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <FileText className="w-5 h-5 text-green-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Informations de base</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Date
+              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                Date *
               </label>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Statut
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as TransactionStatus })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              >
-                {statuses.map(status => (
-                  <option key={status.value} value={status.value}>{status.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description
-            </label>
-            <input
-              type="text"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              placeholder="Description de la transaction"
-              required
-            />
-          </div>
-
-          {/* Catégorie et montant */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Catégorie
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value as TransactionCategory })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                required
-              >
-                {categories.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Montant (€)
+              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-green-600" />
+                Montant (€) *
               </label>
               <input
                 type="number"
                 step="0.01"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300 placeholder-gray-400"
                 placeholder="0.00"
                 required
               />
             </div>
           </div>
 
-          {/* Liaison avec le projet */}
-          <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-              <Link className="w-4 h-4 mr-2" />
-              Liaison avec le projet
-            </h3>
+          <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-purple-600" />
+                  Description *
+                </label>
+                <input
+                  type="text"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300 placeholder-gray-400"
+                  placeholder="Description de la transaction"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Section Catégorisation */}
+            <div className="glass-card p-6 space-y-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Tag className="w-5 h-5 text-orange-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Catégorisation</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-orange-600" />
+                    Catégorie
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value as TransactionCategory })}
+                    className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                    Statut
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as TransactionStatus })}
+                    className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300"
+                  >
+                    {statuses.map(status => (
+                      <option key={status.value} value={status.value}>{status.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Section Associations */}
+            <div className="glass-card p-6 space-y-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Link className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Associations</h3>
+              </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Building className="w-4 h-4 text-indigo-600" />
                   Phase
                 </label>
                 <select
                   value={formData.phaseId || ''}
                   onChange={(e) => setFormData({ ...formData, phaseId: e.target.value || undefined, taskId: undefined })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300"
                 >
                   <option value="">Aucune phase</option>
                   {phases.map(phase => (
@@ -222,13 +268,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-teal-600" />
                   Tâche
                 </label>
                 <select
                   value={formData.taskId || ''}
                   onChange={(e) => setFormData({ ...formData, taskId: e.target.value || undefined })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!formData.phaseId}
                 >
                   <option value="">Aucune tâche</option>
@@ -239,14 +286,15 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
             </div>
 
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Building className="w-4 h-4 text-gray-600" />
                 Équipement
               </label>
               <select
                 value={formData.equipmentId || ''}
                 onChange={(e) => setFormData({ ...formData, equipmentId: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300"
               >
                 <option value="">Aucun équipement</option>
                 {equipment.map(eq => (
@@ -254,24 +302,25 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                 ))}
               </select>
             </div>
-          </div>
+            </div>
 
-          {/* Informations de paiement */}
-          <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-              <FileText className="w-4 h-4 mr-2" />
-              Informations de paiement
-            </h3>
+            {/* Section Informations de paiement */}
+            <div className="glass-card p-6 space-y-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <CreditCard className="w-5 h-5 text-green-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Informations de paiement</h3>
+              </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-blue-600" />
                   Mode de paiement
                 </label>
                 <select
                   value={formData.paymentMethod}
                   onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as PaymentMethod })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300"
                 >
                   {paymentMethods.map(method => (
                     <option key={method.value} value={method.value}>{method.label}</option>
@@ -280,63 +329,69 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-purple-600" />
                   N° Facture
                 </label>
                 <input
                   type="text"
                   value={formData.invoiceNumber || ''}
                   onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value || undefined })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300 placeholder-gray-400"
                   placeholder="F2024-001"
                 />
               </div>
             </div>
 
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <User className="w-4 h-4 text-indigo-600" />
                 Fournisseur
               </label>
               <input
                 type="text"
                 value={formData.vendor || ''}
                 onChange={(e) => setFormData({ ...formData, vendor: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300 placeholder-gray-400"
                 placeholder="Nom du fournisseur"
               />
             </div>
-          </div>
+            </div>
 
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Notes
-            </label>
-            <textarea
-              value={formData.notes || ''}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value || undefined })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              rows={3}
-              placeholder="Notes additionnelles..."
-            />
-          </div>
+            {/* Section Notes */}
+            <div className="glass-card p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <FileText className="w-5 h-5 text-gray-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Notes</h3>
+              </div>
+              <textarea
+                value={formData.notes || ''}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value || undefined })}
+                className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300 placeholder-gray-400 resize-none"
+                rows={4}
+                placeholder="Notes additionnelles..."
+              />
+            </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-            >
-              {initialData ? 'Modifier' : 'Ajouter'}
-            </button>
-          </div>
-        </form>
+            {/* Actions */}
+            <div className="flex justify-end gap-4 pt-6 border-t border-white/20">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-3 text-sm font-semibold text-gray-700 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl hover:bg-gray-50/70 hover:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-500/20 transition-all duration-300"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="px-8 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-green-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+              >
+                <DollarSign className="w-5 h-5" />
+                {initialData ? 'Modifier la Transaction' : 'Ajouter la Transaction'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

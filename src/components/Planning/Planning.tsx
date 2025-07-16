@@ -43,7 +43,7 @@ export const Planning: React.FC = () => {
     const newTask: ProjectTask = {
       ...task,
       id: crypto.randomUUID(),
-      assignedTo: Array.isArray(task.assignedTo) ? task.assignedTo : [task.assignedTo || '']
+      assignedTo: task.assignedTo || ''
     };
     
     // Ajouter à la première phase disponible ou créer une phase par défaut
@@ -69,7 +69,7 @@ export const Planning: React.FC = () => {
       // Convertir les updates en ProjectTask
       const projectUpdates: Partial<ProjectTask> = {
         ...updates,
-        assignedTo: updates.assignedTo ? (updates.assignedTo as string[]) : undefined
+        assignedTo: updates.assignedTo || undefined
       };
       
       projectContext.updateTask(projectContext.currentProject.id, phaseId, taskId, projectUpdates);

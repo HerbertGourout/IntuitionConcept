@@ -37,32 +37,32 @@ const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   const sizeClasses = {
-    sm: 'max-w-xl',
-    md: 'max-w-xl',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl'
+    sm: 'max-w-md',
+    md: 'max-w-xl', 
+    lg: 'max-w-3xl',
+    xl: 'max-w-5xl'
   };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
-        {/* Backdrop */}
+        {/* Backdrop glassmorphism */}
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
           onClick={onClose}
         />
         
-        {/* Modal */}
-        <div className={`relative bg-white rounded-xl shadow-xl w-full ${sizeClasses[size]} transform transition-all`}>
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        {/* Modal glassmorphism */}
+        <div className={`relative glass-card bg-gradient-to-br from-white/95 to-blue-50/90 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl w-full ${sizeClasses[size]} transform transition-all hover:shadow-3xl`}>
+          {/* Header glassmorphism */}
+          <div className="flex items-center justify-between p-6 border-b border-white/20">
+            <h3 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">{title}</h3>
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 hover:scale-105 focus:ring-4 focus:ring-blue-500/20"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             )}
           </div>

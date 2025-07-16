@@ -1,5 +1,5 @@
 import React, { useState, useContext, useMemo } from 'react';
-import { Plus, Search, Filter, Grid, List, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Filter, Grid, List, X, ChevronDown, ChevronUp, CheckCircle, Package, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document } from '../../types';
 import { Project } from '../../contexts/projectTypes';
@@ -121,73 +121,87 @@ const Documents: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-8">
-      {/* Header glassmorphism */}
-      <div className="glass-card flex items-center justify-between mb-8 p-8 bg-gradient-to-r from-blue-50/90 to-purple-50/90 shadow-2xl">
-        <div className="flex items-center gap-3">
-          <Grid className="text-blue-500 w-8 h-8 drop-shadow" />
-          <h1 className="text-2xl font-bold text-blue-900 tracking-tight">Documents du projet</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      {/* Header principal */}
+      <div className="glass-card p-6 mb-6 shadow-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg">
+              <Grid className="w-8 h-8" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                Documents
+              </h1>
+              <p className="text-gray-600 mt-1">Gestion des documents et fichiers du projet</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+          >
+            <Plus className="w-5 h-5" />
+            Nouveau Document
+          </button>
         </div>
-        <button
-          className="btn-glass bg-gradient-to-r from-blue-600 to-cyan-600 hover:scale-105 transition px-6 py-2 rounded-full text-white font-semibold shadow-xl flex items-center gap-2"
-          onClick={() => setIsUploadOpen(true)}
-        >
-          <Plus className="w-5 h-5" /> Ajouter un document
-        </button>
       </div>
 
-      {/* Filtres glassmorphism */}
-      <div className="glass-card p-6 mb-8 flex flex-wrap gap-4 items-center shadow-lg">
-        {/* Champs de recherche, tags, sélecteurs, tous stylisés glassmorphism */}
-        <div className="flex flex-wrap gap-4 items-center w-full">
-          <div className="flex items-center gap-2 bg-white/70 backdrop-blur-sm border-2 border-blue-100 rounded-full px-4 py-2">
-            <Search className="w-5 h-5 text-blue-400" />
+      {/* Barre de recherche et filtres */}
+      <div className="glass-card p-6 mb-6 shadow-xl">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          {/* Recherche */}
+          <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm border border-white/20 rounded-xl px-4 py-3 min-w-80">
+            <Search className="w-5 h-5 text-gray-500" />
             <input
               type="text"
-              className="bg-transparent outline-none text-blue-900 placeholder:text-blue-300"
+              className="bg-transparent outline-none text-gray-700 placeholder:text-gray-400 flex-1"
               placeholder="Rechercher un document..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <button
-            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtres
-            {isFiltersOpen ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Bouton Filtres */}
+            <button
+              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-100/80 to-gray-200/80 backdrop-blur-sm text-gray-700 rounded-xl font-medium hover:from-gray-200/80 hover:to-gray-300/80 hover:scale-105 transition-all duration-200"
+            >
+              <Filter className="w-4 h-4" />
+              Filtres
+              {isFiltersOpen ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
 
-          <div className="flex items-center border-l border-gray-200 dark:border-gray-700 ml-2 pl-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg ${viewMode === 'grid' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              title="Vue en grille"
-            >
-              <Grid className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg ${viewMode === 'list' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              title="Vue en liste"
-            >
-              <List className="w-5 h-5" />
-            </button>
+            {/* Sélecteur de vue */}
+            <div className="flex items-center bg-white/50 backdrop-blur-sm border border-white/20 rounded-xl p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  viewMode === 'grid' 
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg' 
+                    : 'text-gray-500 hover:bg-white/50'
+                }`}
+                title="Vue en grille"
+              >
+                <Grid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  viewMode === 'list' 
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg' 
+                    : 'text-gray-500 hover:bg-white/50'
+                }`}
+                title="Vue en liste"
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-
-          <button
-            onClick={() => setIsUploadOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-          >
-            <Plus className="-ml-1 mr-2 h-4 w-4" />
-            Nouveau
-          </button>
         </div>
       </div>
 
@@ -198,15 +212,15 @@ const Documents: React.FC = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+            className="overflow-hidden mb-6 glass-card p-6 shadow-xl"
           >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type de document</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Type de document</label>
                 <select
                   value={filterType}
                   onChange={(e) => handleTypeFilter(e.target.value as 'all' | Document['type'])}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-full bg-white/50 backdrop-blur-sm border border-white/20 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
                 >
                   {documentTypes.map((type) => (
                     <option key={type.value} value={type.value}>
@@ -217,18 +231,18 @@ const Documents: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Étiquettes</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Étiquettes</label>
                 <div className="flex flex-wrap gap-2">
                   {selectedTags.map(tag => (
                     <span
                       key={tag}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200"
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-700 border border-blue-200 backdrop-blur-sm"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-500 dark:hover:bg-blue-800"
+                        className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full text-blue-500 hover:bg-blue-500/20 transition-colors duration-200"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -243,9 +257,9 @@ const Documents: React.FC = () => {
                           setSelectedTags([...selectedTags, e.target.value]);
                         }
                       }}
-                      className="text-sm border-0 focus:ring-0 focus:outline-none bg-transparent text-gray-500 dark:text-gray-400"
+                      className="bg-white/50 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
-                      <option value="">Ajouter une étiquette</option>
+                      <option value="">+ Ajouter étiquette</option>
                       {availableTags
                         .filter(tag => !selectedTags.includes(tag))
                         .map(tag => (
@@ -268,9 +282,9 @@ const Documents: React.FC = () => {
                     setSelectedTags([]);
                     setSelectedFolder('root');
                   }}
-                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                  className="px-4 py-2 bg-gradient-to-r from-red-500/10 to-pink-500/10 text-red-600 rounded-lg font-medium hover:from-red-500/20 hover:to-pink-500/20 hover:scale-105 transition-all duration-200"
                 >
-                  Réinitialiser les filtres
+                  Réinitialiser
                 </button>
               </div>
             </div>
@@ -278,62 +292,121 @@ const Documents: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Étiquettes actives */}
+      {/* Statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="glass-card p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+              <Grid className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-medium">Total</p>
+              <p className="text-2xl font-bold text-gray-800">{documents.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+              <CheckCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-medium">Plans</p>
+              <p className="text-2xl font-bold text-gray-800">{documents.filter(d => d.type === 'plan').length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+              <Package className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-medium">Contrats</p>
+              <p className="text-2xl font-bold text-gray-800">{documents.filter(d => d.type === 'contract').length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white">
+              <Activity className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-medium">Rapports</p>
+              <p className="text-2xl font-bold text-gray-800">{documents.filter(d => d.type === 'report').length}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtres actifs */}
       {(selectedTags.length > 0 || searchTerm || filterType !== 'all' || selectedFolder !== 'root') && (
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Filtres actifs :</span>
-
-          {searchTerm && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-              Recherche: "{searchTerm}"
-              <button
-                type="button"
-                onClick={() => setSearchTerm('')}
-                className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 dark:hover:bg-gray-600"
-              >
-                <X className="h-3 w-3" />
-              </button>
+        <div className="glass-card p-4 mb-6 shadow-lg">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-gray-600 font-medium flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              Filtres actifs :
             </span>
-          )}
 
-          {filterType !== 'all' && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-              Type: {documentTypes.find(t => t.value === filterType)?.label}
-              <button
-                type="button"
-                onClick={() => setFilterType('all')}
-                className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 dark:hover:bg-gray-600"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          )}
+            {searchTerm && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-gray-500/20 to-slate-500/20 text-gray-700 border border-gray-200 backdrop-blur-sm">
+                Recherche: "{searchTerm}"
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full text-gray-500 hover:bg-gray-500/20 transition-colors duration-200"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
 
-          {selectedTags.map(tag => (
-            <span
-              key={tag}
-              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200"
-            >
-              {tag}
-              <button
-                type="button"
-                onClick={() => handleRemoveTag(tag)}
-                className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-500 dark:hover:bg-blue-800"
+            {filterType !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-700 border border-purple-200 backdrop-blur-sm">
+                Type: {documentTypes.find(t => t.value === filterType)?.label}
+                <button
+                  type="button"
+                  onClick={() => setFilterType('all')}
+                  className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full text-purple-500 hover:bg-purple-500/20 transition-colors duration-200"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedTags.map(tag => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-700 border border-blue-200 backdrop-blur-sm"
               >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTag(tag)}
+                  className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full text-blue-500 hover:bg-blue-500/20 transition-colors duration-200"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="glass-card p-12 text-center shadow-xl">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+            <p className="text-gray-600 font-medium">Chargement des documents...</p>
+          </div>
         </div>
       ) : filteredDocuments.length > 0 ? (
         <div
-          className={`grid gap-4 ${
+          className={`grid gap-6 ${
             viewMode === 'grid'
               ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
               : 'grid-cols-1'
@@ -356,26 +429,29 @@ const Documents: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
+          className="glass-card p-16 text-center shadow-xl"
         >
-          <div className="mx-auto h-24 w-24 text-gray-400 dark:text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">Aucun document trouvé</h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {searchTerm || filterType !== 'all' || selectedTags.length > 0
-              ? 'Essayez de modifier vos critères de recherche.'
-              : 'Commencez par ajouter votre premier document.'}
-          </p>
-          <div className="mt-6">
+          <div className="flex flex-col items-center gap-6">
+            <div className="p-6 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100">
+              <Grid className="w-16 h-16 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                {searchTerm || filterType !== 'all' || selectedTags.length > 0
+                  ? 'Aucun document trouvé'
+                  : 'Aucun document'}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {searchTerm || filterType !== 'all' || selectedTags.length > 0
+                  ? 'Essayez de modifier vos critères de recherche.'
+                  : 'Commencez par ajouter votre premier document au projet.'}
+              </p>
+            </div>
             <button
-              type="button"
               onClick={() => setIsUploadOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg"
             >
-              <Plus className="-ml-1 mr-2 h-4 w-4" />
+              <Plus className="w-5 h-5" />
               Téléverser un document
             </button>
           </div>
@@ -383,7 +459,7 @@ const Documents: React.FC = () => {
       )}
 
       {/* Modals */}
-<DocumentUpload 
+      <DocumentUpload 
         isOpen={isUploadOpen} 
         onClose={() => setIsUploadOpen(false)}
         onUpload={handleUpload}
@@ -406,7 +482,7 @@ const Documents: React.FC = () => {
         onFolderSelect={(folderId: string) => setSelectedFolder(folderId)}
       />
       
-<TagManager 
+      <TagManager 
         isOpen={isTagManagerOpen} 
         onClose={() => setIsTagManagerOpen(false)}
         selectedTags={selectedTags}
