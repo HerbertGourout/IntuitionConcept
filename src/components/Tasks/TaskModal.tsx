@@ -20,13 +20,18 @@ interface TaskModalProps {
   teamMembers: Array<{ id: string; name: string; role?: string }>;
 }
 
+import { useProjectContext } from '../../contexts/ProjectContext';
+
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, onDelete, teamMembers }) => {
+  const { currentProject } = useProjectContext();
+  const phases = currentProject?.phases || [];
   const [showConfirm, setShowConfirm] = useState(false);
   const [formData, setFormData] = useState<Partial<ProjectTask> & {
     status: TaskStatus;
     priority: TaskPriority;
     spent: number;
     precision?: number;
+    phaseId?: string;
   }>({
     name: '',
     description: '',
@@ -40,7 +45,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     dependencies: [],
     costItems: [],
     precision: 3,
-    subtasks: []
+    subtasks: [],
+    phaseId: ''
   });
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [isSubTask, setIsSubTask] = useState<boolean>(!!task?.parentId);
@@ -58,7 +64,12 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         startDate: task.startDate || '',
         endDate: task.endDate || '',
         budget: task.budget || 0,
-        spent: typeof task.spent === 'number' ? task.spent : 0
+        spent: typeof task.spent === 'number' ? task.spent : 0,
+        phaseId: task.phaseId || '',
+        dependencies: task.dependencies || [],
+        costItems: task.costItems || [],
+        precision: typeof task.precision === 'number' ? task.precision : 3,
+        subtasks: task.subtasks || []
       });
       setIsSubTask(!!task.parentId);
       setParentTaskId(task.parentId);
@@ -74,7 +85,12 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         startDate: defaultStartDate,
         endDate: defaultEndDate,
         budget: 0,
-        spent: 0
+        spent: 0,
+        phaseId: '',
+        dependencies: [],
+        costItems: [],
+        precision: 3,
+        subtasks: []
       });
       setIsSubTask(false);
       setParentTaskId(undefined);
@@ -121,6 +137,23 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     }
     if (formData.spent !== undefined && formData.spent < 0) {
       errors.spent = 'La dépense réelle ne peut pas être négative.';
+    }
+
+    // Validation stricte du budget par rapport à la phase sélectionnée
+    if (formData.phaseId) {
+      const phase = phases.find(p => p.id === formData.phaseId);
+      if (phase) {
+        const budgetTotal = phase.estimatedBudget || 0;
+        const isEdit = !!(task && task.id);
+        const totalBudgetTasks = (phase.tasks || [])
+          .filter(t => !isEdit || t.id !== task?.id)
+          .reduce((sum, t) => sum + (t.budget || 0), 0);
+        const budgetCourant = typeof formData.budget === 'number' ? formData.budget : 0;
+        const totalBudgetAvecCourant = totalBudgetTasks + budgetCourant;
+        if (totalBudgetAvecCourant > budgetTotal) {
+          errors.budget = `Le budget total des tâches (${totalBudgetAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}) dépasse le budget de la phase (${budgetTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}).`;
+        }
+      }
     }
 
     setFormErrors(errors);
@@ -203,6 +236,126 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
           <div className="glass-card p-6 space-y-6">
+            {/* Sélection de la phase */}
+            <div className="space-y-2">
+              <label htmlFor="task-phase" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                <Flag className="w-4 h-4 text-purple-500" />
+                <span>Phase du projet</span>
+              </label>
+              <select
+                id="task-phase"
+                className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 border-white/30"
+                value={formData.phaseId || ''}
+                onChange={e => setFormData(prev => ({ ...prev, phaseId: e.target.value }))}
+                required
+              >
+                <option value="" disabled>Sélectionnez une phase...</option>
+                {phases.map(phase => (
+                  <option key={phase.id} value={phase.id}>{phase.name}</option>
+                ))}
+              </select>
+              {formErrors.phaseId && (
+                <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <p className="text-red-600 text-sm">{formErrors.phaseId}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Synthèse budgétaire dynamique de la phase sélectionnée */}
+            {formData.phaseId && (() => {
+              const phase = phases.find(p => p.id === formData.phaseId);
+              if (!phase) return null;
+              // Calculs
+              const budgetTotal = phase.estimatedBudget || 0;
+              // Exclure la tâche en cours si édition (pour éviter double comptage)
+              const isEdit = !!(task && task.id);
+              const totalBudgetTasks = (phase.tasks || [])
+                .filter(t => !isEdit || t.id !== task?.id)
+                .reduce((sum, t) => sum + (t.budget || 0), 0);
+              const totalSpentTasks = (phase.tasks || [])
+                .reduce((sum, t) => sum + (t.spent || 0), 0);
+              // Ajout du budget de la tâche en cours (si renseigné)
+              const budgetCourant = typeof formData.budget === 'number' ? formData.budget : 0;
+              const totalBudgetAvecCourant = totalBudgetTasks + budgetCourant;
+              const resteAllouer = budgetTotal - totalBudgetAvecCourant;
+              return (
+                <div className="glass-card p-4 mb-2 border border-purple-200 bg-gradient-to-br from-purple-50/60 to-white/60 rounded-xl">
+                  <div className="flex flex-wrap gap-4 items-center justify-between">
+                    <div className="flex flex-col text-xs">
+                      <span className="font-semibold text-purple-700">Budget phase</span>
+                      <span className="text-lg font-bold">{budgetTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                    </div>
+                    <div className="flex flex-col text-xs">
+                      <span className="font-semibold text-orange-700">Budgété (avec cette tâche)</span>
+                      <span className="text-lg font-bold">{totalBudgetAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                    </div>
+                    <div className="flex flex-col text-xs">
+                      <span className="font-semibold text-green-700">Dépensé</span>
+                      <span className="text-lg font-bold">{totalSpentTasks.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                    </div>
+                    <div className="flex flex-col text-xs">
+                      <span className={resteAllouer < 0 ? 'font-semibold text-red-700' : 'font-semibold text-emerald-700'}>Reste à allouer</span>
+                      <span className={resteAllouer < 0 ? 'text-lg font-bold text-red-600' : 'text-lg font-bold text-emerald-600'}>{resteAllouer.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                    </div>
+                  </div>
+                  {/* Progression budgétaire */}
+                  <div className="mt-4">
+                    <div className="w-full h-3 bg-purple-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-3 rounded-full transition-all duration-500 ${totalBudgetAvecCourant <= budgetTotal ? 'bg-gradient-to-r from-orange-400 to-purple-500' : 'bg-red-400'}`}
+                        style={{ width: `${Math.min(100, (totalBudgetAvecCourant / budgetTotal) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Budget estimé et dépense réelle */}
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 space-y-2">
+                <label htmlFor="task-budget" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <DollarSign className="w-4 h-4 text-emerald-500" />
+                  <span>Budget estimé pour cette tâche (€)</span>
+                </label>
+                <input
+                  id="task-budget"
+                  type="number"
+                  min={0}
+                  className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 ${formErrors.budget ? 'border-red-500' : 'border-white/30'}`}
+                  value={formData.budget ?? ''}
+                  onChange={e => setFormData(prev => ({ ...prev, budget: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                  required
+                />
+                {formErrors.budget && (
+                  <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <p className="text-red-600 text-sm">{formErrors.budget}</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <label htmlFor="task-spent" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <DollarSign className="w-4 h-4 text-blue-500" />
+                  <span>Dépense réelle (optionnel)</span>
+                </label>
+                <input
+                  id="task-spent"
+                  type="number"
+                  min={0}
+                  className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 ${formErrors.spent ? 'border-red-500' : 'border-white/30'}`}
+                  value={formData.spent ?? ''}
+                  onChange={e => setFormData(prev => ({ ...prev, spent: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                />
+                {formErrors.spent && (
+                  <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <p className="text-red-600 text-sm">{formErrors.spent}</p>
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="flex items-center space-x-2 mb-4">
               <FileText className="w-5 h-5 text-blue-600" />
               <h3 className="text-lg font-semibold text-gray-900">Informations de base</h3>

@@ -76,6 +76,10 @@ export interface ProjectTask {
   priority?: 'low' | 'medium' | 'high';
   dependencies?: string[];
   precision?: number;
+  /**
+   * Phase à laquelle cette tâche est rattachée
+   */
+  phaseId?: string;
 }
 
 export interface ProjectSubTask {
