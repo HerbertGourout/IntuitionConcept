@@ -80,7 +80,7 @@ export const Planning: React.FC = () => {
     }
   };
 
-  const handlePhaseSave = (phaseData: { name: string; startDate: string; endDate: string }) => {
+  const handlePhaseSave = (phaseData: { name: string; startDate: string; endDate: string; estimatedBudget?: number }) => {
     if (!projectContext || !projectContext.currentProject) return;
     
     const phase: ProjectPhase = {
@@ -89,7 +89,8 @@ export const Planning: React.FC = () => {
       startDate: phaseData.startDate,
       endDate: phaseData.endDate,
       tasks: phaseModalMode === 'edit' && editingPhase ? editingPhase.tasks : [],
-      status: phaseModalMode === 'edit' && editingPhase ? editingPhase.status : 'planned'
+      status: phaseModalMode === 'edit' && editingPhase ? editingPhase.status : 'planned',
+      estimatedBudget: phaseData.estimatedBudget !== undefined ? phaseData.estimatedBudget : undefined
     };
     
     if (phaseModalMode === 'create') {
@@ -229,6 +230,126 @@ export const Planning: React.FC = () => {
             </div>
           </div>
         </GlassCard>
+      </div>
+
+      {/* Liste des phases */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        {(projectContext.currentProject.phases || []).length === 0 ? (
+          <GlassCard className="text-center py-10 flex flex-col items-center justify-center">
+            <Target className="w-10 h-10 text-orange-400 mb-2" />
+            <div className="text-gray-700 font-semibold mb-1">Aucune phase créée</div>
+            <button
+              className="btn-glass bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-lg mt-2 hover:scale-105 transition"
+              onClick={() => {
+                setPhaseModalMode('create');
+                setEditingPhase(null);
+                setIsPhaseModalOpen(true);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-1" /> Nouvelle phase
+            </button>
+          </GlassCard>
+        ) : (
+          (projectContext.currentProject.phases || []).map((phase) => (
+            <GlassCard
+              key={phase.id}
+              className="relative p-5 flex flex-col gap-2 glass-card hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-orange-400" />
+                    {phase.name}
+                  </div>
+                  <div className="text-xs text-gray-500 mb-1">
+                    {phase.startDate} — {phase.endDate}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {phase.tasks?.length || 0} tâche{(phase.tasks?.length || 0) > 1 ? 's' : ''}
+                  </div>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <button
+                    className="p-2 rounded-lg bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    title="Éditer la phase"
+                    onClick={() => {
+                      setEditingPhase(phase);
+                      setPhaseModalMode('edit');
+                      setIsPhaseModalOpen(true);
+                    }}
+                  >
+                    <span className="sr-only">Éditer</span>
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6-6m2.828-2.828a2.828 2.828 0 114 4L7 21H3v-4l12.828-12.828z" />
+                    </svg>
+                  </button>
+                  <button
+                    className="p-2 rounded-lg bg-gradient-to-r from-red-100 to-orange-100 hover:from-red-200 hover:to-orange-200 shadow-md focus:outline-none focus:ring-2 focus:ring-red-400"
+                    title="Supprimer la phase"
+                    onClick={() => {
+                      setEditingPhase(phase);
+                      setPhaseModalMode('edit');
+                      setIsPhaseModalOpen(true);
+                    }}
+                  >
+                    <span className="sr-only">Supprimer</span>
+                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" />
+                    </svg>
+                  </button>
+                </div>
+                {/* Budget et finances de la phase */}
+                {typeof phase.estimatedBudget === 'number' && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 text-xs font-medium">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700">
+                        <BarChart3 className="w-4 h-4 text-orange-500" /> Budget estimé&nbsp;:
+                        <span className="font-bold">{phase.estimatedBudget.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                      </span>
+                    </div>
+                    {/* Calcul du coût réel des tâches */}
+                    <div className="flex items-center gap-2 text-xs mt-1">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700">
+                        <Clock className="w-4 h-4 text-blue-500" /> Dépensé&nbsp;:
+                        <span className="font-bold">
+                          {(() => {
+                            const spent = (phase.tasks||[]).reduce((sum, t) => typeof t.spent === 'number' ? sum + t.spent : sum, 0);
+                            return spent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          })()} €
+                        </span>
+                      </span>
+                      {/* Badge d'alerte */}
+                      {(() => {
+                        const spent = (phase.tasks||[]).reduce((sum, t) => typeof t.spent === 'number' ? sum + t.spent : sum, 0);
+                        if (phase.estimatedBudget === 0) return null;
+                        const ratio = spent / phase.estimatedBudget;
+                        if (ratio > 1) {
+                          return <span className="ml-2 px-2 py-1 rounded bg-gradient-to-r from-red-500 to-orange-400 text-white font-bold animate-pulse">Dépassement !</span>;
+                        } else if (ratio > 0.9) {
+                          return <span className="ml-2 px-2 py-1 rounded bg-gradient-to-r from-orange-400 to-yellow-300 text-orange-900 font-bold">Alerte &gt;90%</span>;
+                        }
+                        return null;
+                      })()}
+                    </div>
+                    {/* Barre de progression budgétaire */}
+                    <div className="w-full h-2 bg-orange-100 rounded-full mt-2 relative overflow-hidden">
+                      {(() => {
+                        const spent = (phase.tasks||[]).reduce((sum, t) => typeof t.spent === 'number' ? sum + t.spent : sum, 0);
+                        const ratio = phase.estimatedBudget ? Math.min(spent / phase.estimatedBudget, 1.2) : 0;
+                        let color = 'bg-gradient-to-r from-orange-400 to-orange-600';
+                        if (ratio > 1) color = 'bg-gradient-to-r from-red-500 to-orange-500';
+                        else if (ratio > 0.9) color = 'bg-gradient-to-r from-orange-400 to-yellow-300';
+                        return <div className={`h-full ${color} rounded-full transition-all duration-700`} style={{ width: `${Math.min(ratio * 100, 120)}%` }}></div>;
+                      })()}
+                      {/* Marqueur 100% */}
+                      <div className="absolute left-[100%] top-0 h-full w-0.5 bg-red-400 opacity-70" style={{height:'100%'}}></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </GlassCard>
+          ))
+        )}
       </div>
 
       {/* Filtres */}

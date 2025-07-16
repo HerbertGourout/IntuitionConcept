@@ -15,7 +15,8 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ isOpen, onClose, onSave, onDele
   const [form, setForm] = useState({
     name: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    estimatedBudget: ''
   });
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -25,10 +26,11 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ isOpen, onClose, onSave, onDele
       setForm({
         name: initialPhase.name || '',
         startDate: initialPhase.startDate || '',
-        endDate: initialPhase.endDate || ''
+        endDate: initialPhase.endDate || '',
+        estimatedBudget: initialPhase.estimatedBudget !== undefined ? initialPhase.estimatedBudget.toString() : ''
       });
     } else {
-      setForm({ name: '', startDate: '', endDate: '' });
+      setForm({ name: '', startDate: '', endDate: '', estimatedBudget: '' });
     }
     setError('');
     setShowDeleteConfirm(false);
@@ -36,6 +38,13 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ isOpen, onClose, onSave, onDele
 
   const handleChange = (field: string, value: string) => {
     setForm(f => ({ ...f, [field]: value }));
+  };
+
+  const handleBudgetChange = (value: string) => {
+    // Autorise uniquement les nombres >= 0
+    if (/^\d*(\.\d{0,2})?$/.test(value)) {
+      setForm(f => ({ ...f, estimatedBudget: value }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -53,7 +62,15 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ isOpen, onClose, onSave, onDele
       setError('La date de début doit précéder la date de fin');
       return;
     }
-    onSave(form);
+    if (form.estimatedBudget && isNaN(Number(form.estimatedBudget))) {
+      setError('Le budget estimé doit être un nombre valide');
+      return;
+    }
+    if (form.estimatedBudget && Number(form.estimatedBudget) < 0) {
+      setError('Le budget estimé doit être positif');
+      return;
+    }
+    onSave({ ...form, estimatedBudget: form.estimatedBudget ? Number(form.estimatedBudget) : undefined });
   };
 
   const handleDelete = () => {
@@ -106,6 +123,21 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ isOpen, onClose, onSave, onDele
               required
             />
           </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+            <span>Budget estimé (€)</span>
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            className="w-full border rounded-lg px-3 py-2 bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm"
+            value={form.estimatedBudget}
+            onChange={e => handleBudgetChange(e.target.value)}
+            placeholder="Ex: 15000"
+            inputMode="decimal"
+          />
         </div>
         {error && <div className="text-red-600 text-sm">{error}</div>}
         

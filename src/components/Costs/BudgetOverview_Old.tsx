@@ -1,22 +1,12 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, Target, AlertTriangle, CheckCircle } from 'lucide-react';
+import Progress from '../UI/progress';
 import { useProjectContext } from '../../contexts/ProjectContext';
 
 export const BudgetOverview: React.FC = () => {
     const projectContext = useProjectContext();
     const project = projectContext.currentProject;
-    
-    if (!project) {
-        return (
-            <div className="glass-card p-8 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl mb-4">
-                    <BarChart3 className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">Aucun projet sélectionné</h3>
-                <p className="text-gray-500">Sélectionnez un projet pour voir l'analyse budgétaire</p>
-            </div>
-        );
-    }
+    if (!project) return <div className="text-center text-gray-500">Aucun projet sélectionné</div>;
 
     // Calculs dynamiques sécurisés
     const phases = project.phases || [];
@@ -24,17 +14,14 @@ export const BudgetOverview: React.FC = () => {
         const budget = typeof ph.estimatedBudget === 'number' ? ph.estimatedBudget : 0;
         return sum + budget;
     }, 0);
-    
     const totalSpent = phases.reduce((sum, ph) => {
         const tasks = ph.tasks || [];
         const phaseSpent = tasks.reduce((s, t) => s + (t.spent || 0), 0);
         return sum + phaseSpent;
     }, 0);
-    
     const variance = totalEstimated - totalSpent;
     const usagePercentage = totalEstimated > 0 ? (totalSpent / totalEstimated) * 100 : 0;
     const isOverBudget = totalSpent > totalEstimated;
-    
     const overBudgetPhases = phases.filter(ph => {
         const est = typeof ph.estimatedBudget === 'number' ? ph.estimatedBudget : 0;
         const tasks = ph.tasks || [];
@@ -48,6 +35,7 @@ export const BudgetOverview: React.FC = () => {
 
     return (
         <div className="space-y-8">
+
             {/* Header avec titre et statistiques rapides */}
             <div className="glass-card p-8 bg-gradient-to-br from-white/90 to-blue-50/90 backdrop-blur-xl border border-white/20 shadow-2xl">
                 <div className="text-center mb-8">
@@ -66,10 +54,8 @@ export const BudgetOverview: React.FC = () => {
                         <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl mb-3 mx-auto">
                             <DollarSign className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-gray-600 block mb-1">💰 Budget estimé</span>
-                        <div className="text-2xl font-bold text-blue-700">
-                            {totalEstimated.toLocaleString('fr-FR')} €
-                        </div>
+                        <span className="text-sm font-medium text-gray-600 block mb-1">💰 Budget total</span>
+                        <div className={`text-2xl font-bold ${isOverBudget ? 'text-red-600' : 'text-emerald-700'}`}>{totalSpent.toLocaleString('fr-FR')} €</div>
                     </div>
                     
                     <div className="glass-card p-6 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -81,11 +67,16 @@ export const BudgetOverview: React.FC = () => {
                             {isOverBudget ? (
                                 <TrendingUp className="w-6 h-6 text-white" />
                             ) : (
-                                <CheckCircle className="w-6 h-6 text-white" />
+                                <TrendingDown className="w-6 h-6 text-white" />
                             )}
                         </div>
-                        <span className="text-sm font-medium text-gray-600 block mb-1">💸 Dépensé</span>
-                        <div className={`text-2xl font-bold ${isOverBudget ? 'text-red-600' : 'text-emerald-700'}`}>
+                        </div>
+                        <span className="text-sm font-medium text-gray-600 block mb-1">
+                            {isOverBudget ? '🚨 Dépassement' : '💸 Dépensé'}
+                        </span>
+                        <div className={`text-2xl font-bold ${
+                            isOverBudget ? 'text-red-600' : 'text-green-600'
+                        }`}>
                             {totalSpent.toLocaleString('fr-FR')} €
                         </div>
                     </div>
@@ -93,29 +84,27 @@ export const BudgetOverview: React.FC = () => {
                     <div className="glass-card p-6 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <div className={`flex items-center justify-center w-12 h-12 rounded-xl mb-3 mx-auto ${
                             variance < 0 
-                                ? 'bg-gradient-to-br from-red-500 to-orange-500' 
-                                : 'bg-gradient-to-br from-emerald-500 to-green-600'
+                                ? 'bg-gradient-to-br from-red-500 to-red-600' 
+                                : 'bg-gradient-to-br from-emerald-500 to-emerald-600'
                         }`}>
-                            {variance < 0 ? (
-                                <AlertTriangle className="w-6 h-6 text-white" />
-                            ) : (
-                                <Target className="w-6 h-6 text-white" />
-                            )}
+                            <Target className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-gray-600 block mb-1">
-                            {variance < 0 ? '⚠️ Dépassement' : '✅ Économie'}
+                            {variance < 0 ? '🔴 Déficit' : '🟢 Restant'}
                         </span>
-                        <div className={`text-2xl font-bold ${variance < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        <div className={`text-2xl font-bold ${
+                            variance < 0 ? 'text-red-600' : 'text-emerald-600'
+                        }`}>
                             {Math.abs(variance).toLocaleString('fr-FR')} €
                         </div>
                     </div>
                     
                     <div className="glass-card p-6 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                        <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl mb-3 mx-auto">
-                            <BarChart3 className="w-6 h-6 text-white" />
+                        <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl mb-3 mx-auto">
+                            <CheckCircle className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-gray-600 block mb-1">📊 Utilisation</span>
-                        <div className={`text-2xl font-bold ${usagePercentage > 100 ? 'text-red-600' : 'text-purple-600'}`}>
+                        <span className="text-sm font-medium text-gray-600 block mb-1">🎯 Utilisation</span>
+                        <div className="text-2xl font-bold text-purple-600">
                             {Math.round(usagePercentage)}%
                         </div>
                     </div>
@@ -123,109 +112,128 @@ export const BudgetOverview: React.FC = () => {
 
                 {/* Barre de progression globale */}
                 <div className="glass-card p-6">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                            <Target className="w-5 h-5 text-blue-600" />
-                            Progression budgétaire globale
+                            <BarChart3 className="w-5 h-5 text-blue-600" />
+                            Progression budgétaire
                         </h3>
                         <span className={`text-sm font-medium px-3 py-1 rounded-full ${
                             isOverBudget 
                                 ? 'bg-red-100 text-red-700' 
-                                : usagePercentage > 75 
-                                    ? 'bg-orange-100 text-orange-700'
+                                : usagePercentage > 90 
+                                    ? 'bg-yellow-100 text-yellow-700' 
                                     : 'bg-green-100 text-green-700'
                         }`}>
-                            {isOverBudget ? 'Dépassement' : usagePercentage > 75 ? 'Attention' : 'Sous contrôle'}
+                            {isOverBudget ? 'Dépassement' : usagePercentage > 90 ? 'Attention' : 'Normal'}
                         </span>
                     </div>
-                    <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden mb-2">
-                        <div
-                            className={`h-full rounded-full transition-all duration-800 ${
-                                isOverBudget 
-                                    ? 'bg-gradient-to-r from-red-500 to-orange-400'
-                                    : usagePercentage > 75
-                                        ? 'bg-gradient-to-r from-orange-500 to-yellow-400'
-                                        : 'bg-gradient-to-r from-blue-500 to-cyan-400'
-                            }`}
-                            style={{ width: `${Math.min(usagePercentage, 100)}%` }}
-                        />
+                    <Progress value={Math.min(usagePercentage, 100)} className="mt-4" />
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-600">Progression budgétaire</span>
+                        <span className={`text-sm font-semibold ${isOverBudget ? 'text-red-600' : usagePercentage > 90 ? 'text-orange-600' : 'text-blue-700'}`}>{Math.round(usagePercentage)}%</span>
                     </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                        <span>0 €</span>
-                        <span className="font-medium">
-                            {totalSpent.toLocaleString('fr-FR')} € / {totalEstimated.toLocaleString('fr-FR')} €
-                        </span>
-                        <span>{totalEstimated.toLocaleString('fr-FR')} €</span>
-                    </div>
+                    {isOverBudget && (
+                        <div className="flex items-center gap-2 text-red-600 font-semibold mt-2">
+                            <AlertTriangle className="w-5 h-5" /> Dépassement du budget global !
+                        </div>
+                    )}
+                    {!isOverBudget && usagePercentage > 90 && (
+                        <div className="flex items-center gap-2 text-orange-600 font-semibold mt-2">
+                            <AlertTriangle className="w-5 h-5" /> Attention : plus de 90% du budget utilisé
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Analyse par phases */}
-            {phases.length > 0 && (
-                <div className="glass-card p-8">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                            <BarChart3 className="w-6 h-6 text-blue-600" />
-                            Analyse par phases ({phases.length})
-                        </h3>
-                        <div className="flex gap-4 text-sm">
-                            <span className="flex items-center gap-1">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                Terminées: {completedPhases}
-                            </span>
-                            <span className="flex items-center gap-1">
-                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                En cours: {inProgressPhases}
-                            </span>
-                            <span className="flex items-center gap-1">
-                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                Dépassement: {overBudgetPhases}
-                            </span>
+            {/* Section des phases avec cartes modernes */}
+            <div className="glass-card p-8 bg-gradient-to-br from-white/90 to-purple-50/90 backdrop-blur-xl border border-white/20 shadow-2xl">
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
+                            <Target className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                                Analyse par phase
+                            </h3>
+                            <p className="text-gray-600 text-sm">Performance budgétaire détaillée</p>
                         </div>
                     </div>
-                    
+                    <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-gray-600">{completedPhases} terminées</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Target className="w-4 h-4 text-blue-600" />
+                            <span className="text-gray-600">{inProgressPhases} en cours</span>
+                        </div>
+                        {overBudgetPhases > 0 && (
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 text-red-600" />
+                                <span className="text-red-600">{overBudgetPhases} dépassées</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {phases.length === 0 ? (
+                    <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Target className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 text-lg">Aucune phase enregistrée</p>
+                        <p className="text-gray-400 text-sm mt-1">Les phases apparaîtront ici une fois créées</p>
+                    </div>
+                ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {phases.map((phase, index) => {
+                        {phases.map(phase => {
+                            // Calculs centralisés et sécurisés pour chaque phase
                             const estimated = typeof phase.estimatedBudget === 'number' ? phase.estimatedBudget : 0;
                             const tasks = phase.tasks || [];
                             const spent = tasks.reduce((s, t) => s + (t.spent || 0), 0);
                             const remaining = estimated - spent;
                             const usage = estimated > 0 ? (spent / estimated) * 100 : 0;
-                            const status = spent > estimated ? 'over' : usage > 75 ? 'warning' : 'good';
-                            // Calculate progress based on completed tasks
-                            const totalTasks = tasks.length;
-                            const completedTasks = tasks.filter(task => task.status === 'done').length;
-                            const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
+                            const isOverBudget = estimated > 0 && spent > estimated;
+                            const isHighUsage = estimated > 0 && usage > 90;
+                            
+                            // Statut d'alerte
+                            let status: 'ok' | 'alert' | 'over';
+                            if (isOverBudget) status = 'over';
+                            else if (isHighUsage) status = 'alert';
+                            else status = 'ok';
+                            
+                            // Calcul de l'avancement des tâches
+                            const completedTasks = tasks.filter(t => t.status === 'completed').length;
+                            const progressPercentage = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+                            
                             return (
-                                <div key={index} className="glass-card p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h4 className="font-semibold text-gray-800 truncate">{phase.name}</h4>
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                            phase.status === 'completed' 
-                                                ? 'bg-green-100 text-green-700'
-                                                : phase.status === 'in_progress'
-                                                    ? 'bg-blue-100 text-blue-700'
-                                                    : 'bg-gray-100 text-gray-700'
+                                <div key={phase.id} className="glass-card p-5 rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-lg font-semibold">{phase.name}</span>
+                                        <span className={`text-sm font-semibold ${
+                                            status === 'over' ? 'text-red-600'
+                                            : status === 'alert' ? 'text-orange-600'
+                                            : 'text-green-600'
                                         }`}>
-                                            {phase.status === 'completed' ? 'Terminée' : 
-                                             phase.status === 'in_progress' ? 'En cours' : 'Planifiée'}
+                                            {status === 'over' ? '🚨 Dépassement'
+                                             : status === 'alert' ? '⚠️ Alerte'
+                                             : '✔️ OK'}
                                         </span>
                                     </div>
-                                    
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-gray-600 flex items-center gap-1">
                                                 <DollarSign className="w-4 h-4" />
-                                                Budget
+                                                Budget alloué
                                             </span>
-                                            <span className="font-semibold text-blue-600">
+                                            <span className="font-semibold text-blue-700">
                                                 {estimated.toLocaleString('fr-FR')} €
                                             </span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-gray-600 flex items-center gap-1">
-                                                {status === 'over' ? (
+                                                {isOverBudget ? (
                                                     <TrendingUp className="w-4 h-4 text-red-500" />
                                                 ) : (
                                                     <TrendingDown className="w-4 h-4 text-green-500" />
@@ -233,7 +241,7 @@ export const BudgetOverview: React.FC = () => {
                                                 Dépensé
                                             </span>
                                             <span className={`font-semibold ${
-                                                status === 'over' ? 'text-red-600' : 'text-green-600'
+                                                isOverBudget ? 'text-red-600' : 'text-green-600'
                                             }`}>
                                                 {spent.toLocaleString('fr-FR')} €
                                             </span>
@@ -249,7 +257,6 @@ export const BudgetOverview: React.FC = () => {
                                                 {Math.abs(remaining).toLocaleString('fr-FR')} €
                                             </span>
                                         </div>
-                                        
                                         <div className="pt-2">
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className="text-sm text-gray-600">Avancement</span>
@@ -257,13 +264,7 @@ export const BudgetOverview: React.FC = () => {
                                                     {progressPercentage}%
                                                 </span>
                                             </div>
-                                            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-purple-500 to-pink-400 rounded-full transition-all duration-800"
-                                                    style={{ width: `${progressPercentage}%` }}
-                                                />
-                                            </div>
-                                            
+                                            <Progress value={progressPercentage} className="mb-2" />
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className="text-sm text-gray-600">Utilisation budget</span>
                                                 <span className={`text-sm font-medium ${
@@ -280,7 +281,7 @@ export const BudgetOverview: React.FC = () => {
                                                             : 'bg-gradient-to-r from-blue-500 to-cyan-400'
                                                     }`}
                                                     style={{ width: `${Math.min(usage, 100)}%` }}
-                                                />
+                                                ></div>
                                             </div>
                                         </div>
                                     </div>
@@ -288,10 +289,10 @@ export const BudgetOverview: React.FC = () => {
                             );
                         })}
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
-};
+}
 
 export default BudgetOverview;

@@ -51,6 +51,10 @@ export interface ProjectPhase {
   endDate: string;
   tasks: ProjectTask[];
   status: 'planned' | 'in_progress' | 'completed' | 'on_hold';
+  /**
+   * Estimation budgétaire pour cette phase (en euros)
+   */
+  estimatedBudget?: number;
 }
 
 export type TaskStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked' | 'todo' | 'done';
