@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Task } from '../../types';
+import { ProjectTask } from '../../contexts/projectTypes';
 
 interface GanttTaskProps {
-  task: Task;
+  task: ProjectTask;
   position: { left: number; width: number };
   rowIndex: number;
   rowHeight: number;
@@ -49,14 +49,12 @@ const GanttTask: React.FC<GanttTaskProps> = ({
 
   const getPriorityIndicator = () => {
     switch (task.priority) {
-      case 'urgent':
-        return 'border-l-4 border-l-red-500';
       case 'high':
-        return 'border-l-4 border-l-orange-500';
+        return 'border-l-4 border-l-red-500';
       case 'medium':
-        return 'border-l-4 border-l-yellow-500';
+        return 'border-l-4 border-l-orange-500';
       case 'low':
-        return 'border-l-4 border-l-green-500';
+        return 'border-l-4 border-l-yellow-500';
       default:
         return '';
     }
@@ -87,23 +85,23 @@ const GanttTask: React.FC<GanttTaskProps> = ({
         // Calculate new start date based on position
         const dayWidth = 40; // Assuming day view for simplicity
         const daysDelta = Math.round(deltaX / dayWidth);
-        const newStartDate = new Date(task.startDate);
+        const newStartDate = new Date(task.startDate || new Date());
         newStartDate.setDate(newStartDate.getDate() + daysDelta);
         onMove(newStartDate);
       } else if (action === 'resize-left') {
         // Resize from left (change start date)
         const dayWidth = 40;
         const daysDelta = Math.round(deltaX / dayWidth);
-        const newStartDate = new Date(task.startDate);
+        const newStartDate = new Date(task.startDate || new Date());
         newStartDate.setDate(newStartDate.getDate() + daysDelta);
-        onResize(newStartDate, new Date(task.dueDate));
+        onResize(newStartDate, new Date(task.dueDate || task.endDate || new Date()));
       } else if (action === 'resize-right') {
         // Resize from right (change end date)
         const dayWidth = 40;
         const daysDelta = Math.round(deltaX / dayWidth);
-        const newEndDate = new Date(task.dueDate);
+        const newEndDate = new Date(task.dueDate || task.endDate || new Date());
         newEndDate.setDate(newEndDate.getDate() + daysDelta);
-        onResize(new Date(task.startDate), newEndDate);
+        onResize(new Date(task.startDate || new Date()), newEndDate);
       }
     };
 
@@ -120,10 +118,17 @@ const GanttTask: React.FC<GanttTaskProps> = ({
   };
 
   const formatDuration = () => {
-    const start = new Date(task.startDate);
-    const end = new Date(task.dueDate);
+    const start = new Date(task.startDate || new Date());
+    const end = new Date(task.dueDate || task.endDate || new Date());
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     return `${days}j`;
+  };
+
+  // Get progress value (default to 0 if not available)
+  const getProgress = () => {
+    if (task.status === 'completed' || task.status === 'done') return 100;
+    if (task.status === 'in_progress') return 50;
+    return 0;
   };
 
   return (
@@ -155,31 +160,31 @@ const GanttTask: React.FC<GanttTaskProps> = ({
         {/* Progress Bar */}
         <div
           className="absolute top-0 left-0 h-full bg-white bg-opacity-30 transition-all duration-300"
-          style={{ width: `${task.progress}%` }}
+          style={{ width: `${getProgress()}%` }}
         />
 
         {/* Task Content */}
         <div className="relative z-10 px-3 py-2 h-full flex items-center justify-between text-white">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">
-              {task.title}
+              {task.name}
             </p>
             {position.width > 120 && (
               <p className="text-xs opacity-90 truncate">
-                {formatDuration()} • {task.progress}%
+                {formatDuration()} • {getProgress()}%
               </p>
             )}
           </div>
           
           {position.width > 80 && (
             <div className="text-xs opacity-90">
-              {task.progress}%
+              {getProgress()}%
             </div>
           )}
         </div>
 
         {/* Dependency Lines */}
-        {task.dependencies.length > 0 && (
+        {task.dependencies && task.dependencies.length > 0 && (
           <div className="absolute -left-2 top-1/2 w-2 h-0.5 bg-gray-400" />
         )}
       </div>
@@ -192,12 +197,12 @@ const GanttTask: React.FC<GanttTaskProps> = ({
 
       {/* Tooltip */}
       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
-        <div className="font-medium">{task.title}</div>
+        <div className="font-medium">{task.name}</div>
         <div className="text-gray-300">
-          {new Date(task.startDate).toLocaleDateString('fr-FR')} - {new Date(task.dueDate).toLocaleDateString('fr-FR')}
+          {new Date(task.startDate || new Date()).toLocaleDateString('fr-FR')} - {new Date(task.dueDate || task.endDate || new Date()).toLocaleDateString('fr-FR')}
         </div>
         <div className="text-gray-300">
-          Assigné à: {task.assignedTo}
+          Assigné à: {Array.isArray(task.assignedTo) ? task.assignedTo.join(', ') : task.assignedTo || 'Non assigné'}
         </div>
         <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
       </div>

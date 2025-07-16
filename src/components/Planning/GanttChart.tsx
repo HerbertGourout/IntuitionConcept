@@ -10,17 +10,19 @@ interface GanttChartProps {
   onTaskUpdate: (taskId: string, updates: Partial<ProjectTask>) => void;
   onTaskCreate: (task: Omit<ProjectTask, 'id'>) => void;
   projectId?: string;
+  phases?: any[]; // Ajouter les phases en props
 }
 
 const GanttChart: React.FC<GanttChartProps> = ({ 
   tasks, 
   onTaskUpdate, 
   onTaskCreate,
-  projectId 
+  projectId,
+  phases = [] // Ajouter phases avec valeur par défaut
 }) => {
   type ViewMode = 'days' | 'weeks' | 'months';
   const [viewMode, setViewMode] = useState<ViewMode>('weeks');
-  const [selectedTask, setSelectedTask] = useState<ProjectTask | null>(null);
+  const [selectedTask, setSelectedTask] = useState<ProjectTask | undefined>(undefined);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -30,45 +32,70 @@ const GanttChart: React.FC<GanttChartProps> = ({
 
   // Calculate date range based on phases and tasks
 const getDateRange = () => {
-  // Try to get phases from props if available (passed via projectId or context)
-  let phases = [];
-  // Try to get phases from window/projectContext if available (for compatibility)
-  if (typeof window !== 'undefined' && (window as any).projectContext?.currentProject?.phases) {
-    phases = (window as any).projectContext.currentProject.phases;
-  }
-  // Or try to get phases from props if passed (optional, fallback)
-  if (!phases.length && (typeof projectId !== 'undefined')) {
-    // Could add logic to fetch phases by projectId if needed
-  }
+  // Use phases passed as props
+  const projectPhases = phases || [];
 
   // If phases exist, use their start/end dates
-  if (phases.length > 0) {
-    const phaseDates = phases.flatMap((phase: any) => [
+  if (projectPhases.length > 0) {
+    const phaseDates = projectPhases.flatMap((phase: any) => [
       new Date(phase.startDate),
       new Date(phase.endDate)
     ]);
     const start = new Date(Math.min(...phaseDates.map((d: Date) => d.getTime())));
     const end = new Date(Math.max(...phaseDates.map((d: Date) => d.getTime())));
-    start.setDate(start.getDate() - 7);
-    end.setDate(end.getDate() + 7);
+    // Ajouter une marge pour voir les dates historiques
+    start.setDate(start.getDate() - 30); // 30 jours avant
+    end.setDate(end.getDate() + 30); // 30 jours après
     return { start, end };
   }
 
   // If no phases, use tasks as fallback
   if (tasks.length === 0) {
+    // Au lieu de commencer à aujourd'hui, commencer il y a 2 ans
     const start = new Date();
+    start.setFullYear(start.getFullYear() - 2); // 2 ans dans le passé
     const end = new Date();
-    end.setMonth(end.getMonth() + 3);
+    end.setFullYear(end.getFullYear() + 1); // 1 an dans le futur
     return { start, end };
   }
-  const dates = tasks.flatMap(task => [
-    new Date(task.startDate),
-    new Date(task.dueDate)
-  ]);
+  
+  // Utiliser toutes les dates des tâches (historiques et futures)
+  const dates = tasks.flatMap(task => {
+    const taskDates: Date[] = [];
+    
+    // Ajouter startDate si elle existe
+    if (task.startDate) {
+      taskDates.push(new Date(task.startDate));
+    }
+    
+    // Ajouter dueDate si elle existe
+    if (task.dueDate) {
+      taskDates.push(new Date(task.dueDate));
+    }
+    
+    // Ajouter endDate si elle existe
+    if (task.endDate) {
+      taskDates.push(new Date(task.endDate));
+    }
+    
+    return taskDates;
+  }).filter(date => !isNaN(date.getTime())); // Filtrer les dates invalides
+  
+  // Si aucune date valide n'est trouvée, utiliser une plage par défaut
+  if (dates.length === 0) {
+    const today = new Date();
+    const start = new Date(today);
+    const end = new Date(today);
+    start.setDate(start.getDate() - 30);
+    end.setDate(end.getDate() + 90);
+    return { start, end };
+  }
+  
   const start = new Date(Math.min(...dates.map((d: Date) => d.getTime())));
   const end = new Date(Math.max(...dates.map((d: Date) => d.getTime())));
-  start.setDate(start.getDate() - 7);
-  end.setDate(end.getDate() + 7);
+  // Ajouter une marge généreuse pour voir l'historique
+  start.setDate(start.getDate() - 30);
+  end.setDate(end.getDate() + 30);
   return { start, end };
 };
 
@@ -139,7 +166,7 @@ const getDateRange = () => {
   // Handle task move
   const handleTaskMove = (taskId: string, newStartDate: Date) => {
     const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task || !task.startDate || !task.dueDate) return;
 
     const duration = new Date(task.dueDate).getTime() - new Date(task.startDate).getTime();
     const newEndDate = new Date(newStartDate.getTime() + duration);

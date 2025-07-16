@@ -418,6 +418,7 @@ export const Planning: React.FC = () => {
               onTaskUpdate={handleTaskUpdate} 
               onTaskCreate={handleTaskCreate}
               projectId={projectContext.currentProject.id}
+              phases={projectContext.currentProject.phases || []}
             />
           )}
           {viewType === 'calendar' && (
