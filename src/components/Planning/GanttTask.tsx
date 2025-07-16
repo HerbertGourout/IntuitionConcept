@@ -11,7 +11,7 @@ interface GanttTaskProps {
   onDragEnd: () => void;
   onResize: (startDate: Date, endDate: Date) => void;
   onMove: (startDate: Date) => void;
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 const GanttTask: React.FC<GanttTaskProps> = ({

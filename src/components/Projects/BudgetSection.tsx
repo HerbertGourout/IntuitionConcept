@@ -84,7 +84,7 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ project }) => {
           Exporter CSV
         </button>
       </div>
-      <BudgetOverview project={overviewData} />
+      <BudgetOverview />
       <div className="grid md:grid-cols-2 gap-8 mt-8">
         <ProjectBudgetChart budget={project.budget} spent={project.spent} />
         <PhaseBudgetChart phases={(project.phases || []).map(ph => {

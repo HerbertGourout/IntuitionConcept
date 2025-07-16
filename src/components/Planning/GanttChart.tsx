@@ -1,9 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { ProjectTask } from '../../contexts/projectTypes';
 import GanttTask from './GanttTask';
 import GanttTimeline from './GanttTimeline';
-import TaskModal from './TaskModal';
 
 interface GanttChartProps {
   tasks: ProjectTask[];
@@ -22,8 +21,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
 }) => {
   type ViewMode = 'days' | 'weeks' | 'months';
   const [viewMode, setViewMode] = useState<ViewMode>('weeks');
-  const [selectedTask, setSelectedTask] = useState<ProjectTask | undefined>(undefined);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   
@@ -257,13 +255,7 @@ const getDateRange = () => {
             </select>
 
             {/* Add Task */}
-            <button
-              onClick={() => setIsTaskModalOpen(true)}
-              className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Nouvelle Tâche
-            </button>
+
           </div>
         </div>
       </div>
@@ -303,10 +295,7 @@ const getDateRange = () => {
             {filteredTasks.map((task) => (
               <div
                 key={task.id}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                  selectedTask?.id === task.id ? 'bg-orange-50 border-orange-200' : ''
-                }`}
-                onClick={() => setSelectedTask(task)}
+                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50`}
               >
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${
@@ -357,7 +346,7 @@ const getDateRange = () => {
                     onDragEnd={handleTaskDragEnd}
                     onResize={(startDate, endDate) => handleTaskResize(task.id, startDate, endDate)}
                     onMove={(startDate) => handleTaskMove(task.id, startDate)}
-                    onClick={() => setSelectedTask(task)}
+                    // onClick retiré : sélection de tâche désactivée dans le GanttChart
                   />
                 );
               })}
@@ -375,25 +364,12 @@ const getDateRange = () => {
             <p className="text-gray-600 mb-4">
               Commencez par créer une nouvelle tâche pour voir votre planning.
             </p>
-            <button
-              onClick={() => setIsTaskModalOpen(true)}
-              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-            >
-              Créer une tâche
-            </button>
+
           </div>
         )}
       </div>
 
-      {/* Task Modal */}
-      <TaskModal
-        isOpen={isTaskModalOpen}
-        onClose={() => setIsTaskModalOpen(false)}
-        onTaskCreate={onTaskCreate}
-        onTaskUpdate={onTaskUpdate}
-        selectedTask={selectedTask}
-        projectId={projectId || ''}
-      />
+
     </div>
   );
 };
