@@ -1,5 +1,6 @@
 import React from 'react';
 import type { FinancialRecord } from '../../types';
+import { useFormatCurrency } from '../../utils/currency';
 
 interface ExpenseListProps {
   expenses: FinancialRecord[];
@@ -8,6 +9,7 @@ interface ExpenseListProps {
 }
 
 export const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDelete }) => {
+  const formatCurrency = useFormatCurrency();
   return (
     <div className="overflow-x-auto mt-6">
       <table className="min-w-full border text-sm">
@@ -28,7 +30,7 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEdit, onDe
             <tr key={exp.id}>
               <td className="px-2 py-1 border">{exp.date}</td>
               <td className="px-2 py-1 border">{exp.category}</td>
-              <td className="px-2 py-1 border">{exp.amount.toLocaleString('fr-FR')} FCFA</td>
+              <td className="px-2 py-1 border">{formatCurrency(exp.amount)}</td>
               <td className="px-2 py-1 border">{exp.description}</td>
               <td className="px-2 py-1 border">{exp.vendor || '-'}</td>
               <td className="px-2 py-1 border">{exp.invoiceNumber || '-'}</td>

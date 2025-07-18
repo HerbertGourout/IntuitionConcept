@@ -16,27 +16,10 @@ const ProjectBudget: React.FC = () => {
         );
     }
 
-    // Mapping Project -> ProjectData attendu par BudgetOverview
-    const budgetData = {
-        name: currentProject.name,
-        budget: currentProject.budget,
-        actualSpent: currentProject.spent,
-        phases: (currentProject.phases || []).map(phase => ({
-            id: phase.id,
-            name: phase.name,
-            estimatedCost: (phase.tasks || []).reduce((sum, t) => sum + (t.budget || 0), 0),
-            actualCost: (phase.tasks || []).reduce((sum, t) => sum + (t.spent || 0), 0),
-            completion: Math.round(
-                ((phase.tasks || []).reduce((sum, t) => sum + (t.spent || 0), 0) /
-                Math.max(1, (phase.tasks || []).reduce((sum, t) => sum + (t.budget || 0), 0))) * 100
-            ),
-        })),
-    };
-
     return (
         <div className="p-4 max-w-4xl mx-auto">
             <h1 className="text-2xl font-bold mb-6">Budget du projet : {currentProject.name}</h1>
-            <BudgetOverview project={budgetData} />
+            <BudgetOverview />
         </div>
     );
 };

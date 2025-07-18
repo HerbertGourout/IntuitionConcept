@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, User, MapPin, TrendingUp } from 'lucide-react';
 import ProjectActionsMenu from './ProjectActionsMenu';
+import { useFormatCurrency } from '../../utils/currency';
 
 // Interface pour les propriétés du composant
 interface ProjectCardProps {
@@ -24,6 +25,7 @@ interface ProjectCardProps {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
+  const formatCurrency = useFormatCurrency();
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -73,15 +75,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
     }
   };
 
-  // Formater les montants en FCFA
-  const formatFCFA = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount).replace('XOF', 'FCFA');
-  };
+
+// ...
+// (hook utilisé dans le composant ProjectCard)
+
 
   const budget = project.budget || 0;
   const spent = project.spent || 0;
@@ -143,8 +140,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <TrendingUp className="w-4 h-4 flex-shrink-0" />
-          <div className="flex flex-col">
-            <span className="font-medium">{formatFCFA(budget)}</span>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="font-medium text-sm break-words">{formatCurrency(budget)}</span>
             <span className="text-xs text-gray-500">Budget total</span>
           </div>
         </div>

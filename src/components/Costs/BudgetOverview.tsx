@@ -1,8 +1,10 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, DollarSign, BarChart3, Target, AlertTriangle, CheckCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, BarChart3, Target, AlertTriangle, CheckCircle, Package, Wrench, Users, Building, FileText } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { useFormatCurrency } from '../../utils/currency';
 
 export const BudgetOverview: React.FC = () => {
+    const formatCurrency = useFormatCurrency();
     const projectContext = useProjectContext();
     const project = projectContext.currentProject;
     
@@ -67,8 +69,8 @@ export const BudgetOverview: React.FC = () => {
                             <DollarSign className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-sm font-medium text-gray-600 block mb-1">💰 Budget estimé</span>
-                        <div className="text-2xl font-bold text-blue-700">
-                            {totalEstimated.toLocaleString('fr-FR')} €
+                        <div className="text-xl md:text-2xl font-bold text-blue-700 break-words">
+                            {formatCurrency(totalEstimated)}
                         </div>
                     </div>
                     
@@ -85,8 +87,8 @@ export const BudgetOverview: React.FC = () => {
                             )}
                         </div>
                         <span className="text-sm font-medium text-gray-600 block mb-1">💸 Dépensé</span>
-                        <div className={`text-2xl font-bold ${isOverBudget ? 'text-red-600' : 'text-emerald-700'}`}>
-                            {totalSpent.toLocaleString('fr-FR')} €
+                        <div className={`text-xl md:text-2xl font-bold break-words ${isOverBudget ? 'text-red-600' : 'text-emerald-700'}`}>
+                            {formatCurrency(totalSpent)}
                         </div>
                     </div>
                     
@@ -105,8 +107,8 @@ export const BudgetOverview: React.FC = () => {
                         <span className="text-sm font-medium text-gray-600 block mb-1">
                             {variance < 0 ? '⚠️ Dépassement' : '✅ Économie'}
                         </span>
-                        <div className={`text-2xl font-bold ${variance < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                            {Math.abs(variance).toLocaleString('fr-FR')} €
+                        <div className={`text-xl md:text-2xl font-bold break-words ${variance < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {formatCurrency(Math.abs(variance))}
                         </div>
                     </div>
                     
@@ -153,11 +155,167 @@ export const BudgetOverview: React.FC = () => {
                     <div className="flex justify-between text-sm text-gray-600">
                         <span>0 €</span>
                         <span className="font-medium">
-                            {totalSpent.toLocaleString('fr-FR')} € / {totalEstimated.toLocaleString('fr-FR')} €
+                            {formatCurrency(totalSpent)} / {formatCurrency(totalEstimated)}
                         </span>
-                        <span>{totalEstimated.toLocaleString('fr-FR')} €</span>
+                        <span>{formatCurrency(totalEstimated)}</span>
                     </div>
                 </div>
+            </div>
+
+            {/* Section Répartition des Coûts par Catégorie */}
+            <div className="glass-card p-8 bg-gradient-to-br from-white/90 to-purple-50/90 backdrop-blur-xl border border-white/20 shadow-2xl">
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl mb-4 shadow-lg">
+                        <BarChart3 className="w-8 h-8 text-white" />
+                    </div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                        Répartition des Coûts
+                    </h2>
+                    <p className="text-gray-600">Analyse détaillée par catégorie de dépenses</p>
+                </div>
+
+                {(() => {
+                    // Calcul des coûts par catégorie depuis les CostItems des tâches
+                    const costsByCategory = {
+                        material: { estimated: 0, actual: 0, count: 0 },
+                        equipment: { estimated: 0, actual: 0, count: 0 },
+                        labor: { estimated: 0, actual: 0, count: 0 },
+                        subcontractor: { estimated: 0, actual: 0, count: 0 },
+                        other: { estimated: 0, actual: 0, count: 0 }
+                    };
+
+                    // Parcourir toutes les phases et tâches pour calculer les coûts par catégorie
+                    phases.forEach(phase => {
+                        const tasks = phase.tasks || [];
+                        tasks.forEach(task => {
+                            const costItems = task.costItems || [];
+                            costItems.forEach(item => {
+                                const category = item.type as keyof typeof costsByCategory;
+                                if (costsByCategory[category]) {
+                                    costsByCategory[category].estimated += (item.estimatedQuantity || 0) * (item.estimatedUnitPrice || 0);
+                                    costsByCategory[category].actual += item.actualTotal || 0;
+                                    costsByCategory[category].count += 1;
+                                }
+                            });
+                        });
+                    });
+
+                    const categoryConfig = [
+                        {
+                            key: 'material',
+                            name: 'Matériaux',
+                            icon: Package,
+                            color: 'blue',
+                            emoji: '🧱'
+                        },
+                        {
+                            key: 'equipment',
+                            name: 'Équipements',
+                            icon: Wrench,
+                            color: 'orange',
+                            emoji: '🔧'
+                        },
+                        {
+                            key: 'labor',
+                            name: 'Main-d\'œuvre',
+                            icon: Users,
+                            color: 'green',
+                            emoji: '👷'
+                        },
+                        {
+                            key: 'subcontractor',
+                            name: 'Sous-traitance',
+                            icon: Building,
+                            color: 'purple',
+                            emoji: '🏗️'
+                        },
+                        {
+                            key: 'other',
+                            name: 'Autres',
+                            icon: FileText,
+                            color: 'gray',
+                            emoji: '📋'
+                        }
+                    ];
+
+                    return (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {categoryConfig.map(config => {
+                                const data = costsByCategory[config.key];
+                                const usagePercentage = data.estimated > 0 ? (data.actual / data.estimated) * 100 : 0;
+                                const isOverBudget = data.actual > data.estimated;
+                                const IconComponent = config.icon;
+
+                                return (
+                                    <div key={config.key} className="glass-card p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-12 h-12 bg-gradient-to-br from-${config.color}-500 to-${config.color}-600 rounded-xl flex items-center justify-center shadow-lg`}>
+                                                    <IconComponent className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold text-gray-800">{config.emoji} {config.name}</h4>
+                                                    <p className="text-sm text-gray-500">{data.count} élément{data.count > 1 ? 's' : ''}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">💰 Estimé</span>
+                                                <span className="font-semibold text-blue-600">
+                                                    {formatCurrency(data.estimated)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">💸 Réel</span>
+                                                <span className={`font-semibold ${
+                                                    isOverBudget ? 'text-red-600' : 'text-green-600'
+                                                }`}>
+                                                    {formatCurrency(data.actual)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">📊 Utilisation</span>
+                                                <span className={`font-semibold text-sm ${
+                                                    isOverBudget ? 'text-red-600' : usagePercentage > 75 ? 'text-orange-600' : 'text-green-600'
+                                                }`}>
+                                                    {Math.round(usagePercentage)}%
+                                                </span>
+                                            </div>
+
+                                            {/* Barre de progression */}
+                                            <div className="pt-2">
+                                                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-800 ${
+                                                            isOverBudget 
+                                                                ? 'bg-gradient-to-r from-red-500 to-orange-400'
+                                                                : usagePercentage > 75
+                                                                    ? 'bg-gradient-to-r from-orange-500 to-yellow-400'
+                                                                    : `bg-gradient-to-r from-${config.color}-500 to-${config.color}-400`
+                                                        }`}
+                                                        style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Alerte si dépassement */}
+                                            {isOverBudget && (
+                                                <div className="flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                                                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                                                    <span className="text-xs text-red-700 font-medium">
+                                                        Dépassement de {formatCurrency(data.actual - data.estimated)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* Analyse par phases */}
@@ -235,7 +393,7 @@ export const BudgetOverview: React.FC = () => {
                                             <span className={`font-semibold ${
                                                 status === 'over' ? 'text-red-600' : 'text-green-600'
                                             }`}>
-                                                {spent.toLocaleString('fr-FR')} €
+                                                {formatCurrency(spent)}
                                             </span>
                                         </div>
                                         <div className="flex justify-between items-center">
@@ -246,7 +404,7 @@ export const BudgetOverview: React.FC = () => {
                                             <span className={`font-semibold ${
                                                 remaining < 0 ? 'text-red-600' : 'text-emerald-600'
                                             }`}>
-                                                {Math.abs(remaining).toLocaleString('fr-FR')} €
+                                                {formatCurrency(Math.abs(remaining))}
                                             </span>
                                         </div>
                                         
