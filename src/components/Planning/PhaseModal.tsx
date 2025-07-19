@@ -5,7 +5,7 @@ import { ProjectPhase } from '../../contexts/projectTypes';
 interface PhaseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (phaseData: { name: string; startDate: string; endDate: string }) => void;
+  onSave: (phaseData: { name: string; startDate: string; endDate: string; estimatedBudget?: number }) => void;
   onDelete?: () => void;
   initialPhase?: ProjectPhase | null;
   mode?: 'create' | 'edit';

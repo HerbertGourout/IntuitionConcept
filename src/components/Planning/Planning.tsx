@@ -3,7 +3,7 @@ import { Calendar, Filter, Plus, BarChart3, Clock, CheckCircle, AlertTriangle, T
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask, ProjectPhase } from '../../contexts/projectTypes';
 import { GlassCard, AnimatedCounter } from '../UI/VisualEffects';
-import GanttChart from './GanttChart';
+import SimpleGanttChart from './SimpleGanttChart';
 import PhaseModal from './PhaseModal';
 
 export const Planning: React.FC = () => {
@@ -382,44 +382,67 @@ export const Planning: React.FC = () => {
         </div>
       </GlassCard>
 
-      {/* Vue */}
+      {/* Section Diagramme de Gantt - Pleine Largeur */}
       <GlassCard>
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Settings className="text-purple-500 w-6 h-6" />
-            <span className="text-gray-600">Vue</span>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Diagramme de Gantt</h3>
+              <p className="text-gray-600">Planification visuelle des tâches du projet</p>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
-              className={`glass-card hover:scale-105 transition-all duration-200 px-4 py-2 ${viewType === 'gantt' ? 'bg-blue-600/20' : ''}`}
-              onClick={() => setViewType('gantt')}
+              onClick={() => {
+                setPhaseModalMode('create');
+                setEditingPhase(null);
+                setIsPhaseModalOpen(true);
+              }}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl hover:scale-105 transition-all duration-200 shadow-lg flex items-center gap-2"
             >
-              <span className="font-medium">Gantt</span>
+              <Plus className="w-4 h-4" />
+              <span className="font-medium">Nouvelle Phase</span>
             </button>
-            <button
-              className={`glass-card hover:scale-105 transition-all duration-200 px-4 py-2 ${viewType === 'calendar' ? 'bg-blue-600/20' : ''}`}
-              onClick={() => setViewType('calendar')}
-            >
-              <span className="font-medium">Calendrier</span>
-            </button>
-            <button
-              className={`glass-card hover:scale-105 transition-all duration-200 px-4 py-2 ${viewType === 'list' ? 'bg-blue-600/20' : ''}`}
-              onClick={() => setViewType('list')}
-            >
-              <span className="font-medium">Liste</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  viewType === 'gantt' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                onClick={() => setViewType('gantt')}
+              >
+                Gantt
+              </button>
+              <button
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  viewType === 'calendar' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                onClick={() => setViewType('calendar')}
+              >
+                Calendrier
+              </button>
+              <button
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  viewType === 'list' ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                onClick={() => setViewType('list')}
+              >
+                Liste
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="overflow-hidden">
+        <div className="bg-white/50 rounded-xl p-4">
           {viewType === 'gantt' && (
-            <GanttChart 
-              tasks={tasks} 
-              onTaskUpdate={handleTaskUpdate} 
-              onTaskCreate={handleTaskCreate}
-              projectId={projectContext.currentProject.id}
-              phases={projectContext.currentProject.phases || []}
-            />
+            <div className="w-full">
+              <SimpleGanttChart 
+                tasks={tasks} 
+                onTaskUpdate={handleTaskUpdate}
+              />
+            </div>
           )}
           {viewType === 'calendar' && (
             <div className="text-center py-12">

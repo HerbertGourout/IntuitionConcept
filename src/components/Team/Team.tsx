@@ -1,50 +1,29 @@
-import React, { useState, useMemo } from 'react';
-import {
-  UserPlus, User, Users, Edit3, Trash2, Mail, Phone,
-  BarChart3, Calendar, Clock, CheckCircle, AlertTriangle,
-  Building2, Target, Award, TrendingUp, Filter, Search,
-  UserCheck, UserX, MoreVertical, X, Grid, List,
-  Crown, Shield, Wrench, HardHat, Eye
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  Users, 
+  UserPlus, 
+  Search, 
+  Filter, 
+  Grid, 
+  List, 
+  BarChart3, 
+  CheckCircle, 
+  Clock, 
+  Award, 
+  Crown, 
+  Shield, 
+  Eye, 
+  HardHat, 
+  User,
+  Edit,
+  Trash2,
+  X,
+  Mail,
+  Phone
 } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'admin' | 'project_manager' | 'supervisor' | 'worker' | 'client';
-  speciality: string;
-  status: 'active' | 'inactive' | 'on_leave';
-  joinDate: string;
-  projectsCount: number;
-  avatar?: string;
-  department?: string;
-  salary?: number;
-  workload?: number;
-  skills?: string[];
-  certifications?: string[];
-  lastActivity?: string;
-  performance?: number;
-}
-
-interface Role {
-  key: string;
-  name: string;
-  description: string;
-  permissions: string[];
-  color: string;
-  icon: React.ComponentType<any>;
-  level: number;
-}
-
-interface TeamStats {
-  totalMembers: number;
-  activeMembers: number;
-  onLeaveMembers: number;
-  averageWorkload: number;
-  topPerformers: number;
-}
+import { TeamMember, Role, TeamStats } from '../../types/team';
+import TeamService from '../../services/teamService';
 
 const Team: React.FC = () => {
   const { currentProject } = useProjectContext();
@@ -54,82 +33,53 @@ const Team: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'worker',
+    speciality: '',
+    department: 'Production',
+    salary: '',
+    skills: [] as string[],
+    certifications: [] as string[]
+  });
 
-  // Données d'exemple des membres de l'équipe
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    {
-      id: '1',
-      name: 'Jean Dupont',
-      email: 'jean.dupont@example.com',
-      phone: '+33 1 23 45 67 89',
-      role: 'project_manager',
-      speciality: 'Gestion de projet',
-      status: 'active',
-      joinDate: '2023-01-15',
-      projectsCount: 5,
-      department: 'Management',
-      salary: 65000,
-      workload: 85,
-      skills: ['Leadership', 'Planification', 'Budget'],
-      certifications: ['PMP', 'Agile'],
-      lastActivity: '2024-01-15',
-      performance: 92
-    },
-    {
-      id: '2',
-      name: 'Marie Martin',
-      email: 'marie.martin@example.com',
-      phone: '+33 1 23 45 67 90',
-      role: 'supervisor',
-      speciality: 'Supervision chantier',
-      status: 'active',
-      joinDate: '2023-03-20',
-      projectsCount: 3,
-      department: 'Supervision',
-      salary: 45000,
-      workload: 75,
-      skills: ['Supervision', 'Sécurité', 'Qualité'],
-      certifications: ['CACES', 'Sécurité'],
-      lastActivity: '2024-01-14',
-      performance: 88
-    },
-    {
-      id: '3',
-      name: 'Pierre Durand',
-      email: 'pierre.durand@example.com',
-      phone: '+33 1 23 45 67 91',
-      role: 'worker',
-      speciality: 'Maçonnerie',
-      status: 'active',
-      joinDate: '2023-06-10',
-      projectsCount: 2,
-      department: 'Production',
-      salary: 35000,
-      workload: 90,
-      skills: ['Maçonnerie', 'Béton', 'Finitions'],
-      certifications: ['CAP Maçon'],
-      lastActivity: '2024-01-15',
-      performance: 85
-    },
-    {
-      id: '4',
-      name: 'Sophie Leroy',
-      email: 'sophie.leroy@example.com',
-      phone: '+33 1 23 45 67 92',
-      role: 'admin',
-      speciality: 'Administration',
-      status: 'on_leave',
-      joinDate: '2022-11-05',
-      projectsCount: 8,
-      department: 'Administration',
-      salary: 55000,
-      workload: 0,
-      skills: ['Administration', 'Comptabilité', 'RH'],
-      certifications: ['Comptabilité', 'Paie'],
-      lastActivity: '2024-01-10',
-      performance: 95
-    }
-  ]);
+  // État des membres d'équipe depuis Firebase
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Charger les membres depuis Firebase
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      try {
+        setLoading(true);
+        const members = await TeamService.getAllMembers();
+        setTeamMembers(members);
+        setError(null);
+      } catch (error) {
+        console.error('Erreur lors du chargement des membres:', error);
+        setError('Erreur lors du chargement des membres');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTeamMembers();
+
+    // S'abonner aux mises à jour temps réel
+    const unsubscribe = TeamService.subscribeToMembers((members) => {
+      setTeamMembers(members);
+      setLoading(false);
+    });
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []);
 
   const roles: Role[] = [
     {
@@ -236,21 +186,160 @@ const Team: React.FC = () => {
 
   // Gestionnaires d'événements
   const handleAddMember = () => {
-    setSelectedMember(null);
-    setIsModalOpen(true);
+    openMemberModal();
   };
 
   const handleEditMember = (member: TeamMember) => {
-    setSelectedMember(member);
+    openMemberModal(member);
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    try {
+      await TeamService.deleteMember(memberId);
+      // La mise à jour se fera automatiquement via l'abonnement temps réel
+    } catch (error) {
+      console.error('Erreur lors de la suppression du membre:', error);
+      setError('Erreur lors de la suppression du membre');
+    }
+  };
+
+  const handleSaveMember = async () => {
+    if (!formData.name || !formData.phone) {
+      alert('Veuillez remplir au moins le nom et le téléphone');
+      return;
+    }
+
+    try {
+      const memberData = {
+        name: formData.name,
+        email: formData.email || '', // Email optionnel
+        phone: formData.phone,
+        role: formData.role as any,
+        speciality: formData.speciality,
+        status: 'active' as const,
+        joinDate: selectedMember ? selectedMember.joinDate : new Date().toISOString().split('T')[0],
+        projectsCount: selectedMember ? selectedMember.projectsCount : 0,
+        department: formData.department,
+        salary: formData.salary ? parseInt(formData.salary) : 0,
+        workload: selectedMember ? selectedMember.workload : 0,
+        skills: formData.skills,
+        certifications: formData.certifications,
+        lastActivity: new Date().toISOString().split('T')[0],
+        performance: selectedMember ? selectedMember.performance : 80
+      };
+
+      if (selectedMember) {
+        await TeamService.updateMember(selectedMember.id, memberData);
+      } else {
+        await TeamService.addMember(memberData);
+      }
+
+      // Fermer la modal et réinitialiser le formulaire
+      setIsModalOpen(false);
+      setSelectedMember(null);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        role: 'worker',
+        speciality: '',
+        department: 'Production',
+        salary: '',
+        skills: [],
+        certifications: []
+      });
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du membre:', error);
+      setError('Erreur lors de la sauvegarde du membre');
+    }
+  };
+
+  const openMemberModal = (member?: TeamMember) => {
+    if (member) {
+      setSelectedMember(member);
+      setFormData({
+        name: member.name,
+        email: member.email,
+        phone: member.phone || '',
+        role: member.role,
+        speciality: member.speciality,
+        department: member.department || 'Production',
+        salary: member.salary ? member.salary.toString() : '',
+        skills: member.skills || [],
+        certifications: member.certifications || []
+      });
+    } else {
+      setSelectedMember(null);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        role: 'worker',
+        speciality: '',
+        department: 'Production',
+        salary: '',
+        skills: [],
+        certifications: []
+      });
+    }
     setIsModalOpen(true);
   };
 
-  const handleDeleteMember = (memberId: string) => {
-    setTeamMembers(prev => prev.filter(m => m.id !== memberId));
-  };
+  // Affichage de l'état de chargement
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="glass-card">
+          <div className="flex items-center justify-between p-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl">
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  Équipe
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  Chargement des membres de l'équipe...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="glass-card p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des données...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
+      {/* Affichage des erreurs */}
+      {error && (
+        <div className="glass-card border-red-200 bg-red-50/50">
+          <div className="p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <X className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setError(null)}
+                  className="inline-flex text-red-400 hover:text-red-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="glass-card">
         <div className="flex items-center justify-between p-6">
@@ -481,7 +570,7 @@ const Team: React.FC = () => {
                             onClick={() => handleEditMember(member)}
                             className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors duration-200"
                           >
-                            <Edit3 className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteMember(member.id)}
@@ -517,16 +606,153 @@ const Team: React.FC = () => {
                 </button>
               </div>
               
-              <div className="text-center text-gray-600 py-8">
-                <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p>Formulaire de gestion des membres en cours de développement</p>
-                <p className="text-sm mt-2">Cette fonctionnalité sera implémentée dans la prochaine version</p>
+              {/* Formulaire d'ajout/modification de membre */}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nom complet *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      placeholder="Jean Dupont"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      placeholder="jean.dupont@example.com (optionnel)"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Téléphone *
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      placeholder="+237 6XX XX XX XX"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Rôle
+                    </label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    >
+                      {roles.map(role => (
+                        <option key={role.key} value={role.key}>{role.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Spécialité
+                    </label>
+                    <select
+                      value={formData.speciality}
+                      onChange={(e) => setFormData(prev => ({ ...prev, speciality: e.target.value }))}
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    >
+                      <option value="">Sélectionner une spécialité</option>
+                      <option value="Maçonnerie">🧱 Maçonnerie</option>
+                      <option value="Électricité">⚡ Électricité</option>
+                      <option value="Plomberie">🔧 Plomberie</option>
+                      <option value="Charpenterie">🪵 Charpenterie</option>
+                      <option value="Couverture">🏠 Couverture</option>
+                      <option value="Peinture">🎨 Peinture</option>
+                      <option value="Carrelage">🏺 Carrelage</option>
+                      <option value="Terrassement">🚜 Terrassement</option>
+                      <option value="Béton armé">🏗️ Béton armé</option>
+                      <option value="Isolation">🧊 Isolation</option>
+                      <option value="Menuiserie">🚪 Menuiserie</option>
+                      <option value="Climatisation">❄️ Climatisation</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Département
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.department}
+                      onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      placeholder="Production, Management, etc."
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Salaire (FCFA/an)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.salary}
+                      onChange={(e) => setFormData(prev => ({ ...prev, salary: e.target.value }))}
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      placeholder="2500000 (optionnel)"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Compétences (séparées par des virgules)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.skills.join(', ')}
+                      onChange={(e) => setFormData(prev => ({ ...prev, skills: e.target.value.split(',').map(s => s.trim()).filter(s => s) }))}
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      placeholder="Maçonnerie, Béton, Finitions"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Certifications (séparées par des virgules)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.certifications.join(', ')}
+                    onChange={(e) => setFormData(prev => ({ ...prev, certifications: e.target.value.split(',').map(s => s.trim()).filter(s => s) }))}
+                    className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    placeholder="CAP Maçon, CACES, etc."
+                  />
+                </div>
               </div>
               
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                  className="px-6 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveMember}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:scale-105 transition-all duration-200 shadow-lg"
                 >
                   Annuler
                 </button>

@@ -28,82 +28,76 @@ const GanttChart: React.FC<GanttChartProps> = ({
   const ganttRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
-  // Calculate date range based on phases and tasks
-const getDateRange = () => {
-  // Use phases passed as props
-  const projectPhases = phases || [];
+  // Fonction pour formater les dates dans la timeline
+  const formatDate = (date: Date): string => {
+    switch (viewMode) {
+      case 'days':
+        return date.getDate().toString();
+      case 'weeks': {
+        const getWeekNumber = (date: Date) => {
+          const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+          const dayNum = d.getUTCDay() || 7;
+          d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+          const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+          return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        };
+        return `S${getWeekNumber(date)}`;
+      }
+      case 'months':
+        return date.toLocaleDateString('fr-FR', { month: 'short' });
+      default:
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    }
+  };
 
-  // If phases exist, use their start/end dates
-  if (projectPhases.length > 0) {
-    const phaseDates = projectPhases.flatMap((phase: any) => [
-      new Date(phase.startDate),
-      new Date(phase.endDate)
-    ]);
-    const start = new Date(Math.min(...phaseDates.map((d: Date) => d.getTime())));
-    const end = new Date(Math.max(...phaseDates.map((d: Date) => d.getTime())));
-    // Ajouter une marge pour voir les dates historiques
-    start.setDate(start.getDate() - 30); // 30 jours avant
-    end.setDate(end.getDate() + 30); // 30 jours après
-    return { start, end };
-  }
-
-  // If no phases, use tasks as fallback
-  if (tasks.length === 0) {
-    // Au lieu de commencer à aujourd'hui, commencer il y a 2 ans
-    const start = new Date();
-    start.setFullYear(start.getFullYear() - 2); // 2 ans dans le passé
-    const end = new Date();
-    end.setFullYear(end.getFullYear() + 1); // 1 an dans le futur
-    return { start, end };
-  }
-  
-  // Utiliser toutes les dates des tâches (historiques et futures)
-  const dates = tasks.flatMap(task => {
-    const taskDates: Date[] = [];
-    
-    // Ajouter startDate si elle existe
-    if (task.startDate) {
-      taskDates.push(new Date(task.startDate));
-    }
-    
-    // Ajouter dueDate si elle existe
-    if (task.dueDate) {
-      taskDates.push(new Date(task.dueDate));
-    }
-    
-    // Ajouter endDate si elle existe
-    if (task.endDate) {
-      taskDates.push(new Date(task.endDate));
-    }
-    
-    return taskDates;
-  }).filter(date => !isNaN(date.getTime())); // Filtrer les dates invalides
-  
-  // Si aucune date valide n'est trouvée, utiliser une plage par défaut
-  if (dates.length === 0) {
+  // Calculate fixed date range for Gantt timeline - independent of phases
+  const getFixedDateRange = () => {
     const today = new Date();
-    const start = new Date(today);
-    const end = new Date(today);
-    start.setDate(start.getDate() - 30);
-    end.setDate(end.getDate() + 90);
-    return { start, end };
-  }
-  
-  const start = new Date(Math.min(...dates.map((d: Date) => d.getTime())));
-  const end = new Date(Math.max(...dates.map((d: Date) => d.getTime())));
-  // Ajouter une marge généreuse pour voir l'historique
-  start.setDate(start.getDate() - 30);
-  end.setDate(end.getDate() + 30);
-  return { start, end };
-};
+    
+    // Timeline fixe et raisonnable selon le mode de vue
+    switch (viewMode) {
+      case 'days':
+        // 2 mois : 1 mois passé + 1 mois futur
+        const dayStart = new Date(today);
+        dayStart.setDate(dayStart.getDate() - 30);
+        const dayEnd = new Date(today);
+        dayEnd.setDate(dayEnd.getDate() + 30);
+        return { start: dayStart, end: dayEnd };
+        
+      case 'weeks':
+        // 6 mois : 3 mois passé + 3 mois futur
+        const weekStart = new Date(today);
+        weekStart.setMonth(weekStart.getMonth() - 3);
+        const weekEnd = new Date(today);
+        weekEnd.setMonth(weekEnd.getMonth() + 3);
+        return { start: weekStart, end: weekEnd };
+        
+      case 'months':
+        // 2 ans : 1 an passé + 1 an futur
+        const monthStart = new Date(today);
+        monthStart.setFullYear(monthStart.getFullYear() - 1);
+        const monthEnd = new Date(today);
+        monthEnd.setFullYear(monthEnd.getFullYear() + 1);
+        return { start: monthStart, end: monthEnd };
+        
+      default:
+        // Par défaut : 6 mois
+        const defaultStart = new Date(today);
+        defaultStart.setMonth(defaultStart.getMonth() - 3);
+        const defaultEnd = new Date(today);
+        defaultEnd.setMonth(defaultEnd.getMonth() + 3);
+        return { start: defaultStart, end: defaultEnd };
+    }
+  };
 
-  const { start: startDate, end: endDate } = getDateRange();
+  const { start: startDate, end: endDate } = getFixedDateRange();
 
-  // Generate timeline columns
+  // Generate timeline columns with fixed limits - no dependency on phases
   const generateTimelineColumns = () => {
     const columns = [];
     const current = new Date(startDate);
     
+    // Colonnes fixes selon le mode de vue
     while (current <= endDate) {
       columns.push(new Date(current));
       
@@ -125,13 +119,13 @@ const getDateRange = () => {
 
   const timelineColumns = generateTimelineColumns();
 
-  // Calculate column width based on view mode
+  // Calculate column width based on view mode - responsive
   const getColumnWidth = () => {
     switch (viewMode) {
-      case 'days': return 40;
-      case 'weeks': return 100;
-      case 'months': return 120;
-      default: return 100;
+      case 'days': return 35; // Réduit pour éviter le scroll excessif
+      case 'weeks': return 80; // Réduit pour éviter le scroll excessif
+      case 'months': return 100; // Réduit pour éviter le scroll excessif
+      default: return 80;
     }
   };
 
@@ -206,10 +200,21 @@ const getDateRange = () => {
     return { left, width };
   };
 
-  // Handle scroll synchronization
-  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
-    if (timelineRef.current) {
-      timelineRef.current.scrollLeft = event.currentTarget.scrollLeft;
+  // Handle scroll synchronization between timeline and gantt bars
+  const handleGanttScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const scrollLeft = event.currentTarget.scrollLeft;
+    if (timelineRef.current && timelineRef.current.scrollLeft !== scrollLeft) {
+      timelineRef.current.scrollLeft = scrollLeft;
+    }
+  };
+
+  const handleTimelineScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const scrollLeft = event.currentTarget.scrollLeft;
+    if (ganttRef.current) {
+      const ganttBarsContainer = ganttRef.current.querySelector('.gantt-bars-container') as HTMLElement;
+      if (ganttBarsContainer && ganttBarsContainer.scrollLeft !== scrollLeft) {
+        ganttBarsContainer.scrollLeft = scrollLeft;
+      }
     }
   };
 
@@ -260,97 +265,85 @@ const getDateRange = () => {
         </div>
       </div>
 
-      {/* Gantt Chart */}
-      <div className="relative">
-        {/* Timeline Header */}
-        <div className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
-          <div className="flex">
-            {/* Task Names Column */}
-            <div className="w-80 p-4 border-r border-gray-200 bg-white">
-              <h4 className="text-sm font-medium text-gray-700">Tâches</h4>
-            </div>
-            
-            {/* Timeline */}
-            <div 
-              ref={timelineRef}
-              className="flex-1 overflow-x-auto scrollbar-hide"
-            >
-              <GanttTimeline
-                columns={timelineColumns}
-                columnWidth={columnWidth}
-                viewMode={viewMode}
-              />
-            </div>
+      {/* Timeline Header */}
+      <div 
+        ref={timelineRef}
+        className="timeline-header bg-gray-50 border-b border-gray-200 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+        onScroll={handleTimelineScroll}
+      >
+        <div className="flex" style={{ width: `${48 * 4 + timelineColumns.length * columnWidth}px` }}>
+          {/* Task names column */}
+          <div className="w-48 flex-shrink-0 p-3 bg-gray-100 border-r border-gray-200">
+            <div className="text-sm font-semibold text-gray-700">Tâches</div>
           </div>
-        </div>
-
-        {/* Tasks */}
-        <div 
-          ref={ganttRef}
-          className="flex max-h-96 overflow-y-auto"
-          onScroll={handleScroll}
-        >
-          {/* Task Names */}
-          <div className="w-80 border-r border-gray-200 bg-white">
-            {filteredTasks.map((task) => (
-              <div
-                key={task.id}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${
-                    task.status === 'done' ? 'bg-green-500' :
-                    task.status === 'in_progress' ? 'bg-blue-500' :
-                    task.status === 'blocked' ? 'bg-yellow-500' : 'bg-gray-400'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {task.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {task.assignedTo.join(', ')}
-                    </p>
-                  </div>
+          
+          {/* Timeline columns */}
+          <div className="flex flex-shrink-0">
+            {timelineColumns.map((date, index) => (
+              <div key={index} className="timeline-column border-r border-gray-200 p-2 text-center" style={{ minWidth: `${columnWidth}px`, width: `${columnWidth}px` }}>
+                <div className="text-xs font-medium text-gray-600">
+                  {formatDate(date)}
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      </div>
 
-          {/* Gantt Bars */}
-          <div className="flex-1 relative bg-gray-50">
-            <div 
-              className="relative h-full"
-              style={{ width: timelineColumns.length * columnWidth }}
-            >
-              {/* Grid Lines */}
-              {timelineColumns.map((_, index) => (
-                <div
-                  key={index}
-                  className="absolute top-0 bottom-0 border-r border-gray-200"
-                  style={{ left: index * columnWidth }}
+      {/* Gantt Bars */}
+      <div 
+        ref={ganttRef}
+        className="gantt-bars overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+        style={{ maxHeight: '300px' }}
+        onScroll={handleGanttScroll}
+      >
+        <div className="flex" style={{ width: `${48 * 4 + timelineColumns.length * columnWidth}px` }}>
+          {/* Task names column */}
+          <div className="w-48 flex-shrink-0 bg-gray-50 border-r border-gray-200">
+            {filteredTasks.map((task, index) => (
+              <div key={task.id || index} className="p-3 border-b border-gray-100 h-12 flex items-center">
+                <span className="text-sm text-gray-700 truncate" title={task.name}>
+                  {task.name}
+                </span>
+              </div>
+            ))}
+          </div>
+          
+          {/* Task bars container */}
+          <div 
+            className="relative flex-shrink-0" 
+            style={{ 
+              width: Math.min(timelineColumns.length * columnWidth, 2000),
+              minWidth: '600px'
+            }}
+          >
+            {/* Grid Lines */}
+            {timelineColumns.map((_, index) => (
+              <div
+                key={index}
+                className="absolute top-0 bottom-0 border-r border-gray-200"
+                style={{ left: index * columnWidth }}
+              />
+            ))}
+
+            {/* Task Bars */}
+            {filteredTasks.map((task, index) => {
+              const position = getTaskPosition(task);
+              return (
+                <GanttTask
+                  key={task.id}
+                  task={task}
+                  position={position}
+                  rowIndex={index}
+                  rowHeight={48}
+                  isDragged={draggedTask === task.id}
+                  onDragStart={(e) => handleTaskDragStart(task.id, e)}
+                  onDragEnd={handleTaskDragEnd}
+                  onResize={(startDate, endDate) => handleTaskResize(task.id, startDate, endDate)}
+                  onMove={(startDate) => handleTaskMove(task.id, startDate)}
                 />
-              ))}
-
-              {/* Task Bars */}
-              {filteredTasks.map((task, index) => {
-                const position = getTaskPosition(task);
-                return (
-                  <GanttTask
-                    key={task.id}
-                    task={task}
-                    position={position}
-                    rowIndex={index}
-                    rowHeight={73}
-                    isDragged={draggedTask === task.id}
-                    onDragStart={(e) => handleTaskDragStart(task.id, e)}
-                    onDragEnd={handleTaskDragEnd}
-                    onResize={(startDate, endDate) => handleTaskResize(task.id, startDate, endDate)}
-                    onMove={(startDate) => handleTaskMove(task.id, startDate)}
-                    // onClick retiré : sélection de tâche désactivée dans le GanttChart
-                  />
-                );
-              })}
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -364,7 +357,6 @@ const getDateRange = () => {
             <p className="text-gray-600 mb-4">
               Commencez par créer une nouvelle tâche pour voir votre planning.
             </p>
-
           </div>
         )}
       </div>
