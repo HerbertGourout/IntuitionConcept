@@ -8,6 +8,9 @@ import {
 import { ProjectTask } from '../../contexts/projectTypes';
 import CostManagement from '../../components/Tasks/CostManagement';
 import { TaskStatus } from '../../contexts/projectTypes';
+import { useProjectContext } from '../../contexts/ProjectContext';
+import TeamService from '../../services/teamService';
+import { TeamMember } from '../../types/team';
 
 type TaskPriority = 'low' | 'medium' | 'high';
 
@@ -20,16 +23,15 @@ interface TaskModalProps {
   teamMembers: Array<{ id: string; name: string; role?: string }>;
 }
 
-import { useProjectContext } from '../../contexts/ProjectContext';
-
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, onDelete, teamMembers }) => {
   const { currentProject } = useProjectContext();
   const phases = currentProject?.phases || [];
   const [showConfirm, setShowConfirm] = useState(false);
+  const [firebaseTeamMembers, setFirebaseTeamMembers] = useState<TeamMember[]>([]);
   const [formData, setFormData] = useState<Partial<ProjectTask> & {
     status: TaskStatus;
     priority: TaskPriority;
-    spent: number;
+    spent: number | undefined;
     precision?: number;
     phaseId?: string;
   }>({
@@ -41,7 +43,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     startDate: '',
     endDate: '',
     budget: 0,
-    spent: 0,
+    spent: undefined,
     dependencies: [],
     costItems: [],
     precision: 3,
@@ -52,6 +54,24 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
   const [isSubTask, setIsSubTask] = useState<boolean>(!!task?.parentId);
   const [parentTaskId, setParentTaskId] = useState<string | undefined>(task?.parentId);
   const [isDropdownOpen, setIsDropdownOpen] = useState<string | null>(null);
+
+  // Charger les membres d'équipe depuis Firebase
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      try {
+        const members = await TeamService.getAllMembers();
+        setFirebaseTeamMembers(members);
+      } catch (error) {
+        console.error('Erreur lors du chargement des membres:', error);
+        // Fallback vers les membres passés en prop si Firebase échoue
+        setFirebaseTeamMembers([]);
+      }
+    };
+
+    if (isOpen) {
+      loadTeamMembers();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (task) {
@@ -64,7 +84,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         startDate: task.startDate || '',
         endDate: task.endDate || '',
         budget: task.budget || 0,
-        spent: typeof task.spent === 'number' ? task.spent : 0,
+        spent: typeof task.spent === 'number' ? task.spent : undefined,
         phaseId: task.phaseId || '',
         dependencies: task.dependencies || [],
         costItems: task.costItems || [],
@@ -85,7 +105,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         startDate: defaultStartDate,
         endDate: defaultEndDate,
         budget: 0,
-        spent: 0,
+        spent: undefined,
         phaseId: '',
         dependencies: [],
         costItems: [],
@@ -354,7 +374,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                   min={0}
                   className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 ${formErrors.spent ? 'border-red-500' : 'border-white/30'}`}
                   value={formData.spent ?? ''}
-                  onChange={e => setFormData(prev => ({ ...prev, spent: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                  onChange={e => setFormData(prev => ({ ...prev, spent: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                  placeholder="Montant dépensé (optionnel)"
                 />
                 {formErrors.spent && (
                   <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
@@ -365,116 +386,126 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
               </div>
             </div>
             <div className="flex items-center space-x-2 mb-4">
-  <FileText className="w-5 h-5 text-blue-600" />
-  <h3 className="text-lg font-semibold text-gray-900">Informations de base</h3>
-</div>
+              <FileText className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Informations de base</h3>
+            </div>
 
-{/* Statut de la tâche */}
-<div className="space-y-2">
-  <label htmlFor="task-status" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-    <Flag className="w-4 h-4 text-purple-500" />
-    <span>Statut *</span>
-  </label>
-  <select
-    id="task-status"
-    className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 ${formErrors.status ? 'border-red-500' : 'border-white/30'}`}
-    value={formData.status}
-    onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as TaskStatus }))}
-    required
-  >
-    <option value="not_started">Non commencé</option>
-    <option value="in_progress">En cours</option>
-    <option value="blocked">Bloqué</option>
-    <option value="completed">Terminé</option>
-  </select>
-  {formErrors.status && (
-    <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
-      <AlertTriangle className="w-4 h-4 text-red-500" />
-      <p className="text-red-600 text-sm">{formErrors.status}</p>
-    </div>
-  )}
-</div>
+            {/* Statut de la tâche */}
+            <div className="space-y-2">
+              <label htmlFor="task-status" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                <Flag className="w-4 h-4 text-purple-500" />
+                <span>Statut *</span>
+              </label>
+              <select
+                id="task-status"
+                className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 ${formErrors.status ? 'border-red-500' : 'border-white/30'}`}
+                value={formData.status}
+                onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as TaskStatus }))}
+                required
+              >
+                <option value="not_started">Non commencé</option>
+                <option value="in_progress">En cours</option>
+                <option value="blocked">Bloqué</option>
+                <option value="completed">Terminé</option>
+              </select>
+              {formErrors.status && (
+                <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <p className="text-red-600 text-sm">{formErrors.status}</p>
+                </div>
+              )}
+            </div>
 
-{/* Délais (dates) */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  <div className="space-y-2">
-    <label htmlFor="task-start" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-      <Calendar className="w-4 h-4 text-blue-500" />
-      <span>Date de début *</span>
-    </label>
-    <input
-      id="task-start"
-      type="date"
-      className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 ${formErrors.startDate ? 'border-red-500' : 'border-white/30'}`}
-      value={formData.startDate}
-      onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-      required
-    />
-    {formErrors.startDate && (
-      <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
-        <AlertTriangle className="w-4 h-4 text-red-500" />
-        <p className="text-red-600 text-sm">{formErrors.startDate}</p>
-      </div>
-    )}
-  </div>
-  <div className="space-y-2">
-    <label htmlFor="task-end" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-      <Calendar className="w-4 h-4 text-blue-700" />
-      <span>Date de fin *</span>
-    </label>
-    <input
-      id="task-end"
-      type="date"
-      className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 ${formErrors.endDate ? 'border-red-500' : 'border-white/30'}`}
-      value={formData.endDate}
-      onChange={e => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-      required
-    />
-    {formErrors.endDate && (
-      <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
-        <AlertTriangle className="w-4 h-4 text-red-500" />
-        <p className="text-red-600 text-sm">{formErrors.endDate}</p>
-      </div>
-    )}
-  </div>
-</div>
+            {/* Délais (dates) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="task-start" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <Calendar className="w-4 h-4 text-blue-500" />
+                  <span>Date de début *</span>
+                </label>
+                <input
+                  id="task-start"
+                  type="date"
+                  className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 ${formErrors.startDate ? 'border-red-500' : 'border-white/30'}`}
+                  value={formData.startDate}
+                  onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  required
+                />
+                {formErrors.startDate && (
+                  <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <p className="text-red-600 text-sm">{formErrors.startDate}</p>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="task-end" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                  <Calendar className="w-4 h-4 text-blue-700" />
+                  <span>Date de fin *</span>
+                </label>
+                <input
+                  id="task-end"
+                  type="date"
+                  className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 ${formErrors.endDate ? 'border-red-500' : 'border-white/30'}`}
+                  value={formData.endDate}
+                  onChange={e => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                  required
+                />
+                {formErrors.endDate && (
+                  <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <p className="text-red-600 text-sm">{formErrors.endDate}</p>
+                  </div>
+                )}
+              </div>
+            </div>
 
-{/* Assignation d'une personne */}
-<div className="space-y-2">
-  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-    <Users className="w-4 h-4 text-blue-500" />
-    <span>Assigné à *</span>
-  </label>
-  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-    {teamMembers.map(member => (
-      <label key={member.id} className="flex items-center space-x-2 p-2 rounded-lg bg-white/50 backdrop-blur-sm border border-white/30">
-        <input
-          type="checkbox"
-          checked={formData.assignedTo?.includes(member.id)}
-          onChange={() => {
-            setFormData(prev => {
-              const assigned = prev.assignedTo || [];
-              return {
-                ...prev,
-                assignedTo: assigned.includes(member.id)
-                  ? assigned.filter(id => id !== member.id)
-                  : [...assigned, member.id]
-              };
-            });
-          }}
-          className="w-4 h-4 text-blue-600"
-        />
-        <span>{member.name}</span>
-      </label>
-    ))}
-  </div>
-  {formErrors.assignedTo && (
-    <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
-      <AlertTriangle className="w-4 h-4 text-red-500" />
-      <p className="text-red-600 text-sm">{formErrors.assignedTo}</p>
-    </div>
-  )}
-</div>
+            {/* Assignation d'une personne */}
+            <div className="space-y-2">
+              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                <Users className="w-4 h-4 text-blue-500" />
+                <span>Assigné à *</span>
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {(firebaseTeamMembers.length > 0 ? firebaseTeamMembers : teamMembers).map(member => (
+                  <label key={member.id} className="flex items-center space-x-2 p-2 rounded-lg bg-white/50 backdrop-blur-sm border border-white/30 hover:bg-white/70 transition-all duration-200">
+                    <input
+                      type="checkbox"
+                      checked={formData.assignedTo?.includes(member.id)}
+                      onChange={() => {
+                        setFormData(prev => {
+                          const assigned = prev.assignedTo || [];
+                          return {
+                            ...prev,
+                            assignedTo: assigned.includes(member.id)
+                              ? assigned.filter(id => id !== member.id)
+                              : [...assigned, member.id]
+                          };
+                        });
+                      }}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{member.name}</span>
+                      {member.role && (
+                        <span className="text-xs text-gray-500 capitalize">{member.role}</span>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+              {(firebaseTeamMembers.length === 0 && teamMembers.length === 0) && (
+                <div className="text-center p-4 bg-yellow-50/50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-700 text-sm">Aucun membre d'équipe disponible. Ajoutez des membres dans la section Équipe.</p>
+                </div>
+              )}
+              {formErrors.assignedTo && (
+                <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <p className="text-red-600 text-sm">{formErrors.assignedTo}</p>
+                </div>
+              )}
+            </div>
 
             <div className="space-y-2">
               <label htmlFor="task-name" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
