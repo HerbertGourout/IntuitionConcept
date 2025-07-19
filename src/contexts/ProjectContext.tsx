@@ -103,6 +103,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           team: Array.isArray(data.team) ? data.team : [],
           manager: typeof data.manager === 'string' ? data.manager : '',
           client: typeof data.client === 'string' ? data.client : '',
+          equipment: Array.isArray(data.equipment) ? data.equipment : [],
         };
       });
       // Agrégation automatique des dépenses :

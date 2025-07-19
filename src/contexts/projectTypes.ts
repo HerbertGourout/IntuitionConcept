@@ -69,6 +69,7 @@ export interface ProjectTask {
   dueDate?: string;
   startDate?: string;
   endDate?: string;
+  updatedAt?: string; // Date de dernière modification
   costItems?: CostItem[];
   subtasks?: ProjectTask[];
   parentId?: string;

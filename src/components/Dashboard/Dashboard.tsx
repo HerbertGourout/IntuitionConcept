@@ -36,7 +36,11 @@ const Dashboard: React.FC = () => {
       return {
         activeTasks: 0,
         availableEquipment: 0,
+        equipmentInUse: 0,
+        equipmentMaintenance: 0,
+        totalEquipment: 0,
         teamMembers: 0,
+        teamEfficiency: 0,
         budget: 0,
         budgetSpent: 0,
         budgetRemaining: 0,
@@ -67,14 +71,32 @@ const Dashboard: React.FC = () => {
     const budgetRemaining = Math.max(0, budget - budgetSpent);
     const budgetPercentage = budget > 0 ? Math.round((budgetSpent / budget) * 100) : 0;
     
-    // Valeurs factices pour l'équipement et l'équipe
-    const availableEquipment = currentProjectData.equipment?.length || 0;
+    // Statistiques d'équipement réelles
+    const equipment = currentProjectData.equipment || [];
+    const availableEquipment = equipment.filter(eq => eq.status === 'available').length;
+    const equipmentInUse = equipment.filter(eq => eq.status === 'in-use').length;
+    const equipmentMaintenance = equipment.filter(eq => eq.status === 'maintenance').length;
+    const totalEquipment = equipment.length;
+    
+    // Calcul de l'efficacité de l'équipe basée sur les tâches terminées vs en retard
+    const allTasksWithDates = (currentProjectData.phases || []).flatMap(phase => 
+      (phase.tasks || []).filter(task => task && task.dueDate)
+    );
+    const completedTasksCount = allTasksWithDates.filter(task => task.status === 'done').length;
+    const teamEfficiency = allTasksWithDates.length > 0 
+      ? Math.round((completedTasksCount / allTasksWithDates.length) * 100)
+      : 85; // Valeur par défaut si pas de données
+    
     const teamMembers = currentProjectData.team?.length || 0;
 
     return {
       activeTasks,
       availableEquipment,
+      equipmentInUse,
+      equipmentMaintenance,
+      totalEquipment,
       teamMembers,
+      teamEfficiency,
       budget,
       budgetSpent,
       budgetRemaining,
@@ -231,11 +253,11 @@ const Dashboard: React.FC = () => {
         
         <CircularProgressWidget
           title="Efficacité Équipe"
-          percentage={85}
-          value="85%"
+          percentage={stats.teamEfficiency}
+          value={`${stats.teamEfficiency}%`}
           color="#8b5cf6"
           icon={<Zap className="w-5 h-5" />}
-          subtitle="Performance hebdomadaire"
+          subtitle={`${stats.teamMembers} membres actifs`}
         />
       </div>
 

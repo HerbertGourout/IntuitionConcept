@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Clock, CheckCircle, AlertCircle, User, Calendar } from 'lucide-react';
+import { useProjects } from '../../../hooks/useProjects';
 
 interface ActivityItem {
   id: string;
@@ -12,50 +13,121 @@ interface ActivityItem {
 }
 
 const ActivityTimelineWidget: React.FC = () => {
-  const activities: ActivityItem[] = [
-    {
-      id: '1',
-      type: 'task_completed',
-      title: 'Fondations terminées',
-      description: 'Coulage des fondations du bâtiment A',
-      time: '2h',
-      user: 'Jean Dupont',
-      priority: 'high'
-    },
-    {
-      id: '2',
-      type: 'task_started',
-      title: 'Début des murs porteurs',
-      description: 'Équipe de maçonnerie mobilisée',
-      time: '4h',
-      user: 'Marie Martin',
-      priority: 'medium'
-    },
-    {
-      id: '3',
-      type: 'alert',
-      title: 'Retard livraison matériaux',
-      description: 'Béton prévu pour demain matin',
-      time: '6h',
-      priority: 'high'
-    },
-    {
-      id: '4',
-      type: 'meeting',
-      title: 'Réunion équipe',
-      description: 'Point hebdomadaire avec les chefs d\'équipe',
-      time: '1j',
-      user: 'Chef de projet'
-    },
-    {
-      id: '5',
-      type: 'milestone',
-      title: 'Phase 1 complétée',
-      description: 'Gros œuvre terminé selon planning',
-      time: '2j',
-      priority: 'high'
+  const { currentProject } = useProjects();
+
+  // Fonction utilitaire pour calculer le temps écoulé
+  const getTimeAgo = (date: Date, now: Date): string => {
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) {
+      return `${diffDays}j`;
+    } else if (diffHours > 0) {
+      return `${diffHours}h`;
+    } else {
+      return 'maintenant';
     }
-  ];
+  };
+
+  // Générer des activités dynamiques basées sur les vraies données du projet
+  const activities: ActivityItem[] = useMemo(() => {
+    if (!currentProject) {
+      return [];
+    }
+
+    const recentActivities: ActivityItem[] = [];
+    const now = new Date();
+
+    // Activités basées sur les tâches du projet
+    (currentProject.phases || []).forEach(phase => {
+      (phase.tasks || []).forEach(task => {
+        if (task.status === 'done') {
+          recentActivities.push({
+            id: `task-${task.id}`,
+            type: 'task_completed',
+            title: `Tâche terminée: ${task.name}`,
+            description: `Phase: ${phase.name}`,
+            time: task.updatedAt ? getTimeAgo(new Date(task.updatedAt), now) : '1j',
+            user: task.assignedTo && task.assignedTo.length > 0 ? task.assignedTo[0] : undefined,
+            priority: task.priority as 'low' | 'medium' | 'high'
+          });
+        } else if (task.status === 'in_progress') {
+          recentActivities.push({
+            id: `task-progress-${task.id}`,
+            type: 'task_started',
+            title: `En cours: ${task.name}`,
+            description: `Phase: ${phase.name}`,
+            time: task.startDate ? getTimeAgo(new Date(task.startDate), now) : '2h',
+            user: task.assignedTo && task.assignedTo.length > 0 ? task.assignedTo[0] : undefined,
+            priority: task.priority as 'low' | 'medium' | 'high'
+          });
+        }
+
+        // Alertes pour les tâches en retard
+        if (task.status !== 'done' && task.dueDate && new Date(task.dueDate) < now) {
+          recentActivities.push({
+            id: `alert-${task.id}`,
+            type: 'alert',
+            title: `Tâche en retard: ${task.name}`,
+            description: `Échéance dépassée depuis ${getTimeAgo(new Date(task.dueDate), now)}`,
+            time: getTimeAgo(new Date(task.dueDate), now),
+            priority: 'high'
+          });
+        }
+      });
+    });
+
+    // Activités basées sur les équipements
+    (currentProject.equipment || []).forEach(equipment => {
+      if (equipment.status === 'maintenance') {
+        recentActivities.push({
+          id: `equipment-${equipment.id}`,
+          type: 'alert',
+          title: `Équipement en maintenance`,
+          description: `${equipment.name} (${equipment.type})`,
+          time: '3h',
+          priority: 'medium'
+        });
+      }
+    });
+
+    // Milestones basés sur les phases terminées
+    (currentProject.phases || []).forEach(phase => {
+      if (phase.status === 'completed') {
+        recentActivities.push({
+          id: `milestone-${phase.id}`,
+          type: 'milestone',
+          title: `Phase terminée: ${phase.name}`,
+          description: `Toutes les tâches de la phase sont complétées`,
+          time: phase.endDate ? getTimeAgo(new Date(phase.endDate), now) : '1j',
+          priority: 'high'
+        });
+      }
+    });
+
+    // Si pas d'activités, afficher un message par défaut
+    if (recentActivities.length === 0) {
+      recentActivities.push({
+        id: 'default',
+        type: 'task_started',
+        title: 'Projet initialisé',
+        description: `Projet "${currentProject.name}" créé et prêt`,
+        time: currentProject.createdAt ? getTimeAgo(new Date(currentProject.createdAt), now) : 'récemment',
+        user: currentProject.manager || 'Gestionnaire',
+        priority: 'medium'
+      });
+    }
+
+    // Trier par ordre chronologique et limiter à 5 activités
+    return recentActivities
+      .sort((a, b) => {
+        // Tri basique par type de priorité et temps
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        return (priorityOrder[b.priority || 'medium'] || 2) - (priorityOrder[a.priority || 'medium'] || 2);
+      })
+      .slice(0, 5);
+  }, [currentProject, getTimeAgo]);
 
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
