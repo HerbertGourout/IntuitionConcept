@@ -127,29 +127,28 @@ const Equipment: React.FC = () => {
     }
 
     try {
-      console.log('🔧 Ajout d\'équipement:', newEquipment);
+      console.log('🔧 Ajout d\'équipement avec les valeurs du formulaire:', values);
       
-      // Créer un nouvel équipement avec toutes les valeurs définies
+      // Créer un nouvel équipement avec les valeurs du formulaire
       const newEquip: Equipment = {
-        id: Date.now().toString(),
-        name: newEquipment.name?.trim() || '',
-        type: newEquipment.type || 'other',
-        model: newEquipment.model?.trim() || '',
-        serialNumber: newEquipment.serialNumber?.trim() || '',
-        status: newEquipment.status || 'available',
-        location: newEquipment.location?.trim() || '',
+        id: values.id || Date.now().toString(),
+        name: values.name?.trim() || '',
+        type: values.type || 'other',
+        model: values.model?.trim() || '',
+        serialNumber: values.serialNumber?.trim() || '',
+        status: values.status || 'available',
+        location: values.location?.trim() || '',
         assignedProject: projectContext.currentProject.id,
-        lastMaintenance: new Date().toISOString(),
-        nextMaintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    
-        operator: newEquipment.operator?.trim() || ''
+        lastMaintenance: values.lastMaintenance || new Date().toISOString(),
+        nextMaintenance: values.nextMaintenance || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        operator: values.operator?.trim() || ''
       };
 
       // Ajouter coordinates seulement si défini et valide
-      if (newEquipment.coordinates && 
-          typeof newEquipment.coordinates.lat === 'number' && 
-          typeof newEquipment.coordinates.lng === 'number') {
-        newEquip.coordinates = newEquipment.coordinates;
+      if (values.coordinates && 
+          typeof values.coordinates.lat === 'number' && 
+          typeof values.coordinates.lng === 'number') {
+        newEquip.coordinates = values.coordinates;
       }
 
       console.log('🔧 Nouvel équipement créé:', newEquip);
