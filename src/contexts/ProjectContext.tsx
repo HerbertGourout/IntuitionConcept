@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 
 import type { Project, ProjectPhase, ProjectTask, ProjectContextType } from './projectTypes';
-import type { Equipment, FinancialRecord } from '../types';
+import type { FinancialRecord } from '../types';
 import { sumTaskBudgets } from './projectUtils';
 
 
@@ -35,10 +35,7 @@ function aggregateProjectSpent(phases: ProjectPhase[]): number {
 export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // --- Dépenses réelles (FinancialRecord) ---
   const [expenses, setExpenses] = useState<FinancialRecord[]>([]);
-  const [projects, setProjects] = useState<Project[]>(() => {
-    const local = localStorage.getItem('projects');
-    return local ? JSON.parse(local) : [];
-  });
+  const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [loadingProjects, setLoadingProjects] = useState<boolean>(true);
 
@@ -76,10 +73,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     await deleteDoc(ref);
   };
 
-  // Persistance locale : sauvegarde à chaque changement
-  useEffect(() => {
-    localStorage.setItem('projects', JSON.stringify(projects));
-  }, [projects]);
+  // Plus de persistance locale - tout est géré par Firebase
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'projects'), (snapshot) => {
@@ -117,8 +111,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       });
       setProjects(withSpent);
       setLoadingProjects(false);
-      // Sauvegarde dans le localStorage
-      localStorage.setItem('projects', JSON.stringify(withSpent));
+      // Plus de sauvegarde localStorage - Firebase gère tout
     });
     return () => unsubscribe();
   }, []);
