@@ -4,7 +4,6 @@ import {
   Plus, 
   Trash2, 
   ShoppingCart, 
-  Building2, 
   User, 
   Calendar, 
   DollarSign,
@@ -17,6 +16,7 @@ import { PurchaseOrder, PurchaseOrderItem, Supplier } from '../../types/purchase
 import { usePurchaseOrderContext } from '../../contexts/PurchaseOrderContext';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { PurchaseOrderService } from '../../services/purchaseOrderService';
+import { uploadPdfToFirebase, deletePdfFromFirebase } from '../../utils/uploadPdfToFirebase';
 
 interface PurchaseOrderModalProps {
   isOpen: boolean;
@@ -43,6 +43,18 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
   const [items, setItems] = useState<Omit<PurchaseOrderItem, 'id'>[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [loading, setLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Pièce jointe PDF
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfName, setPdfName] = useState<string>('');
+  const [uploadingPdf, setUploadingPdf] = useState<boolean>(false);
+
+  // Phases et tâches dynamiques
+  const selectedProject = projects.find(p => p.id === formData.projectId);
+  const phases = selectedProject?.phases || [];
+  const selectedPhase = phases.find(ph => ph.id === formData.phaseId);
+  const tasks = selectedPhase?.tasks || [];
 
   // Initialiser le formulaire
   useEffect(() => {
@@ -72,6 +84,15 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
         notes: item.notes
       })));
       setSelectedSupplier(suppliers.find(s => s.id === order.supplierId) || null);
+      // Pré-remplir PDF si existant
+      if (order.pdfUrl) {
+        setPdfUrl(order.pdfUrl);
+        const match = order.pdfUrl.match(/[^/]+\.pdf$/i);
+        setPdfName(match ? match[0] : 'Document.pdf');
+      } else {
+        setPdfUrl(null);
+        setPdfName('');
+      }
     } else {
       // Réinitialiser pour nouveau bon d'achat
       setFormData({
@@ -110,7 +131,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
   };
 
   // Mettre à jour un article
-  const updateItem = (index: number, field: string, value: any) => {
+  const updateItem = (index: number, field: string, value: string | number) => {
     const updatedItems = [...items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
@@ -137,11 +158,23 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.projectId || !formData.supplierId || items.length === 0) {
-      alert('Veuillez remplir tous les champs obligatoires et ajouter au moins un article.');
-      return;
-    }
-
+    // Validation avancée
+    const errors: Record<string, string> = {};
+    if (!formData.projectId) errors.projectId = 'Projet obligatoire';
+    if (phases.length > 0 && !formData.phaseId) errors.phaseId = 'Phase obligatoire';
+    if (tasks.length > 0 && !formData.taskId) errors.taskId = 'Tâche obligatoire';
+    if (!formData.supplierId) errors.supplierId = 'Fournisseur obligatoire';
+    if (items.length === 0) errors.items = 'Ajoutez au moins un article';
+    items.forEach((item, idx) => {
+      if (!item.name) errors[`item-name-${idx}`] = 'Nom requis';
+      if (!item.quantity || item.quantity <= 0) errors[`item-quantity-${idx}`] = 'Quantité > 0 requise';
+      if (!item.unit) errors[`item-unit-${idx}`] = 'Unité requise';
+      if (!item.unitPrice || item.unitPrice < 0) errors[`item-unitPrice-${idx}`] = 'Prix unitaire requis';
+      if (item.taxRate === undefined || item.taxRate < 0) errors[`item-taxRate-${idx}`] = 'TVA requise';
+    });
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+    
     setLoading(true);
     
     try {
@@ -166,7 +199,8 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
         requestedBy: 'Utilisateur actuel', // À remplacer par l'utilisateur connecté
         deliveryAddress: formData.deliveryAddress || undefined,
         deliveryInstructions: formData.deliveryInstructions || undefined,
-        notes: formData.notes || undefined
+        notes: formData.notes || undefined,
+        pdfUrl: pdfUrl || undefined
       };
 
       if (order) {
@@ -176,7 +210,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
       }
 
       onClose();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erreur lors de la sauvegarde:', error);
       alert('Erreur lors de la sauvegarde du bon d\'achat.');
     } finally {
@@ -224,22 +258,133 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Projet */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Building2 className="h-4 w-4 inline mr-1 text-green-500" />
-                    Projet *
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Projet <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.projectId}
-                    onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                    className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
-                    required
+                    onChange={e => setFormData({ ...formData, projectId: e.target.value, phaseId: '', taskId: '' })}
+                    className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-4 transition-all duration-300 ${formErrors.projectId ? 'border-red-500' : 'border-white/30'}`}
                   >
-                    <option value="">Sélectionner un projet</option>
+                    <option value="">Sélectionner un projet...</option>
                     {projects.map(project => (
                       <option key={project.id} value={project.id}>{project.name}</option>
                     ))}
                   </select>
+                  {formErrors.projectId && <div className="text-red-600 text-xs mt-1">{formErrors.projectId}</div>}
                 </div>
+
+                {/* Upload de pièce jointe PDF */}
+                <div className="mb-4">
+                  <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                    Pièce jointe (PDF)
+                    <span className="ml-1" title="Joindre un devis, une facture ou tout document PDF lié à ce bon d'achat.">
+                      <svg aria-label="Aide pièce jointe" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" className="inline text-blue-400 cursor-help"><circle cx="10" cy="10" r="10" /><text x="10" y="15" textAnchor="middle" fontSize="12" fill="#fff">?</text></svg>
+                    </span>
+                  </label>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.type !== 'application/pdf') {
+                        alert('Seuls les fichiers PDF sont autorisés.');
+                        return;
+                      }
+                      if (file.size > 10 * 1024 * 1024) {
+                        alert('Le fichier PDF ne doit pas dépasser 10 Mo.');
+                        return;
+                      }
+                      setUploadingPdf(true);
+                      try {
+                        const url = await uploadPdfToFirebase(file, order?.orderNumber || 'draft');
+                        setPdfUrl(url);
+                        setPdfName(file.name);
+                      } catch (err: unknown) {
+                        if (err instanceof Error) {
+                          alert(err.message || "Erreur lors de l'upload du PDF.");
+                        } else {
+                          alert("Erreur lors de l'upload du PDF.");
+                        }
+                      } finally {
+                        setUploadingPdf(false);
+                      }
+                    }}
+                    disabled={uploadingPdf}
+                    className="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {uploadingPdf && <div className="text-blue-500 text-xs mt-1">Envoi du PDF en cours...</div>}
+                  {pdfUrl && (
+                    <div className="flex items-center mt-2 space-x-2">
+                      <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{pdfName}</a>
+                      <button type="button" onClick={async () => {
+                        if (pdfUrl) {
+                          setUploadingPdf(true);
+                          try {
+                            await deletePdfFromFirebase(pdfUrl);
+                            setPdfUrl(null);
+                            setPdfName('');
+                          } catch (err: unknown) {
+                            if (err instanceof Error) {
+                              alert(err.message || "Erreur lors de la suppression du PDF.");
+                            } else {
+                              alert("Erreur lors de la suppression du PDF.");
+                            }
+                          } finally {
+                            setUploadingPdf(false);
+                          }
+                        }
+                      }} className="text-red-500 hover:underline text-xs">Supprimer</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sélection de la phase, si applicable */}
+                {phases.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phase {phases.length > 0 && <span className="text-red-500">*</span>}
+                      <span className="ml-1" title="La phase correspond à une étape du projet. Sélectionnez la phase concernée par cette commande.">
+                        <svg aria-label="Aide phase" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" className="inline text-blue-400 cursor-help"><circle cx="10" cy="10" r="10" /><text x="10" y="15" textAnchor="middle" fontSize="12" fill="#fff">?</text></svg>
+                      </span>
+                    </label>
+                    <select
+                      value={formData.phaseId}
+                      onChange={e => setFormData({ ...formData, phaseId: e.target.value, taskId: '' })}
+                      className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-4 transition-all duration-300 ${formErrors.phaseId ? 'border-red-500' : 'border-white/30'}`}
+                    >
+                      <option value="">Sélectionner une phase...</option>
+                      {phases.map(phase => (
+                        <option key={phase.id} value={phase.id}>{phase.name}</option>
+                      ))}
+                    </select>
+                    {formErrors.phaseId && <div className="text-red-600 text-xs mt-1">{formErrors.phaseId}</div>}
+                  </div>
+                )}
+
+                {/* Sélection de la tâche, si applicable */}
+                {tasks.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tâche {tasks.length > 0 && <span className="text-red-500">*</span>}
+                      <span className="ml-1" title="La tâche précise l'action ou le lot concerné. Filtrée par la phase choisie.">
+                        <svg aria-label="Aide tâche" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" className="inline text-blue-400 cursor-help"><circle cx="10" cy="10" r="10" /><text x="10" y="15" textAnchor="middle" fontSize="12" fill="#fff">?</text></svg>
+                      </span>
+                    </label>
+                    <select
+                      value={formData.taskId}
+                      onChange={e => setFormData({ ...formData, taskId: e.target.value })}
+                      className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-4 transition-all duration-300 ${formErrors.taskId ? 'border-red-500' : 'border-white/30'}`}
+                    >
+                      <option value="">Sélectionner une tâche...</option>
+                      {tasks.map(task => (
+                        <option key={task.id} value={task.id}>{task.name}</option>
+                      ))}
+                    </select>
+                    {formErrors.taskId && <div className="text-red-600 text-xs mt-1">{formErrors.taskId}</div>}
+                  </div>
+                )}
 
                 {/* Fournisseur */}
                 <div>
@@ -250,7 +395,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
                   <select
                     value={formData.supplierId}
                     onChange={(e) => handleSupplierChange(e.target.value)}
-                    className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                    className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-4 transition-all duration-300 ${formErrors.supplierId ? 'border-red-500' : 'border-white/30'}`}
                     required
                   >
                     <option value="">Sélectionner un fournisseur</option>
@@ -258,6 +403,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
                       <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                     ))}
                   </select>
+                  {formErrors.supplierId && <div className="text-red-600 text-xs mt-1">{formErrors.supplierId}</div>}
                 </div>
 
                 {/* Date de livraison souhaitée */}
@@ -294,6 +440,9 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Instructions de livraison
+                  <span className="ml-1" title="Indiquez ici toute consigne particulière pour la livraison (ex : horaires, accès, contact sur site, etc.)">
+                    <svg aria-label="Aide instructions livraison" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" className="inline text-blue-400 cursor-help"><circle cx="10" cy="10" r="10" /><text x="10" y="15" textAnchor="middle" fontSize="12" fill="#fff">?</text></svg>
+                  </span>
                 </label>
                 <textarea
                   value={formData.deliveryInstructions}
@@ -332,94 +481,125 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
                   {items.map((item, index) => (
                     <div key={index} className="bg-gray-50/50 rounded-lg p-4 border border-gray-200/50">
                       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                        {/* Nom de l'article */}
-                        <div className="md:col-span-2">
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Nom de l'article *
-                          </label>
-                          <input
-                            type="text"
-                            value={item.name}
-                            onChange={(e) => updateItem(index, 'name', e.target.value)}
-                            placeholder="Nom de l'article"
-                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            required
-                          />
+                        <div className="flex flex-col md:flex-row md:items-end md:space-x-4">
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'article <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              value={item.name}
+                              onChange={e => updateItem(index, 'name', e.target.value)}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-4 transition-all duration-300 ${formErrors[`item-name-${index}`] ? 'border-red-500' : 'border-white/30'}`}
+                              placeholder="Désignation..."
+                            />
+                            {formErrors[`item-name-${index}`] && <div className="text-red-600 text-xs mt-1">{formErrors[`item-name-${index}`]}</div>}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantité <span className="text-red-500">*</span></label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={item.quantity}
+                              onChange={e => updateItem(index, 'quantity', Number(e.target.value))}
+                              className={`w-24 px-3 py-2 border-2 rounded-lg focus:ring-4 transition-all duration-300 ${formErrors[`item-quantity-${index}`] ? 'border-red-500' : 'border-white/30'}`}
+                            />
+                            {formErrors[`item-quantity-${index}`] && <div className="text-red-600 text-xs mt-1">{formErrors[`item-quantity-${index}`]}</div>}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Unité <span className="text-red-500">*</span>
+                              <span className="ml-1" title="Exemple : pièce, kg, mètre, litre, etc. L'unité permet de quantifier l'article.">
+                                <svg aria-label="Aide unité" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" className="inline text-blue-400 cursor-help"><circle cx="10" cy="10" r="10" /><text x="10" y="15" textAnchor="middle" fontSize="12" fill="#fff">?</text></svg>
+                              </span>
+                            </label>
+                            <input
+                              type="text"
+                              value={item.unit}
+                              onChange={e => updateItem(index, 'unit', e.target.value)}
+                              className={`w-20 px-3 py-2 border-2 rounded-lg focus:ring-4 transition-all duration-300 ${formErrors[`item-unit-${index}`] ? 'border-red-500' : 'border-white/30'}`}
+                              placeholder="pièce, kg, m..."
+                            />
+                            {formErrors[`item-unit-${index}`] && <div className="text-red-600 text-xs mt-1">{formErrors[`item-unit-${index}`]}</div>}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Prix unitaire <span className="text-red-500">*</span></label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={item.unitPrice}
+                              onChange={e => updateItem(index, 'unitPrice', Number(e.target.value))}
+                              className={`w-28 px-3 py-2 border-2 rounded-lg focus:ring-4 transition-all duration-300 ${formErrors[`item-unitPrice-${index}`] ? 'border-red-500' : 'border-white/30'}`}
+                              placeholder="0"
+                            />
+                            {formErrors[`item-unitPrice-${index}`] && <div className="text-red-600 text-xs mt-1">{formErrors[`item-unitPrice-${index}`]}</div>}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">TVA (%) <span className="text-red-500">*</span>
+                              <span className="ml-1" title="Taux de taxe sur la valeur ajoutée applicable à l'article. Par défaut 18%.">
+                                <svg aria-label="Aide TVA" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" className="inline text-blue-400 cursor-help"><circle cx="10" cy="10" r="10" /><text x="10" y="15" textAnchor="middle" fontSize="12" fill="#fff">?</text></svg>
+                              </span>
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={item.taxRate}
+                              onChange={e => updateItem(index, 'taxRate', Number(e.target.value))}
+                              className={`w-16 px-3 py-2 border-2 rounded-lg focus:ring-4 transition-all duration-300 ${formErrors[`item-taxRate-${index}`] ? 'border-red-500' : 'border-white/30'}`}
+                              placeholder="18"
+                            />
+                            {formErrors[`item-taxRate-${index}`] && <div className="text-red-600 text-xs mt-1">{formErrors[`item-taxRate-${index}`]}</div>}
+                          </div>
+                          <div className="flex items-end pb-2">
+                            <button
+                              type="button"
+                              onClick={() => removeItem(index)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Supprimer l'article"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                        {/* Champs avancés pour l'article */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Description</label>
+                            <input
+                              type="text"
+                              value={item.description || ''}
+                              onChange={e => updateItem(index, 'description', e.target.value)}
+                              className="w-full px-3 py-2 border-2 rounded-lg focus:ring-2 border-white/30"
+                              placeholder="Description détaillée (optionnel)"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Spécifications</label>
+                            <input
+                              type="text"
+                              value={item.specifications || ''}
+                              onChange={e => updateItem(index, 'specifications', e.target.value)}
+                              className="w-full px-3 py-2 border-2 rounded-lg focus:ring-2 border-white/30"
+                              placeholder="Spécifications techniques (optionnel)"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Notes</label>
+                            <input
+                              type="text"
+                              value={item.notes || ''}
+                              onChange={e => updateItem(index, 'notes', e.target.value)}
+                              className="w-full px-3 py-2 border-2 rounded-lg focus:ring-2 border-white/30"
+                              placeholder="Notes internes (optionnel)"
+                            />
+                          </div>
                         </div>
 
-                        {/* Quantité */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Quantité *
-                          </label>
-                          <input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                            min="0"
-                            step="0.01"
-                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            required
-                          />
-                        </div>
-
-                        {/* Unité */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Unité
-                          </label>
-                          <select
-                            value={item.unit}
-                            onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                          >
-                            <option value="pièce">pièce</option>
-                            <option value="kg">kg</option>
-                            <option value="m">m</option>
-                            <option value="m²">m²</option>
-                            <option value="m³">m³</option>
-                            <option value="litre">litre</option>
-                            <option value="tonne">tonne</option>
-                            <option value="sac">sac</option>
-                            <option value="palette">palette</option>
-                          </select>
-                        </div>
-
-                        {/* Prix unitaire */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Prix unitaire (FCFA)
-                          </label>
-                          <input
-                            type="number"
-                            value={item.unitPrice}
-                            onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                            min="0"
-                            step="0.01"
-                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                          />
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-end">
-                          <button
-                            type="button"
-                            onClick={() => removeItem(index)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Supprimer l'article"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Prix total */}
-                      <div className="mt-3 pt-3 border-t border-gray-200/50">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Prix total :</span>
-                          <span className="text-sm font-semibold text-gray-900">
-                            {item.totalPrice.toLocaleString('fr-FR')} FCFA
-                          </span>
+                        {/* Prix total */}
+                        <div className="mt-3 pt-3 border-t border-gray-200/50">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Prix total :</span>
+                            <span className="text-sm font-semibold text-gray-900">
+                              {item.totalPrice.toLocaleString('fr-FR')} FCFA
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

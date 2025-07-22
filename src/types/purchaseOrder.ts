@@ -75,7 +75,7 @@ export interface PurchaseOrder {
   // Suivi
   notes?: string;
   attachments?: string[]; // URLs des documents joints
-  
+  pdfUrl?: string; // URL du PDF principal joint
   createdAt: string;
   updatedAt: string;
 }
