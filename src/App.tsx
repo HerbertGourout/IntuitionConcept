@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProjectProvider } from './contexts/ProjectContext';
+import { PurchaseOrderProvider } from './contexts/PurchaseOrderContext';
 import type { Project } from './contexts/projectTypes';
 import { useProjects } from './hooks/useProjects';
 
@@ -14,6 +15,7 @@ import Planning from './components/Planning/Planning';
 import Documents from './components/Documents/Documents';
 import Reports from './components/Reports/Reports';
 import Team from './components/Team/Team';
+import PurchaseOrders from './components/PurchaseOrders/PurchaseOrders';
 import Locations from './components/Locations/Locations';
 import Settings from './components/Settings/Settings';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
@@ -242,6 +244,8 @@ const AppContent: React.FC = () => {
         return <Reports />;
       case 'team':
         return <Team />;
+      case 'purchase-orders':
+        return <PurchaseOrders />;
       case 'locations':
         return <Locations />;
       case 'settings':
@@ -339,7 +343,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ProjectProvider>
-      <AppContent />
+      <PurchaseOrderProvider>
+        <AppContent />
+      </PurchaseOrderProvider>
     </ProjectProvider>
   );
 };

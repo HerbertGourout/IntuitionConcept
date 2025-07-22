@@ -14,7 +14,8 @@ import {
   Building,
   Wrench,
   Clock,
-  Target
+  Target,
+  ShoppingCart
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -152,7 +153,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       color: 'text-violet-500',
       bgColor: 'bg-violet-500/10',
       hoverColor: 'hover:bg-violet-500/20',
-      description: 'Gestion d\'équipe'
+      description: 'Gestion de l\'équipe'
+    },
+    { 
+      id: 'purchase-orders', 
+      label: 'Bons d\'Achat', 
+      icon: ShoppingCart, 
+      disabled: !currentProjectId,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-500/10',
+      hoverColor: 'hover:bg-orange-500/20',
+      description: 'Gestion des commandes et livraisons',
+      status: currentProjectId ? 'active' : 'disabled'
     },
     { 
       id: 'locations', 

@@ -2,15 +2,22 @@
 export interface Supplier {
   id: string;
   name: string;
+  type: 'materials' | 'equipment' | 'services' | 'transport';
+  contactPerson?: string;
   email?: string;
   phone?: string;
   address?: string;
   city?: string;
   postalCode?: string;
   country?: string;
-  taxNumber?: string;
-  paymentTerms?: string; // Ex: "30 jours", "Comptant"
+  website?: string;
+  taxId?: string;
+  taxNumber?: string; // Alias pour compatibilité
+  registrationNumber?: string;
+  bankAccount?: string;
+  paymentTerms?: number; // Nombre de jours
   rating?: number; // Note sur 5
+  notes?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
