@@ -25,6 +25,7 @@ export interface UserSettings {
     defaultView: 'dashboard' | 'projects' | 'tasks';
     autoSave: boolean;
     compactMode: boolean;
+    defaultCurrency?: string;
   };
   createdAt: string;
   updatedAt: string;

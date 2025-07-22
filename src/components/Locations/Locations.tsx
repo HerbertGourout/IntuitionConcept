@@ -1,28 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, message } from 'antd';
 import { 
   MapPin, 
-  Building2, 
-  Home, 
+  Building, 
   Warehouse, 
-  Compass,
-  Plus,
-  Edit3,
-  Trash2,
-  Users,
-  Package,
-  Activity,
-  Phone,
-  Navigation,
-  CheckCircle,
+  Users, 
+  Settings, 
+  BarChart3, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Phone, 
+  Mail,
   AlertTriangle,
   Clock
 } from 'lucide-react';
+import { LocationService, Location as FirebaseLocation } from '../../services/locationService';
 
 const { Option } = Select;
 const { TextArea } = Input;
 
-interface Location {
+// Interface locale pour compatibilité avec l'UI existante
+interface LocalLocation {
   id: string;
   name: string;
   type: 'site' | 'office' | 'warehouse' | 'depot';
@@ -37,71 +36,57 @@ interface Location {
   projectsCount: number;
   equipmentCount: number;
   description?: string;
-  contact?: {
+  contact: {
     name: string;
     phone: string;
+    email?: string;
   };
 }
 
-const mockLocations: Location[] = [
-  {
-    id: '1',
-    name: 'Chantier Centre-Ville',
-    type: 'site',
-    address: '123 Rue de la Construction',
-    city: 'Paris',
-    region: 'Île-de-France',
-    coordinates: { lat: 48.8566, lng: 2.3522 },
-    status: 'active',
-    projectsCount: 3,
-    equipmentCount: 15,
-    description: 'Chantier principal de construction résidentielle',
-    contact: { name: 'Jean Dupont', phone: '01 23 45 67 89' }
-  },
-  {
-    id: '2',
-    name: 'Bureau Central',
-    type: 'office',
-    address: '456 Avenue des Affaires',
-    city: 'Lyon',
-    region: 'Auvergne-Rhône-Alpes',
-    status: 'active',
-    projectsCount: 8,
-    equipmentCount: 5,
-    contact: { name: 'Marie Martin', phone: '04 56 78 90 12' }
-  },
-  {
-    id: '3',
-    name: 'Entrepôt Sud',
-    type: 'warehouse',
-    address: '789 Zone Industrielle',
-    city: 'Marseille',
-    region: 'Provence-Alpes-Côte d\'Azur',
-    status: 'maintenance',
-    projectsCount: 0,
-    equipmentCount: 45,
-    description: 'Stockage principal des matériaux',
-    contact: { name: 'Pierre Durand', phone: '04 91 23 45 67' }
-  },
-  {
-    id: '4',
-    name: 'Dépôt Nord',
-    type: 'depot',
-    address: '321 Route Industrielle',
-    city: 'Lille',
-    region: 'Hauts-de-France',
-    status: 'inactive',
-    projectsCount: 1,
-    equipmentCount: 8,
-    contact: { name: 'Sophie Leroy', phone: '03 20 12 34 56' }
-  }
-];
-
 const Locations: React.FC = () => {
-  const [locations, setLocations] = useState<Location[]>(mockLocations);
+  const [locations, setLocations] = useState<LocalLocation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [editingLocation, setEditingLocation] = useState<LocalLocation | null>(null);
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        // Initialiser les données de test si nécessaire
+        await LocationService.initializeTestData();
+        
+        // Récupérer les localisations depuis Firebase
+        const firebaseLocations = await LocationService.getAllLocations();
+        
+        // Convertir vers le format local pour compatibilité UI
+        const convertedLocations: LocalLocation[] = firebaseLocations.map(loc => ({
+          id: loc.id,
+          name: loc.name,
+          type: loc.type === 'construction_site' ? 'site' : 
+                loc.type === 'storage' ? 'depot' : loc.type as 'office' | 'warehouse',
+          address: loc.address,
+          city: loc.address.split(',')[1]?.trim() || 'Ville inconnue',
+          region: 'Région',
+          coordinates: loc.coordinates,
+          status: loc.status,
+          projectsCount: Math.floor(Math.random() * 5), // Simulation
+          equipmentCount: loc.equipmentCount,
+          description: loc.description,
+          contact: loc.contact
+        }));
+        
+        setLocations(convertedLocations);
+      } catch (error) {
+        console.error('Erreur lors du chargement des localisations:', error);
+        // Fallback vers données locales en cas d'erreur
+        setLocations([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLocations();
+  }, []);
 
   // Statistiques calculées
   const stats = {

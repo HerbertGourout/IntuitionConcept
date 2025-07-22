@@ -1,11 +1,11 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Filter, Search, MapPin, Calendar, Wrench, TrendingUp, Settings, BarChart3, CheckCircle, AlertTriangle, Grid3X3, Package } from 'lucide-react';
 import EquipmentCard from './EquipmentCard';
 import EquipmentDetailModal from './EquipmentDetailModal';
 import MaintenancePlanningModal from './MaintenancePlanningModal';
 import EquipmentForm from './EquipmentForm';
-import ProjectContext from '../../contexts/ProjectContext';
-import type { Equipment } from '../../types';
+import { EquipmentService } from '../../services/equipmentService';
+import type { Equipment } from '../../types/index';
 
 // Types pour les statuts d'équipement
 const statusOptions = [
@@ -31,12 +31,30 @@ function cleanEquipmentData(equipment: Equipment): Equipment {
     serialNumber: (equipment.serialNumber || '').trim(),
     status: equipment.status || 'available',
     location: (equipment.location || '').trim(),
-    assignedProject: (equipment.assignedProject || '').trim(),
     lastMaintenance: equipment.lastMaintenance || new Date().toISOString(),
     nextMaintenance: equipment.nextMaintenance || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-
-    operator: (equipment.operator || '').trim()
   };
+  
+  // Ajouter les propriétés optionnelles seulement si définies et non vides
+  if (equipment.assignedProject && equipment.assignedProject.trim()) {
+    cleaned.assignedProject = equipment.assignedProject.trim();
+  }
+  
+  if (equipment.operator && equipment.operator.trim()) {
+    cleaned.operator = equipment.operator.trim();
+  }
+  
+  if (equipment.brand && equipment.brand.trim()) {
+    cleaned.brand = equipment.brand.trim();
+  }
+  
+  if (equipment.dailyRate !== undefined) {
+    cleaned.dailyRate = equipment.dailyRate;
+  }
+  
+  if (equipment.description && equipment.description.trim()) {
+    cleaned.description = equipment.description.trim();
+  }
   
   // Ajouter coordinates seulement si défini et valide
   if (equipment.coordinates && 
@@ -54,13 +72,41 @@ function cleanEquipmentData(equipment: Equipment): Equipment {
 }
 
 const Equipment: React.FC = () => {
-  const projectContext = useContext(ProjectContext);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Utiliser la vraie liste d'équipements du projet courant
-  const equipment: Equipment[] = projectContext?.currentProject?.equipment || [];
+  // Charger les équipements depuis Firebase
+  useEffect(() => {
+    const loadEquipment = async () => {
+      try {
+        setLoading(true);
+        
+        // Initialiser les données de test si nécessaire
+        await EquipmentService.initializeTestData();
+        
+        // Charger les équipements
+        const equipmentList = await EquipmentService.getAllEquipment();
+        setEquipment(equipmentList);
+      } catch (error) {
+        console.error('Erreur lors du chargement des équipements:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEquipment();
+
+    // Écouter les changements en temps réel
+    const unsubscribe = EquipmentService.subscribeToEquipment((equipmentList) => {
+      setEquipment(equipmentList);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
   const [showAddEquipment, setShowAddEquipment] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [, setShowDetailModal] = useState(false);
@@ -116,62 +162,37 @@ const Equipment: React.FC = () => {
   ];
 
   const handleAddEquipment = async (values: Equipment) => {
-    if (!projectContext?.currentProject) {
-      console.error('Aucun projet courant sélectionné');
-      return;
-    }
-
-    if (!projectContext.updateProject) {
-      console.error('Fonction updateProject non disponible dans le contexte');
-      return;
-    }
-
     try {
-      console.log('🔧 Ajout d\'équipement avec les valeurs du formulaire:', values);
+      // Nettoyer les données avant ajout
+      const cleanedData = cleanEquipmentData(values);
       
-      // Créer un nouvel équipement avec les valeurs du formulaire
-      const newEquip: Equipment = {
-        id: values.id || Date.now().toString(),
-        name: values.name?.trim() || '',
-        type: values.type || 'other',
-        model: values.model?.trim() || '',
-        serialNumber: values.serialNumber?.trim() || '',
-        status: values.status || 'available',
-        location: values.location?.trim() || '',
-        assignedProject: projectContext.currentProject.id,
-        lastMaintenance: values.lastMaintenance || new Date().toISOString(),
-        nextMaintenance: values.nextMaintenance || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        operator: values.operator?.trim() || ''
-      };
-
-      // Ajouter coordinates seulement si défini et valide
-      if (values.coordinates && 
-          typeof values.coordinates.lat === 'number' && 
-          typeof values.coordinates.lng === 'number') {
-        newEquip.coordinates = values.coordinates;
-      }
-
-      console.log('🔧 Nouvel équipement créé:', newEquip);
+      console.log('Ajout équipement:', cleanedData);
       
-      // Nettoyer tous les équipements existants pour éviter les undefined
-      const currentEquipment = projectContext.currentProject.equipment || [];
-      const cleanedCurrentEquipment = currentEquipment.map(eq => cleanEquipmentData(eq));
-      const updatedList = [...cleanedCurrentEquipment, newEquip];
+      // Ajouter à Firebase
+      await EquipmentService.addEquipment({
+        name: cleanedData.name,
+        type: cleanedData.type,
+        brand: cleanedData.model, // Utiliser model comme brand pour la compatibilité
+        model: cleanedData.model,
+        serialNumber: cleanedData.serialNumber,
+        status: cleanedData.status as Equipment['status'],
+        location: cleanedData.location,
+        // Propriétés requises par l'interface Equipment
+        lastMaintenance: cleanedData.lastMaintenance || new Date().toISOString(),
+        nextMaintenance: cleanedData.nextMaintenance || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 jours dans le futur
+        // Propriétés optionnelles
+        dailyRate: 0, // Valeur par défaut
+        purchaseDate: cleanedData.lastMaintenance ? new Date(cleanedData.lastMaintenance) : undefined,
+        lastMaintenanceDate: cleanedData.lastMaintenance ? new Date(cleanedData.lastMaintenance) : undefined,
+        nextMaintenanceDate: cleanedData.nextMaintenance ? new Date(cleanedData.nextMaintenance) : undefined,
+        description: `Équipement ${cleanedData.name}`,
+        assignedTo: cleanedData.operator
+      });
       
-      console.log('🔧 Liste mise à jour (nettoyée):', updatedList);
-      
-      await projectContext.updateProject(
-        projectContext.currentProject.id,
-        { equipment: updatedList },
-        'Équipement ajouté',
-        'Utilisateur',
-        `Ajout de l'équipement: ${newEquip.name} (${newEquip.type})`
-      );
-
       console.log('✅ Équipement ajouté avec succès');
+      setShowAddEquipment(false);
       
       // Réinitialiser le formulaire
-      setShowAddEquipment(false);
       setNewEquipment({
         id: '',
         name: '',
@@ -180,16 +201,16 @@ const Equipment: React.FC = () => {
         serialNumber: '',
         status: 'available',
         location: '',
-        assignedProject: '',
         lastMaintenance: '',
         nextMaintenance: '',
-    
+        assignedProject: '',
         operator: '',
         coordinates: undefined
       });
       
     } catch (error) {
       console.error('❌ Erreur lors de l\'ajout de l\'équipement:', error);
+      alert('Erreur lors de l\'ajout de l\'équipement. Veuillez réessayer.');
     }
   };
 
@@ -390,42 +411,45 @@ const Equipment: React.FC = () => {
           setSelectedEquipment(null);
           setShowDetailModal(false);
         }}
-        onEdit={(updated) => {
-          if (!projectContext?.currentProject || !projectContext.updateProject) return;
-          const updatedList = equipment.map(eq => eq.id === updated.id ? { ...updated } : eq);
-          projectContext.updateProject(
-            projectContext.currentProject.id,
-            { equipment: updatedList },
-            'Équipement modifié',
-            'Utilisateur',
-            `Modification de l'équipement ${updated.name}`
-          );
-          setSelectedEquipment(updated);
+        onEdit={async (updated) => {
+          try {
+            await EquipmentService.updateEquipment(updated.id, {
+              name: updated.name,
+              type: updated.type,
+              brand: updated.model,
+              model: updated.model,
+              serialNumber: updated.serialNumber,
+              status: updated.status as Equipment['status'],
+              location: updated.location,
+              assignedTo: updated.operator
+            });
+            setSelectedEquipment(updated);
+          } catch (error) {
+            console.error('Erreur lors de la modification:', error);
+            alert('Erreur lors de la modification de l\'équipement.');
+          }
         }}
-        onDelete={(toDelete) => {
-          if (!projectContext?.currentProject || !projectContext.updateProject) return;
-          const updatedList = equipment.filter(eq => eq.id !== toDelete.id);
-          projectContext.updateProject(
-            projectContext.currentProject.id,
-            { equipment: updatedList },
-            'Équipement supprimé',
-            'Utilisateur',
-            `Suppression de l'équipement ${toDelete.name}`
-          );
-          setSelectedEquipment(null);
-          setShowDetailModal(false);
+        onDelete={async (toDelete) => {
+          try {
+            await EquipmentService.deleteEquipment(toDelete.id);
+            setSelectedEquipment(null);
+            setShowDetailModal(false);
+          } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            alert('Erreur lors de la suppression de l\'équipement.');
+          }
         }}
-        onUpdateMaintenance={(updated) => {
-          if (!projectContext?.currentProject || !projectContext.updateProject) return;
-          const updatedList = equipment.map(eq => eq.id === updated.id ? { ...updated } : eq);
-          projectContext.updateProject(
-            projectContext.currentProject.id,
-            { equipment: updatedList },
-            'Maintenance équipement mise à jour',
-            'Utilisateur',
-            `Mise à jour maintenance pour ${updated.name}`
-          );
-          setSelectedEquipment(updated);
+        onUpdateMaintenance={async (updated) => {
+          try {
+            await EquipmentService.updateEquipment(updated.id, {
+              lastMaintenanceDate: updated.lastMaintenance ? new Date(updated.lastMaintenance) : undefined,
+              nextMaintenanceDate: updated.nextMaintenance ? new Date(updated.nextMaintenance) : undefined
+            });
+            setSelectedEquipment(updated);
+          } catch (error) {
+            console.error('Erreur lors de la mise à jour maintenance:', error);
+            alert('Erreur lors de la mise à jour de la maintenance.');
+          }
         }}
       />
 

@@ -1,148 +1,366 @@
-import React, { useState, useContext, useMemo } from 'react';
-import { Plus, Search, Filter, Grid, List, X, ChevronDown, ChevronUp, CheckCircle, Package, Activity } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Document } from '../../types';
-import { Project } from '../../contexts/projectTypes';
-import ProjectContext from '../../contexts/ProjectContext';
-import DocumentUpload from './DocumentUpload';
+import { 
+  FileText, 
+  Image, 
+  FileCheck, 
+  Receipt, 
+  BarChart3, 
+  File, 
+  Search, 
+  Filter, 
+  Upload, 
+  MoreVertical,
+  Eye,
+  Download,
+  Copy,
+  Share2,
+  Trash2,
+  Grid,
+  List,
+  X,
+  ChevronUp,
+  ChevronDown,
+  CheckCircle,
+  Package,
+  Activity
+} from 'lucide-react';
 import DocumentViewer from './DocumentViewer';
-import FolderManager from './FolderManager';
-import TagManager from './TagManager';
-import ShareModal from './ShareModal';
-import ModernDocumentCard from './ModernDocumentCard';
+import { DocumentService, Document } from '../../services/documentService';
+
+// Composant DocumentCard moderne
+interface ModernDocumentCardProps {
+  document: Document;
+  viewMode: 'grid' | 'list';
+  onClick: () => void;
+  onDelete: (e: React.MouseEvent) => void;
+}
+
+const ModernDocumentCard: React.FC<ModernDocumentCardProps> = ({ 
+  document, 
+  viewMode, 
+  onClick, 
+  onDelete 
+}) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fermer le dropdown quand on clique ailleurs
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as Element;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    // Utiliser window.document avec le bon typage
+    if (typeof window !== 'undefined' && window.document) {
+      window.document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        window.document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isDropdownOpen]);
+
+  const getDocumentIcon = (type: Document['type']) => {
+    switch (type) {
+      case 'photo': return <Image className="w-6 h-6" />;
+      case 'plan': return <FileCheck className="w-6 h-6" />;
+      case 'contract': return <FileText className="w-6 h-6" />;
+      case 'invoice': return <Receipt className="w-6 h-6" />;
+      case 'report': return <BarChart3 className="w-6 h-6" />;
+      default: return <File className="w-6 h-6" />;
+    }
+  };
+
+  const getDocumentColor = (type: Document['type']) => {
+    switch (type) {
+      case 'photo': return 'from-green-500 to-emerald-500';
+      case 'plan': return 'from-blue-500 to-cyan-500';
+      case 'contract': return 'from-purple-500 to-pink-500';
+      case 'invoice': return 'from-orange-500 to-red-500';
+      case 'report': return 'from-indigo-500 to-purple-500';
+      default: return 'from-gray-500 to-slate-500';
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      className={`glass-card p-6 cursor-pointer hover:shadow-xl transition-all duration-300 ${
+        viewMode === 'list' ? 'flex items-center space-x-4' : 'space-y-4'
+      }`}
+      onClick={onClick}
+    >
+      <div className={`flex items-center ${viewMode === 'list' ? 'space-x-4' : 'justify-between'}`}>
+        <div className={`p-3 rounded-xl bg-gradient-to-r ${getDocumentColor(document.type)} text-white`}>
+          {getDocumentIcon(document.type)}
+        </div>
+        
+        {viewMode === 'grid' && (
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDropdownOpen(!isDropdownOpen);
+              }}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              title="Plus d'options"
+            >
+              <MoreVertical className="w-4 h-4 text-gray-500" />
+            </button>
+            
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClick();
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>Visualiser</span>
+                  </button>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Télécharger:', document.name);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Télécharger</span>
+                  </button>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(document.url);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span>Copier le lien</span>
+                  </button>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Partager:', document.name);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span>Partager</span>
+                  </button>
+                  
+                  <div className="border-t border-gray-100 my-1"></div>
+                  
+                  <button
+                    onClick={(e) => {
+                      onDelete(e);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Supprimer</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+      
+      <div className={viewMode === 'list' ? 'flex-1' : ''}>
+        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{document.name}</h3>
+        
+        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+          <span>{formatFileSize(document.size)}</span>
+          <span>•</span>
+          <span>{formatDate(document.uploadDate)}</span>
+        </div>
+        
+        {document.description && (
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{document.description}</p>
+        )}
+        
+        <div className="flex flex-wrap gap-2">
+          {document.tags?.slice(0, 3).map((tag) => (
+            <span
+              key={tag}
+              className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+            >
+              {tag}
+            </span>
+          ))}
+          {document.tags && document.tags.length > 3 && (
+            <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
+              +{document.tags.length - 3}
+            </span>
+          )}
+        </div>
+      </div>
+      
+      {viewMode === 'list' && (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Télécharger:', document.name);
+            }}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            title="Télécharger"
+          >
+            <Download className="w-4 h-4 text-gray-500" />
+          </button>
+          
+          <button
+            onClick={onDelete}
+            className="p-2 hover:bg-red-100 rounded-lg transition-colors duration-200"
+            title="Supprimer"
+          >
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      )}
+    </motion.div>
+  );
+};
 
 const Documents: React.FC = () => {
-  const projectContext = useContext(ProjectContext);
-
-  // Générer des documents temporaires basés sur le projet actuel
-  const initialDocuments = projectContext?.currentProject ? generateDocumentsFromProject(projectContext.currentProject) : [];
-
-  const [documents, setDocuments] = useState<Document[]>(initialDocuments);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [isFolderManagerOpen, setIsFolderManagerOpen] = useState(false);
-  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | Document['type']>('all');
-  const [filterProject, setFilterProject] = useState<string>('all');
-  const [selectedFolder, setSelectedFolder] = useState<string>('root');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  // État de chargement (à utiliser pour les opérations asynchrones futures)
-  const [isLoading] = useState(false);
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(true);
 
-  type DocumentType = Document['type'];
-  
-  const documentTypes: { value: DocumentType | 'all'; label: string }[] = [
-    { value: 'all', label: 'Tous les types' },
-    { value: 'plan', label: 'Plans' },
-    { value: 'contract', label: 'Contrats' },
-    { value: 'permit', label: 'Permis' },
-    { value: 'report', label: 'Rapports' },
-    { value: 'photo', label: 'Photos' },
-    { value: 'other', label: 'Autres' }
-  ];
+  // Charger les documents depuis Firebase
+  useEffect(() => {
+    const loadDocuments = async () => {
+      try {
+        setLoading(true);
+        
+        // Initialiser les données de test si nécessaire
+        await DocumentService.initializeTestData();
+        
+        // Charger les documents
+        const docs = await DocumentService.getAllDocuments();
+        setDocuments(docs);
+      } catch (error) {
+        console.error('Erreur lors du chargement des documents:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const filteredDocuments = useMemo(() => {
-    return documents.filter(doc => {
-      const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = filterType === 'all' || doc.type === filterType;
-      const matchesProject = filterProject === 'all' || doc.projectId === filterProject;
-      const matchesTags = selectedTags.length === 0 || selectedTags.some(tag => doc.tags?.includes(tag));
-      const matchesFolder = selectedFolder === 'root' || doc.folderId === selectedFolder;
+    loadDocuments();
 
-      return matchesSearch && matchesType && matchesProject && matchesTags && matchesFolder;
+    // Écouter les changements en temps réel
+    const unsubscribe = DocumentService.subscribeToDocuments((docs) => {
+      setDocuments(docs);
+      setLoading(false);
     });
-  }, [documents, searchTerm, filterType, filterProject, selectedTags, selectedFolder]);
 
-  const availableTags = useMemo(() => {
-    const tags = new Set<string>();
-    documents.forEach(doc => {
-      doc.tags?.forEach(tag => tags.add(tag));
-    });
-    return Array.from(tags);
-  }, [documents]);
+    return () => unsubscribe();
+  }, []);
 
   const handleDocumentClick = (doc: Document) => {
     setSelectedDocument(doc);
   };
 
-  const handleDownload = (e: React.MouseEvent, doc: Document) => {
+  const handleDelete = async (e: React.MouseEvent, doc: Document) => {
+    e.preventDefault();
     e.stopPropagation();
-    // Implémentation du téléchargement
-    console.log('Télécharger le document:', doc.name);
+    
+    const confirmDelete = window.confirm(
+      `Êtes-vous sûr de vouloir supprimer définitivement le document :\n\n"${doc.name}"\n\nCette action est irréversible.`
+    );
+    
+    if (confirmDelete) {
+      try {
+        await DocumentService.deleteDocument(doc.id);
+        console.log(`Document "${doc.name}" supprimé avec succès`);
+      } catch (error) {
+        console.error('Erreur lors de la suppression du document:', error);
+        alert('Erreur lors de la suppression du document. Veuillez réessayer.');
+      }
+    }
   };
 
-  const handleShare = (e: React.MouseEvent, doc: Document) => {
-    e.stopPropagation();
-    setSelectedDocument(doc);
-    setIsShareModalOpen(true);
-  };
-
-
-
-  const handleRemoveTag = (tag: string) => {
-    setSelectedTags(prev => prev.filter(t => t !== tag));
-  };
-
-  const handleTypeFilter = (type: 'all' | Document['type']) => {
-    setFilterType(type);
-  };
-
-
-
-  const handleUpload = (files: File[], metadata: { tags?: string[]; description?: string } = {}) => {
-    const newDocuments: Document[] = files.map(file => {
-      const fileType = file.type.split('/')[1];
-      const docType = (['plan', 'contract', 'permit', 'report', 'photo'].includes(fileType) 
-        ? fileType 
-        : 'other') as Document['type'];
-      
-      return {
-        id: `doc-${Math.random().toString(36).substr(2, 9)}`,
-        name: file.name,
-        type: docType,
-        size: file.size,
-        uploadDate: new Date().toISOString(),
-        projectId: projectContext?.currentProject?.id || '',
-        uploadedBy: 'Utilisateur actuel',
-        version: '1.0',
-        url: '#',
-        folderId: selectedFolder,
-        tags: metadata.tags || [],
-        description: metadata.description || ''
-      };
-    });
-
-    setDocuments(prev => [...prev, ...newDocuments]);
-    setIsUploadOpen(false);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6 flex items-center justify-center">
+        <div className="glass-card p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des documents...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-      {/* Header principal */}
-      <div className="glass-card p-6 mb-6 shadow-xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
+      {/* Header */}
+      <div className="glass-card p-8 mb-8">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg">
-              <Grid className="w-8 h-8" />
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white">
+              <FileText className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                Documents
-              </h1>
-              <p className="text-gray-600 mt-1">Gestion des documents et fichiers du projet</p>
+              <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
+              <p className="text-gray-600 mt-1">Gérez vos documents de projet ({documents.length} documents)</p>
             </div>
           </div>
-          <button
-            onClick={() => setIsUploadOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
           >
-            <Plus className="w-5 h-5" />
-            Nouveau Document
-          </button>
+            <Upload className="w-5 h-5" />
+            <span>Télécharger</span>
+          </motion.button>
         </div>
       </div>
 
@@ -164,12 +382,12 @@ const Documents: React.FC = () => {
           <div className="flex items-center gap-3">
             {/* Bouton Filtres */}
             <button
-              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-100/80 to-gray-200/80 backdrop-blur-sm text-gray-700 rounded-xl font-medium hover:from-gray-200/80 hover:to-gray-300/80 hover:scale-105 transition-all duration-200"
             >
               <Filter className="w-4 h-4" />
               Filtres
-              {isFiltersOpen ? (
+              {isDropdownOpen ? (
                 <ChevronUp className="w-4 h-4" />
               ) : (
                 <ChevronDown className="w-4 h-4" />
@@ -207,7 +425,7 @@ const Documents: React.FC = () => {
 
       {/* Filtres avancés */}
       <AnimatePresence>
-        {isFiltersOpen && (
+        {isDropdownOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -218,58 +436,24 @@ const Documents: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Type de document</label>
                 <select
-                  value={filterType}
-                  onChange={(e) => handleTypeFilter(e.target.value as 'all' | Document['type'])}
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
                   className="w-full bg-white/50 backdrop-blur-sm border border-white/20 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
                 >
-                  {documentTypes.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
+                  <option value="all">Tous les types</option>
+                  <option value="plan">Plans</option>
+                  <option value="contract">Contrats</option>
+                  <option value="permit">Permis</option>
+                  <option value="report">Rapports</option>
+                  <option value="photo">Photos</option>
+                  <option value="other">Autres</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Étiquettes</label>
                 <div className="flex flex-wrap gap-2">
-                  {selectedTags.map(tag => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-700 border border-blue-200 backdrop-blur-sm"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full text-blue-500 hover:bg-blue-500/20 transition-colors duration-200"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-
-                  {availableTags.filter(tag => !selectedTags.includes(tag)).length > 0 && (
-                    <select
-                      value=""
-                      onChange={(e) => {
-                        if (e.target.value && !selectedTags.includes(e.target.value)) {
-                          setSelectedTags([...selectedTags, e.target.value]);
-                        }
-                      }}
-                      className="bg-white/50 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    >
-                      <option value="">+ Ajouter étiquette</option>
-                      {availableTags
-                        .filter(tag => !selectedTags.includes(tag))
-                        .map(tag => (
-                          <option key={tag} value={tag}>
-                            {tag}
-                          </option>
-                        ))
-                      }
-                    </select>
-                  )}
+                  {/* Étiquettes */}
                 </div>
               </div>
 
@@ -277,10 +461,7 @@ const Documents: React.FC = () => {
                 <button
                   onClick={() => {
                     setSearchTerm('');
-                    setFilterType('all');
-                    setFilterProject('all');
-                    setSelectedTags([]);
-                    setSelectedFolder('root');
+                    setSelectedType('all');
                   }}
                   className="px-4 py-2 bg-gradient-to-r from-red-500/10 to-pink-500/10 text-red-600 rounded-lg font-medium hover:from-red-500/20 hover:to-pink-500/20 hover:scale-105 transition-all duration-200"
                 >
@@ -296,7 +477,7 @@ const Documents: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <div className="glass-card p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+            <div className="p-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
               <Grid className="w-6 h-6" />
             </div>
             <div>
@@ -308,7 +489,7 @@ const Documents: React.FC = () => {
 
         <div className="glass-card p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+            <div className="p-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white">
               <CheckCircle className="w-6 h-6" />
             </div>
             <div>
@@ -320,7 +501,7 @@ const Documents: React.FC = () => {
 
         <div className="glass-card p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+            <div className="p-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white">
               <Package className="w-6 h-6" />
             </div>
             <div>
@@ -332,7 +513,7 @@ const Documents: React.FC = () => {
 
         <div className="glass-card p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white">
+            <div className="p-3 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white">
               <Activity className="w-6 h-6" />
             </div>
             <div>
@@ -344,7 +525,7 @@ const Documents: React.FC = () => {
       </div>
 
       {/* Filtres actifs */}
-      {(selectedTags.length > 0 || searchTerm || filterType !== 'all' || selectedFolder !== 'root') && (
+      {(searchTerm || selectedType !== 'all') && (
         <div className="glass-card p-4 mb-6 shadow-lg">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm text-gray-600 font-medium flex items-center gap-2">
@@ -365,46 +546,23 @@ const Documents: React.FC = () => {
               </span>
             )}
 
-            {filterType !== 'all' && (
+            {selectedType !== 'all' && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-700 border border-purple-200 backdrop-blur-sm">
-                Type: {documentTypes.find(t => t.value === filterType)?.label}
+                Type: {selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}
                 <button
                   type="button"
-                  onClick={() => setFilterType('all')}
+                  onClick={() => setSelectedType('all')}
                   className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full text-purple-500 hover:bg-purple-500/20 transition-colors duration-200"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </span>
             )}
-
-            {selectedTags.map(tag => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-700 border border-blue-200 backdrop-blur-sm"
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(tag)}
-                  className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full text-blue-500 hover:bg-blue-500/20 transition-colors duration-200"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
           </div>
         </div>
       )}
 
-      {isLoading ? (
-        <div className="glass-card p-12 text-center shadow-xl">
-          <div className="flex flex-col items-center gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
-            <p className="text-gray-600 font-medium">Chargement des documents...</p>
-          </div>
-        </div>
-      ) : filteredDocuments.length > 0 ? (
+      {documents.length > 0 ? (
         <div
           className={`grid gap-6 ${
             viewMode === 'grid'
@@ -413,16 +571,22 @@ const Documents: React.FC = () => {
           }`}
         >
           <AnimatePresence>
-            {filteredDocuments.map((doc) => (
-              <ModernDocumentCard
-                key={doc.id}
-                document={doc}
-                viewMode={viewMode}
-                onClick={() => handleDocumentClick(doc)}
-                onDownload={(e) => handleDownload(e, doc)}
-                onShare={(e) => handleShare(e, doc)}
-              />
-            ))}
+            {documents
+              .filter(doc => {
+                const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesType = selectedType === 'all' || doc.type === selectedType;
+
+                return matchesSearch && matchesType;
+              })
+              .map((doc) => (
+                <ModernDocumentCard
+                  key={doc.id}
+                  document={doc}
+                  viewMode={viewMode}
+                  onClick={() => handleDocumentClick(doc)}
+                  onDelete={(e) => handleDelete(e, doc)}
+                />
+              ))}
           </AnimatePresence>
         </div>
       ) : (
@@ -437,145 +601,41 @@ const Documents: React.FC = () => {
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">
-                {searchTerm || filterType !== 'all' || selectedTags.length > 0
+                {searchTerm || selectedType !== 'all'
                   ? 'Aucun document trouvé'
                   : 'Aucun document'}
               </h3>
               <p className="text-gray-600 mb-6">
-                {searchTerm || filterType !== 'all' || selectedTags.length > 0
+                {searchTerm || selectedType !== 'all'
                   ? 'Essayez de modifier vos critères de recherche.'
                   : 'Commencez par ajouter votre premier document au projet.'}
               </p>
             </div>
             <button
-              onClick={() => setIsUploadOpen(true)}
+              onClick={() => {
+                // Télécharger un document
+              }}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg"
             >
-              <Plus className="w-5 h-5" />
-              Téléverser un document
+              <Upload className="w-5 h-5" />
+              <span>Télécharger</span>
             </button>
           </div>
         </motion.div>
       )}
 
       {/* Modals */}
-      <DocumentUpload 
-        isOpen={isUploadOpen} 
-        onClose={() => setIsUploadOpen(false)}
-        onUpload={handleUpload}
-        currentFolder={selectedFolder}
-      />
-      
       {selectedDocument && (
         <DocumentViewer
           document={selectedDocument}
           isOpen={!!selectedDocument}
           onClose={() => setSelectedDocument(null)}
-          onShare={() => setIsShareModalOpen(true)}
         />
       )}
-      
-      <FolderManager 
-        isOpen={isFolderManagerOpen} 
-        onClose={() => setIsFolderManagerOpen(false)}
-        selectedFolder={selectedFolder}
-        onFolderSelect={(folderId: string) => setSelectedFolder(folderId)}
-      />
-      
-      <TagManager 
-        isOpen={isTagManagerOpen} 
-        onClose={() => setIsTagManagerOpen(false)}
-        selectedTags={selectedTags}
-        onTagsChange={(tags: string[]) => setSelectedTags(tags)}
-      />
-      
-      <ShareModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        document={selectedDocument!}
-      />
     </div>
   );
 };
 
-// Fonction utilitaire pour générer des documents temporaires basés sur le projet
-const generateDocumentsFromProject = (project: Project): Document[] => {
-  const documentTypes: Document['type'][] = ['plan', 'contract', 'permit', 'report', 'photo', 'other'];
-  const documents: Document[] = [];
 
-  // Documents de base pour le projet
-  documents.push({
-    id: `doc-plan-${project.id}`,
-    name: `Plan d'exécution - ${project.name}`,
-    type: 'plan',
-    size: 2500000, // 2.5 MB
-    uploadDate: project.startDate,
-    projectId: project.id,
-    uploadedBy: 'Pierre Dubois',
-    version: '1.0',
-    url: '#', // URL fictive
-    folderId: 'root',
-    tags: ['plan', 'exécution'],
-    description: `Plan d'exécution pour le projet ${project.name}`
-  });
-
-  documents.push({
-    id: `doc-contract-${project.id}`,
-    name: `Contrat - ${project.name}`,
-    type: 'contract',
-    size: 1200000, // 1.2 MB
-    uploadDate: project.startDate,
-    projectId: project.id,
-    uploadedBy: 'Pierre Dubois',
-    version: '1.0',
-    url: '#', // URL fictive
-    folderId: 'root',
-    tags: ['contrat', 'client'],
-    description: `Contrat signé pour le projet ${project.name}`
-  });
-
-  // Générer des documents pour chaque phase
-  project.phases.forEach((phase, phaseIndex) => {
-    // Document pour la phase
-    documents.push({
-      id: `doc-phase-${phase.id}`,
-      name: `Documentation - ${phase.name}`,
-      type: 'report',
-      size: 800000 + Math.random() * 1000000, // 0.8-1.8 MB
-      uploadDate: phase.startDate,
-      projectId: project.id,
-      uploadedBy: 'Pierre Dubois',
-      version: '1.0',
-      url: '#', // URL fictive
-      folderId: 'phases',
-      tags: ['phase', 'documentation'],
-      description: `Documentation technique pour la phase ${phase.name}`
-    });
-
-    // Documents pour certaines tâches importantes
-    phase.tasks.forEach((task, taskIndex) => {
-      // Ne pas créer un document pour chaque tâche (trop de documents)
-      if (taskIndex % 3 === 0) { // Une tâche sur trois
-        const typeIndex = (phaseIndex + taskIndex) % documentTypes.length;
-        documents.push({
-          id: `doc-task-${task.id}`,
-          name: `${documentTypes[typeIndex].charAt(0).toUpperCase() + documentTypes[typeIndex].slice(1)} - ${task.name}`,
-          type: documentTypes[typeIndex] as Document['type'],
-          size: 500000 + Math.random() * 1500000, // 0.5-2 MB
-          uploadDate: task.dueDate || new Date().toISOString().split('T')[0],
-          projectId: project.id,
-          uploadedBy: 'Pierre Dubois',
-          version: '1.0',
-          url: '#', // URL fictive
-          folderId: 'tasks',
-          tags: [documentTypes[typeIndex], 'tâche'],
-          description: `Document relatif à la tâche ${task.name}`
-        });
-      }
-    });
-  });
-
-  return documents;
-};
 
 export default Documents;

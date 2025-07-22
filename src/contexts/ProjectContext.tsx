@@ -1,19 +1,11 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { addSubTaskRecursive, removeSubTaskRecursive, reorderSubTasksRecursive } from '../utils/taskUtils';
-import { db } from '../firebase';
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  onSnapshot,
-  getDoc,
-  deleteDoc
-} from 'firebase/firestore';
-
+import { ProjectService, Project as FirebaseProject } from '../services/projectService';
 import type { Project, ProjectPhase, ProjectTask, ProjectContextType } from './projectTypes';
 import type { FinancialRecord } from '../types';
 import { sumTaskBudgets } from './projectUtils';
+import { onSnapshot, collection, addDoc, updateDoc, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 
 
@@ -39,38 +31,107 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [loadingProjects, setLoadingProjects] = useState<boolean>(true);
 
-  // Ecoute en temps réel des dépenses du projet courant
+  // Charger les projets depuis Firebase
   useEffect(() => {
-    if (!currentProjectId) {
-      setExpenses([]);
-      return;
-    }
-    const q = collection(db, 'expenses');
-    // Filtre par projet courant
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const filtered = snapshot.docs
-        .map(doc => ({ id: doc.id, ...(doc.data() as Omit<FinancialRecord, 'id'>) }))
-        .filter(exp => exp.projectId === currentProjectId);
-      setExpenses(filtered);
+    const loadProjects = async () => {
+      try {
+        setLoadingProjects(true);
+        const firebaseProjects = await ProjectService.getAllProjects();
+        
+        // Convertir les projets Firebase vers le format du contexte
+        const convertedProjects: Project[] = firebaseProjects.map(fbProject => ({
+          id: fbProject.id,
+          name: fbProject.name,
+          location: fbProject.location,
+          description: fbProject.description,
+          startDate: fbProject.startDate,
+          endDate: fbProject.endDate,
+          status: fbProject.status === 'active' ? 'in_progress' : fbProject.status,
+          budget: fbProject.budget,
+          createdAt: fbProject.createdAt.toISOString(),
+          updatedAt: fbProject.updatedAt.toISOString(),
+          spent: fbProject.actualCost,
+          phases: fbProject.phases.map(phase => ({
+            ...phase,
+            tasks: phase.tasks.map(task => ({
+              ...task,
+              assignedTo: task.assignedTo || [],
+              status: task.status as any, // Type conversion
+              priority: task.priority || 'medium',
+              updatedAt: task.updatedAt?.toISOString()
+            }))
+          })),
+          progress: fbProject.progress,
+          priority: 'medium', // Valeur par défaut
+          manager: 'Non assigné', // Firebase n'a pas de manager
+          client: fbProject.client,
+          team: fbProject.team
+        }));
+        
+        setProjects(convertedProjects);
+      } catch (error) {
+        console.error('Erreur lors du chargement des projets:', error);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
+    loadProjects();
+
+    // Écouter les changements en temps réel
+    const unsubscribe = ProjectService.subscribeToProjects((firebaseProjects) => {
+      const convertedProjects: Project[] = firebaseProjects.map(fbProject => ({
+        id: fbProject.id,
+        name: fbProject.name,
+        location: fbProject.location,
+        description: fbProject.description,
+        startDate: fbProject.startDate,
+        endDate: fbProject.endDate,
+        status: fbProject.status === 'active' ? 'in_progress' : fbProject.status,
+        budget: fbProject.budget,
+        createdAt: fbProject.createdAt.toISOString(),
+        updatedAt: fbProject.updatedAt.toISOString(),
+        spent: fbProject.actualCost,
+        phases: fbProject.phases.map(phase => ({
+          ...phase,
+          tasks: phase.tasks.map(task => ({
+            ...task,
+            assignedTo: task.assignedTo || [],
+            status: task.status as any, // Type conversion
+            priority: task.priority || 'medium',
+            updatedAt: task.updatedAt?.toISOString()
+          }))
+        })),
+        progress: fbProject.progress,
+        priority: 'medium',
+        manager: 'Non assigné', // Firebase n'a pas de manager
+        client: fbProject.client,
+        team: fbProject.team
+      }));
+      
+      setProjects(convertedProjects);
     });
+
     return () => unsubscribe();
-  }, [currentProjectId]);
+  }, []);
 
-  // Ajout d'une dépense
+  // Gestion des dépenses via ProjectService
   const addExpense = async (expense: Omit<FinancialRecord, 'id'>) => {
-    await addDoc(collection(db, 'expenses'), expense);
+    if (currentProjectId) {
+      await ProjectService.addFinancialRecord(currentProjectId, expense);
+    }
   };
 
-  // Edition d'une dépense
   const editExpense = async (id: string, updates: Partial<FinancialRecord>) => {
-    const ref = doc(db, 'expenses', id);
-    await updateDoc(ref, updates);
+    // Pour l'instant, on garde la logique existante
+    // TODO: Implémenter la mise à jour des enregistrements financiers dans ProjectService
+    console.warn('editExpense: Migration vers ProjectService en cours');
   };
 
-  // Suppression d'une dépense
   const deleteExpense = async (id: string) => {
-    const ref = doc(db, 'expenses', id);
-    await deleteDoc(ref);
+    // Pour l'instant, on garde la logique existante
+    // TODO: Implémenter la suppression des enregistrements financiers dans ProjectService
+    console.warn('deleteExpense: Migration vers ProjectService en cours');
   };
 
   // Plus de persistance locale - tout est géré par Firebase

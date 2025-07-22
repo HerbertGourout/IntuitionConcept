@@ -58,6 +58,7 @@ export interface ProjectPhase {
   estimatedBudget?: number;
 }
 
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked' | 'todo' | 'done';
 
 export interface ProjectTask {

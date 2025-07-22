@@ -3,6 +3,7 @@ import ProjectAccessGuard from '../Projects/ProjectAccessGuard';
 import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, BarChart3, Filter, Grid3X3, Settings, Building2 } from 'lucide-react';
 import { ProjectTask, TaskStatus } from '../../contexts/projectTypes';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { TaskService, Task } from '../../services/taskService';
 import TaskModal from './TaskModal';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { message } from 'antd';
@@ -11,15 +12,45 @@ const Tasks: React.FC = () => {
   const projectContext = useProjectContext();
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [currentTask, setCurrentTask] = useState<ProjectTask | null>(null);
+  const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const project = projectContext?.currentProject;
   const phases = project?.phases || [];
   const selectedPhase = phases.find(phase => phase.id === selectedPhaseId);
+  
+  // Filtrer les tâches par phase sélectionnée
+  const phaseTasks = tasks.filter(task => task.phaseId === selectedPhaseId);
+
+  // Charger les tâches depuis Firebase
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setLoading(true);
+        const allTasks = await TaskService.getAllTasks();
+        setTasks(allTasks);
+      } catch (error) {
+        console.error('Erreur lors du chargement des tâches:', error);
+        message.error('Erreur lors du chargement des tâches');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTasks();
+
+    // Écouter les changements en temps réel
+    const unsubscribe = TaskService.subscribeToTasks((updatedTasks) => {
+      setTasks(updatedTasks);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Sélectionner automatiquement la première phase si aucune n'est sélectionnée
-  React.useEffect(() => {
+  useEffect(() => {
     if (phases.length > 0 && !selectedPhaseId) {
       setSelectedPhaseId(phases[0].id);
     }
@@ -35,17 +66,25 @@ const Tasks: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleSaveTask = async (taskData: Partial<ProjectTask>) => {
+  const handleSaveTask = async (taskData: Partial<Task>) => {
     if (!selectedPhase || !project) return;
 
     try {
       if (currentTask) {
         // Édition
-        await projectContext?.updateTask(project.id, selectedPhase.id, currentTask.id, taskData);
+        await TaskService.updateTask(currentTask.id, taskData);
         message.success('Tâche mise à jour avec succès');
       } else {
         // Création
-        await projectContext?.addTask(project.id, selectedPhase.id, taskData as Omit<ProjectTask, 'id'>);
+        const newTaskData = {
+          ...taskData,
+          phaseId: selectedPhase.id,
+          projectId: project.id,
+          status: taskData.status || 'todo' as const,
+          priority: taskData.priority || 'medium' as const
+        } as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>;
+        
+        await TaskService.addTask(newTaskData);
         message.success('Tâche créée avec succès');
       }
       setIsModalVisible(false);
@@ -57,10 +96,8 @@ const Tasks: React.FC = () => {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!selectedPhase || !project) return;
-
     try {
-      await projectContext?.removeTask(project.id, selectedPhase.id, taskId);
+      await TaskService.deleteTask(taskId);
       message.success('Tâche supprimée avec succès');
       setIsModalVisible(false);
       setCurrentTask(null);
@@ -107,7 +144,7 @@ const Tasks: React.FC = () => {
     }
   };
 
-  const renderTaskCard = (task: ProjectTask, index: number) => {
+  const renderTaskCard = (task: Task, index: number) => {
     const isExpanded = expandedTasks.has(task.id);
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
 
@@ -169,7 +206,7 @@ const Tasks: React.FC = () => {
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <h5 className="text-sm font-medium text-gray-700 mb-3">Sous-tâches ({task.subtasks?.length})</h5>
                 <div className="space-y-3 pl-4 border-l-2 border-blue-200">
-                  {task.subtasks?.map((subtask, subIndex) => (
+                  {task.subtasks?.map((subtask) => (
                     <div key={subtask.id} className="bg-white/50 backdrop-blur-sm rounded-lg p-4 border border-white/30">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -392,9 +429,9 @@ const Tasks: React.FC = () => {
               <h2 className="text-xl font-bold text-gray-900">Phases du Projet</h2>
             </div>
             <div className="flex flex-wrap gap-3">
-              {phases.map(phase => {
-                const taskCount = phase.tasks?.length || 0;
-                const isSelected = selectedPhaseId === phase.id;
+              {phases.map((phase) => {
+                const isSelected = phase.id === selectedPhaseId;
+                const taskCount = tasks.filter(task => task.phaseId === phase.id).length;
                 return (
                   <button
                     key={phase.id}
@@ -427,11 +464,16 @@ const Tasks: React.FC = () => {
                 Tâches - {selectedPhase?.name}
               </h2>
               <span className="px-3 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-sm font-medium border border-blue-200">
-                {selectedPhase?.tasks?.length || 0} tâche{(selectedPhase?.tasks?.length || 0) > 1 ? 's' : ''}
+                {phaseTasks.length} tâche{phaseTasks.length > 1 ? 's' : ''}
               </span>
             </div>
 
-            {selectedPhase?.tasks && selectedPhase.tasks.length > 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-600 mt-4">Chargement des tâches...</p>
+              </div>
+            ) : phaseTasks.length > 0 ? (
               <DragDropContext onDragEnd={onDragEnd}>
                 <Droppable droppableId="tasks">
                   {(provided) => (
@@ -440,7 +482,7 @@ const Tasks: React.FC = () => {
                       ref={provided.innerRef}
                       className="space-y-4"
                     >
-                      {selectedPhase.tasks.map((task, index) => 
+                      {phaseTasks.map((task, index) => 
                         renderTaskCard(task, index)
                       )}
                       {provided.placeholder}
@@ -474,7 +516,7 @@ const Tasks: React.FC = () => {
             onSave={handleSaveTask}
             onDelete={currentTask ? handleDeleteTask : undefined}
             teamMembers={(projectContext?.currentProject?.team || []).map(email => ({ id: email, name: email }))}
-            allTasks={selectedPhase?.tasks || []}
+            allTasks={phaseTasks}
           />
         </div>
       </div>

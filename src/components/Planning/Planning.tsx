@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Filter, Plus, BarChart3, Clock, CheckCircle, AlertTriangle, Target, Settings } from 'lucide-react';
+import { Calendar, Filter, Plus, BarChart3, Clock, CheckCircle, AlertTriangle, Target, Settings, Users } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask, ProjectPhase } from '../../contexts/projectTypes';
 import { GlassCard, AnimatedCounter } from '../UI/VisualEffects';
@@ -16,6 +16,77 @@ export const Planning: React.FC = () => {
   const [phaseModalMode, setPhaseModalMode] = useState<'create' | 'edit'>('create');
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null);
   const [phaseError, setPhaseError] = useState('');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [listFilter, setListFilter] = useState<'all' | 'todo' | 'in_progress' | 'done'>('all');
+  const [listSort, setListSort] = useState<'dueDate' | 'priority' | 'name' | 'status'>('dueDate');
+
+  // Fonctions utilitaires pour le calendrier
+  const getCalendarDays = (date: Date): Date[] => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    
+    // Obtenir le premier lundi de la semaine contenant le 1er du mois
+    const startDate = new Date(firstDay);
+    const dayOfWeek = firstDay.getDay();
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    startDate.setDate(firstDay.getDate() - mondayOffset);
+    
+    // Générer 42 jours (6 semaines)
+    const days: Date[] = [];
+    for (let i = 0; i < 42; i++) {
+      const day = new Date(startDate);
+      day.setDate(startDate.getDate() + i);
+      days.push(day);
+    }
+    
+    return days;
+  };
+
+  const getTasksForDay = (date: Date, allTasks: ProjectTask[]): ProjectTask[] => {
+    return allTasks.filter(task => {
+      if (!task.dueDate) return false;
+      const taskDate = new Date(task.dueDate);
+      return taskDate.toDateString() === date.toDateString();
+    });
+  };
+
+  // Fonction de filtrage et tri pour la vue liste
+  const getFilteredAndSortedTasks = (): ProjectTask[] => {
+    let filteredTasks = tasks;
+    
+    // Filtrage par statut
+    if (listFilter !== 'all') {
+      filteredTasks = tasks.filter(task => task.status === listFilter);
+    }
+    
+    // Tri
+    const sortedTasks = [...filteredTasks].sort((a, b) => {
+      switch (listSort) {
+        case 'dueDate':
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        case 'priority':
+          const priorityOrder = { high: 3, medium: 2, low: 1 };
+          const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
+          const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
+          return bPriority - aPriority;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'status':
+          const statusOrder = { todo: 1, in_progress: 2, done: 3 };
+          const aStatus = statusOrder[a.status as keyof typeof statusOrder] || 0;
+          const bStatus = statusOrder[b.status as keyof typeof statusOrder] || 0;
+          return aStatus - bStatus;
+        default:
+          return 0;
+      }
+    });
+    
+    return sortedTasks;
+  };
 
   useEffect(() => {
     if (projectContext.currentProject) {
@@ -445,15 +516,247 @@ export const Planning: React.FC = () => {
             </div>
           )}
           {viewType === 'calendar' && (
-            <div className="text-center py-12">
-              <Calendar className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <p className="text-gray-500">Vue calendrier en développement</p>
+            <div className="space-y-4">
+              {/* En-tête du calendrier */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => {
+                      const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+                      setCurrentDate(prevMonth);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    ←
+                  </button>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                  </h3>
+                  <button 
+                    onClick={() => {
+                      const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                      setCurrentDate(nextMonth);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    →
+                  </button>
+                </div>
+                <button 
+                  onClick={() => setCurrentDate(new Date())}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                >
+                  Aujourd'hui
+                </button>
+              </div>
+
+              {/* Grille du calendrier */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* En-têtes des jours */}
+                {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+                  <div key={day} className="p-3 text-center text-sm font-medium text-gray-600 bg-gray-50 rounded-lg">
+                    {day}
+                  </div>
+                ))}
+                
+                {/* Jours du calendrier */}
+                {getCalendarDays(currentDate).map((day, index) => {
+                  const dayTasks = getTasksForDay(day, tasks);
+                  const isToday = day.toDateString() === new Date().toDateString();
+                  const isCurrentMonth = day.getMonth() === currentDate.getMonth();
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className={`min-h-[100px] p-2 border rounded-lg transition-colors ${
+                        isCurrentMonth ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100'
+                      } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
+                    >
+                      <div className={`text-sm font-medium mb-2 ${
+                        isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                      } ${isToday ? 'text-blue-600' : ''}`}>
+                        {day.getDate()}
+                      </div>
+                      <div className="space-y-1">
+                        {dayTasks.slice(0, 3).map(task => (
+                          <div 
+                            key={task.id}
+                            className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 ${
+                              task.status === 'done' ? 'bg-green-100 text-green-800' :
+                              task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}
+                            title={task.name}
+                          >
+                            {task.name}
+                          </div>
+                        ))}
+                        {dayTasks.length > 3 && (
+                          <div className="text-xs text-gray-500 text-center">
+                            +{dayTasks.length - 3} autres
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Légende */}
+              <div className="flex items-center justify-center gap-6 mt-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-gray-100 rounded"></div>
+                  <span className="text-sm text-gray-600">À faire</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-blue-100 rounded"></div>
+                  <span className="text-sm text-gray-600">En cours</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-100 rounded"></div>
+                  <span className="text-sm text-gray-600">Terminé</span>
+                </div>
+              </div>
             </div>
           )}
           {viewType === 'list' && (
-            <div className="text-center py-12">
-              <Target className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <p className="text-gray-500">Vue liste en développement</p>
+            <div className="space-y-4">
+              {/* Filtres et tri */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <select 
+                    value={listFilter}
+                    onChange={(e) => setListFilter(e.target.value as 'all' | 'todo' | 'in_progress' | 'done')}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">Toutes les tâches</option>
+                    <option value="todo">À faire</option>
+                    <option value="in_progress">En cours</option>
+                    <option value="done">Terminées</option>
+                  </select>
+                  <select 
+                    value={listSort}
+                    onChange={(e) => setListSort(e.target.value as 'dueDate' | 'priority' | 'name' | 'status')}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="dueDate">Trier par date</option>
+                    <option value="priority">Trier par priorité</option>
+                    <option value="name">Trier par nom</option>
+                    <option value="status">Trier par statut</option>
+                  </select>
+                </div>
+                <div className="text-sm text-gray-600">
+                  {getFilteredAndSortedTasks().length} tâche(s)
+                </div>
+              </div>
+
+              {/* Liste des tâches */}
+              {getFilteredAndSortedTasks().length === 0 ? (
+                <div className="text-center py-12">
+                  <Target className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                  <p className="text-gray-500">Aucune tâche ne correspond aux filtres sélectionnés</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {getFilteredAndSortedTasks().map((task) => {
+                    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+                    const daysUntilDue = task.dueDate ? Math.ceil((new Date(task.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+                    
+                    return (
+                      <div 
+                        key={task.id}
+                        className={`bg-white/70 backdrop-blur-sm border rounded-xl p-4 hover:shadow-md transition-all duration-200 ${
+                          isOverdue ? 'border-red-200 bg-red-50/50' : 'border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-semibold text-gray-900">{task.name}</h4>
+                              <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                task.status === 'done' ? 'bg-green-100 text-green-800' :
+                                task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {task.status === 'done' ? 'Terminé' :
+                                 task.status === 'in_progress' ? 'En cours' : 'À faire'}
+                              </div>
+                              {task.priority && (
+                                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                  task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {task.priority === 'high' ? 'Haute' :
+                                   task.priority === 'medium' ? 'Moyenne' : 'Basse'}
+                                </div>
+                              )}
+                              {isOverdue && (
+                                <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                  En retard
+                                </div>
+                              )}
+                            </div>
+                            
+                            {task.description && (
+                              <p className="text-gray-600 text-sm mb-3">{task.description}</p>
+                            )}
+                            
+                            <div className="flex items-center gap-6 text-sm text-gray-500">
+                              {task.assignedTo && (
+                                <div className="flex items-center gap-1">
+                                  <Users size={14} />
+                                  <span>{task.assignedTo}</span>
+                                </div>
+                              )}
+                              {task.dueDate && (
+                                <div className={`flex items-center gap-1 ${
+                                  isOverdue ? 'text-red-600' : daysUntilDue && daysUntilDue <= 3 ? 'text-orange-600' : ''
+                                }`}>
+                                  <Calendar size={14} />
+                                  <span>
+                                    {new Date(task.dueDate).toLocaleDateString('fr-FR')}
+                                    {daysUntilDue !== null && (
+                                      <span className="ml-1">
+                                        ({daysUntilDue > 0 ? `dans ${daysUntilDue}j` : 
+                                          daysUntilDue === 0 ? "aujourd'hui" : 
+                                          `retard de ${Math.abs(daysUntilDue)}j`})
+                                      </span>
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                              {/* Estimation d'heures non disponible dans ProjectTask */}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 ml-4">
+                            <button
+                              onClick={() => {
+                                const newStatus = task.status === 'done' ? 'todo' : 
+                                                task.status === 'todo' ? 'in_progress' : 'done';
+                                handleTaskUpdate(task.id, { status: newStatus });
+                              }}
+                              className={`p-2 rounded-lg transition-colors ${
+                                task.status === 'done' ? 'bg-green-100 text-green-600 hover:bg-green-200' :
+                                task.status === 'in_progress' ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' :
+                                'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                              title="Changer le statut"
+                            >
+                              {task.status === 'done' ? <CheckCircle size={16} /> :
+                               task.status === 'in_progress' ? <Clock size={16} /> :
+                               <Target size={16} />}
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Sous-tâches non disponibles dans ProjectTask */}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

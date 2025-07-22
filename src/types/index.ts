@@ -23,10 +23,11 @@ export interface Project {
 export interface Equipment {
   id: string;
   name: string;
-  type: 'excavator' | 'crane' | 'truck' | 'concrete-mixer' | 'bulldozer' | 'other';
+  type: 'excavator' | 'crane' | 'truck' | 'concrete-mixer' | 'bulldozer' | 'mixer' | 'generator' | 'compressor' | 'other';
+  brand?: string;
   model: string;
   serialNumber: string;
-  status: 'available' | 'in-use' | 'maintenance' | 'out-of-service';
+  status: 'available' | 'in-use' | 'maintenance' | 'out-of-service' | 'in_use' | 'out_of_order';
   location: string;
   assignedProject?: string;
   lastMaintenance: string;
@@ -34,6 +35,23 @@ export interface Equipment {
   dailyRate?: number;
   operator?: string;
   coordinates?: { lat: number; lng: number };
+  // Additional properties for compatibility
+  purchaseDate?: Date;
+  lastMaintenanceDate?: Date;
+  nextMaintenanceDate?: Date;
+  description?: string;
+  specifications?: {
+    power?: string;
+    capacity?: string;
+    weight?: string;
+    dimensions?: string;
+  };
+  projectId?: string;
+  assignedTo?: string;
+  images?: string[];
+  documents?: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Task {

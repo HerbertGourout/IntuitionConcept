@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { Task } from '../../types';
+
 import ReactDOM from 'react-dom';
 import {
   X, Calendar, AlertTriangle, Clock, CheckCircle, ChevronDown,
   Target, Users, DollarSign, FileText, Flag, Zap, Play,
   Layers, ArrowUp, ArrowDown
 } from 'lucide-react';
-import { ProjectTask } from '../../contexts/projectTypes';
+import { ProjectTask, TaskStatus, TaskPriority } from '../../contexts/projectTypes';
 import CostManagement from '../../components/Tasks/CostManagement';
-import { TaskStatus } from '../../contexts/projectTypes';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import TeamService from '../../services/teamService';
 import { TeamMember } from '../../types/team';
 
-type TaskPriority = 'low' | 'medium' | 'high';
+// TaskPriority is now imported from projectTypes
 
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  task: ProjectTask | null;
+  task?: ProjectTask | null;
   onSave: (taskData: Partial<ProjectTask>, isSubTask?: boolean, parentTaskId?: string) => void;
   onDelete?: (taskId: string) => void;
   teamMembers: Array<{ id: string; name: string; role?: string }>;
+  allTasks?: ProjectTask[];
 }
 
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, onDelete, teamMembers }) => {
@@ -37,7 +39,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
   }>({
     name: '',
     description: '',
-    status: 'not_started',
+    status: 'todo',
     priority: 'medium',
     assignedTo: [],
     startDate: '',
@@ -60,7 +62,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     const loadTeamMembers = async () => {
       try {
         const members = await TeamService.getAllMembers();
-        setFirebaseTeamMembers(members);
+        // Dédupliquer les membres par ID et email pour éviter les clés dupliquées
+        const uniqueMembers = members.filter((member, index, self) => 
+          index === self.findIndex(m => m.id === member.id || m.email === member.email)
+        );
+        setFirebaseTeamMembers(uniqueMembers);
       } catch (error) {
         console.error('Erreur lors du chargement des membres:', error);
         // Fallback vers les membres passés en prop si Firebase échoue
@@ -78,7 +84,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
       setFormData({
         name: task.name || '',
         description: task.description || '',
-        status: task.status || 'not_started',
+        status: task.status || 'todo',
         priority: task.priority || 'medium',
         assignedTo: task.assignedTo || [],
         startDate: task.startDate || '',
@@ -99,7 +105,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
       setFormData({
         name: '',
         description: '',
-        status: 'not_started',
+        status: 'todo',
         priority: 'medium',
         assignedTo: [],
         startDate: defaultStartDate,
@@ -117,7 +123,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     }
   }, [task, isOpen]);
 
-  const handleInputChange = <K extends keyof ProjectTask>(field: K, value: ProjectTask[K]) => {
+  const handleInputChange = <K extends keyof typeof formData>(field: K, value: (typeof formData)[K]) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value
@@ -171,7 +177,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         const budgetCourant = typeof formData.budget === 'number' ? formData.budget : 0;
         const totalBudgetAvecCourant = totalBudgetTasks + budgetCourant;
         if (totalBudgetAvecCourant > budgetTotal) {
-          errors.budget = `Le budget total des tâches (${totalBudgetAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}) dépasse le budget de la phase (${budgetTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}).`;
+          errors.budget = `Le budget total des tâches (${totalBudgetAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}) dépasse le budget de la phase (${budgetTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}).`;
         }
       }
     }
@@ -312,19 +318,19 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                   <div className="flex flex-wrap gap-4 items-center justify-between">
                     <div className="flex flex-col text-xs">
                       <span className="font-semibold text-purple-700">Budget phase</span>
-                      <span className="text-lg font-bold">{budgetTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                      <span className="text-lg font-bold">{budgetTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
                     </div>
                     <div className="flex flex-col text-xs">
                       <span className="font-semibold text-orange-700">Budgété (avec cette tâche)</span>
-                      <span className="text-lg font-bold">{totalBudgetAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                      <span className="text-lg font-bold">{totalBudgetAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
                     </div>
                     <div className="flex flex-col text-xs">
                       <span className="font-semibold text-green-700">Dépensé</span>
-                      <span className="text-lg font-bold">{totalSpentTasks.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                      <span className="text-lg font-bold">{totalSpentTasks.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
                     </div>
                     <div className="flex flex-col text-xs">
                       <span className={resteAllouer < 0 ? 'font-semibold text-red-700' : 'font-semibold text-emerald-700'}>Reste à allouer</span>
-                      <span className={resteAllouer < 0 ? 'text-lg font-bold text-red-600' : 'text-lg font-bold text-emerald-600'}>{resteAllouer.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                      <span className={resteAllouer < 0 ? 'text-lg font-bold text-red-600' : 'text-lg font-bold text-emerald-600'}>{resteAllouer.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
                     </div>
                   </div>
                   {/* Progression budgétaire */}
@@ -467,32 +473,50 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                 <span>Assigné à *</span>
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {(firebaseTeamMembers.length > 0 ? firebaseTeamMembers : teamMembers).map(member => (
-                  <label key={member.id} className="flex items-center space-x-2 p-2 rounded-lg bg-white/50 backdrop-blur-sm border border-white/30 hover:bg-white/70 transition-all duration-200">
-                    <input
-                      type="checkbox"
-                      checked={formData.assignedTo?.includes(member.id)}
-                      onChange={() => {
-                        setFormData(prev => {
-                          const assigned = prev.assignedTo || [];
-                          return {
-                            ...prev,
-                            assignedTo: assigned.includes(member.id)
-                              ? assigned.filter(id => id !== member.id)
-                              : [...assigned, member.id]
-                          };
-                        });
-                      }}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{member.name}</span>
-                      {member.role && (
-                        <span className="text-xs text-gray-500 capitalize">{member.role}</span>
-                      )}
-                    </div>
-                  </label>
-                ))}
+                {(() => {
+                  // Utiliser Firebase members en priorité, sinon fallback vers teamMembers
+                  const membersToUse = firebaseTeamMembers.length > 0 ? firebaseTeamMembers : teamMembers;
+                  
+                  // Dédupliquer encore une fois et garantir des clés uniques
+                  const uniqueMembers = membersToUse.filter((member, index, self) => {
+                    // Vérifier que l'ID existe et est unique
+                    if (!member.id) return false;
+                    return index === self.findIndex(m => m.id === member.id);
+                  });
+                  
+                  return uniqueMembers.map((member, index) => {
+                    // Utiliser une clé composée pour garantir l'unicité
+                    const memberEmail = 'email' in member ? member.email : 'no-email';
+                    const uniqueKey = `${member.id}-${index}-${memberEmail || 'no-email'}`;
+                    
+                    return (
+                      <label key={uniqueKey} className="flex items-center space-x-2 p-2 rounded-lg bg-white/50 backdrop-blur-sm border border-white/30 hover:bg-white/70 transition-all duration-200">
+                        <input
+                          type="checkbox"
+                          checked={formData.assignedTo?.includes(member.id)}
+                          onChange={() => {
+                            setFormData(prev => {
+                              const assigned = prev.assignedTo || [];
+                              return {
+                                ...prev,
+                                assignedTo: assigned.includes(member.id)
+                                  ? assigned.filter(id => id !== member.id)
+                                  : [...assigned, member.id]
+                              };
+                            });
+                          }}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{member.name}</span>
+                          {member.role && (
+                            <span className="text-xs text-gray-500 capitalize">{member.role}</span>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  });
+                })()}
               </div>
               {(firebaseTeamMembers.length === 0 && teamMembers.length === 0) && (
                 <div className="text-center p-4 bg-yellow-50/50 border border-yellow-200 rounded-lg">
