@@ -87,7 +87,8 @@ export interface DeliveryNoteItem {
   orderedQuantity: number;
   deliveredQuantity: number;
   unit: string;
-  condition: 'good' | 'damaged' | 'incomplete' | 'rejected';
+  status: 'pending' | 'partial' | 'delivered' | 'excess';
+  condition: 'good' | 'damaged' | 'defective';
   notes?: string;
   photos?: string[]; // URLs des photos de réception
 }

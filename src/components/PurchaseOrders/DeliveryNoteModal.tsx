@@ -58,9 +58,9 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
         deliveryDate: deliveryNote.deliveryDate.split('T')[0], // Format date pour input
         deliveredBy: deliveryNote.deliveredBy || '',
         receivedBy: deliveryNote.receivedBy || '',
-        deliveryAddress: deliveryNote.deliveryAddress || '',
-        transportCompany: deliveryNote.transportCompany || '',
-        vehicleInfo: deliveryNote.vehicleInfo || '',
+        deliveryAddress: '',
+        transportCompany: '',
+        vehicleInfo: '',
         notes: deliveryNote.notes || ''
       });
       setItems(deliveryNote.items.map(item => ({
@@ -145,28 +145,26 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
         notes: ''
       })));
       
-      // Pré-remplir l'adresse de livraison
-      if (po.deliveryAddress) {
-        setFormData(prev => ({ ...prev, deliveryAddress: po.deliveryAddress || '' }));
-      }
+      // Si tu veux pré-remplir une adresse pour l'UI, conserve ce champ dans formData uniquement, mais ne l'utilise pas dans DeliveryNote.
     } else {
       setItems([]);
     }
   };
 
   // Mettre à jour un article
-  const updateItem = (index: number, field: string, value: any) => {
+  const updateItem = (index: number, field: string, value: string | number) => {
     const updatedItems = [...items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
     // Déterminer automatiquement le statut basé sur les quantités
     if (field === 'deliveredQuantity') {
       const item = updatedItems[index];
-      if (value === 0) {
+      const delivered = Number(value);
+      if (delivered === 0) {
         item.status = 'pending';
-      } else if (value < item.orderedQuantity) {
+      } else if (delivered < item.orderedQuantity) {
         item.status = 'partial';
-      } else if (value === item.orderedQuantity) {
+      } else if (delivered === item.orderedQuantity) {
         item.status = 'delivered';
       } else {
         item.status = 'excess';
@@ -209,10 +207,9 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
         })),
         deliveredBy: formData.deliveredBy || undefined,
         receivedBy: formData.receivedBy || undefined,
-        deliveryAddress: formData.deliveryAddress || undefined,
-        transportCompany: formData.transportCompany || undefined,
-        vehicleInfo: formData.vehicleInfo || undefined,
-        notes: formData.notes || undefined
+        notes: formData.notes || undefined,
+        qualityCheck: false,
+        overallCondition: 'good' as DeliveryNote['overallCondition']
       };
 
       if (deliveryNote) {
@@ -231,13 +228,13 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
   };
 
   // Déterminer le statut global de la livraison
-  const determineOverallStatus = (): 'pending' | 'partial' | 'delivered' | 'cancelled' => {
+  const determineOverallStatus = (): 'pending' | 'in_transit' | 'delivered' | 'partially_received' | 'received' | 'rejected' => {
     const deliveredCount = deliveryStats.deliveredItems;
     const partialCount = deliveryStats.partialItems;
     const totalCount = deliveryStats.totalItems;
 
     if (deliveredCount === totalCount) return 'delivered';
-    if (deliveredCount > 0 || partialCount > 0) return 'partial';
+    if (deliveredCount > 0 || partialCount > 0) return 'partially_received';
     return 'pending';
   };
 
@@ -266,7 +263,7 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200/50">
           <div className="flex items-center space-x-3">
@@ -290,7 +287,7 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <form onSubmit={handleSubmit} className="flex-1 p-8 space-y-8 overflow-y-auto">
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Informations générales */}
             <div className="glass-card p-6">
@@ -315,7 +312,7 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                   >
                     <option value="">Sélectionner un bon d'achat</option>
                     {purchaseOrders
-                      .filter(po => po.status === 'approved' || po.status === 'sent')
+                      .filter(po => po.status === 'approved' || po.status === 'ordered')
                       .map(po => (
                         <option key={po.id} value={po.id}>
                           {po.orderNumber} - {po.supplier.name}
@@ -554,7 +551,7 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
           </div>
 
           {/* Footer avec actions */}
-          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50">
+          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 sticky bottom-0 left-0 right-0 z-10">
             <button
               type="button"
               onClick={onClose}
