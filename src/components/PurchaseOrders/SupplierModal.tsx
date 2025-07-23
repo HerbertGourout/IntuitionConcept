@@ -16,6 +16,9 @@ import {
 import { Supplier } from '../../types/purchaseOrder';
 import { usePurchaseOrderContext } from '../../contexts/PurchaseOrderContext';
 
+// Type pour les valeurs possibles du type de fournisseur
+type SupplierType = "materials" | "equipment" | "services" | "transport";
+
 interface SupplierModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -66,6 +69,15 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [globalError, setGlobalError] = useState<string>('');
+
+  // Types de fournisseurs
+  const supplierTypes = [
+    { value: 'materials', label: 'Matériaux', icon: Building },
+    { value: 'equipment', label: 'Équipements', icon: CreditCard },
+    { value: 'services', label: 'Services', icon: User },
+    { value: 'transport', label: 'Transport', icon: MapPin }
+  ];
 
   // Initialiser le formulaire
   useEffect(() => {
@@ -90,7 +102,6 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         isActive: supplier.isActive !== false
       });
     } else {
-      // Réinitialiser pour nouveau fournisseur
       setFormData({
         name: '',
         type: 'materials',
@@ -112,28 +123,24 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
       });
     }
     setErrors({});
+    setGlobalError('');
   }, [supplier]);
 
   // Validation du formulaire
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.name.trim()) {
       newErrors.name = 'Le nom du fournisseur est obligatoire';
     }
-
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Format d\'email invalide';
     }
-
-    if (formData.phone && !/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+    if (formData.phone && !/^[\d\s\-+()]+$/.test(formData.phone)) {
       newErrors.phone = 'Format de téléphone invalide';
     }
-
     if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
       newErrors.website = 'L\'URL doit commencer par http:// ou https://';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -141,15 +148,19 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
   // Soumettre le formulaire
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setGlobalError('');
     if (!validateForm()) {
+      setGlobalError('Veuillez corriger les erreurs dans le formulaire.');
+      return;
+    }
+    if (isNaN(Number(formData.paymentTerms)) || Number(formData.paymentTerms) <= 0) {
+      setGlobalError('Le délai de paiement doit être un nombre positif.');
       return;
     }
 
     setLoading(true);
-    
     try {
-      const supplierData: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt'> = {
+      const supplierData = {
         name: formData.name.trim(),
         type: formData.type,
         contactPerson: formData.contactPerson.trim() || undefined,
@@ -163,7 +174,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         taxId: formData.taxId.trim() || undefined,
         registrationNumber: formData.registrationNumber.trim() || undefined,
         bankAccount: formData.bankAccount.trim() || undefined,
-        paymentTerms: parseInt(formData.paymentTerms) || 30,
+        paymentTerms: parseInt(formData.paymentTerms, 10) || 30,
         rating: formData.rating,
         notes: formData.notes.trim() || undefined,
         isActive: formData.isActive
@@ -174,23 +185,19 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
       } else {
         await addSupplier(supplierData);
       }
-
       onClose();
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde du fournisseur.');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Erreur lors de la sauvegarde du fournisseur:', error);
+        setGlobalError(`Erreur : ${error.message}`);
+      } else {
+        console.error('Erreur lors de la sauvegarde du fournisseur:', error);
+        setGlobalError('Erreur : Échec de la sauvegarde');
+      }
     } finally {
       setLoading(false);
     }
   };
-
-  // Types de fournisseurs
-  const supplierTypes = [
-    { value: 'materials', label: 'Matériaux', icon: Building },
-    { value: 'equipment', label: 'Équipements', icon: CreditCard },
-    { value: 'services', label: 'Services', icon: User },
-    { value: 'transport', label: 'Transport', icon: MapPin }
-  ];
 
   if (!isOpen) return null;
 
@@ -215,20 +222,31 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Fermer le modal"
           >
             <X className="h-6 w-6 text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 p-8 space-y-8 overflow-y-auto">
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Affichage de l'erreur globale */}
+        {globalError && (
+          <div className="mx-6 mt-4 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5" />
+              <span><strong>Erreur :</strong> {globalError}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Formulaire principal */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+          <div className="flex-1 overflow-y-auto p-6 space-y-8">
             {/* Informations de base */}
             <div className="glass-card p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
                 <User className="h-5 w-5 text-blue-600" />
                 <span>Informations de Base</span>
               </h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Nom du fournisseur */}
                 <div className="md:col-span-2">
@@ -241,7 +259,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Nom de l'entreprise"
                     className={`w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 ${
-                      errors.name ? 'border-red-300' : 'border-white/30'
+                      errors.name ? 'border-red-500' : 'border-white/30'
                     }`}
                     required
                   />
@@ -260,7 +278,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                   </label>
                   <select
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as SupplierType })}
                     className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
                     required
                   >
@@ -296,7 +314,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="contact@fournisseur.com"
                     className={`w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 ${
-                      errors.email ? 'border-red-300' : 'border-white/30'
+                      errors.email ? 'border-red-500' : 'border-white/30'
                     }`}
                   />
                   {errors.email && (
@@ -319,7 +337,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+225 XX XX XX XX"
                     className={`w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 ${
-                      errors.phone ? 'border-red-300' : 'border-white/30'
+                      errors.phone ? 'border-red-500' : 'border-white/30'
                     }`}
                   />
                   {errors.phone && (
@@ -338,7 +356,6 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                 <MapPin className="h-5 w-5 text-purple-600" />
                 <span>Adresse</span>
               </h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Adresse complète */}
                 <div className="md:col-span-2">
@@ -408,7 +425,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                     placeholder="https://www.fournisseur.com"
                     className={`w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 ${
-                      errors.website ? 'border-red-300' : 'border-white/30'
+                      errors.website ? 'border-red-500' : 'border-white/30'
                     }`}
                   />
                   {errors.website && (
@@ -427,7 +444,6 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                 <FileText className="h-5 w-5 text-green-600" />
                 <span>Informations Légales et Financières</span>
               </h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Numéro fiscal */}
                 <div>
@@ -499,7 +515,6 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                 <Star className="h-5 w-5 text-yellow-500" />
                 <span>Évaluation et Statut</span>
               </h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Note */}
                 <div>
@@ -515,6 +530,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                         className={`p-1 rounded transition-colors ${
                           star <= formData.rating ? 'text-yellow-500' : 'text-gray-300'
                         }`}
+                        aria-label={`Noter ${star} étoile${star > 1 ? 's' : ''}`}
                       >
                         <Star className="h-6 w-6 fill-current" />
                       </button>
@@ -560,8 +576,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
             </div>
           </div>
 
-          {/* Footer avec actions */}
-          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 sticky bottom-0 left-0 right-0 z-10">
+          {/* Footer */}
+          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 sticky bottom-0 z-10">
             <button
               type="button"
               onClick={onClose}

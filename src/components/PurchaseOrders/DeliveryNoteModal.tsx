@@ -49,13 +49,23 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
   const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState<PurchaseOrder | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Générer un numéro de bon de livraison
+  const generateDeliveryNumber = () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `BL-${year}${month}${day}-${random}`;
+  };
+
   // Initialiser le formulaire
   useEffect(() => {
     if (deliveryNote) {
       setFormData({
         purchaseOrderId: deliveryNote.purchaseOrderId,
         deliveryNumber: deliveryNote.deliveryNumber,
-        deliveryDate: deliveryNote.deliveryDate.split('T')[0], // Format date pour input
+        deliveryDate: deliveryNote.deliveryDate.split('T')[0],
         deliveredBy: deliveryNote.deliveredBy || '',
         receivedBy: deliveryNote.receivedBy || '',
         deliveryAddress: '',
@@ -75,7 +85,6 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
       })));
       setSelectedPurchaseOrder(purchaseOrders.find(po => po.id === deliveryNote.purchaseOrderId) || null);
     } else if (purchaseOrder) {
-      // Initialiser avec un bon d'achat spécifique
       setFormData({
         purchaseOrderId: purchaseOrder.id,
         deliveryNumber: generateDeliveryNumber(),
@@ -99,7 +108,6 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
       })));
       setSelectedPurchaseOrder(purchaseOrder);
     } else {
-      // Réinitialiser pour nouveau bon de livraison
       setFormData({
         purchaseOrderId: '',
         deliveryNumber: generateDeliveryNumber(),
@@ -116,36 +124,22 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
     }
   }, [deliveryNote, purchaseOrder, purchaseOrders]);
 
-  // Générer un numéro de bon de livraison
-  const generateDeliveryNumber = () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `BL-${year}${month}${day}-${random}`;
-  };
-
   // Gérer la sélection du bon d'achat
   const handlePurchaseOrderChange = (purchaseOrderId: string) => {
     const po = purchaseOrders.find(p => p.id === purchaseOrderId);
     setFormData({ ...formData, purchaseOrderId });
     setSelectedPurchaseOrder(po || null);
-    
     if (po) {
-      // Initialiser les articles avec les quantités commandées
       setItems(po.items.map(item => ({
         purchaseOrderItemId: item.id,
         name: item.name,
         orderedQuantity: item.quantity,
         deliveredQuantity: 0,
         unit: item.unit,
-        status: 'pending' as const,
-        condition: 'good' as const,
+        status: 'pending',
+        condition: 'good',
         notes: ''
       })));
-      
-      // Si tu veux pré-remplir une adresse pour l'UI, conserve ce champ dans formData uniquement, mais ne l'utilise pas dans DeliveryNote.
     } else {
       setItems([]);
     }
@@ -155,22 +149,17 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
   const updateItem = (index: number, field: string, value: string | number) => {
     const updatedItems = [...items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
-    
-    // Déterminer automatiquement le statut basé sur les quantités
+
     if (field === 'deliveredQuantity') {
-      const item = updatedItems[index];
       const delivered = Number(value);
-      if (delivered === 0) {
-        item.status = 'pending';
-      } else if (delivered < item.orderedQuantity) {
-        item.status = 'partial';
-      } else if (delivered === item.orderedQuantity) {
-        item.status = 'delivered';
-      } else {
-        item.status = 'excess';
-      }
+      const ordered = updatedItems[index].orderedQuantity;
+
+      if (delivered === 0) updatedItems[index].status = 'pending';
+      else if (delivered < ordered) updatedItems[index].status = 'partial';
+      else if (delivered === ordered) updatedItems[index].status = 'delivered';
+      else updatedItems[index].status = 'excess';
     }
-    
+
     setItems(updatedItems);
   };
 
@@ -183,58 +172,14 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
     damagedItems: items.filter(item => item.condition === 'damaged').length
   };
 
-  // Soumettre le formulaire
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.purchaseOrderId || !formData.deliveryDate || items.length === 0) {
-      alert('Veuillez remplir tous les champs obligatoires.');
-      return;
-    }
-
-    setLoading(true);
-    
-    try {
-      const deliveryNoteData = {
-        purchaseOrderId: formData.purchaseOrderId,
-        purchaseOrder: selectedPurchaseOrder!,
-        deliveryNumber: formData.deliveryNumber,
-        deliveryDate: new Date(formData.deliveryDate).toISOString(),
-        status: determineOverallStatus(),
-        items: items.map((item, index) => ({
-          ...item,
-          id: `item-${Date.now()}-${index}`
-        })),
-        deliveredBy: formData.deliveredBy || undefined,
-        receivedBy: formData.receivedBy || undefined,
-        notes: formData.notes || undefined,
-        qualityCheck: false,
-        overallCondition: 'good' as DeliveryNote['overallCondition']
-      };
-
-      if (deliveryNote) {
-        await updateDeliveryNote(deliveryNote.id, deliveryNoteData);
-      } else {
-        await addDeliveryNote(deliveryNoteData);
-      }
-
-      onClose();
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde du bon de livraison.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Déterminer le statut global de la livraison
+  // Déterminer le statut global
   const determineOverallStatus = (): 'pending' | 'in_transit' | 'delivered' | 'partially_received' | 'received' | 'rejected' => {
-    const deliveredCount = deliveryStats.deliveredItems;
-    const partialCount = deliveryStats.partialItems;
-    const totalCount = deliveryStats.totalItems;
+    const delivered = deliveryStats.deliveredItems;
+    const partial = deliveryStats.partialItems;
+    const total = deliveryStats.totalItems;
 
-    if (deliveredCount === totalCount) return 'delivered';
-    if (deliveredCount > 0 || partialCount > 0) return 'partially_received';
+    if (delivered === total) return 'delivered';
+    if (delivered > 0 || partial > 0) return 'partially_received';
     return 'pending';
   };
 
@@ -256,6 +201,46 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
       case 'damaged': return 'text-red-600 bg-red-50';
       case 'defective': return 'text-orange-600 bg-orange-50';
       default: return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  // Soumettre le formulaire
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.purchaseOrderId || !formData.deliveryDate || items.length === 0) {
+      alert('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const deliveryNoteData = {
+        purchaseOrderId: formData.purchaseOrderId,
+        purchaseOrder: selectedPurchaseOrder!,
+        deliveryNumber: formData.deliveryNumber,
+        deliveryDate: new Date(formData.deliveryDate).toISOString(),
+        status: determineOverallStatus(),
+        items: items.map((item, index) => ({
+          ...item,
+          id: `item-${Date.now()}-${index}`
+        })),
+        deliveredBy: formData.deliveredBy || undefined,
+        receivedBy: formData.receivedBy || undefined,
+        notes: formData.notes || undefined,
+        qualityCheck: false,
+        overallCondition: 'good' as const
+      };
+
+      if (deliveryNote) {
+        await updateDeliveryNote(deliveryNote.id, deliveryNoteData);
+      } else {
+        await addDeliveryNote(deliveryNoteData);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      alert('Erreur lors de la sauvegarde du bon de livraison.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -282,12 +267,14 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Fermer le modal"
           >
             <X className="h-6 w-6 text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 p-8 space-y-8 overflow-y-auto">
+        {/* Formulaire principal */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Informations générales */}
             <div className="glass-card p-6">
@@ -295,7 +282,6 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                 <FileText className="h-5 w-5 text-blue-600" />
                 <span>Informations de Livraison</span>
               </h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Bon d'achat */}
                 <div>
@@ -308,7 +294,7 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                     onChange={(e) => handlePurchaseOrderChange(e.target.value)}
                     className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
                     required
-                    disabled={!!purchaseOrder} // Désactivé si un bon d'achat est pré-sélectionné
+                    disabled={!!purchaseOrder}
                   >
                     <option value="">Sélectionner un bon d'achat</option>
                     {purchaseOrders
@@ -462,7 +448,6 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                 <Package className="h-5 w-5 text-purple-600" />
                 <span>Articles à Réceptionner</span>
               </h3>
-
               {items.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Package className="h-12 w-12 mx-auto mb-2 text-gray-300" />
@@ -473,19 +458,14 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                   {items.map((item, index) => (
                     <div key={index} className="bg-gray-50/50 rounded-lg p-4 border border-gray-200/50">
                       <div className="grid grid-cols-1 md:grid-cols-8 gap-4 items-center">
-                        {/* Nom de l'article */}
                         <div className="md:col-span-2">
                           <div className="font-medium text-gray-900">{item.name}</div>
                           <div className="text-sm text-gray-500">{item.unit}</div>
                         </div>
-
-                        {/* Quantité commandée */}
                         <div className="text-center">
                           <div className="text-sm text-gray-600">Commandée</div>
                           <div className="font-semibold">{item.orderedQuantity}</div>
                         </div>
-
-                        {/* Quantité livrée */}
                         <div>
                           <label className="block text-xs text-gray-600 mb-1">Livrée</label>
                           <input
@@ -493,21 +473,17 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                             value={item.deliveredQuantity}
                             onChange={(e) => updateItem(index, 'deliveredQuantity', parseFloat(e.target.value) || 0)}
                             min="0"
-                            max={item.orderedQuantity * 1.1} // Permettre 10% de surplus
+                            max={item.orderedQuantity * 1.1}
                             step="0.01"
                             className="w-full px-2 py-1 text-sm bg-white border border-gray-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
                         </div>
-
-                        {/* Statut */}
                         <div className="text-center">
                           <div className="flex items-center justify-center space-x-1">
                             {getStatusIcon(item.status)}
                             <span className="text-xs capitalize">{item.status}</span>
                           </div>
                         </div>
-
-                        {/* Condition */}
                         <div>
                           <select
                             value={item.condition}
@@ -519,8 +495,6 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                             <option value="defective">Défectueux</option>
                           </select>
                         </div>
-
-                        {/* Notes */}
                         <div>
                           <input
                             type="text"
@@ -550,8 +524,8 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
             </div>
           </div>
 
-          {/* Footer avec actions */}
-          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 sticky bottom-0 left-0 right-0 z-10">
+          {/* Footer */}
+          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 sticky bottom-0 z-10">
             <button
               type="button"
               onClick={onClose}
