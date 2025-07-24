@@ -25,7 +25,7 @@ interface PurchaseOrderModalProps {
 }
 
 // Typage des champs modifiables dans un article
-type ItemField = 'name' | 'description' | 'quantity' | 'unit' | 'unitPrice' | 'taxRate' | 'specifications' | 'notes' | 'deliveryDate';
+type ItemField = 'name' | 'description' | 'quantity' | 'unit' | 'unitPrice' | 'taxRate' | 'specifications' | 'notes' | 'deliveryDate' | 'materialId' | 'equipmentId';
 
 const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose, order }) => {
   const { addPurchaseOrder, updatePurchaseOrder, suppliers } = usePurchaseOrderContext();
@@ -123,7 +123,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
     } else {
       console.log('[PurchaseOrderModal] Réinitialisation du formulaire pour un nouveau bon');
     }
-  }, [order]);
+  }, [order, suppliers]);
 
   // Ajouter un article
   const addItem = () => {
@@ -209,7 +209,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
         taskId: formData.taskId || undefined,
         supplierId: formData.supplierId,
         supplier: selectedSupplier!,
-        status: order?.status || 'draft' as const,
+        status: order?.status || 'ordered' as const,
         items: items.map((item, index) => ({
           ...item,
           id: `item-${Date.now()}-${index}`
@@ -221,10 +221,10 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
         orderDate: order?.orderDate || new Date().toISOString(),
         requestedDeliveryDate: formData.requestedDeliveryDate || undefined,
         requestedBy: 'Utilisateur actuel', // À remplacer par auth
-        deliveryAddress: formData.deliveryAddress || undefined,
-        deliveryInstructions: formData.deliveryInstructions || undefined,
-        notes: formData.notes || undefined,
-        pdfUrl: pdfUrl || undefined
+        deliveryAddress: formData.deliveryAddress ?? '',
+        deliveryInstructions: formData.deliveryInstructions ?? '',
+        notes: formData.notes ?? '',
+        pdfUrl: pdfUrl ?? ''
       };
 
       if (order) {
@@ -246,7 +246,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200/50">
           <div className="flex items-center space-x-3">
@@ -272,7 +272,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
         </div>
 
         {/* Formulaire principal */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-8">
             {/* Informations générales */}
             <div className="glass-card p-6">
@@ -553,102 +553,181 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
               ) : (
                 <div className="space-y-4">
                   {items.map((item, index) => (
-                    <div key={index} className="bg-gray-50/50 rounded-lg p-4 border border-gray-200/50">
-                      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                        <div className="flex flex-col md:grid md:grid-cols-10 gap-2 items-center">
-                          <input
-                            type="text"
-                            value={item.name}
-                            onChange={e => updateItem(index, 'name', e.target.value)}
-                            className={`px-2 py-1 border-2 rounded-lg focus:ring-2 text-sm ${
-                              formErrors[`item-name-${index}`] ? 'border-red-500' : 'border-white/30'
+                    <div key={index} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                        {/* Sélection d'article */}
+                        <div className="lg:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Article *
+                          </label>
+                          <select
+                            value={
+                              item.equipmentId ? `eq-${item.equipmentId}` :
+                              item.materialId ? `mat-${item.materialId}` :
+                              'custom'
+                            }
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === 'custom') {
+                                updateItem(index, 'name', '');
+                                updateItem(index, 'materialId', '');
+                                updateItem(index, 'equipmentId', '');
+                              } else {
+                                // Logique pour pré-remplir depuis les données existantes
+                                if (value.startsWith('eq-')) {
+                                  const equipmentId = value.replace('eq-', '');
+                                  // Données d'exemple pour les équipements
+                                  const equipmentData: Record<string, { name: string; unit: string }> = {
+                                    '1': { name: 'Pelleteuse CAT 320', unit: 'jour' },
+                                    '2': { name: 'Grue mobile 50T', unit: 'jour' },
+                                    '3': { name: 'Bétonnière 500L', unit: 'heure' }
+                                  };
+                                  const selectedItem = equipmentData[equipmentId as string] || { name: 'Équipement sélectionné', unit: 'pièce' };
+                                  updateItem(index, 'name', selectedItem.name);
+                                  updateItem(index, 'unit', selectedItem.unit);
+                                  updateItem(index, 'equipmentId', equipmentId);
+                                  updateItem(index, 'materialId', '');
+                                } else if (value.startsWith('mat-')) {
+                                  const materialId = value.replace('mat-', '');
+                                  // Données d'exemple pour les matériaux
+                                  const materialData: Record<string, { name: string; unit: string }> = {
+                                    '1': { name: 'Ciment Portland 50kg', unit: 'sac' },
+                                    '2': { name: 'Sable fin', unit: 'm³' },
+                                    '3': { name: 'Gravier 15/25', unit: 'm³' },
+                                    '4': { name: 'Fer à béton Ø12', unit: 'kg' }
+                                  };
+                                  const selectedItem = materialData[materialId as string] || { name: 'Matériau sélectionné', unit: 'kg' };
+                                  updateItem(index, 'name', selectedItem.name);
+                                  updateItem(index, 'unit', selectedItem.unit);
+                                  updateItem(index, 'materialId', materialId);
+                                  updateItem(index, 'equipmentId', '');
+                                }
+                              }
+                            }}
+                            className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
+                              formErrors[`item-name-${index}`] ? 'border-red-500' : 'border-gray-300'
                             }`}
-                            placeholder="Désignation"
-                            title="Nom ou référence de l'article. Obligatoire."
-                            required
-                          />
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={e => updateItem(index, 'description', e.target.value)}
-                            className="px-2 py-1 border-2 rounded-lg focus:ring-2 text-sm border-white/30"
-                            placeholder="Description"
-                            title="Description détaillée de l'article."
-                          />
+                          >
+                            <option value="custom">🆕 Saisie libre</option>
+                            <optgroup label="🔧 Équipements">
+                              <option value="eq-1">Pelleteuse CAT 320</option>
+                              <option value="eq-2">Grue mobile 50T</option>
+                              <option value="eq-3">Bétonnière 500L</option>
+                            </optgroup>
+                            <optgroup label="🧱 Matériaux">
+                              <option value="mat-1">Ciment Portland 50kg</option>
+                              <option value="mat-2">Sable fin m³</option>
+                              <option value="mat-3">Gravier 15/25 m³</option>
+                              <option value="mat-4">Fer à béton Ø12</option>
+                            </optgroup>
+                          </select>
+                          {formErrors[`item-name-${index}`] && (
+                            <p className="mt-1 text-sm text-red-600">{formErrors[`item-name-${index}`]}</p>
+                          )}
+                        </div>
+
+                        {/* Nom personnalisé (si saisie libre) */}
+                        {(!item.materialId && !item.equipmentId) && (
+                          <div className="lg:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Nom de l'article *
+                            </label>
+                            <input
+                              type="text"
+                              value={item.name}
+                              onChange={e => updateItem(index, 'name', e.target.value)}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
+                                formErrors[`item-name-${index}`] ? 'border-red-500' : 'border-gray-300'
+                              }`}
+                              placeholder="Ex: Tuyau PVC Ø110"
+                              required
+                            />
+                          </div>
+                        )}
+
+                        {/* Quantité */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Quantité *
+                          </label>
                           <input
                             type="number"
-                            min={1}
+                            min="0.01"
+                            step="0.01"
                             value={item.quantity}
                             onChange={e => updateItem(index, 'quantity', Number(e.target.value))}
-                            className={`px-2 py-1 border-2 rounded-lg focus:ring-2 text-sm ${
-                              formErrors[`item-quantity-${index}`] ? 'border-red-500' : 'border-white/30'
+                            className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
+                              formErrors[`item-quantity-${index}`] ? 'border-red-500' : 'border-gray-300'
                             }`}
-                            placeholder="Qté"
+                            placeholder="1"
                             required
                           />
-                          <input
-                            type="text"
+                          {formErrors[`item-quantity-${index}`] && (
+                            <p className="mt-1 text-sm text-red-600">{formErrors[`item-quantity-${index}`]}</p>
+                          )}
+                        </div>
+
+                        {/* Unité */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Unité *
+                          </label>
+                          <select
                             value={item.unit}
                             onChange={e => updateItem(index, 'unit', e.target.value)}
-                            className="px-2 py-1 border-2 rounded-lg focus:ring-2 text-sm border-white/30"
-                            placeholder="Unité"
-                            title="Unité de mesure (ex : pièce, kg)."
-                          />
-                          <input
-                            type="number"
-                            min={0}
-                            step={0.01}
-                            value={item.unitPrice}
-                            onChange={e => updateItem(index, 'unitPrice', Number(e.target.value))}
-                            className="px-2 py-1 border-2 rounded-lg focus:ring-2 text-sm border-white/30"
-                            placeholder="Prix unitaire"
-                            title="Prix unitaire TTC."
-                          />
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            step={0.01}
-                            value={item.taxRate}
-                            onChange={e => updateItem(index, 'taxRate', Number(e.target.value))}
-                            className="px-2 py-1 border-2 rounded-lg focus:ring-2 text-sm border-white/30"
-                            placeholder="TVA (%)"
-                            title="Taux de TVA (ex : 18%)."
-                          />
-                          <input
-                            type="text"
-                            value={item.specifications}
-                            onChange={e => updateItem(index, 'specifications', e.target.value)}
-                            className="px-2 py-1 border-2 rounded-lg focus:ring-2 text-sm border-white/30"
-                            placeholder="Spécifications"
-                            title="Exigences techniques spécifiques."
-                          />
-                          <input
-                            type="text"
-                            value={item.notes || ''}
-                            onChange={e => updateItem(index, 'notes', e.target.value)}
-                            className="w-full px-3 py-2 border-2 rounded-lg focus:ring-2 border-white/30"
-                            placeholder="Notes internes"
-                            title="Commentaires internes non visibles par le fournisseur."
-                          />
-                          <div className="flex items-end pb-2">
-                            <button
-                              type="button"
-                              onClick={() => removeItem(index)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Supprimer l'article"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          >
+                            <option value="pièce">pièce</option>
+                            <option value="kg">kg</option>
+                            <option value="m">m</option>
+                            <option value="m²">m²</option>
+                            <option value="m³">m³</option>
+                            <option value="L">L</option>
+                            <option value="sac">sac</option>
+                            <option value="tonne">tonne</option>
+                            <option value="jour">jour</option>
+                            <option value="heure">heure</option>
+                          </select>
                         </div>
-                        <div className="mt-3 pt-3 border-t border-gray-200/50">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Total :</span>
-                            <span className="text-sm font-semibold text-gray-900">
-                              {item.totalPrice.toLocaleString('fr-FR')} FCFA
-                            </span>
+
+                        {/* Prix unitaire estimé */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Prix unitaire (FCFA) *
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={item.unitPrice || ''}
+                            onChange={e => {
+                              const value = e.target.value;
+                              updateItem(index, 'unitPrice', value === '' ? 0 : Number(value));
+                            }}
+                            className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
+                              formErrors[`item-unitPrice-${index}`] ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="Saisir le prix unitaire"
+                            required
+                          />
+                          {formErrors[`item-unitPrice-${index}`] && (
+                            <p className="mt-1 text-sm text-red-600">{formErrors[`item-unitPrice-${index}`]}</p>
+                          )}
+                        </div>
+
+                        {/* Actions et total */}
+                        <div className="lg:col-span-4 flex items-center justify-between pt-3 border-t border-gray-200">
+                          <div className="text-sm text-gray-600">
+                            <strong>Total : {(item.quantity * item.unitPrice).toLocaleString('fr-FR')} FCFA</strong>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(index)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Supprimer l'article"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -696,7 +775,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
         {/* Fin du body scrollable */}
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 sticky bottom-0 z-10">
+        <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}

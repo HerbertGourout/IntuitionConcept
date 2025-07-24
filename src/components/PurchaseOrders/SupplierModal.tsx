@@ -160,25 +160,28 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
 
     setLoading(true);
     try {
-      const supplierData = {
+      // Préparer les données en excluant les valeurs undefined (Firestore ne les accepte pas)
+      const supplierData: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt'> = {
         name: formData.name.trim(),
         type: formData.type,
-        contactPerson: formData.contactPerson.trim() || undefined,
-        email: formData.email.trim() || undefined,
-        phone: formData.phone.trim() || undefined,
-        address: formData.address.trim() || undefined,
-        city: formData.city.trim() || undefined,
-        postalCode: formData.postalCode.trim() || undefined,
-        country: formData.country.trim(),
-        website: formData.website.trim() || undefined,
-        taxId: formData.taxId.trim() || undefined,
-        registrationNumber: formData.registrationNumber.trim() || undefined,
-        bankAccount: formData.bankAccount.trim() || undefined,
+        country: formData.country.trim() || 'Côte d\'Ivoire',
         paymentTerms: parseInt(formData.paymentTerms, 10) || 30,
         rating: formData.rating,
-        notes: formData.notes.trim() || undefined,
         isActive: formData.isActive
       };
+
+      // Ajouter les champs optionnels seulement s'ils ne sont pas vides
+      if (formData.contactPerson.trim()) supplierData.contactPerson = formData.contactPerson.trim();
+      if (formData.email.trim()) supplierData.email = formData.email.trim();
+      if (formData.phone.trim()) supplierData.phone = formData.phone.trim();
+      if (formData.address.trim()) supplierData.address = formData.address.trim();
+      if (formData.city.trim()) supplierData.city = formData.city.trim();
+      if (formData.postalCode.trim()) supplierData.postalCode = formData.postalCode.trim();
+      if (formData.website.trim()) supplierData.website = formData.website.trim();
+      if (formData.taxId.trim()) supplierData.taxId = formData.taxId.trim();
+      if (formData.registrationNumber.trim()) supplierData.registrationNumber = formData.registrationNumber.trim();
+      if (formData.bankAccount.trim()) supplierData.bankAccount = formData.bankAccount.trim();
+      if (formData.notes.trim()) supplierData.notes = formData.notes.trim();
 
       if (supplier) {
         await updateSupplier(supplier.id, supplierData);
@@ -203,7 +206,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-3xl h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200/50">
           <div className="flex items-center space-x-3">
@@ -239,7 +242,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         )}
 
         {/* Formulaire principal */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-8">
             {/* Informations de base */}
             <div className="glass-card p-6">
@@ -577,7 +580,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 sticky bottom-0 z-10">
+          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
