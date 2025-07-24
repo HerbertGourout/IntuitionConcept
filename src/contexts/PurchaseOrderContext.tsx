@@ -14,12 +14,10 @@ const PurchaseOrderContext = createContext<PurchaseOrderContextType | undefined>
 export const PurchaseOrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // États pour les bons d'achat
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [currentPurchaseOrder, setCurrentPurchaseOrder] = useState<PurchaseOrder | null>(null);
   const [loadingPurchaseOrders, setLoadingPurchaseOrders] = useState<boolean>(true);
 
   // États pour les bons de livraison
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
-  const [currentDeliveryNote, setCurrentDeliveryNote] = useState<DeliveryNote | null>(null);
   const [loadingDeliveryNotes, setLoadingDeliveryNotes] = useState<boolean>(true);
 
   // États pour les fournisseurs
@@ -143,12 +141,22 @@ export const PurchaseOrderProvider: React.FC<{ children: ReactNode }> = ({ child
     }
   };
 
-  const receiveDelivery = async (id: string, receivedBy: string, items: any[]) => {
+  const receiveDelivery = async (id: string, receivedBy: string) => {
     try {
       await PurchaseOrderService.receiveDelivery(id, receivedBy, true, 'Livraison réceptionnée');
       // Les données seront mises à jour via l'écoute en temps réel
     } catch (error) {
       console.error('Erreur lors de la réception de la livraison:', error);
+      throw error;
+    }
+  };
+
+  const deleteDeliveryNote = async (id: string) => {
+    try {
+      await PurchaseOrderService.deleteDeliveryNote(id);
+      // Les données seront mises à jour via l'écoute en temps réel
+    } catch (error) {
+      console.error('Erreur lors de la suppression du bon de livraison:', error);
       throw error;
     }
   };
@@ -181,7 +189,6 @@ export const PurchaseOrderProvider: React.FC<{ children: ReactNode }> = ({ child
   const contextValue: PurchaseOrderContextType = {
     // Bons d'achat
     purchaseOrders,
-    currentPurchaseOrder,
     loadingPurchaseOrders,
     addPurchaseOrder,
     updatePurchaseOrder,
@@ -190,11 +197,11 @@ export const PurchaseOrderProvider: React.FC<{ children: ReactNode }> = ({ child
 
     // Bons de livraison
     deliveryNotes,
-    currentDeliveryNote,
     loadingDeliveryNotes,
     addDeliveryNote,
     updateDeliveryNote,
     receiveDelivery,
+    deleteDeliveryNote,
 
     // Fournisseurs
     suppliers,

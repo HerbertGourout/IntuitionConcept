@@ -252,6 +252,16 @@ export class PurchaseOrderService {
     }
   }
 
+  // Supprimer un bon de livraison
+  static async deleteDeliveryNote(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, DELIVERY_NOTES_COLLECTION, id));
+    } catch (error) {
+      console.error('Erreur lors de la suppression du bon de livraison:', error);
+      throw error;
+    }
+  }
+
   // Générer un numéro de bon de livraison unique
   static generateDeliveryNumber(): string {
     const date = new Date();

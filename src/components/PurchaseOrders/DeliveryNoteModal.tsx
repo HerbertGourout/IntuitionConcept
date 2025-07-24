@@ -59,6 +59,20 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
     return `BL-${year}${month}${day}-${random}`;
   };
 
+  // Rafraîchir la liste des bons d'achat quand le modal s'ouvre
+  useEffect(() => {
+    if (isOpen && !deliveryNote && !purchaseOrder) {
+      // Force un petit délai pour s'assurer que les nouveaux bons d'achat sont synchronisés
+      const timer = setTimeout(() => {
+        console.log('Synchronisation des bons d\'achat:', purchaseOrders.length, 'bons disponibles');
+        if (purchaseOrders.length > 0) {
+          console.log('Premier bon d\'achat:', purchaseOrders[0]);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, purchaseOrders.length, deliveryNote, purchaseOrder]);
+
   // Initialiser le formulaire
   useEffect(() => {
     if (deliveryNote) {
@@ -207,15 +221,41 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
   // Soumettre le formulaire
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.purchaseOrderId || !formData.deliveryDate || items.length === 0) {
-      alert('Veuillez remplir tous les champs obligatoires.');
+    
+    console.log('=== DÉBOGAGE SOUMISSION BON DE LIVRAISON ===');
+    console.log('FormData:', formData);
+    console.log('Items:', items);
+    console.log('SelectedPurchaseOrder:', selectedPurchaseOrder);
+    
+    // Validation
+    if (!formData.purchaseOrderId) {
+      console.log('ERREUR: purchaseOrderId manquant');
+      alert('Veuillez sélectionner un bon d\'achat.');
       return;
     }
+    if (!formData.deliveryDate) {
+      console.log('ERREUR: deliveryDate manquante');
+      alert('Veuillez saisir une date de livraison.');
+      return;
+    }
+    if (items.length === 0) {
+      console.log('ERREUR: aucun article à livrer');
+      alert('Aucun article à livrer. Veuillez sélectionner un bon d\'achat contenant des articles.');
+      return;
+    }
+    if (!selectedPurchaseOrder) {
+      console.log('ERREUR: selectedPurchaseOrder est null');
+      alert('Erreur: bon d\'achat non trouvé.');
+      return;
+    }
+    
+    console.log('Validation OK, préparation des données...');
     setLoading(true);
+    
     try {
       const deliveryNoteData = {
         purchaseOrderId: formData.purchaseOrderId,
-        purchaseOrder: selectedPurchaseOrder!,
+        purchaseOrder: selectedPurchaseOrder,
         deliveryNumber: formData.deliveryNumber,
         deliveryDate: new Date(formData.deliveryDate).toISOString(),
         status: determineOverallStatus(),
@@ -223,24 +263,35 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
           ...item,
           id: `item-${Date.now()}-${index}`
         })),
-        deliveredBy: formData.deliveredBy || undefined,
-        receivedBy: formData.receivedBy || undefined,
-        notes: formData.notes || undefined,
+        deliveredBy: formData.deliveredBy || '',
+        receivedBy: formData.receivedBy || '',
+        notes: formData.notes || '',
         qualityCheck: false,
         overallCondition: 'good' as const
       };
+      
+      console.log('Données à sauvegarder:', deliveryNoteData);
 
       if (deliveryNote) {
+        console.log('Mise à jour du bon de livraison existant...');
         await updateDeliveryNote(deliveryNote.id, deliveryNoteData);
       } else {
+        console.log('Création d\'un nouveau bon de livraison...');
         await addDeliveryNote(deliveryNoteData);
       }
+      
+      console.log('Sauvegarde réussie!');
       onClose();
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde du bon de livraison.');
+      console.error('ERREUR lors de la sauvegarde:', error);
+      console.error('Détails de l\'erreur:', {
+        message: error instanceof Error ? error.message : 'Erreur inconnue',
+        stack: error instanceof Error ? error.stack : 'Pas de stack trace'
+      });
+      alert(`Erreur lors de la sauvegarde du bon de livraison: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     } finally {
       setLoading(false);
+      console.log('=== FIN DÉBOGAGE ===');
     }
   };
 
@@ -274,7 +325,7 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
         </div>
 
         {/* Formulaire principal */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Informations générales */}
             <div className="glass-card p-6">
@@ -299,11 +350,15 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                     <option value="">Sélectionner un bon d'achat</option>
                     {purchaseOrders
                       .filter(po => po.status === 'approved' || po.status === 'ordered')
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                       .map(po => (
                         <option key={po.id} value={po.id}>
-                          {po.orderNumber} - {po.supplier.name}
+                          {po.orderNumber} - {po.supplier?.name || 'Fournisseur inconnu'} ({po.status === 'ordered' ? 'Commandé' : 'Approuvé'})
                         </option>
                       ))}
+                    {purchaseOrders.filter(po => po.status === 'approved' || po.status === 'ordered').length === 0 && (
+                      <option disabled>Aucun bon d'achat disponible</option>
+                    )}
                   </select>
                 </div>
 
@@ -525,7 +580,7 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 sticky bottom-0 z-10">
+          <div className="flex items-center justify-end space-x-4 p-6 border-t border-gray-200/50 bg-gray-50/50 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}

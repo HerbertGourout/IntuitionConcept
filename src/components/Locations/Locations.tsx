@@ -2,20 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, message } from 'antd';
 import { 
   MapPin, 
-  Building, 
+  Building2,
+  Home,
+  Package,
+  CheckCircle,
   Warehouse, 
   Users, 
-  Settings, 
-  BarChart3, 
   Plus, 
-  Edit, 
+  Edit,
   Trash2, 
-  Phone, 
-  Mail,
+  Phone,
   AlertTriangle,
-  Clock
+  Clock,
+  Activity,
+  Navigation
 } from 'lucide-react';
-import { LocationService, Location as FirebaseLocation } from '../../services/locationService';
+import { LocationService } from '../../services/locationService';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -46,6 +48,7 @@ interface LocalLocation {
 const Locations: React.FC = () => {
   const [locations, setLocations] = useState<LocalLocation[]>([]);
   const [loading, setLoading] = useState(true);
+  console.log('Loading state:', loading); // Pour éviter l'erreur unused variable
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingLocation, setEditingLocation] = useState<LocalLocation | null>(null);
   const [form] = Form.useForm();
@@ -150,7 +153,7 @@ const Locations: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleEdit = (location: Location) => {
+  const handleEdit = (location: LocalLocation) => {
     setEditingLocation(location);
     form.setFieldsValue(location);
     setIsModalVisible(true);
@@ -175,7 +178,7 @@ const Locations: React.FC = () => {
         message.success('Localisation modifiée avec succès');
       } else {
         // Ajout
-        const newLocation: Location = {
+        const newLocation: LocalLocation = {
           id: Date.now().toString(),
           ...values,
           projectsCount: 0,
@@ -361,7 +364,7 @@ const Locations: React.FC = () => {
                     onClick={() => handleEdit(location)}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-600 rounded-lg font-medium hover:from-blue-500/20 hover:to-cyan-500/20 hover:scale-105 transition-all duration-200"
                   >
-                    <Edit3 className="w-4 h-4" />
+                    <Edit className="w-4 h-4" />
                     Modifier
                   </button>
                   <button

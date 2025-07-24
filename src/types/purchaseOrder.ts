@@ -165,7 +165,6 @@ export interface DeliveryStats {
 export interface PurchaseOrderContextType {
   // Bons d'achat
   purchaseOrders: PurchaseOrder[];
-  currentPurchaseOrder: PurchaseOrder | null;
   loadingPurchaseOrders: boolean;
   
   // Actions bons d'achat
@@ -176,13 +175,13 @@ export interface PurchaseOrderContextType {
   
   // Bons de livraison
   deliveryNotes: DeliveryNote[];
-  currentDeliveryNote: DeliveryNote | null;
   loadingDeliveryNotes: boolean;
   
   // Actions bons de livraison
   addDeliveryNote: (note: Omit<DeliveryNote, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateDeliveryNote: (id: string, updates: Partial<DeliveryNote>) => Promise<void>;
-  receiveDelivery: (id: string, receivedBy: string, items: DeliveryNoteItem[]) => Promise<void>;
+  receiveDelivery: (id: string, receivedBy: string) => Promise<void>;
+  deleteDeliveryNote: (id: string) => Promise<void>;
   
   // Fournisseurs
   suppliers: Supplier[];
