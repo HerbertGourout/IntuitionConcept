@@ -59,30 +59,27 @@ export interface ProjectPhase {
 }
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskStatus = 'not_started' | 'in_progress' | 'completed' | 'blocked' | 'todo' | 'done';
+export type TaskStatus = 'todo' | 'planned' | 'in_progress' | 'done' | 'on_hold' | 'cancelled';
 
 export interface ProjectTask {
   id: string;
   name: string;
   description?: string;
-  status: TaskStatus;
+  status: 'todo' | 'planned' | 'in_progress' | 'done' | 'on_hold' | 'cancelled';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   assignedTo: string[];
-  dueDate?: string;
   startDate?: string;
-  endDate?: string;
-  updatedAt?: string; // Date de dernière modification
-  costItems?: CostItem[];
-  subtasks?: ProjectTask[];
-  parentId?: string;
+  endDate?: string; // Standardized from dueDate
+  dueDate?: string; // Kept for compatibility, can be removed later
+  updatedAt?: string;
   budget?: number;
-  spent?: number; // Dépense réelle pour cette tâche
-  priority?: 'low' | 'medium' | 'high';
-  dependencies?: string[];
+  spent?: number;
   precision?: number;
-  /**
-   * Phase à laquelle cette tâche est rattachée
-   */
+  dependencies?: string[];
+  parentId?: string;
   phaseId?: string;
+  subTasks?: ProjectTask[]; // Standardized from subtasks
+  costItems?: CostItem[];
 }
 
 export interface ProjectSubTask {

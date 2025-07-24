@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ProjectAccessGuard from '../Projects/ProjectAccessGuard';
 import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, BarChart3, Filter, Grid3X3, Settings, Building2 } from 'lucide-react';
-import { ProjectTask, TaskStatus } from '../../contexts/projectTypes';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { ProjectTask, TaskStatus } from '../../contexts/projectTypes';
 import { TaskService, Task } from '../../services/taskService';
 import TaskModal from './TaskModal';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { message } from 'antd';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 const Tasks: React.FC = () => {
   const projectContext = useProjectContext();
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [currentTask, setCurrentTask] = useState<Task | null>(null);
+  const [currentTask, setCurrentTask] = useState<ProjectTask | null>(null);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +22,28 @@ const Tasks: React.FC = () => {
   
   // Filtrer les tâches par phase sélectionnée
   const phaseTasks = tasks.filter(task => task.phaseId === selectedPhaseId);
+  
+  // Convertir Task[] vers ProjectTask[] pour le TaskModal
+  const convertTaskToProjectTask = (task: Task): ProjectTask => {
+    return {
+      id: task.id,
+      name: task.name || 'Tâche sans nom',
+      description: task.description || '',
+      status: task.status,
+      assignedTo: typeof task.assignedTo === 'string'
+        ? [task.assignedTo]
+        : Array.isArray(task.assignedTo)
+          ? task.assignedTo
+          : [],
+      endDate: task.dueDate ? (typeof task.dueDate === 'string' ? task.dueDate : task.dueDate.toISOString()) : undefined,
+      startDate: task.startDate ? (typeof task.startDate === 'string' ? task.startDate : task.startDate.toISOString()) : undefined,
+      priority: task.priority === 'urgent' ? 'urgent' : task.priority as 'low' | 'medium' | 'high',
+      budget: task.estimatedHours ? task.estimatedHours * 50 : undefined,
+      spent: 0
+    };
+  };
+  
+
 
   // Charger les tâches depuis Firebase
   useEffect(() => {
@@ -33,7 +54,7 @@ const Tasks: React.FC = () => {
         setTasks(allTasks);
       } catch (error) {
         console.error('Erreur lors du chargement des tâches:', error);
-        message.error('Erreur lors du chargement des tâches');
+        console.error('Erreur lors du chargement des tâches');
       } finally {
         setLoading(false);
       }
@@ -61,49 +82,65 @@ const Tasks: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleEditTask = (task: ProjectTask) => {
-    setCurrentTask(task);
+  const handleEditTask = (task: Task) => {
+    const projectTask = convertTaskToProjectTask(task);
+    setCurrentTask(projectTask);
     setIsModalVisible(true);
   };
 
-  const handleSaveTask = async (taskData: Partial<Task>) => {
+  const handleSaveTask = async (taskData: Partial<ProjectTask>) => {
     if (!selectedPhase || !project) return;
 
     try {
       if (currentTask) {
-        // Édition
-        await TaskService.updateTask(currentTask.id, taskData);
-        message.success('Tâche mise à jour avec succès');
+        // Édition - Convertir ProjectTask vers Task
+        const taskForUpdate: Partial<Task> = {
+          name: taskData.name,
+          description: taskData.description,
+          status: taskData.status as 'todo' | 'in_progress' | 'done',
+          priority: taskData.priority as 'low' | 'medium' | 'high' | 'urgent',
+          assignedTo: taskData.assignedTo || [],
+          dueDate: taskData.endDate ? new Date(taskData.endDate) : undefined,
+          startDate: taskData.startDate ? new Date(taskData.startDate) : undefined,
+          estimatedHours: taskData.budget ? Math.round(taskData.budget / 50) : undefined
+        };
+        await TaskService.updateTask(currentTask.id, taskForUpdate);
+        console.log('Tâche mise à jour avec succès');
       } else {
-        // Création
-        const newTaskData = {
-          ...taskData,
+        // Création - Convertir ProjectTask vers Task
+        const newTaskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> = {
+          name: taskData.name || 'Nouvelle tâche',
+          description: taskData.description || '',
           phaseId: selectedPhase.id,
           projectId: project.id,
-          status: taskData.status || 'todo' as const,
-          priority: taskData.priority || 'medium' as const
-        } as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>;
+          status: taskData.status === 'done' ? 'done' : (taskData.status as 'todo' | 'in_progress' | 'done') || 'todo',
+          priority: (taskData.priority === 'urgent' ? 'high' : taskData.priority) as 'low' | 'medium' | 'high' || 'medium',
+          assignedTo: taskData.assignedTo || [],
+          dueDate: taskData.endDate ? new Date(taskData.endDate) : undefined,
+          startDate: taskData.startDate ? new Date(taskData.startDate) : undefined,
+          estimatedHours: taskData.budget ? Math.round(taskData.budget / 50) : undefined
+        };
         
         await TaskService.addTask(newTaskData);
-        message.success('Tâche créée avec succès');
+        console.log('Tâche créée avec succès');
       }
       setIsModalVisible(false);
       setCurrentTask(null);
     } catch (error) {
       console.error('Erreur lors de la sauvegarde de la tâche:', error);
-      message.error('Erreur lors de la sauvegarde de la tâche');
+      console.error('Erreur lors de la sauvegarde de la tâche');
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
     try {
       await TaskService.deleteTask(taskId);
-      message.success('Tâche supprimée avec succès');
+      console.log('Tâche supprimée avec succès');
       setIsModalVisible(false);
       setCurrentTask(null);
     } catch (error) {
       console.error('Erreur lors de la suppression de la tâche:', error);
-      message.error('Erreur lors de la suppression de la tâche');
+      console.error('Erreur lors de la suppression de la tâche');
     }
   };
 
@@ -117,7 +154,7 @@ const Tasks: React.FC = () => {
     setExpandedTasks(newExpanded);
   };
 
-  const getStatusColor = (status: TaskStatus): string => {
+  const getStatusColor = (status: Task['status']): string => {
     switch (status) {
       case 'done': return 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200';
       case 'in_progress': return 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 border border-blue-200';
@@ -126,7 +163,7 @@ const Tasks: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: TaskStatus) => {
+  const getStatusIcon = (status: Task['status']) => {
     switch (status) {
       case 'done': return <CheckCircle className="w-4 h-4" />;
       case 'in_progress': return <Clock className="w-4 h-4" />;
@@ -135,7 +172,7 @@ const Tasks: React.FC = () => {
     }
   };
 
-  const getStatusLabel = (status: TaskStatus): string => {
+  const getStatusLabel = (status: Task['status']): string => {
     switch (status) {
       case 'done': return 'Terminée';
       case 'in_progress': return 'En cours';
@@ -146,7 +183,7 @@ const Tasks: React.FC = () => {
 
   const renderTaskCard = (task: Task, index: number) => {
     const isExpanded = expandedTasks.has(task.id);
-    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+    const hasSubtasks = task.subtasks && Array.isArray(task.subtasks) && task.subtasks.length > 0;
 
     return (
       <Draggable key={task.id} draggableId={task.id} index={index}>
@@ -165,10 +202,10 @@ const Tasks: React.FC = () => {
                     {getStatusIcon(task.status)}
                     {getStatusLabel(task.status)}
                   </span>
-                  {task.assignedTo && (
+                  {task.assignedTo && Array.isArray(task.assignedTo) && task.assignedTo.length > 0 && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
                       <Users className="w-3 h-3" />
-                      {task.assignedTo}
+                      {task.assignedTo.join(', ')}
                     </span>
                   )}
                   {task.dueDate && (
@@ -211,14 +248,18 @@ const Tasks: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(subtask.status)}`}>
-                              {getStatusIcon(subtask.status)}
-                              {getStatusLabel(subtask.status)}
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                              subtask.completed 
+                                ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200'
+                                : 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200'
+                            }`}>
+                              {subtask.completed ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                              {subtask.completed ? 'Terminée' : 'En cours'}
                             </span>
                           </div>
                           <h5 className="font-medium text-gray-900 mb-1">{subtask.name}</h5>
-                          {subtask.description && (
-                            <p className="text-gray-600 text-sm">{subtask.description}</p>
+                          {subtask.assignedTo && (
+                            <p className="text-gray-600 text-sm">Assignée à: {subtask.assignedTo}</p>
                           )}
                         </div>
                       </div>
@@ -233,7 +274,7 @@ const Tasks: React.FC = () => {
     );
   };
 
-  const onDragEnd = (result: any) => {
+  const onDragEnd = (result: DropResult) => {
     if (!result.destination || !selectedPhase || !project) return;
 
     const sourceIndex = result.source.index;
@@ -514,9 +555,12 @@ const Tasks: React.FC = () => {
             task={currentTask}
             onClose={() => setIsModalVisible(false)}
             onSave={handleSaveTask}
-            onDelete={currentTask ? handleDeleteTask : undefined}
-            teamMembers={(projectContext?.currentProject?.team || []).map(email => ({ id: email, name: email }))}
-            allTasks={phaseTasks}
+            onDelete={currentTask ? () => handleDeleteTask(currentTask.id) : undefined}
+            teamMembers={(projectContext?.currentProject?.team || []).map(email => ({ 
+              id: email, 
+              name: email.includes('@') ? email.split('@')[0] : email,
+              role: 'member'
+            }))}
           />
         </div>
       </div>

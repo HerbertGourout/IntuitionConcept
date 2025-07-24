@@ -18,7 +18,7 @@ export interface Task {
   name: string;
   description?: string;
   status: 'todo' | 'in_progress' | 'done';
-  priority: 'low' | 'medium' | 'high';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   assignedTo?: string[];
   dueDate?: Date;
   startDate?: Date;
