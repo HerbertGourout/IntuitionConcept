@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Task } from '../../types';
+
 
 import ReactDOM from 'react-dom';
 import {
@@ -49,7 +49,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     dependencies: [],
     costItems: [],
     precision: 3,
-    subtasks: [],
+    subTasks: [],
     phaseId: ''
   });
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
@@ -95,7 +95,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         dependencies: task.dependencies || [],
         costItems: task.costItems || [],
         precision: typeof task.precision === 'number' ? task.precision : 3,
-        subtasks: task.subtasks || []
+        subTasks: task.subTasks || []
       });
       setIsSubTask(!!task.parentId);
       setParentTaskId(task.parentId);
@@ -116,7 +116,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         dependencies: [],
         costItems: [],
         precision: 3,
-        subtasks: []
+        subTasks: []
       });
       setIsSubTask(false);
       setParentTaskId(undefined);
@@ -217,11 +217,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
 
   const getStatusLabel = (status: TaskStatus) => {
     switch (status) {
-      case 'completed':
+      case 'done':
         return 'Terminé';
       case 'in_progress':
         return 'En cours';
-      case 'blocked':
+      case 'on_hold':
         return 'Bloqué';
       default:
         return 'Non commencé';
@@ -600,7 +600,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
           </div>
 
           {/* Section Hiérarchie des Tâches */}
-          {(task?.parentId || (task?.subtasks && task.subtasks.length > 0)) && (
+          {(task?.parentId || (task?.subTasks && task.subTasks.length > 0)) && (
             <div className="glass-card p-6 space-y-6">
               <div className="flex items-center space-x-2 mb-4">
                 <Layers className="w-5 h-5 text-indigo-600" />
@@ -616,14 +616,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                   </div>
                 </div>
               )}
-              {task?.subtasks && task.subtasks.length > 0 && (
+              {task?.subTasks && task.subTasks.length > 0 && (
                 <div className="space-y-3">
                   <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
                     <ArrowDown className="w-4 h-4 text-indigo-500" />
-                    <span>Sous-tâches ({task.subtasks.length})</span>
+                    <span>Sous-tâches ({task.subTasks.length})</span>
                   </label>
                   <div className="glass-card p-4 max-h-48 overflow-y-auto space-y-2">
-                    {task.subtasks.map((subTask) => (
+                    {task.subTasks.map((subTask) => (
                       <div key={subTask.id} className="flex items-center justify-between p-3 bg-white/50 backdrop-blur-sm rounded-lg">
                         <div className="flex items-center space-x-3">
                           <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
@@ -633,7 +633,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                           </div>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(subTask.status)}`}>
-                          {subTask.status === 'completed' ? '✅ 100%' : subTask.status === 'in_progress' ? '⏳ 50%' : '⏸️ 0%'}
+                          {subTask.status === 'done' ? '✅ 100%' : subTask.status === 'in_progress' ? '⏳ 50%' : '⏸️ 0%'}
                         </div>
                       </div>
                     ))}
