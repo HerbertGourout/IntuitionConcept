@@ -3,12 +3,11 @@ import { useState, useEffect } from 'react';
 
 import ReactDOM from 'react-dom';
 import {
-  X, Calendar, AlertTriangle, Clock, CheckCircle, ChevronDown,
-  Target, Users, DollarSign, FileText, Flag, Zap, Play,
+  X, Calendar, AlertTriangle,
+  Target, Users, DollarSign, FileText, Flag,
   Layers, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { ProjectTask, TaskStatus, TaskPriority } from '../../contexts/projectTypes';
-import CostManagement from '../../components/Tasks/CostManagement';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import TeamService from '../../services/teamService';
 import { TeamMember } from '../../types/team';
@@ -55,7 +54,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [isSubTask, setIsSubTask] = useState<boolean>(!!task?.parentId);
   const [parentTaskId, setParentTaskId] = useState<string | undefined>(task?.parentId);
-  const [isDropdownOpen, setIsDropdownOpen] = useState<string | null>(null);
 
   // Charger les membres d'équipe depuis Firebase
   useEffect(() => {
@@ -130,17 +128,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     }));
   };
 
-  const handleToggleAssigned = (memberId: string) => {
-    setFormData((prev) => {
-      const newAssignedTo = prev.assignedTo?.includes(memberId)
-        ? prev.assignedTo.filter(id => id !== memberId)
-        : [...(prev.assignedTo || []), memberId];
-      return {
-        ...prev,
-        assignedTo: newAssignedTo
-      };
-    });
-  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,19 +154,31 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     }
 
     // Validation stricte du budget par rapport à la phase sélectionnée
-    if (formData.phaseId) {
+    if (formData.phaseId && currentProject) {
       const phase = phases.find(p => p.id === formData.phaseId);
       if (phase) {
         const budgetTotal = phase.estimatedBudget || 0;
-        const isEdit = !!(task && task.id);
-        const totalBudgetTasks = (phase.tasks || [])
-          .filter(t => !isEdit || t.id !== task?.id)
-          .reduce((sum, t) => sum + (t.budget || 0), 0);
         const budgetCourant = typeof formData.budget === 'number' ? formData.budget : 0;
-        const totalBudgetAvecCourant = totalBudgetTasks + budgetCourant;
-        if (totalBudgetAvecCourant > budgetTotal) {
-          errors.budget = `Le budget total des tâches (${totalBudgetAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}) dépasse le budget de la phase (${budgetTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}).`;
+        
+        // Calculer le budget utilisé en sommant les budgets des tâches existantes
+        const budgetUtilise = (phase.tasks || [])
+          .filter(t => !task || t.id !== task.id) // Exclure la tâche en cours d'édition
+          .reduce((sum, t) => sum + (t.budget || 0), 0);
+        
+        const budgetRestant = budgetTotal - budgetUtilise;
+        
+        if (budgetCourant > budgetRestant) {
+          errors.budget = `Le budget de cette tâche (${budgetCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}) dépasse le budget restant de la phase (${budgetRestant.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}).`;
         }
+        
+        console.log('Validation budget:', {
+          phaseId: formData.phaseId,
+          budgetTotal,
+          budgetUtilise,
+          budgetRestant,
+          budgetCourant,
+          isValid: budgetCourant <= budgetRestant
+        });
       }
     }
 
@@ -228,18 +228,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     }
   };
 
-  const statusOptions = [
-    { value: 'not_started', label: 'Non commencé', icon: <Clock className="w-4 h-4" /> },
-    { value: 'in_progress', label: 'En cours', icon: <AlertTriangle className="w-4 h-4" /> },
-    { value: 'completed', label: 'Terminé', icon: <CheckCircle className="w-4 h-4" /> },
-    { value: 'blocked', label: 'Bloqué', icon: <X className="w-4 h-4" /> }
-  ];
 
-  const priorityOptions = [
-    { value: 'low', label: 'Basse', color: 'text-green-600' },
-    { value: 'medium', label: 'Moyenne', color: 'text-yellow-600' },
-    { value: 'high', label: 'Haute', color: 'text-red-600' }
-  ];
 
   return isOpen ? ReactDOM.createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -300,19 +289,36 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
             {formData.phaseId && (() => {
               const phase = phases.find(p => p.id === formData.phaseId);
               if (!phase) return null;
-              // Calculs
+              
+              // Calculs basés sur les vraies tâches de la phase
               const budgetTotal = phase.estimatedBudget || 0;
-              // Exclure la tâche en cours si édition (pour éviter double comptage)
               const isEdit = !!(task && task.id);
-              const totalBudgetTasks = (phase.tasks || [])
-                .filter(t => !isEdit || t.id !== task?.id)
+              
+              // Calculer le budget déjà alloué aux tâches existantes de cette phase
+              const existingTasks = (phase.tasks || [])
+                .filter(t => !isEdit || t.id !== task?.id); // Exclure la tâche en cours d'édition
+              
+              const totalBudgetTasks = existingTasks
                 .reduce((sum, t) => sum + (t.budget || 0), 0);
-              const totalSpentTasks = (phase.tasks || [])
+              
+              const totalSpentTasks = existingTasks
                 .reduce((sum, t) => sum + (t.spent || 0), 0);
+              
               // Ajout du budget de la tâche en cours (si renseigné)
               const budgetCourant = typeof formData.budget === 'number' ? formData.budget : 0;
               const totalBudgetAvecCourant = totalBudgetTasks + budgetCourant;
               const resteAllouer = budgetTotal - totalBudgetAvecCourant;
+              
+              console.log('Calcul budget phase:', {
+                phaseId: formData.phaseId,
+                budgetTotal,
+                existingTasksCount: existingTasks.length,
+                totalBudgetTasks,
+                totalSpentTasks,
+                budgetCourant,
+                totalBudgetAvecCourant,
+                resteAllouer
+              });
               return (
                 <div className="glass-card p-4 mb-2 border border-purple-200 bg-gradient-to-br from-purple-50/60 to-white/60 rounded-xl">
                   <div className="flex flex-wrap gap-4 items-center justify-between">

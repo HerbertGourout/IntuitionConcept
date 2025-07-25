@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import ProjectAccessGuard from '../Projects/ProjectAccessGuard';
-import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, BarChart3, Filter, Grid3X3, Settings, Building2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, BarChart3, Filter, Grid3X3 } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
-import { ProjectTask, TaskStatus } from '../../contexts/projectTypes';
+import { ProjectTask } from '../../contexts/projectTypes';
 import { TaskService, Task } from '../../services/taskService';
 import TaskModal from './TaskModal';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -17,12 +16,94 @@ const Tasks: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const project = projectContext?.currentProject;
-  const phases = project?.phases || [];
+  const phases = useMemo(() => project?.phases || [], [project?.phases]);
   const selectedPhase = phases.find(phase => phase.id === selectedPhaseId);
   
+  // Fonction pour charger les tâches depuis les phases du projet
+  const loadTasksFromProject = useCallback(() => {
+    try {
+      setLoading(true);
+      console.log('🔄 Chargement des tâches depuis les phases du projet...');
+      
+      if (!project || !project.phases) {
+        console.log('⚠️ Aucun projet ou phases disponibles');
+        setTasks([]);
+        return;
+      }
+
+      // Extraire toutes les tâches de toutes les phases et les convertir au format Task
+      const allProjectTasks: Task[] = project.phases.flatMap(phase => 
+        (phase.tasks || []).map(task => ({
+          id: task.id,
+          name: task.name || 'Tâche sans nom',
+          description: task.description || '',
+          status: task.status === 'planned' || task.status === 'on_hold' || task.status === 'cancelled' 
+            ? 'todo' as const 
+            : task.status as 'todo' | 'in_progress' | 'done',
+          priority: task.priority === 'urgent' ? 'high' as const : task.priority as 'low' | 'medium' | 'high',
+          assignedTo: task.assignedTo || [],
+          dueDate: task.endDate ? (typeof task.endDate === 'string' ? new Date(task.endDate) : new Date(task.endDate)) : undefined,
+          startDate: task.startDate ? (typeof task.startDate === 'string' ? new Date(task.startDate) : new Date(task.startDate)) : undefined,
+          estimatedHours: task.budget ? Math.round(task.budget / 50) : undefined,
+          actualHours: 0,
+          tags: [],
+          dependencies: task.dependencies || [],
+          phaseId: phase.id,
+          projectId: project.id,
+          subtasks: [],
+          attachments: [],
+          comments: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }))
+      );
+
+      console.log('✅ Tâches chargées depuis le projet:', {
+        count: allProjectTasks.length,
+        tasks: allProjectTasks.map(t => ({ 
+          id: t.id, 
+          name: t.name, 
+          phaseId: t.phaseId, 
+          projectId: t.projectId, 
+          status: t.status 
+        }))
+      });
+      
+      setTasks(allProjectTasks);
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des tâches depuis le projet:', error);
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [project]);
+
   // Filtrer les tâches par phase sélectionnée
-  const phaseTasks = tasks.filter(task => task.phaseId === selectedPhaseId);
+  const phaseTasks = tasks.filter(task => {
+    const matches = task.phaseId === selectedPhaseId;
+    if (!matches) {
+      console.log('Tâche filtrée:', {
+        taskName: task.name,
+        taskPhaseId: task.phaseId,
+        selectedPhaseId,
+        taskProjectId: task.projectId,
+        currentProjectId: project?.id
+      });
+    }
+    return matches;
+  });
   
+  console.log('📋 Tâches pour la phase sélectionnée:', {
+    selectedPhaseId,
+    totalTasks: tasks.length,
+    phaseTasks: phaseTasks.length,
+    phaseTasksDetails: phaseTasks.map(t => ({
+      id: t.id,
+      name: t.name,
+      status: t.status
+    }))
+  });
+
   // Convertir Task[] vers ProjectTask[] pour le TaskModal
   const convertTaskToProjectTask = (task: Task): ProjectTask => {
     return {
@@ -42,33 +123,11 @@ const Tasks: React.FC = () => {
       spent: 0
     };
   };
-  
 
-
-  // Charger les tâches depuis Firebase
+  // Charger les tâches depuis les phases du projet
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        setLoading(true);
-        const allTasks = await TaskService.getAllTasks();
-        setTasks(allTasks);
-      } catch (error) {
-        console.error('Erreur lors du chargement des tâches:', error);
-        console.error('Erreur lors du chargement des tâches');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTasks();
-
-    // Écouter les changements en temps réel
-    const unsubscribe = TaskService.subscribeToTasks((updatedTasks) => {
-      setTasks(updatedTasks);
-    });
-
-    return () => unsubscribe();
-  }, []);
+    loadTasksFromProject();
+  }, [loadTasksFromProject]);
 
   // Sélectionner automatiquement la première phase si aucune n'est sélectionnée
   useEffect(() => {
@@ -118,17 +177,26 @@ const Tasks: React.FC = () => {
           assignedTo: taskData.assignedTo || [],
           dueDate: taskData.endDate ? new Date(taskData.endDate) : undefined,
           startDate: taskData.startDate ? new Date(taskData.startDate) : undefined,
-          estimatedHours: taskData.budget ? Math.round(taskData.budget / 50) : undefined
+          estimatedHours: taskData.budget ? Math.round(taskData.budget / 50) : undefined,
+          actualHours: 0,
+          tags: [],
+          dependencies: [],
+          subtasks: [],
+          attachments: [],
+          comments: []
         };
         
         await TaskService.addTask(newTaskData);
         console.log('Tâche créée avec succès');
       }
+      
+      // Recharger les tâches après sauvegarde pour mettre à jour l'affichage
+      loadTasksFromProject();
+      
       setIsModalVisible(false);
       setCurrentTask(null);
     } catch (error) {
       console.error('Erreur lors de la sauvegarde de la tâche:', error);
-      console.error('Erreur lors de la sauvegarde de la tâche');
     }
   };
 
@@ -136,11 +204,11 @@ const Tasks: React.FC = () => {
     try {
       await TaskService.deleteTask(taskId);
       console.log('Tâche supprimée avec succès');
+      loadTasksFromProject();
       setIsModalVisible(false);
       setCurrentTask(null);
     } catch (error) {
       console.error('Erreur lors de la suppression de la tâche:', error);
-      console.error('Erreur lors de la suppression de la tâche');
     }
   };
 
@@ -237,37 +305,6 @@ const Tasks: React.FC = () => {
                 </button>
               </div>
             </div>
-
-            {/* Sous-tâches */}
-            {hasSubtasks && isExpanded && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <h5 className="text-sm font-medium text-gray-700 mb-3">Sous-tâches ({task.subtasks?.length})</h5>
-                <div className="space-y-3 pl-4 border-l-2 border-blue-200">
-                  {task.subtasks?.map((subtask) => (
-                    <div key={subtask.id} className="bg-white/50 backdrop-blur-sm rounded-lg p-4 border border-white/30">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                              subtask.completed 
-                                ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200'
-                                : 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200'
-                            }`}>
-                              {subtask.completed ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                              {subtask.completed ? 'Terminée' : 'En cours'}
-                            </span>
-                          </div>
-                          <h5 className="font-medium text-gray-900 mb-1">{subtask.name}</h5>
-                          {subtask.assignedTo && (
-                            <p className="text-gray-600 text-sm">Assignée à: {subtask.assignedTo}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </Draggable>
@@ -276,294 +313,191 @@ const Tasks: React.FC = () => {
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination || !selectedPhase || !project) return;
-
-    const sourceIndex = result.source.index;
-    const destinationIndex = result.destination.index;
-
-    if (sourceIndex === destinationIndex) return;
-
-    // Réorganiser les tâches
-    const tasks = Array.from(selectedPhase.tasks || []);
-    const [reorderedTask] = tasks.splice(sourceIndex, 1);
-    tasks.splice(destinationIndex, 0, reorderedTask);
-
-    // Mettre à jour le contexte
-    projectContext?.updatePhase(project.id, selectedPhase.id, {
-      ...selectedPhase,
-      tasks
-    });
+    // Logique de drag and drop ici si nécessaire
   };
 
-  // Vérifier si un projet est sélectionné
-  if (!project) {
+  if (!projectContext || !project) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="glass-card rounded-2xl p-12 text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Target className="w-10 h-10 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Aucun projet sélectionné</h2>
-            <p className="text-gray-600 mb-6">Sélectionnez un projet pour gérer ses tâches.</p>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun projet sélectionné</h3>
+          <p className="text-gray-600">Veuillez sélectionner un projet pour voir les tâches.</p>
         </div>
       </div>
     );
   }
 
-  // Vérifier s'il y a des phases
-  if (!phases.length) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="glass-card rounded-2xl p-12 text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Settings className="w-10 h-10 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Aucune phase créée</h2>
-            <p className="text-gray-600 mb-6">Créez des phases dans la planification pour organiser vos tâches.</p>
-            <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
-              <Plus className="w-5 h-5" />
-              Créer une phase
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!projectContext.currentProject) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="glass-card rounded-2xl p-6">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Building2 className="w-6 h-6 text-orange-500" />
-              Aucun projet sélectionné
-            </h1>
-            <p className="mt-4 text-gray-600">
-              Veuillez sélectionner un projet dans la liste des projets pour continuer.
-            </p>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des tâches...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <ProjectAccessGuard project={projectContext.currentProject!}>
-      <div className="p-6 space-y-6">
-        {/* Header compact - Style Planning */}
-        <div className="glass-card bg-gradient-to-r from-purple-50 via-white to-pink-50 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white">
-                <Target className="w-8 h-8" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Tâches
-                </h1>
-                <p className="text-gray-600 mt-1">Organisez et suivez l'avancement de vos tâches</p>
-              </div>
+    <div className="space-y-6">
+      {/* En-tête */}
+      <div className="glass-card rounded-xl p-6 border border-white/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
+              <Target className="w-6 h-6" />
             </div>
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                Tâches - {selectedPhase?.name || 'Aucune phase sélectionnée'}
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Organisez et suivez l'avancement de vos tâches
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
             <button
               onClick={handleCreateTask}
-              className="btn-glass bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 transition-all duration-200 px-6 py-3 flex items-center gap-2"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Nouvelle Tâche
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Statistiques - Style Planning compact */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="glass-card hover:-translate-y-1 transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="text-gray-500 w-6 h-6" />
-                  <span className="text-gray-600">Total</span>
-                </div>
-                <h3 className="text-2xl font-bold mt-2 text-gray-900">
-                  {tasks.length}
-                </h3>
-              </div>
-              <div className="w-1/2 h-1 bg-gray-500/20 rounded-full">
-                <div className="h-full bg-gray-500 rounded-full" style={{ width: '100%' }}></div>
-              </div>
+      {/* Statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="glass-card rounded-xl p-4 border border-white/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total</p>
+              <p className="text-2xl font-bold text-gray-900">{phaseTasks.length}</p>
+            </div>
+            <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
+              <BarChart3 className="w-5 h-5" />
             </div>
           </div>
-
-            <div className="glass-card rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-2xl font-bold text-gray-900">
-                  {selectedPhase?.tasks?.filter(task => task.status === 'done').length || 0}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Terminées</h3>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-800"
-                  style={{ 
-                    width: selectedPhase?.tasks?.length 
-                      ? `${((selectedPhase.tasks.filter(task => task.status === 'done').length / selectedPhase.tasks.length) * 100)}%` 
-                      : '0%' 
-                  }}
-                ></div>
-              </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 border border-white/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Terminées</p>
+              <p className="text-2xl font-bold text-green-600">{phaseTasks.filter(t => t.status === 'done').length}</p>
             </div>
-
-            <div className="glass-card rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-2xl font-bold text-gray-900">
-                  {selectedPhase?.tasks?.filter(task => task.status === 'in_progress').length || 0}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">En Cours</h3>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-800"
-                  style={{ 
-                    width: selectedPhase?.tasks?.length 
-                      ? `${((selectedPhase.tasks.filter(task => task.status === 'in_progress').length / selectedPhase.tasks.length) * 100)}%` 
-                      : '0%' 
-                  }}
-                ></div>
-              </div>
-            </div>
-
-            <div className="glass-card rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-2xl font-bold text-gray-900">
-                  {selectedPhase?.tasks?.filter(task => task.status === 'todo').length || 0}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">À Faire</h3>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-800"
-                  style={{ 
-                    width: selectedPhase?.tasks?.length 
-                      ? `${((selectedPhase.tasks.filter(task => task.status === 'todo').length / selectedPhase.tasks.length) * 100)}%` 
-                      : '0%' 
-                  }}
-                ></div>
-              </div>
+            <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 text-white">
+              <CheckCircle className="w-5 h-5" />
             </div>
           </div>
-
-          {/* Sélecteur de phases */}
-          <div className="glass-card rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Filter className="w-6 h-6 text-blue-600" />
-              <h2 className="text-xl font-bold text-gray-900">Phases du Projet</h2>
+        </div>
+        <div className="glass-card rounded-xl p-4 border border-white/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">En Cours</p>
+              <p className="text-2xl font-bold text-blue-600">{phaseTasks.filter(t => t.status === 'in_progress').length}</p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {phases.map((phase) => {
-                const isSelected = phase.id === selectedPhaseId;
-                const taskCount = tasks.filter(task => task.phaseId === phase.id).length;
-                return (
-                  <button
-                    key={phase.id}
-                    className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                      isSelected 
-                        ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg hover:shadow-xl hover:scale-105' 
-                        : 'bg-white/70 backdrop-blur-sm text-gray-700 border border-white/30 hover:bg-white/90 hover:shadow-md'
-                    }`}
-                    onClick={() => setSelectedPhaseId(phase.id)}
-                  >
-                    {phase.name}
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      isSelected 
-                        ? 'bg-white/20 text-white' 
-                        : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {taskCount}
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
+              <Clock className="w-5 h-5" />
             </div>
           </div>
-
-          {/* Liste des tâches */}
-          <div className="glass-card rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Grid3X3 className="w-6 h-6 text-blue-600" />
-              <h2 className="text-xl font-bold text-gray-900">
-                Tâches - {selectedPhase?.name}
-              </h2>
-              <span className="px-3 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-sm font-medium border border-blue-200">
-                {phaseTasks.length} tâche{phaseTasks.length > 1 ? 's' : ''}
-              </span>
+        </div>
+        <div className="glass-card rounded-xl p-4 border border-white/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">À Faire</p>
+              <p className="text-2xl font-bold text-gray-600">{phaseTasks.filter(t => t.status === 'todo').length}</p>
             </div>
+            <div className="p-2 rounded-lg bg-gradient-to-br from-gray-500 to-slate-500 text-white">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+      </div>
 
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-600 mt-4">Chargement des tâches...</p>
-              </div>
-            ) : phaseTasks.length > 0 ? (
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="tasks">
-                  {(provided) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="space-y-4"
-                    >
-                      {phaseTasks.map((task, index) => 
-                        renderTaskCard(task, index)
-                      )}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Target className="w-10 h-10 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Aucune tâche dans cette phase</h3>
-                <p className="text-gray-600 mb-6">Commencez par créer votre première tâche pour organiser votre travail.</p>
-                <button
-                  onClick={handleCreateTask}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+      {/* Sélecteur de phase */}
+      <div className="glass-card rounded-xl p-6 border border-white/20">
+        <div className="flex items-center gap-4 mb-4">
+          <Filter className="w-5 h-5 text-gray-600" />
+          <h3 className="text-lg font-semibold text-gray-900">Filtrer par phase</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {phases.map((phase) => (
+            <button
+              key={phase.id}
+              onClick={() => setSelectedPhaseId(phase.id)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                selectedPhaseId === phase.id
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg'
+                  : 'bg-white/50 text-gray-700 hover:bg-white/80 border border-gray-200'
+              }`}
+            >
+              {phase.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Liste des tâches */}
+      <div className="glass-card rounded-xl p-6 border border-white/20">
+        <div className="flex items-center gap-4 mb-6">
+          <Grid3X3 className="w-5 h-5 text-gray-600" />
+          <h3 className="text-lg font-semibold text-gray-900">
+            Tâches de la phase ({phaseTasks.length})
+          </h3>
+        </div>
+
+        {phaseTasks.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="p-4 rounded-full bg-gradient-to-br from-orange-500 to-red-500 text-white inline-flex mb-4">
+              <Target className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune tâche dans cette phase</h3>
+            <p className="text-gray-600 mb-4">
+              Commencez par créer une nouvelle tâche pour organiser votre travail.
+            </p>
+            <button
+              onClick={handleCreateTask}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Créer une tâche
+            </button>
+          </div>
+        ) : (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="tasks">
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="space-y-4"
                 >
-                  <Plus className="w-5 h-5" />
-                  Créer une tâche
-                </button>
-              </div>
-            )}
-          </div>
+                  {phaseTasks.map((task, index) => renderTaskCard(task, index))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        )}
+      </div>
 
-        {/* Modal pour créer/éditer une tâche */}
+      {/* Modal de tâche */}
+      {isModalVisible && (
         <TaskModal
           isOpen={isModalVisible}
-          task={currentTask}
-          onClose={() => setIsModalVisible(false)}
+          onClose={() => {
+            setIsModalVisible(false);
+            setCurrentTask(null);
+          }}
           onSave={handleSaveTask}
-          onDelete={currentTask ? () => handleDeleteTask(currentTask.id) : undefined}
-          teamMembers={(projectContext?.currentProject?.team || []).map(email => ({ 
-            id: email, 
-            name: email.includes('@') ? email.split('@')[0] : email,
-            role: 'member'
-          }))}
+          onDelete={handleDeleteTask}
+          task={currentTask}
+          teamMembers={[]}
         />
-      </div>
-    </ProjectAccessGuard>
+      )}
+    </div>
   );
 };
 
