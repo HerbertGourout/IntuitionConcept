@@ -1,6 +1,7 @@
 import { 
   collection, 
   doc, 
+  getDoc, // Ajout de getDoc
   getDocs, 
   addDoc, 
   updateDoc, 
@@ -19,6 +20,7 @@ import type {
   PurchaseOrderStats, 
   DeliveryStats 
 } from '../types/purchaseOrder';
+import { deletePdfFromFirebase } from '../utils/uploadPdfToFirebase';
 
 const PURCHASE_ORDERS_COLLECTION = 'purchaseOrders';
 const DELIVERY_NOTES_COLLECTION = 'deliveryNotes';
@@ -130,10 +132,31 @@ export class PurchaseOrderService {
 
   // Supprimer un bon d'achat
   static async deletePurchaseOrder(id: string): Promise<void> {
+    const docRef = doc(db, PURCHASE_ORDERS_COLLECTION, id);
     try {
-      await deleteDoc(doc(db, PURCHASE_ORDERS_COLLECTION, id));
+      // 1. Récupérer le document pour vérifier s'il y a un PDF attaché
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const orderData = docSnap.data() as PurchaseOrder;
+
+        // 2. Si un pdfUrl existe, supprimer le fichier de Firebase Storage
+        if (orderData.pdfUrl) {
+          try {
+            await deletePdfFromFirebase(orderData.pdfUrl);
+          } catch (pdfError) {
+            console.error('Erreur lors de la suppression du PDF associé:', pdfError);
+            // On continue la suppression du document même si le PDF échoue,
+            // mais on logue l'erreur pour un suivi.
+          }
+        }
+      }
+
+      // 3. Supprimer le document de Firestore
+      await deleteDoc(docRef);
+
     } catch (error) {
-      console.error('Erreur lors de la suppression du bon d\'achat:', error);
+      console.error(`Erreur lors de la suppression du bon d'achat ${id}:`, error);
       throw error;
     }
   }
@@ -236,28 +259,42 @@ export class PurchaseOrderService {
 
   // Réceptionner une livraison
   static async receiveDelivery(id: string, receivedBy: string, qualityCheck: boolean, notes?: string): Promise<void> {
-    try {
-      const docRef = doc(db, DELIVERY_NOTES_COLLECTION, id);
-      await updateDoc(docRef, {
-        status: 'received',
-        receivedBy,
-        qualityCheck,
-        qualityNotes: notes || '',
-        actualDeliveryDate: new Date().toISOString(),
-        updatedAt: Timestamp.now()
-      });
-    } catch (error) {
-      console.error('Erreur lors de la réception de la livraison:', error);
-      throw error;
-    }
+    const docRef = doc(db, DELIVERY_NOTES_COLLECTION, id);
+    await updateDoc(docRef, {
+      status: 'received',
+      receivedBy,
+      qualityCheck,
+      qualityNotes: notes || '',
+      actualDeliveryDate: new Date().toISOString(),
+      updatedAt: Timestamp.now()
+    });
   }
 
   // Supprimer un bon de livraison
   static async deleteDeliveryNote(id: string): Promise<void> {
     try {
-      await deleteDoc(doc(db, DELIVERY_NOTES_COLLECTION, id));
+      console.log('Service: Tentative de suppression du bon de livraison:', id);
+      
+      // Vérifier que le document existe avant suppression
+      const docRef = doc(db, DELIVERY_NOTES_COLLECTION, id);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        console.warn('Service: Le bon de livraison n\'existe pas:', id);
+        throw new Error(`Le bon de livraison avec l'ID ${id} n'existe pas.`);
+      }
+      
+      console.log('Service: Document trouvé, suppression en cours...', docSnap.data());
+      
+      await deleteDoc(docRef);
+      console.log('Service: Bon de livraison supprimé avec succès:', id);
+      
     } catch (error) {
-      console.error('Erreur lors de la suppression du bon de livraison:', error);
+      console.error('Service: Erreur lors de la suppression du bon de livraison:', {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   }

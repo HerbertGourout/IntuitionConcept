@@ -94,18 +94,31 @@ const PurchaseOrders: React.FC = () => {
   };
 
   const handleDeleteDeliveryNote = async (deliveryNote: DeliveryNote) => {
-    const confirmDelete = window.confirm(
-      `Êtes-vous sûr de vouloir supprimer le bon de livraison "${deliveryNote.deliveryNumber}" ?\n\nCette action est irréversible.`
-    );
+    console.log('UI: Tentative de suppression directe du bon de livraison:', deliveryNote.deliveryNumber);
     
-    if (confirmDelete) {
-      try {
-        await deleteDeliveryNote(deliveryNote.id);
-        alert('Bon de livraison supprimé avec succès.');
-      } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
-        alert('Erreur lors de la suppression du bon de livraison.');
-      }
+    // Suppression directe sans confirmation pour diagnostiquer le problème
+    try {
+      console.log('UI: Début de suppression du bon de livraison:', {
+        id: deliveryNote.id,
+        deliveryNumber: deliveryNote.deliveryNumber,
+        status: deliveryNote.status
+      });
+      
+      await deleteDeliveryNote(deliveryNote.id);
+      
+      console.log('UI: Suppression réussie, affichage du message de succès');
+      alert(`Bon de livraison "${deliveryNote.deliveryNumber}" supprimé avec succès.`);
+      
+    } catch (error) {
+      console.error('UI: Erreur lors de la suppression:', {
+        deliveryNoteId: deliveryNote.id,
+        deliveryNumber: deliveryNote.deliveryNumber,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      alert(`Erreur lors de la suppression du bon de livraison: ${errorMessage}`);
     }
   };
 
@@ -542,7 +555,10 @@ const PurchaseOrders: React.FC = () => {
                       Voir détails
                     </button>
                     <button
-                      onClick={() => handleDeleteDeliveryNote(note)}
+                      onClick={() => {
+                        console.log('BOUTON CLIQUÉ: Tentative de suppression du bon de livraison:', note.id);
+                        handleDeleteDeliveryNote(note);
+                      }}
                       className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 text-sm font-medium"
                       title="Supprimer ce bon de livraison"
                     >

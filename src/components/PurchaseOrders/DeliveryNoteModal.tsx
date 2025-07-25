@@ -348,16 +348,32 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                     disabled={!!purchaseOrder}
                   >
                     <option value="">Sélectionner un bon d'achat</option>
-                    {purchaseOrders
-                      .filter(po => po.status === 'approved' || po.status === 'ordered')
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .map(po => (
+                    {(() => {
+                      console.log('=== DÉBOGAGE FILTRAGE BONS D\'ACHAT ===');
+                      console.log('Nombre total de bons d\'achat:', purchaseOrders.length);
+                      console.log('Bons d\'achat disponibles:', purchaseOrders.map(po => ({ id: po.id, orderNumber: po.orderNumber, status: po.status })));
+                      
+                      const filteredOrders = purchaseOrders
+                        .filter(po => {
+                          // Inclure plus de statuts pour permettre la création de bons de livraison
+                          const allowedStatuses = ['draft', 'pending_approval', 'approved', 'ordered'];
+                          const isAllowed = allowedStatuses.includes(po.status);
+                          console.log(`Bon d'achat ${po.orderNumber} (${po.status}): ${isAllowed ? 'INCLUS' : 'EXCLU'}`);
+                          return isAllowed;
+                        })
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                      
+                      console.log('Bons d\'achat filtrés:', filteredOrders.length);
+                      console.log('=== FIN DÉBOGAGE ===');
+                      
+                      return filteredOrders.map(po => (
                         <option key={po.id} value={po.id}>
-                          {po.orderNumber} - {po.supplier?.name || 'Fournisseur inconnu'} ({po.status === 'ordered' ? 'Commandé' : 'Approuvé'})
+                          {po.orderNumber} - {po.supplier?.name || 'Fournisseur inconnu'} ({po.status === 'ordered' ? 'Commandé' : po.status === 'approved' ? 'Approuvé' : po.status === 'pending_approval' ? 'En attente' : 'Brouillon'})
                         </option>
-                      ))}
-                    {purchaseOrders.filter(po => po.status === 'approved' || po.status === 'ordered').length === 0 && (
-                      <option disabled>Aucun bon d'achat disponible</option>
+                      ));
+                    })()}
+                    {purchaseOrders.filter(po => ['draft', 'pending_approval', 'approved', 'ordered'].includes(po.status)).length === 0 && (
+                      <option disabled>Aucun bon d'achat disponible - Créez d'abord un bon d'achat</option>
                     )}
                   </select>
                 </div>

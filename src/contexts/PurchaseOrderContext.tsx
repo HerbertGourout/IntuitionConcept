@@ -102,10 +102,12 @@ export const PurchaseOrderProvider: React.FC<{ children: ReactNode }> = ({ child
 
   const deletePurchaseOrder = async (id: string) => {
     try {
+      console.log('Contexte: Tentative de suppression du bon d\'achat:', id);
       await PurchaseOrderService.deletePurchaseOrder(id);
+      console.log('Contexte: Bon d\'achat supprimé avec succès:', id);
       // Les données seront mises à jour via l'écoute en temps réel
     } catch (error) {
-      console.error('Erreur lors de la suppression du bon d\'achat:', error);
+      console.error('Contexte: Erreur lors de la suppression du bon d\'achat:', error);
       throw error;
     }
   };
@@ -153,10 +155,16 @@ export const PurchaseOrderProvider: React.FC<{ children: ReactNode }> = ({ child
 
   const deleteDeliveryNote = async (id: string) => {
     try {
+      console.log('Contexte: Tentative de suppression du bon de livraison:', id);
       await PurchaseOrderService.deleteDeliveryNote(id);
+      console.log('Contexte: Bon de livraison supprimé avec succès:', id);
       // Les données seront mises à jour via l'écoute en temps réel
     } catch (error) {
-      console.error('Erreur lors de la suppression du bon de livraison:', error);
+      console.error('Contexte: Erreur lors de la suppression du bon de livraison:', {
+        id,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   };

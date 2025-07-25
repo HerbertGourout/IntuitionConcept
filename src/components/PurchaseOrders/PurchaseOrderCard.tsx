@@ -57,11 +57,19 @@ const PurchaseOrderCard: React.FC<PurchaseOrderCardProps> = ({ order, onEdit, on
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le bon d'achat ${order.orderNumber} ?`)) {
+    const confirmDelete = window.confirm(
+      `Êtes-vous sûr de vouloir supprimer le bon d'achat "${order.orderNumber}" ?\n\nCette action est irréversible.`
+    );
+    
+    if (confirmDelete) {
       try {
+        console.log('Tentative de suppression du bon d\'achat:', order.id);
         await deletePurchaseOrder(order.id);
+        console.log('Bon d\'achat supprimé avec succès:', order.id);
+        alert('Bon d\'achat supprimé avec succès.');
       } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
+        console.error('Erreur lors de la suppression du bon d\'achat:', error);
+        alert('Erreur lors de la suppression du bon d\'achat.');
       }
     }
   };
