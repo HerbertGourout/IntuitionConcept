@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../../hooks/useProjects';
 import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap } from 'lucide-react';
 import WeatherWidget from './widgets/WeatherWidget';
@@ -10,8 +9,11 @@ import RealTimeChartWidget from './widgets/RealTimeChartWidget';
 import { AnimatedBackground, GlassCard } from '../UI/VisualEffects';
 import { useCurrency } from '../../hooks/useCurrency';
 
-const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
+interface DashboardProps {
+  onNavigate?: (section: string) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { currentProject, projects } = useProjects();
   const { formatAmount } = useCurrency();
   
@@ -277,7 +279,7 @@ const Dashboard: React.FC = () => {
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Actions Rapides</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button 
-              onClick={() => navigate('/projects')}
+              onClick={() => onNavigate?.('projects')}
               className="group p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl border border-orange-200 dark:border-orange-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
             >
               <FolderOpen className="w-8 h-8 text-orange-600 mb-3 group-hover:scale-110 transition-transform" />
@@ -285,7 +287,7 @@ const Dashboard: React.FC = () => {
             </button>
             
             <button 
-              onClick={() => navigate('/planning')}
+              onClick={() => onNavigate?.('planning')}
               className="group p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               <Calendar className="w-8 h-8 text-blue-600 mb-3 group-hover:scale-110 transition-transform" />
@@ -319,7 +321,7 @@ const Dashboard: React.FC = () => {
             </button>
             
             <button 
-              onClick={() => navigate('/purchase-orders')}
+              onClick={() => onNavigate?.('purchase-orders')}
               className="group p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border border-purple-200 dark:border-purple-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
             >
               <Euro className="w-8 h-8 text-purple-600 mb-3 group-hover:scale-110 transition-transform" />

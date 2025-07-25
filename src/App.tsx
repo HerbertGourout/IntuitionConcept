@@ -225,7 +225,7 @@ const AppContent: React.FC = () => {
     // Afficher le contenu en fonction de la section active
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigate={handleNavigate} />;
       case 'projects':
         return <Projects />;
       case 'equipment':
