@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { PurchaseOrderService } from '../services/purchaseOrderService';
+import { BudgetIntegrationService } from '../services/budgetIntegrationService';
 import type { 
   PurchaseOrder, 
   DeliveryNote, 
@@ -103,6 +104,10 @@ export const PurchaseOrderProvider: React.FC<{ children: ReactNode }> = ({ child
   const deletePurchaseOrder = async (id: string) => {
     try {
       console.log('Contexte: Tentative de suppression du bon d\'achat:', id);
+      
+      // Supprimer les dépenses associées avant de supprimer le bon d'achat
+      await BudgetIntegrationService.removePurchaseOrderExpenses(id);
+      
       await PurchaseOrderService.deletePurchaseOrder(id);
       console.log('Contexte: Bon d\'achat supprimé avec succès:', id);
       // Les données seront mises à jour via l'écoute en temps réel
@@ -115,6 +120,15 @@ export const PurchaseOrderProvider: React.FC<{ children: ReactNode }> = ({ child
   const approvePurchaseOrder = async (id: string, approvedBy: string, notes?: string) => {
     try {
       await PurchaseOrderService.approvePurchaseOrder(id, approvedBy, notes);
+      
+      // Synchroniser avec le budget après approbation
+      const approvedOrder = purchaseOrders.find(po => po.id === id);
+      if (approvedOrder) {
+        const updatedOrder = { ...approvedOrder, status: 'approved' as const, approvedBy, approvalNotes: notes };
+        await BudgetIntegrationService.syncPurchaseOrderToBudget(updatedOrder);
+        console.log('✅ Bon d\'achat synchronisé avec le budget');
+      }
+      
       // Les données seront mises à jour via l'écoute en temps réel
     } catch (error) {
       console.error('Erreur lors de l\'approbation du bon d\'achat:', error);
@@ -146,6 +160,15 @@ export const PurchaseOrderProvider: React.FC<{ children: ReactNode }> = ({ child
   const receiveDelivery = async (id: string, receivedBy: string) => {
     try {
       await PurchaseOrderService.receiveDelivery(id, receivedBy, true, 'Livraison réceptionnée');
+      
+      // Synchroniser avec les dépenses réelles après réception
+      const receivedDelivery = deliveryNotes.find(dn => dn.id === id);
+      if (receivedDelivery) {
+        const updatedDelivery = { ...receivedDelivery, status: 'received' as const, receivedBy };
+        await BudgetIntegrationService.syncDeliveryToActualExpense(updatedDelivery);
+        console.log('✅ Livraison synchronisée avec les dépenses réelles');
+      }
+      
       // Les données seront mises à jour via l'écoute en temps réel
     } catch (error) {
       console.error('Erreur lors de la réception de la livraison:', error);

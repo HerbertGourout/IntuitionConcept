@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { usePurchaseOrderContext } from '../../contexts/PurchaseOrderContext';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { useCurrency } from '../../hooks/useCurrency';
 import { PurchaseOrder, Supplier, DeliveryNote, PURCHASE_ORDER_STATUS_LABELS } from '../../types/purchaseOrder';
 import PurchaseOrderCard from './PurchaseOrderCard';
 import PurchaseOrderModal from './PurchaseOrderModal';
@@ -31,6 +32,7 @@ const PurchaseOrders: React.FC = () => {
     deleteDeliveryNote
   } = usePurchaseOrderContext();
   const { projects } = useProjectContext();
+  const { formatAmount } = useCurrency();
 
   // États pour les filtres
   const [searchTerm, setSearchTerm] = useState('');
@@ -294,7 +296,7 @@ const PurchaseOrders: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Montant Total</p>
               <p className="text-2xl font-bold text-purple-600">
-                <AnimatedCounter value={stats.totalValue} /> FCFA
+                {formatAmount(stats.totalValue)}
               </p>
             </div>
             <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">

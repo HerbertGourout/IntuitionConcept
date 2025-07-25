@@ -1,35 +1,31 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  DollarSign, 
   TrendingUp, 
   TrendingDown, 
   Plus,
   Calculator,
-  PieChart,
   BarChart3,
   AlertTriangle,
   CheckCircle,
-  Clock,
   Wrench,
   FileText,
   Target,
   Activity,
-  Zap,
   Users,
   Building,
-  Calendar,
   Layers,
   ArrowUp,
   ArrowDown,
   Percent,
-  LineChart,
-  CurrencyIcon
+  LineChart
 } from 'lucide-react';
 import { Transaction } from '../../types/finance';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import TransactionTable from './TransactionTable';
 import TransactionModal from './TransactionModal';
-import { CurrencyService } from '../../services/currencyService';
+import { useCurrency } from '../../hooks/useCurrency';
+import { usePurchaseOrderContext } from '../../contexts/PurchaseOrderContext';
+import { BudgetIntegrationService } from '../../services/budgetIntegrationService';
 import { v4 as uuidv4 } from 'uuid';
 
 interface FinancialSummary {
@@ -57,9 +53,19 @@ interface FinancialMetric {
   label: string;
   value: string;
   change: number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ size?: number; className?: string; }>;
   color: string;
   trend: 'up' | 'down' | 'stable';
+}
+
+interface IntegratedMetrics {
+  totalPurchaseOrders: number;
+  totalPurchaseOrderAmount: number;
+  approvedPurchaseOrders: number;
+  pendingPurchaseOrders: number;
+  totalPlannedExpenses: number;
+  totalActualExpenses: number;
+  purchaseOrdersBySupplierType: Record<string, { amount: number; count: number }>;
 }
 
 const FinancesAdvanced: React.FC = () => {
@@ -106,31 +112,28 @@ const FinancesAdvanced: React.FC = () => {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'analytics' | 'budget' | 'forecast'>('overview');
   
-  // État pour la monnaie
-  const [currency, setCurrency] = useState({ symbol: 'FCFA', position: 'after' as 'before' | 'after' });
-  
   const currentProject = projectContext.currentProject;
+  const { formatAmount } = useCurrency();
+  const { purchaseOrders, deliveryNotes } = usePurchaseOrderContext();
   
-  // Charger la monnaie par défaut
+  // État pour les métriques intégrées
+  const [integratedMetrics, setIntegratedMetrics] = useState<IntegratedMetrics | null>(null);
+
+  // Charger les métriques intégrées
   useEffect(() => {
-    const loadCurrency = async () => {
-      try {
-        const defaultCurrency = await CurrencyService.getDefaultCurrency();
-        setCurrency({ symbol: defaultCurrency.symbol, position: defaultCurrency.position });
-      } catch (error) {
-        console.warn('Erreur lors du chargement de la monnaie:', error);
+    const loadIntegratedMetrics = async () => {
+      if (currentProject?.id) {
+        try {
+          const metrics = await BudgetIntegrationService.getIntegratedProjectFinancials(currentProject.id);
+          setIntegratedMetrics(metrics);
+        } catch (error) {
+          console.error('Erreur lors du chargement des métriques intégrées:', error);
+        }
       }
     };
-    loadCurrency();
-  }, []);
-  
-  // Fonction pour formater les montants
-  const formatAmount = (amount: number) => {
-    const formatted = Math.abs(amount).toLocaleString('fr-FR');
-    return currency.position === 'before' 
-      ? `${currency.symbol} ${formatted}`
-      : `${formatted} ${currency.symbol}`;
-  };
+    
+    loadIntegratedMetrics();
+  }, [currentProject?.id, purchaseOrders, deliveryNotes]);
 
   // Calculs financiers avancés
   const financialSummary: FinancialSummary = useMemo(() => {
@@ -404,7 +407,7 @@ const FinancesAdvanced: React.FC = () => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'transactions' | 'analytics' | 'budget' | 'forecast')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   activeTab === tab.id
                     ? 'bg-white shadow-md text-blue-600 border border-blue-200'
@@ -423,10 +426,10 @@ const FinancesAdvanced: React.FC = () => {
           <div className="space-y-6">
             {/* Métriques financières principales */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-              {financialMetrics.map((metric, index) => {
+              {financialMetrics.map((metric) => {
                 const IconComponent = metric.icon;
                 return (
-                  <div key={index} className="glass-card p-4 rounded-xl hover:shadow-lg transition-all duration-200">
+                  <div key={metric.label} className="glass-card p-4 rounded-xl hover:shadow-lg transition-all duration-200">
                     <div className="flex items-center justify-between mb-2">
                       <IconComponent size={20} className={`text-${metric.color}-600`} />
                       {metric.trend === 'up' && <ArrowUp size={16} className="text-green-500" />}
@@ -446,6 +449,77 @@ const FinancesAdvanced: React.FC = () => {
               })}
             </div>
 
+            {/* Métriques des bons d'achat intégrées */}
+            {integratedMetrics && (
+              <div className="glass-card p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Bons d'Achat & Intégration Budget
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="text-2xl font-bold text-blue-600">{integratedMetrics.totalPurchaseOrders}</div>
+                    <div className="text-sm text-blue-700">Bons d'achat total</div>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div className="text-2xl font-bold text-green-600">{formatAmount(integratedMetrics.totalPurchaseOrderAmount)}</div>
+                    <div className="text-sm text-green-700">Montant total</div>
+                  </div>
+                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                    <div className="text-2xl font-bold text-orange-600">{integratedMetrics.approvedPurchaseOrders}</div>
+                    <div className="text-sm text-orange-700">Approuvés</div>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <div className="text-2xl font-bold text-purple-600">{integratedMetrics.pendingPurchaseOrders}</div>
+                    <div className="text-sm text-purple-700">En attente</div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3">Dépenses Planifiées vs Réelles</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Planifiées:</span>
+                        <span className="font-medium text-blue-600">{formatAmount(integratedMetrics.totalPlannedExpenses)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Réelles:</span>
+                        <span className="font-medium text-green-600">{formatAmount(integratedMetrics.totalActualExpenses)}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t">
+                        <span className="text-sm font-medium text-gray-900">Écart:</span>
+                        <span className={`font-medium ${
+                          integratedMetrics.totalActualExpenses > integratedMetrics.totalPlannedExpenses 
+                            ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {formatAmount(Math.abs(integratedMetrics.totalActualExpenses - integratedMetrics.totalPlannedExpenses))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3">Répartition par Type de Fournisseur</h4>
+                    <div className="space-y-2">
+                      {Object.entries(integratedMetrics.purchaseOrdersBySupplierType || {}).map(([type, data]) => {
+                        const supplierData = data as { amount: number; count: number } | undefined;
+                        return (
+                          <div key={type} className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600 capitalize">{type}:</span>
+                            <div className="text-right">
+                              <div className="font-medium text-gray-900">{formatAmount(supplierData?.amount || 0)}</div>
+                              <div className="text-xs text-gray-500">{supplierData?.count || 0} commande(s)</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Progression budgétaire */}
             <div className="glass-card p-6 rounded-xl">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression Budgétaire</h3>
@@ -460,7 +534,7 @@ const FinancesAdvanced: React.FC = () => {
                 ></div>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
-                <span>0 {currency.symbol}</span>
+                <span>{formatAmount(0)}</span>
                 <span>{formatAmount(financialSummary.totalBudget)}</span>
               </div>
             </div>
@@ -547,7 +621,7 @@ const FinancesAdvanced: React.FC = () => {
             <div className="glass-card p-6 rounded-xl">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Tendances Mensuelles</h3>
               <div className="grid grid-cols-5 gap-4">
-                {financialSummary.monthlyTrend.map((month, index) => (
+                {financialSummary.monthlyTrend.map((month) => (
                   <div key={month.month} className="text-center">
                     <div className="text-sm text-gray-600 mb-2">{month.month}</div>
                     <div className="space-y-2">

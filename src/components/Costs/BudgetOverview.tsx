@@ -38,75 +38,105 @@ export const BudgetOverview: React.FC = () => {
     const isOverBudget = totalSpent > totalEstimated;
 
     return (
-        <div className="space-y-4">
-            {/* Header compact */}
-            <div className="glass-card p-4">
-                <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-                        <BarChart3 className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            Vue d'ensemble budgétaire
-                        </h1>
-                        <p className="text-sm text-gray-600">
-                            Suivi des coûts et performance financière
-                        </p>
+        <div className="p-6 space-y-6">
+            {/* Header compact - Style Planning */}
+            <div className="glass-card bg-gradient-to-r from-green-50 via-white to-blue-50">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-gradient-to-r from-green-600 to-blue-600 rounded-xl text-white">
+                            <BarChart3 className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                                Budget
+                            </h1>
+                            <p className="text-gray-600 mt-1">Suivi des coûts et performance financière</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Statistiques principales - Layout optimisé */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="glass-card p-4 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl mb-3 mx-auto">
-                        <DollarSign className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-600 block mb-1">💰 Budget estimé</span>
-                    <div className="text-lg font-bold text-blue-700 break-words">
-                        {formatCurrency(totalEstimated)}
-                    </div>
-                </div>
-
-                <div className="glass-card p-4 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl mb-3 mx-auto">
-                        <TrendingDown className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-600 block mb-1">💸 Dépensé</span>
-                    <div className="text-lg font-bold text-red-700 break-words">
-                        {formatCurrency(totalSpent)}
+            {/* Statistiques principales - Style Planning compact */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="glass-card hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <DollarSign className="text-blue-500 w-6 h-6" />
+                                <span className="text-gray-600">Budget estimé</span>
+                            </div>
+                            <h3 className="text-2xl font-bold mt-2 text-blue-700">
+                                {formatCurrency(totalEstimated)}
+                            </h3>
+                        </div>
+                        <div className="w-1/2 h-1 bg-blue-500/20 rounded-full">
+                            <div className="h-full bg-blue-500 rounded-full" style={{ width: '100%' }}></div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="glass-card p-4 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                    <div className={`flex items-center justify-center w-12 h-12 rounded-xl mb-3 mx-auto ${
-                        isOverBudget 
-                            ? 'bg-gradient-to-br from-red-500 to-red-600' 
-                            : 'bg-gradient-to-br from-emerald-500 to-emerald-600'
-                    }`}>
-                        {isOverBudget ? (
-                            <TrendingDown className="w-6 h-6 text-white" />
-                        ) : (
-                            <TrendingUp className="w-6 h-6 text-white" />
-                        )}
-                    </div>
-                    <span className="text-sm font-medium text-gray-600 block mb-1">
-                        {isOverBudget ? '⚠️ Dépassement' : '💚 Économie'}
-                    </span>
-                    <div className={`text-lg font-bold break-words ${
-                        isOverBudget ? 'text-red-700' : 'text-emerald-700'
-                    }`}>
-                        {formatCurrency(Math.abs(variance))}
+                <div className="glass-card hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <TrendingDown className="text-red-500 w-6 h-6" />
+                                <span className="text-gray-600">Dépensé</span>
+                            </div>
+                            <h3 className="text-2xl font-bold mt-2 text-red-700">
+                                {formatCurrency(totalSpent)}
+                            </h3>
+                        </div>
+                        <div className="w-1/2 h-1 bg-red-500/20 rounded-full">
+                            <div className="h-full bg-red-500 rounded-full" style={{ width: `${Math.min(usagePercentage, 100)}%` }}></div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="glass-card p-4 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl mb-3 mx-auto">
-                        <Target className="w-6 h-6 text-white" />
+                <div className="glass-card hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <TrendingUp className={`w-6 h-6 ${variance >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                                <span className="text-gray-600">
+                                    {variance >= 0 ? 'Économies' : 'Dépassement'}
+                                </span>
+                            </div>
+                            <h3 className={`text-2xl font-bold mt-2 ${
+                                variance >= 0 ? 'text-green-700' : 'text-red-700'
+                            }`}>
+                                {formatCurrency(Math.abs(variance))}
+                            </h3>
+                        </div>
+                        <div className={`w-1/2 h-1 rounded-full ${
+                            variance >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'
+                        }`}>
+                            <div className={`h-full rounded-full ${
+                                variance >= 0 ? 'bg-green-500' : 'bg-red-500'
+                            }`} style={{ width: `${Math.min(Math.abs(variance) / totalEstimated * 100, 100)}%` }}></div>
+                        </div>
                     </div>
-                    <span className="text-sm font-medium text-gray-600 block mb-1">📊 Utilisation</span>
-                    <div className="text-lg font-bold text-purple-700 break-words">
-                        {Math.round(usagePercentage)}%
+                </div>
+
+                <div className="glass-card hover:-translate-y-1 transition-all duration-300">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <Target className={`w-6 h-6 ${isOverBudget ? 'text-red-500' : 'text-purple-500'}`} />
+                                <span className="text-gray-600">Utilisation</span>
+                            </div>
+                            <h3 className={`text-2xl font-bold mt-2 ${
+                                isOverBudget ? 'text-red-700' : 'text-purple-700'
+                            }`}>
+                                {Math.round(usagePercentage)}%
+                            </h3>
+                        </div>
+                        <div className={`w-1/2 h-1 rounded-full ${
+                            isOverBudget ? 'bg-red-500/20' : 'bg-purple-500/20'
+                        }`}>
+                            <div className={`h-full rounded-full ${
+                                isOverBudget ? 'bg-red-500' : 'bg-purple-500'
+                            }`} style={{ width: `${Math.min(usagePercentage, 100)}%` }}></div>
+                        </div>
                     </div>
                 </div>
             </div>

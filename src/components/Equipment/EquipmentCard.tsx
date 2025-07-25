@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, User, Calendar, Euro, Wrench } from 'lucide-react';
 import { Equipment } from '../../types';
+import { useCurrency } from '../../hooks/useCurrency';
 
 interface EquipmentCardProps {
   equipment: Equipment;
@@ -8,6 +9,7 @@ interface EquipmentCardProps {
 }
 
 const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onClick }) => {
+  const { formatAmount } = useCurrency();
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available':
@@ -108,7 +110,7 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onClick }) => 
         
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Euro className="w-4 h-4" />
-          <span>{equipment.dailyRate}€/jour</span>
+          <span>{formatAmount(equipment.dailyRate || 0)}/jour</span>
         </div>
         
         <div className="flex items-center gap-2 text-sm text-gray-600">

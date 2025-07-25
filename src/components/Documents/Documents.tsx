@@ -24,13 +24,14 @@ import {
   CheckCircle,
   Package,
   Activity
-} from 'lucide-react';
+} 
+from 'lucide-react';
 import DocumentViewer from './DocumentViewer';
-import { DocumentService, Document } from '../../services/documentService';
+import { DocumentService, Document as ServiceDocument } from '../../services/documentService';
 
 // Composant DocumentCard moderne
 interface ModernDocumentCardProps {
-  document: Document;
+  document: ServiceDocument;
   viewMode: 'grid' | 'list';
   onClick: () => void;
   onDelete: (e: React.MouseEvent) => void;
@@ -65,23 +66,23 @@ const ModernDocumentCard: React.FC<ModernDocumentCardProps> = ({
     }
   }, [isDropdownOpen]);
 
-  const getDocumentIcon = (type: Document['type']) => {
+  const getDocumentIcon = (type: ServiceDocument['type']) => {
     switch (type) {
       case 'photo': return <Image className="w-6 h-6" />;
       case 'plan': return <FileCheck className="w-6 h-6" />;
       case 'contract': return <FileText className="w-6 h-6" />;
-      case 'invoice': return <Receipt className="w-6 h-6" />;
+      case 'permit': return <Receipt className="w-6 h-6" />;
       case 'report': return <BarChart3 className="w-6 h-6" />;
       default: return <File className="w-6 h-6" />;
     }
   };
 
-  const getDocumentColor = (type: Document['type']) => {
+  const getDocumentColor = (type: ServiceDocument['type']) => {
     switch (type) {
       case 'photo': return 'from-green-500 to-emerald-500';
       case 'plan': return 'from-blue-500 to-cyan-500';
       case 'contract': return 'from-purple-500 to-pink-500';
-      case 'invoice': return 'from-orange-500 to-red-500';
+      case 'permit': return 'from-orange-500 to-red-500';
       case 'report': return 'from-indigo-500 to-purple-500';
       default: return 'from-gray-500 to-slate-500';
     }
@@ -95,8 +96,8 @@ const ModernDocumentCard: React.FC<ModernDocumentCardProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('fr-FR', {
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -266,13 +267,12 @@ const ModernDocumentCard: React.FC<ModernDocumentCardProps> = ({
 };
 
 const Documents: React.FC = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<ServiceDocument[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<ServiceDocument | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
 
   // Charger les documents depuis Firebase
@@ -305,26 +305,47 @@ const Documents: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleDocumentClick = (doc: Document) => {
+  const handleDocumentClick = (doc: ServiceDocument) => {
     setSelectedDocument(doc);
   };
 
-  const handleDelete = async (e: React.MouseEvent, doc: Document) => {
+  const handleDelete = async (e: React.MouseEvent, doc: ServiceDocument) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const confirmDelete = window.confirm(
-      `Êtes-vous sûr de vouloir supprimer définitivement le document :\n\n"${doc.name}"\n\nCette action est irréversible.`
-    );
+    console.log('UI: Tentative de suppression du document:', {
+      id: doc.id,
+      name: doc.name,
+      type: doc.type
+    });
     
-    if (confirmDelete) {
-      try {
+    // Utiliser une confirmation personnalisée pour éviter les problèmes de popup
+    const confirmMessage = `Êtes-vous sûr de vouloir supprimer définitivement le document :\n\n"${doc.name}"\n\nCette action est irréversible.`;
+    
+    try {
+      const confirmDelete = window.confirm(confirmMessage);
+      console.log('UI: Résultat de la confirmation:', confirmDelete);
+      
+      if (confirmDelete) {
+        console.log('UI: Début de la suppression du document:', doc.id);
         await DocumentService.deleteDocument(doc.id);
-        console.log(`Document "${doc.name}" supprimé avec succès`);
-      } catch (error) {
-        console.error('Erreur lors de la suppression du document:', error);
-        alert('Erreur lors de la suppression du document. Veuillez réessayer.');
+        console.log(`UI: Document "${doc.name}" supprimé avec succès`);
+        
+        // Notification de succès
+        alert(`Document "${doc.name}" supprimé avec succès.`);
+      } else {
+        console.log('UI: Suppression annulée par l\'utilisateur');
       }
+    } catch (error) {
+      console.error('UI: Erreur lors de la suppression du document:', {
+        documentId: doc.id,
+        documentName: doc.name,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      alert(`Erreur lors de la suppression du document: ${errorMessage}`);
     }
   };
 
@@ -630,6 +651,10 @@ const Documents: React.FC = () => {
           document={selectedDocument}
           isOpen={!!selectedDocument}
           onClose={() => setSelectedDocument(null)}
+          onShare={() => {
+            // Fonction de partage à implémenter
+            console.log('Partage du document:', selectedDocument.name);
+          }}
         />
       )}
     </div>

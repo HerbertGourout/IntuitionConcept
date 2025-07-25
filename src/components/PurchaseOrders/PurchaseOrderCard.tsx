@@ -16,6 +16,7 @@ import {
 import { PurchaseOrder, PURCHASE_ORDER_STATUS_LABELS } from '../../types/purchaseOrder';
 import { usePurchaseOrderContext } from '../../contexts/PurchaseOrderContext';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { useCurrency } from '../../hooks/useCurrency';
 
 interface PurchaseOrderCardProps {
   order: PurchaseOrder;
@@ -24,6 +25,7 @@ interface PurchaseOrderCardProps {
 }
 
 const PurchaseOrderCard: React.FC<PurchaseOrderCardProps> = ({ order, onEdit, onCreateDeliveryNote }) => {
+  const { formatAmount } = useCurrency();
   const { deletePurchaseOrder, approvePurchaseOrder } = usePurchaseOrderContext();
   const { projects } = useProjectContext();
 
@@ -127,7 +129,7 @@ const PurchaseOrderCard: React.FC<PurchaseOrderCardProps> = ({ order, onEdit, on
         <div className="flex items-center space-x-2">
           <DollarSign className="h-4 w-4 text-purple-500" />
           <span className="text-sm font-semibold text-gray-900">
-            {order.totalAmount.toLocaleString('fr-FR')} FCFA
+            {formatAmount(order.totalAmount)}
           </span>
         </div>
 

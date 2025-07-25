@@ -16,16 +16,23 @@ import { db } from '../firebase';
 export interface Document {
   id: string;
   name: string;
-  type: 'photo' | 'plan' | 'contract' | 'invoice' | 'report' | 'other';
+  type: 'photo' | 'plan' | 'contract' | 'report' | 'permit' | 'other';
   url: string;
   size: number;
-  uploadDate: Date;
-  tags: string[];
+  uploadDate: string;
+  tags?: string[];
   description?: string;
-  projectId?: string;
-  uploadedBy?: string;
-  version?: number;
-  isPublic: boolean;
+  projectId: string;
+  uploadedBy: string;
+  version: string;
+  folderId?: string;
+  shared?: boolean;
+  shareSettings?: {
+    accessLevel: 'view' | 'comment' | 'edit';
+    expiration: string;
+    requireAuth: boolean;
+    allowDownload: boolean;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,7 +92,7 @@ export class DocumentService {
       const now = Timestamp.now();
       const docRef = await addDoc(collection(db, COLLECTION_NAME), {
         ...documentData,
-        uploadDate: Timestamp.fromDate(documentData.uploadDate),
+        uploadDate: documentData.uploadDate,
         createdAt: now,
         updatedAt: now
       });
@@ -103,11 +110,7 @@ export class DocumentService {
   static async updateDocument(id: string, updates: Partial<Omit<Document, 'id' | 'createdAt'>>): Promise<void> {
     try {
       const documentRef = doc(db, COLLECTION_NAME, id);
-      const updateData: any = { ...updates };
-      
-      if (updateData.uploadDate) {
-        updateData.uploadDate = Timestamp.fromDate(updateData.uploadDate);
-      }
+      const updateData: Partial<Omit<Document, 'id' | 'createdAt'>> & { uploadDate?: string } = { ...updates };
       
       await updateDoc(documentRef, {
         ...updateData,
@@ -195,65 +198,60 @@ export class DocumentService {
           type: 'plan' as const,
           url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600&fit=crop',
           size: 2048576,
-          uploadDate: new Date('2024-01-15'),
+          uploadDate: '2024-01-15',
           tags: ['plan', 'architecture', 'résidence'],
           description: 'Plans détaillés de la résidence Les Jardins',
           projectId: 'project-1',
           uploadedBy: 'Jean Dupont',
-          version: 1,
-          isPublic: false
+          version: '1'
         },
         {
           name: 'Photo chantier - Fondations',
           type: 'photo' as const,
           url: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&h=600&fit=crop',
           size: 1536000,
-          uploadDate: new Date('2024-01-20'),
+          uploadDate: '2024-01-20',
           tags: ['photo', 'chantier', 'fondations'],
           description: 'État d\'avancement des fondations',
           projectId: 'project-1',
           uploadedBy: 'Marie Martin',
-          version: 1,
-          isPublic: true
+          version: '1'
         },
         {
           name: 'Contrat entreprise générale',
           type: 'contract' as const,
           url: '#',
           size: 512000,
-          uploadDate: new Date('2024-01-10'),
+          uploadDate: '2024-01-10',
           tags: ['contrat', 'juridique'],
           description: 'Contrat principal avec l\'entreprise générale',
           projectId: 'project-1',
           uploadedBy: 'Pierre Leroy',
-          version: 2,
-          isPublic: false
+          version: '2'
         },
         {
-          name: 'Facture matériaux janvier',
-          type: 'invoice' as const,
+          name: 'Permis de construire',
+          type: 'permit' as const,
           url: '#',
           size: 256000,
-          uploadDate: new Date('2024-01-31'),
-          tags: ['facture', 'matériaux', 'janvier'],
-          description: 'Facture des matériaux commandés en janvier',
+          uploadDate: '2024-01-31',
+          tags: ['permis', 'construction', 'administratif'],
+          description: 'Permis de construire officiel du projet',
           projectId: 'project-1',
           uploadedBy: 'Sophie Leroy',
-          version: 1,
-          isPublic: false
+          version: '1'
         },
         {
           name: 'Rapport qualité - Semaine 4',
           type: 'report' as const,
           url: '#',
           size: 768000,
-          uploadDate: new Date('2024-01-28'),
+          uploadDate: '2024-01-28',
           tags: ['rapport', 'qualité', 'contrôle'],
           description: 'Rapport de contrôle qualité de la semaine 4',
           projectId: 'project-1',
           uploadedBy: 'Jean Dupont',
-          version: 1,
-          isPublic: true
+          version: '1'
         }
       ];
 

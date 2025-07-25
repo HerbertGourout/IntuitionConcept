@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../../hooks/useProjects';
 import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap } from 'lucide-react';
 import WeatherWidget from './widgets/WeatherWidget';
@@ -6,10 +7,13 @@ import CircularProgressWidget from './widgets/CircularProgressWidget';
 import ActivityTimelineWidget from './widgets/ActivityTimelineWidget';
 import AnimatedStatsCard from './widgets/AnimatedStatsCard';
 import RealTimeChartWidget from './widgets/RealTimeChartWidget';
-import { AnimatedBackground, GlassCard, AnimatedCounter } from '../UI/VisualEffects';
+import { AnimatedBackground, GlassCard } from '../UI/VisualEffects';
+import { useCurrency } from '../../hooks/useCurrency';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { currentProject, projects } = useProjects();
+  const { formatAmount } = useCurrency();
   
   // Vérifie que le projet sélectionné existe vraiment dans la liste
   const validProject = projects.find(p => p.id === currentProject?.id);
@@ -248,7 +252,7 @@ const Dashboard: React.FC = () => {
           value={`${stats.budgetPercentage}%`}
           color={stats.budgetPercentage > 80 ? '#ef4444' : '#10b981'}
           icon={<Euro className="w-5 h-5" />}
-          subtitle={`${(stats.budgetSpent / 1000000).toFixed(1)}M / ${(stats.budget / 1000000).toFixed(1)}M FCFA`}
+          subtitle={`${formatAmount(stats.budgetSpent)} / ${formatAmount(stats.budget)}`}
         />
         
         <CircularProgressWidget
@@ -272,22 +276,52 @@ const Dashboard: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Actions Rapides</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="group p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl border border-orange-200 dark:border-orange-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <button 
+              onClick={() => navigate('/projects')}
+              className="group p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl border border-orange-200 dark:border-orange-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+            >
               <FolderOpen className="w-8 h-8 text-orange-600 mb-3 group-hover:scale-110 transition-transform" />
               <p className="font-semibold text-gray-900 dark:text-white">Nouveau Projet</p>
             </button>
             
-            <button className="group p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <button 
+              onClick={() => navigate('/planning')}
+              className="group p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
               <Calendar className="w-8 h-8 text-blue-600 mb-3 group-hover:scale-110 transition-transform" />
               <p className="font-semibold text-gray-900 dark:text-white">Planning</p>
             </button>
             
-            <button className="group p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-200 dark:border-green-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <button 
+              onClick={() => {
+                // Scroll vers les alertes ou afficher une notification
+                const alertsSection = document.querySelector('[data-alerts]');
+                if (alertsSection) {
+                  alertsSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  // Afficher les tâches en retard comme alertes
+                  if (stats.delayedTasks > 0) {
+                    alert(`Attention: ${stats.delayedTasks} tâche(s) en retard nécessitent votre attention.`);
+                  } else {
+                    alert('Aucune alerte pour le moment. Tout va bien!');
+                  }
+                }
+              }}
+              className="group p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-200 dark:border-green-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
               <AlertTriangle className="w-8 h-8 text-green-600 mb-3 group-hover:scale-110 transition-transform" />
               <p className="font-semibold text-gray-900 dark:text-white">Alertes</p>
+              {stats.delayedTasks > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                  {stats.delayedTasks}
+                </span>
+              )}
             </button>
             
-            <button className="group p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border border-purple-200 dark:border-purple-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <button 
+              onClick={() => navigate('/purchase-orders')}
+              className="group p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border border-purple-200 dark:border-purple-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+            >
               <Euro className="w-8 h-8 text-purple-600 mb-3 group-hover:scale-110 transition-transform" />
               <p className="font-semibold text-gray-900 dark:text-white">Budget</p>
             </button>

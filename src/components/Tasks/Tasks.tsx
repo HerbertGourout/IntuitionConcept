@@ -352,49 +352,49 @@ const Tasks: React.FC = () => {
 
   return (
     <ProjectAccessGuard project={projectContext.currentProject!}>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="glass-card rounded-2xl p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
-                  <Target className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Gestion des Tâches</h1>
-                  <p className="text-gray-600 mt-1">Organisez et suivez l'avancement de vos tâches</p>
-                </div>
+      <div className="p-6 space-y-6">
+        {/* Header compact - Style Planning */}
+        <div className="glass-card bg-gradient-to-r from-purple-50 via-white to-pink-50 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white">
+                <Target className="w-8 h-8" />
               </div>
-              <button
-                onClick={handleCreateTask}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-              >
-                <Plus className="w-5 h-5" />
-                Nouvelle Tâche
-              </button>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Tâches
+                </h1>
+                <p className="text-gray-600 mt-1">Organisez et suivez l'avancement de vos tâches</p>
+              </div>
+            </div>
+            <button
+              onClick={handleCreateTask}
+              className="btn-glass bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 transition-all duration-200 px-6 py-3 flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Nouvelle Tâche
+            </button>
+          </div>
+        </div>
+
+        {/* Statistiques - Style Planning compact */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="glass-card hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="text-gray-500 w-6 h-6" />
+                  <span className="text-gray-600">Total</span>
+                </div>
+                <h3 className="text-2xl font-bold mt-2 text-gray-900">
+                  {tasks.length}
+                </h3>
+              </div>
+              <div className="w-1/2 h-1 bg-gray-500/20 rounded-full">
+                <div className="h-full bg-gray-500 rounded-full" style={{ width: '100%' }}></div>
+              </div>
             </div>
           </div>
-
-          {/* Statistiques */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="glass-card rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-2xl font-bold text-gray-900">
-                  {selectedPhase?.tasks?.length || 0}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Total Tâches</h3>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-800"
-                  style={{ width: selectedPhase?.tasks?.length ? '100%' : '0%' }}
-                ></div>
-              </div>
-            </div>
 
             <div className="glass-card rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <div className="flex items-center justify-between mb-4">
@@ -549,20 +549,19 @@ const Tasks: React.FC = () => {
             )}
           </div>
 
-          {/* Modal pour créer/éditer une tâche */}
-          <TaskModal
-            isOpen={isModalVisible}
-            task={currentTask}
-            onClose={() => setIsModalVisible(false)}
-            onSave={handleSaveTask}
-            onDelete={currentTask ? () => handleDeleteTask(currentTask.id) : undefined}
-            teamMembers={(projectContext?.currentProject?.team || []).map(email => ({ 
-              id: email, 
-              name: email.includes('@') ? email.split('@')[0] : email,
-              role: 'member'
-            }))}
-          />
-        </div>
+        {/* Modal pour créer/éditer une tâche */}
+        <TaskModal
+          isOpen={isModalVisible}
+          task={currentTask}
+          onClose={() => setIsModalVisible(false)}
+          onSave={handleSaveTask}
+          onDelete={currentTask ? () => handleDeleteTask(currentTask.id) : undefined}
+          teamMembers={(projectContext?.currentProject?.team || []).map(email => ({ 
+            id: email, 
+            name: email.includes('@') ? email.split('@')[0] : email,
+            role: 'member'
+          }))}
+        />
       </div>
     </ProjectAccessGuard>
   );

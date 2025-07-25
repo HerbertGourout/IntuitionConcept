@@ -30,7 +30,7 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
   deliveryNote, 
   purchaseOrder 
 }) => {
-  const { addDeliveryNote, updateDeliveryNote, purchaseOrders } = usePurchaseOrderContext();
+  const { addDeliveryNote, updateDeliveryNote, purchaseOrders, deliveryNotes } = usePurchaseOrderContext();
 
   // États du formulaire
   const [formData, setFormData] = useState({
@@ -357,9 +357,19 @@ const DeliveryNoteModal: React.FC<DeliveryNoteModalProps> = ({
                         .filter(po => {
                           // Inclure plus de statuts pour permettre la création de bons de livraison
                           const allowedStatuses = ['draft', 'pending_approval', 'approved', 'ordered'];
-                          const isAllowed = allowedStatuses.includes(po.status);
-                          console.log(`Bon d'achat ${po.orderNumber} (${po.status}): ${isAllowed ? 'INCLUS' : 'EXCLU'}`);
-                          return isAllowed;
+                          const statusAllowed = allowedStatuses.includes(po.status);
+                          
+                          // CONTRAINTE 1:1 - Exclure les bons d'achat qui ont déjà un bon de livraison
+                          // Sauf si on modifie le bon de livraison existant
+                          const hasExistingDeliveryNote = deliveryNotes.some(dn => 
+                            dn.purchaseOrderId === po.id && 
+                            (!deliveryNote || dn.id !== deliveryNote.id)
+                          );
+                          
+                          const finalAllowed = statusAllowed && !hasExistingDeliveryNote;
+                          
+                          console.log(`Bon d'achat ${po.orderNumber} (${po.status}): statut=${statusAllowed ? 'OK' : 'KO'}, déjà livré=${hasExistingDeliveryNote ? 'OUI' : 'NON'} => ${finalAllowed ? 'INCLUS' : 'EXCLU'}`);
+                          return finalAllowed;
                         })
                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                       
