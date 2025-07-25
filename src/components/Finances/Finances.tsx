@@ -371,17 +371,24 @@ const FinancesAdvanced: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* En-tête avec indicateur de risque */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-full">
+      {/* Header */}
+      <div className="glass-card w-full">
+        <div className="flex items-center justify-between p-4 px-3 md:px-4 lg:px-6">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl">
+              <Calculator className="h-8 w-8 text-white" />
+            </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Analyse Financière</h1>
-              <p className="text-gray-600">
-                {currentProject ? `Projet: ${currentProject.name}` : 'Aucun projet sélectionné'}
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                Finances
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Gestion financière du projet: <span className="font-semibold text-orange-600">{currentProject.name}</span>
               </p>
             </div>
+          </div>
+          <div className="flex items-center space-x-3">
             <div className={`px-4 py-2 rounded-full text-sm font-medium ${
               financialSummary.riskLevel === 'high' ? 'bg-red-100 text-red-800' :
               financialSummary.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
@@ -391,11 +398,20 @@ const FinancesAdvanced: React.FC = () => {
               Risque {financialSummary.riskLevel === 'high' ? 'Élevé' : 
                       financialSummary.riskLevel === 'medium' ? 'Modéré' : 'Faible'}
             </div>
+            <button 
+              onClick={handleAdd} 
+              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Nouvelle transaction</span>
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Navigation des onglets */}
-        <div className="flex space-x-1 mb-6 bg-white/50 backdrop-blur-sm p-1 rounded-xl border border-white/20">
+      {/* Navigation Tabs */}
+      <div className="glass-card p-1 rounded-xl">
+        <div className="flex space-x-1">
           {[
             { id: 'overview', label: 'Vue d\'ensemble', icon: Target },
             { id: 'transactions', label: 'Transactions', icon: FileText },

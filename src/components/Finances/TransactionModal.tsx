@@ -170,7 +170,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-green-600" />
-                Montant (€) *
+                Montant (FCFA) *
               </label>
               <input
                 type="number"

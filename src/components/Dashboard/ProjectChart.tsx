@@ -103,13 +103,13 @@ const ProjectChart: React.FC<ProjectChartProps> = ({ project }) => {
                   <div>
                     <div className="text-gray-500 dark:text-gray-400">Budget</div>
                     <div className="font-medium">
-                      {(project.budget / 1000000).toFixed(1)}M€
+                      {(project.budget / 1000000).toFixed(1)}M FCFA
                     </div>
                   </div>
                   <div>
                     <div className="text-gray-500 dark:text-gray-400">Dépensé</div>
                     <div className="font-medium">
-                      {(project.spent / 1000000).toFixed(1)}M€
+                      {(project.spent / 1000000).toFixed(1)}M FCFA
                     </div>
                   </div>
                   <div>
@@ -122,7 +122,7 @@ const ProjectChart: React.FC<ProjectChartProps> = ({ project }) => {
                   <div>
                     <div className="text-gray-500 dark:text-gray-400">Restant</div>
                     <div className="font-medium">
-                      {Math.max(0, (project.budget - project.spent) / 1000000).toFixed(1)}M€
+                      {Math.max(0, (project.budget - project.spent) / 1000000).toFixed(1)}M FCFA
                     </div>
                   </div>
                 </div>

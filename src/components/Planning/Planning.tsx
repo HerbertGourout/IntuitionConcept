@@ -375,7 +375,7 @@ export const Planning: React.FC = () => {
                     <div className="flex items-center gap-2 text-xs font-medium">
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700">
                         <BarChart3 className="w-4 h-4 text-orange-500" /> Budget estimé&nbsp;:
-                        <span className="font-bold">{phase.estimatedBudget.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                        <span className="font-bold">{phase.estimatedBudget.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA</span>
                       </span>
                     </div>
                     {/* Calcul du coût réel des tâches */}
@@ -386,7 +386,7 @@ export const Planning: React.FC = () => {
                           {(() => {
                             const spent = (phase.tasks||[]).reduce((sum, t) => typeof t.spent === 'number' ? sum + t.spent : sum, 0);
                             return spent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                          })()} €
+                          })()} FCFA
                         </span>
                       </span>
                       {/* Badge d'alerte */}

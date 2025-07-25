@@ -247,7 +247,7 @@ const Settings: React.FC = () => {
                         className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
                       >
                         <option value="FCFA">FCFA</option>
-                        <option value="EUR">Euro (€)</option>
+                        <option value="EUR">FCFA</option>
                         <option value="USD">Dollar ($)</option>
                       </select>
                     </div>

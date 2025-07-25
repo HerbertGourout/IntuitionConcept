@@ -126,8 +126,8 @@ export class PDFService {
         pdf.text(item.description || 'Article', 20, yPosition);
         pdf.text(item.quantity.toString(), 120, yPosition);
         pdf.text(item.unit || 'unité', 140, yPosition);
-        pdf.text(`${item.unitPrice.toFixed(2)} €`, 160, yPosition);
-        pdf.text(`${itemTotal.toFixed(2)} €`, 180, yPosition);
+        pdf.text(`${item.unitPrice.toFixed(2)} FCFA`, 160, yPosition);
+        pdf.text(`${itemTotal.toFixed(2)} FCFA`, 180, yPosition);
         yPosition += 8;
       });
       
@@ -141,20 +141,20 @@ export class PDFService {
       
       pdf.setFont('helvetica', 'bold');
       pdf.text('Total HT:', 140, yPosition);
-      pdf.text(`${totalHT.toFixed(2)} €`, 180, yPosition);
+      pdf.text(`${totalHT.toFixed(2)} FCFA`, 180, yPosition);
       yPosition += 8;
       
       const tva = totalHT * 0.20; // TVA 20%
       pdf.setFont('helvetica', 'normal');
       pdf.text('TVA (20%):', 140, yPosition);
-      pdf.text(`${tva.toFixed(2)} €`, 180, yPosition);
+      pdf.text(`${tva.toFixed(2)} FCFA`, 180, yPosition);
       yPosition += 8;
       
       const totalTTC = totalHT + tva;
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(11);
       pdf.text('Total TTC:', 140, yPosition);
-      pdf.text(`${totalTTC.toFixed(2)} €`, 180, yPosition);
+      pdf.text(`${totalTTC.toFixed(2)} FCFA`, 180, yPosition);
       
       // === NOTES ===
       if (purchaseOrder.notes) {

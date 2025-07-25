@@ -216,10 +216,10 @@ const Reports: React.FC = () => {
         />
         <StatsCard
           title="Budget Total"
-          value={`${stats.totalBudget.toLocaleString()} €`}
+          value={`${stats.totalBudget.toLocaleString()} FCFA`}
           icon={DollarSign}
           color="bg-green-500"
-          subtitle={`${stats.totalSpent.toLocaleString()} € dépensés`}
+          subtitle={`${stats.totalSpent.toLocaleString()} FCFA dépensés`}
         />
         <StatsCard
           title="Tâches"
@@ -310,11 +310,11 @@ const Reports: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-4 pt-2">
                       <div className="text-center">
-                        <p className="text-lg md:text-xl font-bold text-green-600 break-words">{stats.totalSpent.toLocaleString()} €</p>
+                        <p className="text-lg md:text-xl font-bold text-green-600 break-words">{stats.totalSpent.toLocaleString()} FCFA</p>
                         <p className="text-xs text-gray-500">Dépensé</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-lg md:text-xl font-bold text-gray-800 break-words">{(stats.totalBudget - stats.totalSpent).toLocaleString()} €</p>
+                        <p className="text-lg md:text-xl font-bold text-gray-800 break-words">{(stats.totalBudget - stats.totalSpent).toLocaleString()} FCFA</p>
                         <p className="text-xs text-gray-500">Restant</p>
                       </div>
                     </div>
@@ -402,11 +402,11 @@ const Reports: React.FC = () => {
                           </div>
                           <div>
                             <p className="text-gray-500">Budget</p>
-                            <p className="font-semibold text-green-600">{project.budget.toLocaleString()} €</p>
+                            <p className="font-semibold text-green-600">{project.budget.toLocaleString()} FCFA</p>
                           </div>
                           <div>
                             <p className="text-gray-500">Dépensé</p>
-                            <p className="font-semibold text-red-600">{project.spent.toLocaleString()} €</p>
+                            <p className="font-semibold text-red-600">{project.spent.toLocaleString()} FCFA</p>
                           </div>
                           <div>
                             <p className="text-gray-500">Tâches</p>

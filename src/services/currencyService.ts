@@ -16,7 +16,7 @@ export const CURRENCIES: Record<string, CurrencySettings> = {
   },
   'EUR': {
     code: 'EUR',
-    symbol: '€',
+    symbol: 'FCFA',
     name: 'Euro',
     position: 'after'
   },
@@ -82,11 +82,29 @@ export class CurrencyService {
     }
 
     try {
-      await UserSettingsService.updateUserSettings(userId, {
-        preferences: {
-          defaultCurrency: currencyCode
-        }
-      });
+      const currentSettings = await UserSettingsService.getUserSettings(userId);
+
+      // Fournir des valeurs par défaut pour les préférences si elles n'existent pas
+      const existingPrefs = currentSettings?.preferences || {
+        defaultView: 'dashboard',
+        autoSave: true,
+        compactMode: false,
+      };
+
+      const updatedPreferences = {
+        ...existingPrefs,
+        defaultCurrency: currencyCode,
+      };
+
+      // Construire l'objet de paramètres complet à mettre à jour
+      const settingsToUpdate = {
+        ...(currentSettings || {}),
+        preferences: updatedPreferences,
+      };
+
+      // Forcer le type pour correspondre à ce que attend updateUserSettings
+      await UserSettingsService.updateUserSettings(userId, settingsToUpdate as any);
+
     } catch (error) {
       console.error('Erreur lors de la définition de la monnaie par défaut:', error);
       throw error;

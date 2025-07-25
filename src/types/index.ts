@@ -50,6 +50,7 @@ export interface Equipment {
   assignedTo?: string;
   images?: string[];
   documents?: string[];
+  tasks?: string[]; // IDs des tâches assignées à cet équipement
   createdAt?: Date;
   updatedAt?: Date;
 }

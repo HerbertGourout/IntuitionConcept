@@ -48,6 +48,7 @@ export interface Project {
 export interface ProjectPhase {
   id: string;
   name: string;
+  description?: string;
   startDate: string;
   endDate: string;
   tasks: ProjectTask[];

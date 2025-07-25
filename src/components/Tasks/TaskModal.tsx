@@ -351,7 +351,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
               <div className="flex-1 space-y-2">
                 <label htmlFor="task-budget" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
                   <DollarSign className="w-4 h-4 text-emerald-500" />
-                  <span>Budget estimé pour cette tâche (€)</span>
+                  <span>Budget estimé pour cette tâche (FCFA)</span>
                 </label>
                 <input
                   id="task-budget"
