@@ -413,34 +413,6 @@ export class PurchaseOrderService {
     }
   }
 
-  // Récupérer les bons d'achat par projet
-  static async getPurchaseOrdersByProject(projectId: string): Promise<PurchaseOrder[]> {
-    try {
-      const q = query(
-        collection(db, PURCHASE_ORDERS_COLLECTION), 
-        where('projectId', '==', projectId),
-        orderBy('createdAt', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
-            ? data.createdAt.toDate().toISOString() 
-            : data.createdAt || new Date().toISOString(),
-          updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' 
-            ? data.updatedAt.toDate().toISOString() 
-            : data.updatedAt || new Date().toISOString()
-        };
-      }) as PurchaseOrder[];
-    } catch (error) {
-      console.error('Erreur lors de la récupération des bons d\'achat par projet:', error);
-      throw error;
-    }
-  }
-
   // Calculer les statistiques des livraisons
   static async getDeliveryStats(): Promise<DeliveryStats> {
     try {

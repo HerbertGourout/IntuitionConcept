@@ -22,18 +22,20 @@ export const clearAllLocalData = async (): Promise<void> => {
     }
 
     // 3. Nettoyer IndexedDB
-    if ('indexedDB' in window) {
+    if ('indexedDB' in window && window.indexedDB) {
       try {
+        const idb = window.indexedDB;
+        
         // Lister toutes les bases de données IndexedDB
-        if ('databases' in indexedDB) {
-          const databases = await indexedDB.databases();
+        if ('databases' in idb && typeof idb.databases === 'function') {
+          const databases = await idb.databases();
           console.log(`💾 Suppression de ${databases.length} bases IndexedDB:`, databases.map(db => db.name));
           
           for (const db of databases) {
             if (db.name) {
-              const deleteRequest = indexedDB.deleteDatabase(db.name);
-              await new Promise((resolve, reject) => {
-                deleteRequest.onsuccess = () => resolve(true);
+              const deleteRequest = idb.deleteDatabase(db.name);
+              await new Promise<void>((resolve, reject) => {
+                deleteRequest.onsuccess = () => resolve();
                 deleteRequest.onerror = () => reject(deleteRequest.error);
               });
             }
@@ -53,13 +55,14 @@ export const clearAllLocalData = async (): Promise<void> => {
           
           for (const dbName of commonDbNames) {
             try {
-              const deleteRequest = indexedDB.deleteDatabase(dbName);
-              await new Promise((resolve) => {
-                deleteRequest.onsuccess = () => resolve(true);
-                deleteRequest.onerror = () => resolve(false); // Ignore les erreurs pour les DB inexistantes
+              const deleteRequest = idb.deleteDatabase(dbName);
+              await new Promise<void>((resolve) => {
+                deleteRequest.onsuccess = () => resolve();
+                deleteRequest.onerror = () => resolve(); // Ignore les erreurs pour les DB inexistantes
               });
             } catch (error) {
               // Ignorer les erreurs pour les bases qui n'existent pas
+              console.warn(`Erreur lors de la suppression de ${dbName}:`, error);
             }
           }
           console.log(`💾 Tentative de suppression des bases IndexedDB communes`);
