@@ -306,8 +306,15 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
               
               // Ajout du budget de la tâche en cours (si renseigné)
               const budgetCourant = typeof formData.budget === 'number' ? formData.budget : 0;
+              const spentCourant = typeof formData.spent === 'number' ? formData.spent : 0;
               const totalBudgetAvecCourant = totalBudgetTasks + budgetCourant;
+              const totalSpentAvecCourant = totalSpentTasks + spentCourant;
               const resteAllouer = budgetTotal - totalBudgetAvecCourant;
+              
+              // Détection des dépassements
+              const depassementBudget = totalBudgetAvecCourant > budgetTotal;
+              const depassementSpent = totalSpentAvecCourant > budgetTotal;
+              const depassementSpentVsBudget = totalSpentAvecCourant > totalBudgetAvecCourant;
               
               console.log('Calcul budget phase:', {
                 phaseId: formData.phaseId,
@@ -316,35 +323,75 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                 totalBudgetTasks,
                 totalSpentTasks,
                 budgetCourant,
+                spentCourant,
                 totalBudgetAvecCourant,
-                resteAllouer
+                totalSpentAvecCourant,
+                resteAllouer,
+                depassementBudget,
+                depassementSpent,
+                depassementSpentVsBudget
               });
+              
               return (
-                <div className="glass-card p-4 mb-2 border border-purple-200 bg-gradient-to-br from-purple-50/60 to-white/60 rounded-xl">
+                <div className={`glass-card p-4 mb-2 border rounded-xl ${
+                  depassementBudget || depassementSpent 
+                    ? 'border-red-300 bg-gradient-to-br from-red-50/60 to-white/60' 
+                    : 'border-purple-200 bg-gradient-to-br from-purple-50/60 to-white/60'
+                }`}>
+                  {/* Alertes de dépassement */}
+                  {(depassementBudget || depassementSpent) && (
+                    <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                        <div className="text-sm">
+                          <p className="font-semibold text-red-800">⚠️ Dépassement budgétaire détecté</p>
+                          {depassementBudget && (
+                            <p className="text-red-700">• Le budget alloué dépasse le budget total de la phase</p>
+                          )}
+                          {depassementSpent && (
+                            <p className="text-red-700">• Les dépenses dépassent le budget total de la phase</p>
+                          )}
+                          {depassementSpentVsBudget && (
+                            <p className="text-red-700">• Les dépenses dépassent le budget alloué</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex flex-wrap gap-4 items-center justify-between">
                     <div className="flex flex-col text-xs">
                       <span className="font-semibold text-purple-700">Budget phase</span>
                       <span className="text-lg font-bold">{budgetTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
                     </div>
                     <div className="flex flex-col text-xs">
-                      <span className="font-semibold text-orange-700">Budgété (avec cette tâche)</span>
-                      <span className="text-lg font-bold">{totalBudgetAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
+                      <span className={`font-semibold ${depassementBudget ? 'text-red-700' : 'text-orange-700'}`}>Budgété (avec cette tâche)</span>
+                      <span className={`text-lg font-bold ${depassementBudget ? 'text-red-600' : ''}`}>{totalBudgetAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
                     </div>
                     <div className="flex flex-col text-xs">
-                      <span className="font-semibold text-green-700">Dépensé</span>
-                      <span className="text-lg font-bold">{totalSpentTasks.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
+                      <span className={`font-semibold ${depassementSpent ? 'text-red-700' : 'text-green-700'}`}>Dépensé (avec cette tâche)</span>
+                      <span className={`text-lg font-bold ${depassementSpent ? 'text-red-600' : ''}`}>{totalSpentAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
                     </div>
                     <div className="flex flex-col text-xs">
                       <span className={resteAllouer < 0 ? 'font-semibold text-red-700' : 'font-semibold text-emerald-700'}>Reste à allouer</span>
                       <span className={resteAllouer < 0 ? 'text-lg font-bold text-red-600' : 'text-lg font-bold text-emerald-600'}>{resteAllouer.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}</span>
                     </div>
                   </div>
+                  
                   {/* Progression budgétaire */}
-                  <div className="mt-4">
+                  <div className="mt-4 space-y-2">
+                    <div className="text-xs text-gray-600">Progression budgétaire</div>
                     <div className="w-full h-3 bg-purple-100 rounded-full overflow-hidden">
                       <div
                         className={`h-3 rounded-full transition-all duration-500 ${totalBudgetAvecCourant <= budgetTotal ? 'bg-gradient-to-r from-orange-400 to-purple-500' : 'bg-red-400'}`}
                         style={{ width: `${Math.min(100, (totalBudgetAvecCourant / budgetTotal) * 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-600">Progression des dépenses</div>
+                    <div className="w-full h-3 bg-green-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-3 rounded-full transition-all duration-500 ${totalSpentAvecCourant <= budgetTotal ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-red-400'}`}
+                        style={{ width: `${Math.min(100, (totalSpentAvecCourant / budgetTotal) * 100)}%` }}
                       ></div>
                     </div>
                   </div>
@@ -416,8 +463,34 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                       } else if (numValue > 100000000) {
                         setFormErrors(prev => ({ ...prev, spent: 'La dépense ne peut pas dépasser 100 millions FCFA' }));
                       } else {
-                        setFormData(prev => ({ ...prev, spent: numValue }));
-                        setFormErrors(prev => ({ ...prev, spent: '' }));
+                        // Validation par rapport au budget de la phase
+                        if (formData.phaseId && currentProject) {
+                          const phase = phases.find(p => p.id === formData.phaseId);
+                          if (phase) {
+                            const budgetTotal = phase.estimatedBudget || 0;
+                            const existingTasks = (phase.tasks || [])
+                              .filter(t => !task || t.id !== task.id); // Exclure la tâche en cours d'édition
+                            const totalSpentTasks = existingTasks
+                              .reduce((sum, t) => sum + (t.spent || 0), 0);
+                            const totalSpentAvecCourant = totalSpentTasks + numValue;
+                            
+                            if (totalSpentAvecCourant > budgetTotal) {
+                              setFormErrors(prev => ({ 
+                                ...prev, 
+                                spent: `Cette dépense (${numValue.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}) ferait dépasser le budget total de la phase (${budgetTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}). Dépense totale résultante : ${totalSpentAvecCourant.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}.` 
+                              }));
+                            } else {
+                              setFormData(prev => ({ ...prev, spent: numValue }));
+                              setFormErrors(prev => ({ ...prev, spent: '' }));
+                            }
+                          } else {
+                            setFormData(prev => ({ ...prev, spent: numValue }));
+                            setFormErrors(prev => ({ ...prev, spent: '' }));
+                          }
+                        } else {
+                          setFormData(prev => ({ ...prev, spent: numValue }));
+                          setFormErrors(prev => ({ ...prev, spent: '' }));
+                        }
                       }
                     }
                   }}

@@ -88,6 +88,19 @@ const Tasks: React.FC = () => {
     return names.join(', ');
   }, [teamMembers]);
 
+  // Charger les tâches quand le projet change
+  useEffect(() => {
+    if (project) {
+      console.log('🔄 Projet changé, rechargement des tâches...');
+      loadTasksFromProject();
+    }
+  }, [project, loadTasksFromProject]);
+
+  // Charger les membres d'équipe au montage
+  useEffect(() => {
+    loadTeamMembers();
+  }, [loadTeamMembers]);
+
   // Filtrer les tâches par phase sélectionnée
   const phaseTasks = tasks.filter(task => {
     const matches = task.phaseId === selectedPhaseId;
@@ -203,28 +216,13 @@ const Tasks: React.FC = () => {
         
         await projectContext.addTask(project.id, selectedPhase.id, newTaskData);
         console.log('✅ Tâche créée avec succès');
-        
-        // Rechargement immédiat pour affichage instantané
-        console.log('⚡ Rechargement immédiat des tâches...');
-        loadTasksFromProject();
       }
       
-      // Attendre plus longtemps pour la synchronisation Firebase
-    console.log('⏳ Attente synchronisation Firebase...');
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Forcer le rechargement des tâches depuis le projet mis à jour
-    console.log('🔄 Rechargement des tâches...');
-    loadTasksFromProject();
-    
-    // Attendre encore un peu et recharger une seconde fois si nécessaire
-    setTimeout(() => {
-      console.log('🔄 Rechargement final des tâches...');
-      loadTasksFromProject();
-    }, 500);
-      
+      // Fermer le modal immédiatement - useEffect se charge du rechargement automatique
       setIsModalVisible(false);
       setCurrentTask(null);
+      
+      console.log('✅ Opération terminée - useEffect va recharger les tâches automatiquement');
       
       console.log('✅ Opération terminée avec succès');
     } catch (error) {
@@ -242,19 +240,15 @@ const Tasks: React.FC = () => {
     console.log('🗑️ Début suppression tâche:', taskId);
     
     try {
-      await projectContext.removeTask(project.id, selectedPhase.id, taskId);
-      console.log('✅ Tâche supprimée avec succès');
-      
-      // Attendre un peu pour la synchronisation Firebase
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Recharger les tâches
-      loadTasksFromProject();
-      
+      // Fermer le modal immédiatement pour une meilleure UX
       setIsModalVisible(false);
       setCurrentTask(null);
       
-      console.log('✅ Suppression terminée avec succès');
+      // Supprimer de Firebase - le useEffect se chargera de recharger automatiquement
+      await projectContext.removeTask(project.id, selectedPhase.id, taskId);
+      console.log('✅ Tâche supprimée avec succès de Firebase');
+      
+      console.log('✅ Suppression terminée avec succès - useEffect va recharger les tâches');
     } catch (error) {
       console.error('❌ Erreur lors de la suppression de la tâche:', error);
       alert('Erreur lors de la suppression de la tâche. Veuillez réessayer.');
@@ -338,7 +332,67 @@ const Tasks: React.FC = () => {
                 {task.description && (
                   <p className="text-gray-600 mb-3">{task.description}</p>
                 )}
+              
+              {/* Informations financières */}
+              <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-3 border border-gray-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-gray-700">Informations financières</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">Budget</div>
+                    <div className="font-semibold text-blue-600">
+                      {(task.budget || 0).toLocaleString()} FCFA
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">Dépensé</div>
+                    <div className={`font-semibold ${
+                      (task.spent || 0) > (task.budget || 0) 
+                        ? 'text-red-600' 
+                        : 'text-orange-600'
+                    }`}>
+                      {(task.spent || 0).toLocaleString()} FCFA
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">Restant</div>
+                    <div className={`font-semibold ${
+                      ((task.budget || 0) - (task.spent || 0)) < 0 
+                        ? 'text-red-600' 
+                        : 'text-green-600'
+                    }`}>
+                      {((task.budget || 0) - (task.spent || 0)).toLocaleString()} FCFA
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Barre de progression budgétaire */}
+                <div className="mt-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs text-gray-500">Utilisation du budget</span>
+                    <span className="text-xs font-medium text-gray-700">
+                      {(task.budget || 0) > 0 ? Math.round(((task.spent || 0) / (task.budget || 1)) * 100) : 0}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        (task.spent || 0) > (task.budget || 0)
+                          ? 'bg-gradient-to-r from-red-500 to-red-600'
+                          : (task.spent || 0) > (task.budget || 0) * 0.8
+                          ? 'bg-gradient-to-r from-orange-500 to-orange-600'
+                          : 'bg-gradient-to-r from-green-500 to-green-600'
+                      }`}
+                      style={{ 
+                        width: `${Math.min(100, (task.budget || 0) > 0 ? ((task.spent || 0) / (task.budget || 1)) * 100 : 0)}%` 
+                      }}
+                    ></div>
+                  </div>
+                </div>
               </div>
+            </div>
               <div className="flex items-center gap-2 ml-4">
                 {hasSubtasks && (
                   <button
