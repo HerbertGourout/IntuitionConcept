@@ -1,5 +1,4 @@
 import React from 'react';
-import { useState, useRef } from 'react';
 import { ProjectTask } from '../../contexts/projectTypes';
 
 interface GanttTaskProps {
@@ -12,8 +11,9 @@ interface GanttTaskProps {
   onDragEnd: () => void;
   onResize: (startDate: Date, endDate: Date) => void;
   onMove: (startDate: Date) => void;
-  onClick?: () => void;
-  getTeamMemberNames?: (memberIds: string[]) => string;
+  getTeamMemberNames: (memberIds: string[] | undefined) => string;
+  viewMode: 'days' | 'weeks' | 'months';
+  columnWidth: number;
 }
 
 const GanttTask: React.FC<GanttTaskProps> = ({
@@ -26,14 +26,10 @@ const GanttTask: React.FC<GanttTaskProps> = ({
   onDragEnd,
   onResize,
   onMove,
-  onClick,
-  getTeamMemberNames
+  getTeamMemberNames,
+  viewMode,
+  columnWidth,
 }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const taskRef = useRef<HTMLDivElement>(null);
-  const startX = useRef(0);
-  const startLeft = useRef(0);
-  const startWidth = useRef(0);
 
   const getStatusColor = () => {
     switch (task.status) {
@@ -41,173 +37,126 @@ const GanttTask: React.FC<GanttTaskProps> = ({
         return 'bg-green-500 border-green-600';
       case 'in_progress':
         return 'bg-blue-500 border-blue-600';
-      case 'cancelled':
-        return 'bg-red-500 border-red-600';
       case 'on_hold':
-        return 'bg-yellow-500 border-yellow-600';
-      default:
+        return 'bg-amber-500 border-amber-600';
+      case 'planned':
         return 'bg-gray-400 border-gray-500';
-    }
-  };
-
-  const getPriorityIndicator = () => {
-    switch (task.priority) {
-      case 'high':
-        return 'border-l-4 border-l-red-500';
-      case 'medium':
-        return 'border-l-4 border-l-orange-500';
-      case 'low':
-        return 'border-l-4 border-l-yellow-500';
       default:
-        return '';
+        return 'bg-slate-400 border-slate-500';
     }
   };
 
-  const handleMouseDown = (event: React.MouseEvent | React.DragEvent, action: 'drag' | 'resize-left' | 'resize-right') => {
+  const getProgress = () => {
+    if (task.status === 'done') return 100;
+    // A more realistic progress could be calculated if the task object had a 'progress' property
+    if (task.status === 'in_progress') return 50; 
+    return 0;
+  };
+
+  const handleMouseDown = (event: React.MouseEvent, action: 'drag' | 'resize-left' | 'resize-right') => {
     event.preventDefault();
     event.stopPropagation();
-    
-    const clientX = 'clientX' in event ? event.clientX : 0;
-    startX.current = clientX;
-    startLeft.current = position.left;
-    startWidth.current = position.width;
 
-    if (action === 'drag') {
-      setIsDragging(true);
-      if (event.nativeEvent instanceof DragEvent) {
-        onDragStart(event as React.DragEvent);
-      }
-    } else {
-      // La logique de redimensionnement est gérée directement dans handleMouseMove
-    }
+    const startX = event.clientX;
+    const originalStartDate = new Date(task.startDate || Date.now());
+    const originalEndDate = new Date(task.endDate || Date.now());
 
     const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - startX.current;
-      
+      const deltaX = e.clientX - startX;
+      let daysDelta = 0;
+
+      switch (viewMode) {
+        case 'days':
+          daysDelta = deltaX / columnWidth;
+          break;
+        case 'weeks':
+          daysDelta = (deltaX / columnWidth) * 7;
+          break;
+        case 'months':
+          daysDelta = (deltaX / columnWidth) * 30.44; // Average days in a month
+          break;
+      }
+
       if (action === 'drag') {
-        // Calculate new start date based on position
-        const dayWidth = 40; // Assuming day view for simplicity
-        const daysDelta = Math.round(deltaX / dayWidth);
-        const newStartDate = new Date(task.startDate || new Date());
-        newStartDate.setDate(newStartDate.getDate() + daysDelta);
+        const newStartDate = new Date(originalStartDate.getTime() + daysDelta * 24 * 60 * 60 * 1000);
         onMove(newStartDate);
-      } else if (action === 'resize-left') {
-        // Resize from left (change start date)
-        const dayWidth = 40;
-        const daysDelta = Math.round(deltaX / dayWidth);
-        const newStartDate = new Date(task.startDate || new Date());
-        newStartDate.setDate(newStartDate.getDate() + daysDelta);
-        onResize(newStartDate, new Date(task.dueDate || task.endDate || new Date()));
       } else if (action === 'resize-right') {
-        // Resize from right (change end date)
-        const dayWidth = 40;
-        const daysDelta = Math.round(deltaX / dayWidth);
-        const newEndDate = new Date(task.dueDate || task.endDate || new Date());
-        newEndDate.setDate(newEndDate.getDate() + daysDelta);
-        onResize(new Date(task.startDate || new Date()), newEndDate);
+        const newEndDate = new Date(originalEndDate.getTime() + daysDelta * 24 * 60 * 60 * 1000);
+        if (newEndDate > originalStartDate) {
+          onResize(originalStartDate, newEndDate);
+        }
+      } else if (action === 'resize-left') {
+        const newStartDate = new Date(originalStartDate.getTime() + daysDelta * 24 * 60 * 60 * 1000);
+        if (newStartDate < originalEndDate) {
+          onResize(newStartDate, originalEndDate);
+        }
       }
     };
 
     const handleMouseUp = () => {
-      setIsDragging(false);
-      // Nettoyage après le redimensionnement
-      onDragEnd();
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      onDragEnd();
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  const formatDuration = () => {
-    const start = new Date(task.startDate || new Date());
-    const end = new Date(task.dueDate || task.endDate || new Date());
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return `${days}j`;
-  };
-
-  // Get progress value (default to 0 if not available)
-  const getProgress = () => {
-    if (task.status === 'done') return 100;
-    if (task.status === 'in_progress') return 50;
-    return 0;
-  };
-
   return (
     <div
-      ref={taskRef}
-      className={`absolute flex items-center group cursor-pointer transition-all duration-200 ${
-        isDragged || isDragging ? 'z-20 shadow-lg' : 'z-10'
-      }`}
+      className={`absolute flex items-center group transition-all duration-200 ease-in-out ${isDragged ? 'z-20 shadow-xl scale-105' : 'z-10'}`}
       style={{
         left: position.left,
-        top: rowIndex * rowHeight + 16,
-        width: position.width,
-        height: 40
+        top: rowIndex * rowHeight + (rowHeight - 40) / 2, // Center the task in the row
+        width: Math.max(position.width, 10), // Ensure a minimum width
+        height: 40,
       }}
-      onClick={onClick}
+      onDragStart={onDragStart}
+      draggable
     >
-      {/* Resize Handle Left */}
+      {/* Main Task Bar */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 bg-gray-600 rounded-l"
-        onMouseDown={(e) => handleMouseDown(e, 'resize-left')}
-      />
-
-      {/* Task Bar */}
-      <div
-        className={`flex-1 h-full rounded-lg border-2 ${getStatusColor()} ${getPriorityIndicator()} 
-          hover:shadow-md transition-all duration-200 relative overflow-hidden`}
+        className={`w-full h-full rounded-lg border-2 ${getStatusColor()} flex items-center relative overflow-hidden shadow-md hover:shadow-lg transition-shadow`}
         onMouseDown={(e) => handleMouseDown(e, 'drag')}
       >
-        {/* Progress Bar */}
+        {/* Progress Overlay */}
         <div
-          className="absolute top-0 left-0 h-full bg-white bg-opacity-30 transition-all duration-300"
+          className="absolute top-0 left-0 h-full bg-white/25 backdrop-blur-sm transition-all duration-500"
           style={{ width: `${getProgress()}%` }}
         />
-
-        {/* Task Content */}
-        <div className="relative z-10 px-3 py-2 h-full flex items-center justify-between text-white">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">
-              {task.name}
-            </p>
-            {position.width > 120 && (
-              <p className="text-xs opacity-90 truncate">
-                {formatDuration()} • {getProgress()}%
-              </p>
-            )}
-          </div>
-          
+        
+        {/* Content */}
+        <div className="relative z-10 px-3 py-1 w-full flex items-center justify-between text-white font-sans">
+          <span className="text-sm font-medium truncate" title={task.name}>
+            {task.name}
+          </span>
           {position.width > 80 && (
-            <div className="text-xs opacity-90">
+            <span className="text-xs font-mono bg-black/20 px-1.5 py-0.5 rounded">
               {getProgress()}%
-            </div>
+            </span>
           )}
         </div>
-
-        {/* Dependency Lines */}
-        {task.dependencies && task.dependencies.length > 0 && (
-          <div className="absolute -left-2 top-1/2 w-2 h-0.5 bg-gray-400" />
-        )}
       </div>
 
-      {/* Resize Handle Right */}
+      {/* Resize Handles */}
       <div
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 bg-gray-600 rounded-r"
+        className="absolute -left-1 top-1/2 -translate-y-1/2 w-3 h-6 rounded-full bg-slate-600/50 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity"
+        onMouseDown={(e) => handleMouseDown(e, 'resize-left')}
+      />
+      <div
+        className="absolute -right-1 top-1/2 -translate-y-1/2 w-3 h-6 rounded-full bg-slate-600/50 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity"
         onMouseDown={(e) => handleMouseDown(e, 'resize-right')}
       />
 
       {/* Tooltip */}
-      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
-        <div className="font-medium">{task.name}</div>
-        <div className="text-gray-300">
-          {new Date(task.startDate || new Date()).toLocaleDateString('fr-FR')} - {new Date(task.dueDate || task.endDate || new Date()).toLocaleDateString('fr-FR')}
-        </div>
-        <div className="text-gray-300">
-          Assigné à: {getTeamMemberNames ? getTeamMemberNames(Array.isArray(task.assignedTo) ? task.assignedTo : []) : (Array.isArray(task.assignedTo) ? task.assignedTo.join(', ') : task.assignedTo || 'Non assigné')}
-        </div>
-        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-4 py-2 bg-gray-800/90 backdrop-blur-sm text-white text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-30">
+        <p className="font-bold text-base">{task.name}</p>
+        <p className="text-gray-300">
+          {new Date(task.startDate || '').toLocaleDateString('fr-FR')} - {new Date(task.endDate || '').toLocaleDateString('fr-FR')}
+        </p>
+        <p className="text-gray-300">Assigné à: {getTeamMemberNames(task.assignedTo)}</p>
+        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-gray-800/90" />
       </div>
     </div>
   );

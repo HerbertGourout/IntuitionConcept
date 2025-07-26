@@ -112,15 +112,21 @@ export const Planning: React.FC = () => {
     if (projectContext.currentProject) {
       const allTasks: ProjectTask[] = [];
       
+      console.log('Planning - Current project:', projectContext.currentProject);
+      console.log('Planning - Project phases:', projectContext.currentProject.phases);
+      
       // Parcourir toutes les phases du projet
       (projectContext.currentProject.phases || []).forEach((phase: ProjectPhase) => {
+        console.log('Planning - Processing phase:', phase.name, 'tasks:', phase.tasks);
         if (phase.tasks) {
           phase.tasks.forEach((task: ProjectTask) => {
+            console.log('Planning - Adding task:', task.name, 'startDate:', task.startDate, 'dueDate:', task.dueDate);
             allTasks.push(task);
           });
         }
       });
       
+      console.log('Planning - All extracted tasks:', allTasks);
       setTasks(allTasks);
     }
   }, [projectContext.currentProject]);
