@@ -365,7 +365,24 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                   min={0}
                   className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 ${formErrors.budget ? 'border-red-500' : 'border-white/30'}`}
                   value={formData.budget ?? ''}
-                  onChange={e => setFormData(prev => ({ ...prev, budget: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                  onChange={e => {
+                    const value = e.target.value;
+                    if (value === '') {
+                      setFormData(prev => ({ ...prev, budget: undefined }));
+                      setFormErrors(prev => ({ ...prev, budget: '' }));
+                    } else {
+                      const numValue = Number(value);
+                      // Validation stricte : limiter à 100 millions pour éviter les valeurs aberrantes
+                      if (isNaN(numValue) || numValue < 0) {
+                        setFormErrors(prev => ({ ...prev, budget: 'Le budget doit être un nombre positif' }));
+                      } else if (numValue > 100000000) {
+                        setFormErrors(prev => ({ ...prev, budget: 'Le budget ne peut pas dépasser 100 millions FCFA' }));
+                      } else {
+                        setFormData(prev => ({ ...prev, budget: numValue }));
+                        setFormErrors(prev => ({ ...prev, budget: '' }));
+                      }
+                    }
+                  }}
                   required
                 />
                 {formErrors.budget && (
@@ -386,7 +403,24 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                   min={0}
                   className={`w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 ${formErrors.spent ? 'border-red-500' : 'border-white/30'}`}
                   value={formData.spent ?? ''}
-                  onChange={e => setFormData(prev => ({ ...prev, spent: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                  onChange={e => {
+                    const value = e.target.value;
+                    if (value === '') {
+                      setFormData(prev => ({ ...prev, spent: undefined }));
+                      setFormErrors(prev => ({ ...prev, spent: '' }));
+                    } else {
+                      const numValue = Number(value);
+                      // Validation stricte : limiter à 100 millions pour éviter les valeurs aberrantes
+                      if (isNaN(numValue) || numValue < 0) {
+                        setFormErrors(prev => ({ ...prev, spent: 'La dépense doit être un nombre positif' }));
+                      } else if (numValue > 100000000) {
+                        setFormErrors(prev => ({ ...prev, spent: 'La dépense ne peut pas dépasser 100 millions FCFA' }));
+                      } else {
+                        setFormData(prev => ({ ...prev, spent: numValue }));
+                        setFormErrors(prev => ({ ...prev, spent: '' }));
+                      }
+                    }
+                  }}
                   placeholder="Montant dépensé (optionnel)"
                 />
                 {formErrors.spent && (
@@ -415,10 +449,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                 onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as TaskStatus }))}
                 required
               >
-                <option value="not_started">Non commencé</option>
+                <option value="todo">Non commencé</option>
                 <option value="in_progress">En cours</option>
-                <option value="blocked">Bloqué</option>
-                <option value="completed">Terminé</option>
+                <option value="on_hold">En attente</option>
+                <option value="done">Terminé</option>
+                <option value="cancelled">Annulé</option>
               </select>
               {formErrors.status && (
                 <div className="flex items-center space-x-2 p-3 bg-red-50/50 border border-red-200 rounded-lg">

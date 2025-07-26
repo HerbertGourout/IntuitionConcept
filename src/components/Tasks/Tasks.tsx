@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, BarChart3, Filter, Grid3X3 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, BarChart3, Filter, Grid3X3, DollarSign, TrendingUp } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask } from '../../contexts/projectTypes';
-import { TaskService, Task } from '../../services/taskService';
+import TeamService from '../../services/teamService';
+import { TeamMember } from '../../types/team';
+
 import TaskModal from './TaskModal';
+import FinancialDashboard from '../Financial/FinancialDashboard';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 const Tasks: React.FC = () => {
@@ -12,8 +15,10 @@ const Tasks: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentTask, setCurrentTask] = useState<ProjectTask | null>(null);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFinancialDashboard, setShowFinancialDashboard] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const project = projectContext?.currentProject;
   const phases = useMemo(() => project?.phases || [], [project?.phases]);
@@ -31,30 +36,11 @@ const Tasks: React.FC = () => {
         return;
       }
 
-      // Extraire toutes les tâches de toutes les phases et les convertir au format Task
-      const allProjectTasks: Task[] = project.phases.flatMap(phase => 
+      // Extraire toutes les tâches de toutes les phases directement au format ProjectTask
+      const allProjectTasks: ProjectTask[] = project.phases.flatMap(phase => 
         (phase.tasks || []).map(task => ({
-          id: task.id,
-          name: task.name || 'Tâche sans nom',
-          description: task.description || '',
-          status: task.status === 'planned' || task.status === 'on_hold' || task.status === 'cancelled' 
-            ? 'todo' as const 
-            : task.status as 'todo' | 'in_progress' | 'done',
-          priority: task.priority === 'urgent' ? 'high' as const : task.priority as 'low' | 'medium' | 'high',
-          assignedTo: task.assignedTo || [],
-          dueDate: task.endDate ? (typeof task.endDate === 'string' ? new Date(task.endDate) : new Date(task.endDate)) : undefined,
-          startDate: task.startDate ? (typeof task.startDate === 'string' ? new Date(task.startDate) : new Date(task.startDate)) : undefined,
-          estimatedHours: task.budget ? Math.round(task.budget / 50) : undefined,
-          actualHours: 0,
-          tags: [],
-          dependencies: task.dependencies || [],
-          phaseId: phase.id,
-          projectId: project.id,
-          subtasks: [],
-          attachments: [],
-          comments: [],
-          createdAt: new Date(),
-          updatedAt: new Date()
+          ...task,
+          phaseId: phase.id
         }))
       );
 
@@ -64,7 +50,6 @@ const Tasks: React.FC = () => {
           id: t.id, 
           name: t.name, 
           phaseId: t.phaseId, 
-          projectId: t.projectId, 
           status: t.status 
         }))
       });
@@ -78,6 +63,31 @@ const Tasks: React.FC = () => {
     }
   }, [project]);
 
+  // Charger les membres d'équipe
+  const loadTeamMembers = useCallback(async () => {
+    try {
+      const members = await TeamService.getAllMembers();
+      setTeamMembers(members);
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des membres d\'équipe:', error);
+      setTeamMembers([]);
+    }
+  }, []);
+
+  // Fonction utilitaire pour convertir les IDs en noms
+  const getTeamMemberNames = useCallback((memberIds: string[]): string => {
+    if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
+      return 'Non assigné';
+    }
+    
+    const names = memberIds.map(id => {
+      const member = teamMembers.find(m => m.id === id);
+      return member ? member.name : `ID:${id}`;
+    });
+    
+    return names.join(', ');
+  }, [teamMembers]);
+
   // Filtrer les tâches par phase sélectionnée
   const phaseTasks = tasks.filter(task => {
     const matches = task.phaseId === selectedPhaseId;
@@ -86,7 +96,7 @@ const Tasks: React.FC = () => {
         taskName: task.name,
         taskPhaseId: task.phaseId,
         selectedPhaseId,
-        taskProjectId: task.projectId,
+
         currentProjectId: project?.id
       });
     }
@@ -104,30 +114,21 @@ const Tasks: React.FC = () => {
     }))
   });
 
-  // Convertir Task[] vers ProjectTask[] pour le TaskModal
-  const convertTaskToProjectTask = (task: Task): ProjectTask => {
-    return {
-      id: task.id,
-      name: task.name || 'Tâche sans nom',
-      description: task.description || '',
-      status: task.status,
-      assignedTo: typeof task.assignedTo === 'string'
-        ? [task.assignedTo]
-        : Array.isArray(task.assignedTo)
-          ? task.assignedTo
-          : [],
-      endDate: task.dueDate ? (typeof task.dueDate === 'string' ? task.dueDate : task.dueDate.toISOString()) : undefined,
-      startDate: task.startDate ? (typeof task.startDate === 'string' ? task.startDate : task.startDate.toISOString()) : undefined,
-      priority: task.priority === 'urgent' ? 'urgent' : task.priority as 'low' | 'medium' | 'high',
-      budget: task.estimatedHours ? task.estimatedHours * 50 : undefined,
-      spent: 0
-    };
+  // Fonction pour éditer une tâche
+  const handleEditTask = (task: ProjectTask) => {
+    setCurrentTask(task);
+    setIsModalVisible(true);
   };
 
-  // Charger les tâches depuis les phases du projet
+  // Charger les tâches au montage et quand le projet change
   useEffect(() => {
     loadTasksFromProject();
   }, [loadTasksFromProject]);
+
+  // Charger les membres d'équipe au montage
+  useEffect(() => {
+    loadTeamMembers();
+  }, [loadTeamMembers]);
 
   // Sélectionner automatiquement la première phase si aucune n'est sélectionnée
   useEffect(() => {
@@ -141,74 +142,122 @@ const Tasks: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleEditTask = (task: Task) => {
-    const projectTask = convertTaskToProjectTask(task);
-    setCurrentTask(projectTask);
-    setIsModalVisible(true);
-  };
+
 
   const handleSaveTask = async (taskData: Partial<ProjectTask>) => {
-    if (!selectedPhase || !project) return;
+    if (!selectedPhase || !project) {
+      console.error('❌ Impossible de sauvegarder: phase ou projet manquant', { selectedPhase, project });
+      return;
+    }
+
+    console.log('💾 Début sauvegarde tâche:', {
+      currentTask: currentTask?.id,
+      taskData: {
+        name: taskData.name,
+        status: taskData.status,
+        priority: taskData.priority
+      },
+      projectId: project.id,
+      phaseId: selectedPhase.id
+    });
 
     try {
       if (currentTask) {
-        // Édition - Convertir ProjectTask vers Task
-        const taskForUpdate: Partial<Task> = {
-          name: taskData.name,
-          description: taskData.description,
-          status: taskData.status as 'todo' | 'in_progress' | 'done',
-          priority: taskData.priority as 'low' | 'medium' | 'high' | 'urgent',
+        // Édition - Utiliser ProjectContext pour mettre à jour la tâche
+        console.log('🔄 Mise à jour tâche existante:', currentTask.id);
+        await projectContext.updateTask(project.id, selectedPhase.id, currentTask.id, {
+          name: taskData.name || '',
+          description: taskData.description || '',
+          status: taskData.status || 'todo',
+          priority: taskData.priority || 'medium',
           assignedTo: taskData.assignedTo || [],
-          dueDate: taskData.endDate ? new Date(taskData.endDate) : undefined,
-          startDate: taskData.startDate ? new Date(taskData.startDate) : undefined,
-          estimatedHours: taskData.budget ? Math.round(taskData.budget / 50) : undefined
-        };
-        await TaskService.updateTask(currentTask.id, taskForUpdate);
-        console.log('Tâche mise à jour avec succès');
+          startDate: taskData.startDate || '',
+          endDate: taskData.endDate || '',
+          budget: taskData.budget || 0,
+          spent: taskData.spent || 0,
+          dependencies: taskData.dependencies || [],
+          costItems: taskData.costItems || [],
+          precision: taskData.precision
+        });
+        console.log('✅ Tâche mise à jour avec succès');
       } else {
-        // Création - Convertir ProjectTask vers Task
-        const newTaskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> = {
+        // Création - Utiliser ProjectContext pour ajouter la tâche
+        console.log('➕ Création nouvelle tâche');
+        const newTaskData = {
           name: taskData.name || 'Nouvelle tâche',
           description: taskData.description || '',
-          phaseId: selectedPhase.id,
-          projectId: project.id,
-          status: taskData.status === 'done' ? 'done' : (taskData.status as 'todo' | 'in_progress' | 'done') || 'todo',
-          priority: (taskData.priority === 'urgent' ? 'high' : taskData.priority) as 'low' | 'medium' | 'high' || 'medium',
+          status: taskData.status || 'todo',
+          priority: taskData.priority || 'medium',
           assignedTo: taskData.assignedTo || [],
-          dueDate: taskData.endDate ? new Date(taskData.endDate) : undefined,
-          startDate: taskData.startDate ? new Date(taskData.startDate) : undefined,
-          estimatedHours: taskData.budget ? Math.round(taskData.budget / 50) : undefined,
-          actualHours: 0,
-          tags: [],
-          dependencies: [],
-          subtasks: [],
-          attachments: [],
-          comments: []
+          startDate: taskData.startDate || '',
+          endDate: taskData.endDate || '',
+          budget: taskData.budget || 0,
+          spent: taskData.spent || 0,
+          phaseId: selectedPhase.id,
+          dependencies: taskData.dependencies || [],
+          costItems: taskData.costItems || [],
+          precision: taskData.precision || 3,
+          subTasks: []
         };
+        console.log('📝 Données nouvelle tâche:', newTaskData);
         
-        await TaskService.addTask(newTaskData);
-        console.log('Tâche créée avec succès');
+        await projectContext.addTask(project.id, selectedPhase.id, newTaskData);
+        console.log('✅ Tâche créée avec succès');
+        
+        // Rechargement immédiat pour affichage instantané
+        console.log('⚡ Rechargement immédiat des tâches...');
+        loadTasksFromProject();
       }
       
-      // Recharger les tâches après sauvegarde pour mettre à jour l'affichage
+      // Attendre plus longtemps pour la synchronisation Firebase
+    console.log('⏳ Attente synchronisation Firebase...');
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Forcer le rechargement des tâches depuis le projet mis à jour
+    console.log('🔄 Rechargement des tâches...');
+    loadTasksFromProject();
+    
+    // Attendre encore un peu et recharger une seconde fois si nécessaire
+    setTimeout(() => {
+      console.log('🔄 Rechargement final des tâches...');
       loadTasksFromProject();
+    }, 500);
       
       setIsModalVisible(false);
       setCurrentTask(null);
+      
+      console.log('✅ Opération terminée avec succès');
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde de la tâche:', error);
+      console.error('❌ Erreur lors de la sauvegarde de la tâche:', error);
+      alert('Erreur lors de la sauvegarde de la tâche. Veuillez réessayer.');
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
+    if (!project || !selectedPhase) {
+      console.error('❌ Impossible de supprimer: projet ou phase manquant');
+      return;
+    }
+    
+    console.log('🗑️ Début suppression tâche:', taskId);
+    
     try {
-      await TaskService.deleteTask(taskId);
-      console.log('Tâche supprimée avec succès');
+      await projectContext.removeTask(project.id, selectedPhase.id, taskId);
+      console.log('✅ Tâche supprimée avec succès');
+      
+      // Attendre un peu pour la synchronisation Firebase
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Recharger les tâches
       loadTasksFromProject();
+      
       setIsModalVisible(false);
       setCurrentTask(null);
+      
+      console.log('✅ Suppression terminée avec succès');
     } catch (error) {
-      console.error('Erreur lors de la suppression de la tâche:', error);
+      console.error('❌ Erreur lors de la suppression de la tâche:', error);
+      alert('Erreur lors de la suppression de la tâche. Veuillez réessayer.');
     }
   };
 
@@ -222,7 +271,7 @@ const Tasks: React.FC = () => {
     setExpandedTasks(newExpanded);
   };
 
-  const getStatusColor = (status: Task['status']): string => {
+  const getStatusColor = (status: ProjectTask['status']): string => {
     switch (status) {
       case 'done': return 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200';
       case 'in_progress': return 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 border border-blue-200';
@@ -231,7 +280,7 @@ const Tasks: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: Task['status']) => {
+  const getStatusIcon = (status: ProjectTask['status']) => {
     switch (status) {
       case 'done': return <CheckCircle className="w-4 h-4" />;
       case 'in_progress': return <Clock className="w-4 h-4" />;
@@ -240,7 +289,7 @@ const Tasks: React.FC = () => {
     }
   };
 
-  const getStatusLabel = (status: Task['status']): string => {
+  const getStatusLabel = (status: ProjectTask['status']): string => {
     switch (status) {
       case 'done': return 'Terminée';
       case 'in_progress': return 'En cours';
@@ -249,9 +298,9 @@ const Tasks: React.FC = () => {
     }
   };
 
-  const renderTaskCard = (task: Task, index: number) => {
+  const renderTaskCard = (task: ProjectTask, index: number) => {
     const isExpanded = expandedTasks.has(task.id);
-    const hasSubtasks = task.subtasks && Array.isArray(task.subtasks) && task.subtasks.length > 0;
+    const hasSubtasks = task.subTasks && Array.isArray(task.subTasks) && task.subTasks.length > 0;
 
     return (
       <Draggable key={task.id} draggableId={task.id} index={index}>
@@ -273,7 +322,7 @@ const Tasks: React.FC = () => {
                   {task.assignedTo && Array.isArray(task.assignedTo) && task.assignedTo.length > 0 && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
                       <Users className="w-3 h-3" />
-                      {task.assignedTo.join(', ')}
+                      {getTeamMemberNames(task.assignedTo)}
                     </span>
                   )}
                   {task.dueDate && (
@@ -283,7 +332,9 @@ const Tasks: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">{task.name}</h4>
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                {task.name && typeof task.name === 'string' ? task.name : 'Tâche sans nom'}
+              </h4>
                 {task.description && (
                   <p className="text-gray-600 mb-3">{task.description}</p>
                 )}
@@ -358,6 +409,17 @@ const Tasks: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <button
+              onClick={() => setShowFinancialDashboard(!showFinancialDashboard)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl ${
+                showFinancialDashboard 
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700' 
+                  : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
+              } hover:scale-105`}
+            >
+              <DollarSign className="w-4 h-4" />
+              {showFinancialDashboard ? 'Masquer Budget' : 'Voir Budget'}
+            </button>
+            <button
               onClick={handleCreateTask}
               className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
             >
@@ -367,6 +429,23 @@ const Tasks: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Dashboard Financier */}
+      {showFinancialDashboard && (
+        <div className="glass-card rounded-xl p-6 border border-white/20">
+          <div className="flex items-center gap-4 mb-6">
+            <TrendingUp className="w-6 h-6 text-green-600" />
+            <h3 className="text-xl font-semibold text-gray-900">
+              Analyse Financière - {selectedPhase?.name || 'Phase sélectionnée'}
+            </h3>
+          </div>
+          <FinancialDashboard 
+            projectId={project?.id || ''}
+            phaseId={selectedPhaseId || undefined}
+            level="phase"
+          />
+        </div>
+      )}
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -494,7 +573,11 @@ const Tasks: React.FC = () => {
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
           task={currentTask}
-          teamMembers={[]}
+          teamMembers={project?.team?.map((member, index) => ({
+            id: `member-${index}`,
+            name: member,
+            role: 'Membre'
+          })) || []}
         />
       )}
     </div>

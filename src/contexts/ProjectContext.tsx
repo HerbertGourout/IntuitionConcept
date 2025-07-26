@@ -1,71 +1,60 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { addSubTaskRecursive, removeSubTaskRecursive, reorderSubTasksRecursive } from '../utils/taskUtils';
-import { ProjectService, Project as FirebaseProject } from '../services/projectService';
+import { aggregatePhaseSpent, aggregateProjectSpent, cleanHistory } from './projectContextUtils';
+import { ProjectService } from '../services/projectService';
 import type { Project, ProjectPhase, ProjectTask, ProjectContextType } from './projectTypes';
 import type { FinancialRecord } from '../types';
 import { sumTaskBudgets } from './projectUtils';
 import { onSnapshot, collection, addDoc, updateDoc, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-
-
-
-// Expense déplacé dans projectTypes.ts
-
-// interface ProjectContextType déplacée dans projectTypes.ts
+// Type simplifié pour les données Firebase brutes
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FirebaseProjectData = Record<string, any> & {
+  id: string;
+  name: string;
+  status: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+};
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
-// --- AGGREGATION AUTOMATIQUE DES DEPENSES ---
-function aggregatePhaseSpent(tasks: ProjectTask[]): number {
-  return (tasks || []).reduce((sum, t) => sum + (t.spent || 0), 0);
-}
-function aggregateProjectSpent(phases: ProjectPhase[]): number {
-  return (phases || []).reduce((sum, ph) => sum + aggregatePhaseSpent(ph.tasks || []), 0);
-}
-
 export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // --- Dépenses réelles (FinancialRecord) ---
-  const [expenses, setExpenses] = useState<FinancialRecord[]>([]);
+  const [expenses] = useState<FinancialRecord[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [loadingProjects, setLoadingProjects] = useState<boolean>(true);
 
   // Charger les projets depuis Firebase
   useEffect(() => {
-    const loadProjects = async () => {
+    const loadProjects = async (): Promise<void> => {
       try {
         setLoadingProjects(true);
         const firebaseProjects = await ProjectService.getAllProjects();
         
         // Convertir les projets Firebase vers le format du contexte
-        const convertedProjects: Project[] = firebaseProjects.map(fbProject => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const convertedProjects: Project[] = firebaseProjects.map((fbProject: any) => ({
           id: fbProject.id,
           name: fbProject.name,
           location: fbProject.location,
           description: fbProject.description,
           startDate: fbProject.startDate,
           endDate: fbProject.endDate,
-          status: fbProject.status === 'active' ? 'in_progress' : fbProject.status,
+          status: (fbProject.status === 'active' ? 'in_progress' : fbProject.status) as Project['status'],
           budget: fbProject.budget,
-          createdAt: fbProject.createdAt.toISOString(),
-          updatedAt: fbProject.updatedAt.toISOString(),
-          spent: fbProject.actualCost,
-          phases: fbProject.phases.map(phase => ({
-            ...phase,
-            tasks: phase.tasks.map(task => ({
-              ...task,
-              assignedTo: task.assignedTo || [],
-              status: task.status as any, // Type conversion
-              priority: task.priority || 'medium',
-              updatedAt: task.updatedAt?.toISOString()
-            }))
-          })),
-          progress: fbProject.progress,
-          priority: 'medium', // Valeur par défaut
-          manager: 'Non assigné', // Firebase n'a pas de manager
+          spent: fbProject.spent || aggregateProjectSpent((fbProject.phases as ProjectPhase[]) || []),
+          phases: (fbProject.phases as ProjectPhase[]) || [],
+          manager: fbProject.manager || 'Non assigné',
           client: fbProject.client,
-          team: fbProject.team
+          progress: fbProject.progress,
+          priority: fbProject.priority || 'medium',
+          team: fbProject.team || [],
+          createdAt: fbProject.createdAt instanceof Date ? fbProject.createdAt.toISOString() : (fbProject.createdAt || new Date().toISOString()),
+          updatedAt: fbProject.updatedAt instanceof Date ? fbProject.updatedAt.toISOString() : (fbProject.updatedAt || new Date().toISOString()),
+          history: cleanHistory((fbProject.history as Array<{date?: string, action?: string, user?: string, details?: string}>) || [])
         }));
         
         setProjects(convertedProjects);
@@ -79,34 +68,26 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     loadProjects();
 
     // Écouter les changements en temps réel
-    const unsubscribe = ProjectService.subscribeToProjects((firebaseProjects) => {
-      const convertedProjects: Project[] = firebaseProjects.map(fbProject => ({
+    const unsubscribe = ProjectService.subscribeToProjects((firebaseProjects: FirebaseProjectData[]) => {
+      const convertedProjects: Project[] = firebaseProjects.map((fbProject: FirebaseProjectData) => ({
         id: fbProject.id,
         name: fbProject.name,
         location: fbProject.location,
         description: fbProject.description,
         startDate: fbProject.startDate,
         endDate: fbProject.endDate,
-        status: fbProject.status === 'active' ? 'in_progress' : fbProject.status,
+        status: (fbProject.status === 'active' ? 'in_progress' : fbProject.status) as Project['status'],
         budget: fbProject.budget,
-        createdAt: fbProject.createdAt.toISOString(),
-        updatedAt: fbProject.updatedAt.toISOString(),
-        spent: fbProject.actualCost,
-        phases: fbProject.phases.map(phase => ({
-          ...phase,
-          tasks: phase.tasks.map(task => ({
-            ...task,
-            assignedTo: task.assignedTo || [],
-            status: task.status as any, // Type conversion
-            priority: task.priority || 'medium',
-            updatedAt: task.updatedAt?.toISOString()
-          }))
-        })),
-        progress: fbProject.progress,
-        priority: 'medium',
-        manager: 'Non assigné', // Firebase n'a pas de manager
+        spent: fbProject.spent || aggregateProjectSpent((fbProject.phases as ProjectPhase[]) || []),
+        phases: (fbProject.phases as ProjectPhase[]) || [],
+        manager: fbProject.manager || 'Non assigné',
         client: fbProject.client,
-        team: fbProject.team
+        progress: fbProject.progress,
+        priority: fbProject.priority || 'medium',
+        team: fbProject.team || [],
+        createdAt: fbProject.createdAt instanceof Date ? fbProject.createdAt.toISOString() : (fbProject.createdAt || new Date().toISOString()),
+        updatedAt: fbProject.updatedAt instanceof Date ? fbProject.updatedAt.toISOString() : (fbProject.updatedAt || new Date().toISOString()),
+        history: cleanHistory((fbProject.history as Array<{date?: string, action?: string, user?: string, details?: string}>) || [])
       }));
       
       setProjects(convertedProjects);
@@ -122,13 +103,15 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const editExpense = async (id: string, updates: Partial<FinancialRecord>) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const editExpense = async (_id: string, _updates: Partial<FinancialRecord>) => {
     // Pour l'instant, on garde la logique existante
     // TODO: Implémenter la mise à jour des enregistrements financiers dans ProjectService
     console.warn('editExpense: Migration vers ProjectService en cours');
   };
 
-  const deleteExpense = async (id: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const deleteExpense = async (_id: string) => {
     // Pour l'instant, on garde la logique existante
     // TODO: Implémenter la suppression des enregistrements financiers dans ProjectService
     console.warn('deleteExpense: Migration vers ProjectService en cours');
@@ -139,7 +122,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'projects'), (snapshot) => {
       const fetchedProjects = snapshot.docs.map(doc => {
-        const data = doc.data() as Partial<Project>;
+        const data: Partial<Project> = doc.data() as Partial<Project>;
         return {
           id: doc.id,
           name: typeof data.name === 'string' ? data.name : 'Nouveau Projet',
@@ -271,13 +254,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   // Fonction utilitaire pour nettoyer l'historique
-  const cleanHistory = (historyArr: any[]) =>
-    historyArr.map(entry => ({
-      date: entry.date || new Date().toISOString(),
-      action: entry.action || '',
-      user: entry.user || 'Développeur',
-      details: entry.details || ''
-    }));
+  // Fonction utilitaire pour nettoyer l'historique
+// Utils déplacés dans projectContextUtils.ts
 
   const deleteProject = async (id: string, user?: string): Promise<void> => {
     try {
@@ -335,9 +313,6 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       throw error;
     }
   };
-
-
-
 
   const addPhase = async (projectId: string, phase: Omit<ProjectPhase, 'id' | 'tasks'>) => {
     const projectRef = doc(db, 'projects', projectId);
@@ -402,7 +377,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           // Ajout sous-tâche (arborescence)
           return {
             ...phase,
-            tasks: addSubTaskRecursive(phase.tasks, parentTaskId, {
+            tasks: addSubTaskRecursive(phase.tasks || [], parentTaskId, {
               ...task,
               id: `task-${Date.now()}`
             })
@@ -432,9 +407,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
             if (task.id === taskId) {
               return { ...task, ...updates };
             }
-            if (task.subtasks) {
+            if (task.subTasks) {
               // On ne modifie pas les sous-tâches ici
-              return { ...task, subtasks: task.subtasks };
+              return { ...task, subTasks: task.subTasks };
             }
             return task;
           });
