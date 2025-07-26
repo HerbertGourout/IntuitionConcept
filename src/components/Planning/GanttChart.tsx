@@ -1,23 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
+import { useState, useRef } from 'react';
 import { Calendar } from 'lucide-react';
 import { ProjectTask } from '../../contexts/projectTypes';
 import GanttTask from './GanttTask';
-import GanttTimeline from './GanttTimeline';
 
 interface GanttChartProps {
   tasks: ProjectTask[];
   onTaskUpdate: (taskId: string, updates: Partial<ProjectTask>) => void;
-  onTaskCreate: (task: Omit<ProjectTask, 'id'>) => void;
-  projectId?: string;
-  phases?: any[]; // Ajouter les phases en props
 }
 
 const GanttChart: React.FC<GanttChartProps> = ({ 
   tasks, 
-  onTaskUpdate, 
-  onTaskCreate,
-  projectId,
-  phases = [] // Ajouter phases avec valeur par défaut
+  onTaskUpdate
 }) => {
   type ViewMode = 'days' | 'weeks' | 'months';
   const [viewMode, setViewMode] = useState<ViewMode>('weeks');
@@ -56,37 +50,41 @@ const GanttChart: React.FC<GanttChartProps> = ({
     
     // Timeline fixe et raisonnable selon le mode de vue
     switch (viewMode) {
-      case 'days':
+      case 'days': {
         // 2 mois : 1 mois passé + 1 mois futur
         const dayStart = new Date(today);
         dayStart.setDate(dayStart.getDate() - 30);
         const dayEnd = new Date(today);
         dayEnd.setDate(dayEnd.getDate() + 30);
         return { start: dayStart, end: dayEnd };
+      }
         
-      case 'weeks':
+      case 'weeks': {
         // 6 mois : 3 mois passé + 3 mois futur
         const weekStart = new Date(today);
         weekStart.setMonth(weekStart.getMonth() - 3);
         const weekEnd = new Date(today);
         weekEnd.setMonth(weekEnd.getMonth() + 3);
         return { start: weekStart, end: weekEnd };
+      }
         
-      case 'months':
+      case 'months': {
         // 2 ans : 1 an passé + 1 an futur
         const monthStart = new Date(today);
         monthStart.setFullYear(monthStart.getFullYear() - 1);
         const monthEnd = new Date(today);
         monthEnd.setFullYear(monthEnd.getFullYear() + 1);
         return { start: monthStart, end: monthEnd };
+      }
         
-      default:
+      default: {
         // Par défaut : 6 mois
         const defaultStart = new Date(today);
         defaultStart.setMonth(defaultStart.getMonth() - 3);
         const defaultEnd = new Date(today);
         defaultEnd.setMonth(defaultEnd.getMonth() + 3);
         return { start: defaultStart, end: defaultEnd };
+      }
     }
   };
 

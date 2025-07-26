@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
+import { useState, useRef } from 'react';
 import { ProjectTask } from '../../contexts/projectTypes';
 
 interface GanttTaskProps {
@@ -38,10 +39,10 @@ const GanttTask: React.FC<GanttTaskProps> = ({
         return 'bg-green-500 border-green-600';
       case 'in_progress':
         return 'bg-blue-500 border-blue-600';
-      case 'completed':
-        return 'bg-green-500 border-green-600';
-      case 'blocked':
+      case 'cancelled':
         return 'bg-red-500 border-red-600';
+      case 'on_hold':
+        return 'bg-yellow-500 border-yellow-600';
       default:
         return 'bg-gray-400 border-gray-500';
     }
@@ -126,7 +127,7 @@ const GanttTask: React.FC<GanttTaskProps> = ({
 
   // Get progress value (default to 0 if not available)
   const getProgress = () => {
-    if (task.status === 'completed' || task.status === 'done') return 100;
+    if (task.status === 'done') return 100;
     if (task.status === 'in_progress') return 50;
     return 0;
   };
