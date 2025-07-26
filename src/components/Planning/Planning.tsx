@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Filter, Plus, BarChart3, Clock, CheckCircle, AlertTriangle, Target, Settings, Users } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask, ProjectPhase } from '../../contexts/projectTypes';
 import { GlassCard, AnimatedCounter } from '../UI/VisualEffects';
 import SimpleGanttChart from './SimpleGanttChart';
 import PhaseModal from './PhaseModal';
+import TeamService from '../../services/teamService';
+import { TeamMember } from '../../types/team';
 
 export const Planning: React.FC = () => {
   const projectContext = useProjectContext();
@@ -15,10 +17,26 @@ export const Planning: React.FC = () => {
   const [isPhaseModalOpen, setIsPhaseModalOpen] = useState(false);
   const [phaseModalMode, setPhaseModalMode] = useState<'create' | 'edit'>('create');
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null);
-  const [phaseError, setPhaseError] = useState('');
+
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [listFilter, setListFilter] = useState<'all' | 'todo' | 'in_progress' | 'done'>('all');
   const [listSort, setListSort] = useState<'dueDate' | 'priority' | 'name' | 'status'>('dueDate');
+
+  // Fonction pour charger les membres d'équipe
+  const loadTeamMembers = useCallback(async () => {
+    try {
+      const members = await TeamService.getAllMembers();
+      setTeamMembers(members);
+    } catch (error) {
+      console.error('Erreur lors du chargement des membres d\'équipe:', error);
+    }
+  }, []);
+
+  // Charger les membres d'équipe au montage du composant
+  useEffect(() => {
+    loadTeamMembers();
+  }, [loadTeamMembers]);
 
   // Fonctions utilitaires pour le calendrier
   const getCalendarDays = (date: Date): Date[] => {
@@ -68,18 +86,20 @@ export const Planning: React.FC = () => {
           if (!a.dueDate) return 1;
           if (!b.dueDate) return -1;
           return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        case 'priority':
+        case 'priority': {
           const priorityOrder = { high: 3, medium: 2, low: 1 };
           const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
           const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
           return bPriority - aPriority;
+        }
         case 'name':
           return a.name.localeCompare(b.name);
-        case 'status':
+        case 'status': {
           const statusOrder = { todo: 1, in_progress: 2, done: 3 };
           const aStatus = statusOrder[a.status as keyof typeof statusOrder] || 0;
           const bStatus = statusOrder[b.status as keyof typeof statusOrder] || 0;
           return aStatus - bStatus;
+        }
         default:
           return 0;
       }
@@ -107,25 +127,6 @@ export const Planning: React.FC = () => {
 
   // Les tâches sont déjà au format ProjectTask, pas besoin de conversion
   // Le GanttChart accepte directement les ProjectTask
-
-  const handleTaskCreate = (task: Omit<ProjectTask, 'id'>) => {
-    if (!projectContext || !projectContext.currentProject) return;
-    
-    const newTask: ProjectTask = {
-      ...task,
-      id: crypto.randomUUID(),
-      assignedTo: task.assignedTo || ''
-    };
-    
-    // Ajouter à la première phase disponible ou créer une phase par défaut
-    const phases = projectContext.currentProject.phases || [];
-    if (phases.length > 0) {
-      const firstPhase = phases[0];
-      projectContext.addTask(projectContext.currentProject.id, firstPhase.id, newTask);
-    }
-    
-    setTasks(prevTasks => [...prevTasks, newTask]);
-  };
 
   const handleTaskUpdate = (taskId: string, updates: Partial<ProjectTask>) => {
     if (!projectContext || !projectContext.currentProject) return;
@@ -172,7 +173,7 @@ export const Planning: React.FC = () => {
     setIsPhaseModalOpen(false);
     setPhaseModalMode('create');
     setEditingPhase(null);
-    setPhaseError('');
+
   };
 
   const handlePhaseDelete = () => {
@@ -182,7 +183,7 @@ export const Planning: React.FC = () => {
     setIsPhaseModalOpen(false);
     setPhaseModalMode('create');
     setEditingPhase(null);
-    setPhaseError('');
+
   };
 
   if (!projectContext.currentProject) {
@@ -512,6 +513,7 @@ export const Planning: React.FC = () => {
               <SimpleGanttChart 
                 tasks={tasks} 
                 onTaskUpdate={handleTaskUpdate}
+                teamMembers={teamMembers}
               />
             </div>
           )}

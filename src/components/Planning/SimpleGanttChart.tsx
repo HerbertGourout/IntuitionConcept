@@ -1,14 +1,30 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, User } from 'lucide-react';
 import { ProjectTask } from '../../contexts/projectTypes';
+import { TeamMember } from '../../types/team';
 
 interface SimpleGanttChartProps {
   tasks: ProjectTask[];
   onTaskUpdate?: (taskId: string, updates: Partial<ProjectTask>) => void;
+  teamMembers?: TeamMember[];
 }
 
-const SimpleGanttChart: React.FC<SimpleGanttChartProps> = ({ tasks, onTaskUpdate }) => {
+const SimpleGanttChart: React.FC<SimpleGanttChartProps> = ({ tasks, onTaskUpdate, teamMembers = [] }) => {
   const [viewMode, setViewMode] = useState<'weeks' | 'months'>('weeks');
+
+  // Fonction utilitaire pour convertir les IDs en noms
+  const getTeamMemberNames = (memberIds: string[]): string => {
+    if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
+      return 'Non assigné';
+    }
+    
+    const names = memberIds.map(id => {
+      const member = teamMembers.find(m => m.id === id);
+      return member ? member.name : `ID:${id}`;
+    });
+    
+    return names.join(', ');
+  };
 
   // Générer une timeline dynamique basée sur les dates des tâches
   const generateTimeline = () => {
@@ -198,7 +214,7 @@ const SimpleGanttChart: React.FC<SimpleGanttChartProps> = ({ tasks, onTaskUpdate
                       {task.assignedTo && task.assignedTo.length > 0 && (
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                           <User className="w-3 h-3" />
-                          <span className="truncate">{task.assignedTo.join(', ')}</span>
+                          <span className="truncate">{getTeamMemberNames(Array.isArray(task.assignedTo) ? task.assignedTo : [])}</span>
                         </div>
                       )}
                     </div>
@@ -220,7 +236,7 @@ const SimpleGanttChart: React.FC<SimpleGanttChartProps> = ({ tasks, onTaskUpdate
                         {/* Barre de progression */}
                         <div 
                           className="h-full bg-white/30 transition-all duration-300"
-                          style={{ width: `${(task as any).progress || Math.floor(Math.random() * 60) + 20}%` }}
+                          style={{ width: `${Math.floor(Math.random() * 60) + 20}%` }}
                         />
                         
                         {/* Contenu de la barre */}
@@ -229,7 +245,7 @@ const SimpleGanttChart: React.FC<SimpleGanttChartProps> = ({ tasks, onTaskUpdate
                             {task.name}
                           </span>
                           <span className="text-xs text-white/80 ml-auto">
-                            {(task as any).progress || Math.floor(Math.random() * 60) + 20}%
+                            {Math.floor(Math.random() * 60) + 20}%
                           </span>
                         </div>
                       </div>

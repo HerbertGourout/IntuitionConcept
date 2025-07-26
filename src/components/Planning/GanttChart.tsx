@@ -2,16 +2,19 @@ import React from 'react';
 import { useState, useRef } from 'react';
 import { Calendar } from 'lucide-react';
 import { ProjectTask } from '../../contexts/projectTypes';
+import { TeamMember } from '../../types/team';
 import GanttTask from './GanttTask';
 
 interface GanttChartProps {
   tasks: ProjectTask[];
   onTaskUpdate: (taskId: string, updates: Partial<ProjectTask>) => void;
+  teamMembers?: TeamMember[];
 }
 
 const GanttChart: React.FC<GanttChartProps> = ({ 
   tasks, 
-  onTaskUpdate
+  onTaskUpdate,
+  teamMembers = []
 }) => {
   type ViewMode = 'days' | 'weeks' | 'months';
   const [viewMode, setViewMode] = useState<ViewMode>('weeks');
@@ -21,6 +24,20 @@ const GanttChart: React.FC<GanttChartProps> = ({
   
   const ganttRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
+
+  // Fonction utilitaire pour convertir les IDs en noms
+  const getTeamMemberNames = (memberIds: string[]): string => {
+    if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
+      return 'Non assigné';
+    }
+    
+    const names = memberIds.map(id => {
+      const member = teamMembers.find(m => m.id === id);
+      return member ? member.name : `ID:${id}`;
+    });
+    
+    return names.join(', ');
+  };
 
   // Fonction pour formater les dates dans la timeline
   const formatDate = (date: Date): string => {
@@ -339,6 +356,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                   onDragEnd={handleTaskDragEnd}
                   onResize={(startDate, endDate) => handleTaskResize(task.id, startDate, endDate)}
                   onMove={(startDate) => handleTaskMove(task.id, startDate)}
+                  getTeamMemberNames={getTeamMemberNames}
                 />
               );
             })}

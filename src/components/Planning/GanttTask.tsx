@@ -13,6 +13,7 @@ interface GanttTaskProps {
   onResize: (startDate: Date, endDate: Date) => void;
   onMove: (startDate: Date) => void;
   onClick?: () => void;
+  getTeamMemberNames?: (memberIds: string[]) => string;
 }
 
 const GanttTask: React.FC<GanttTaskProps> = ({
@@ -25,7 +26,8 @@ const GanttTask: React.FC<GanttTaskProps> = ({
   onDragEnd,
   onResize,
   onMove,
-  onClick
+  onClick,
+  getTeamMemberNames
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const taskRef = useRef<HTMLDivElement>(null);
@@ -203,7 +205,7 @@ const GanttTask: React.FC<GanttTaskProps> = ({
           {new Date(task.startDate || new Date()).toLocaleDateString('fr-FR')} - {new Date(task.dueDate || task.endDate || new Date()).toLocaleDateString('fr-FR')}
         </div>
         <div className="text-gray-300">
-          Assigné à: {Array.isArray(task.assignedTo) ? task.assignedTo.join(', ') : task.assignedTo || 'Non assigné'}
+          Assigné à: {getTeamMemberNames ? getTeamMemberNames(Array.isArray(task.assignedTo) ? task.assignedTo : []) : (Array.isArray(task.assignedTo) ? task.assignedTo.join(', ') : task.assignedTo || 'Non assigné')}
         </div>
         <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
       </div>

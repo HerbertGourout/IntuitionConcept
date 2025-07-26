@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Filter, Plus, BarChart3, Clock, CheckCircle, AlertTriangle, Target, Settings } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask, ProjectPhase } from '../../contexts/projectTypes';
 import { GlassCard, AnimatedCounter } from '../UI/VisualEffects';
 import GanttChart from './GanttChart';
 import PhaseModal from './PhaseModal';
-
-
+import TeamService from '../../services/teamService';
+import { TeamMember } from '../../types/team';
 
 interface PhaseModalProps {
   isOpen: boolean;
@@ -26,6 +26,7 @@ export const Planning: React.FC = () => {
   const [phaseModalMode, setPhaseModalMode] = useState<'create' | 'edit'>('create');
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null);
   const [phaseError, setPhaseError] = useState('');
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   useEffect(() => {
     if (projectContext.currentProject) {
