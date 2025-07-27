@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Filter, Plus, BarChart3, Clock, CheckCircle, AlertTriangle, Target, Settings, Users } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask, ProjectPhase } from '../../contexts/projectTypes';
 import { GlassCard, AnimatedCounter } from '../UI/VisualEffects';
-import SimpleGanttChart from './SimpleGanttChart';
+// SimpleGanttChart supprimé définitivement
 import PhaseModal from './PhaseModal';
-import TeamService from '../../services/teamService';
-import { TeamMember } from '../../types/team';
 
 export const Planning: React.FC = () => {
   const projectContext = useProjectContext();
@@ -18,27 +16,67 @@ export const Planning: React.FC = () => {
   const [phaseModalMode, setPhaseModalMode] = useState<'create' | 'edit'>('create');
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null);
 
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [listFilter, setListFilter] = useState<'all' | 'todo' | 'in_progress' | 'done'>('all');
   const [listSort, setListSort] = useState<'dueDate' | 'priority' | 'name' | 'status'>('dueDate');
 
-  // Fonction pour charger les membres d'équipe
-  const loadTeamMembers = useCallback(async () => {
-    try {
-      const members = await TeamService.getAllMembers();
-      setTeamMembers(members);
-    } catch (error) {
-      console.error('Erreur lors du chargement des membres d\'équipe:', error);
+  // Fonction utilitaire pour convertir les IDs des membres en noms lisibles
+  const getAssignedMemberNames = (assignedTo: string | string[] | undefined): string => {
+    if (!assignedTo) {
+      return 'Non assigné';
     }
-  }, []);
+    
+    // Convertir en tableau si c'est une string
+    const memberIds = Array.isArray(assignedTo) ? assignedTo : [assignedTo];
+    
+    if (memberIds.length === 0) {
+      return 'Non assigné';
+    }
+    
+    const names = memberIds.map(id => {
+      // Si l'ID ressemble à un nom (contient des espaces ou des lettres), l'utiliser directement
+      if (typeof id === 'string' && (id.includes(' ') || /^[a-zA-ZÀ-ÿ\s]+$/.test(id))) {
+        return id;
+      }
+      
+      // Fallback avec noms génériques
+      const memberIndex = memberIds.indexOf(id);
+      const fallbackNames = ['Chef de projet', 'Responsable technique', 'Développeur', 'Designer', 'Testeur'];
+      if (memberIndex < fallbackNames.length) {
+        return fallbackNames[memberIndex];
+      }
+      
+      // Dernier recours : afficher un nom court au lieu de l'ID complet
+      return typeof id === 'string' && id.length > 10 ? `Membre ${id.substring(0, 8)}...` : `Membre ${id}`;
+    });
+    
+    return names.join(', ');
+  };
 
-  // Charger les membres d'équipe au montage du composant
   useEffect(() => {
-    loadTeamMembers();
-  }, [loadTeamMembers]);
+    if (projectContext.currentProject) {
+      const allTasks: ProjectTask[] = [];
+      
+      console.log('Planning - Current project:', projectContext.currentProject);
+      console.log('Planning - Project phases:', projectContext.currentProject.phases);
+      
+      // Parcourir toutes les phases du projet
+      (projectContext.currentProject.phases || []).forEach((phase: ProjectPhase) => {
+        console.log('Planning - Processing phase:', phase.name, 'tasks:', phase.tasks);
+        if (phase.tasks) {
+          phase.tasks.forEach((task: ProjectTask) => {
+            console.log('Planning - Adding task:', task.name, 'startDate:', task.startDate, 'dueDate:', task.dueDate);
+            allTasks.push(task);
+          });
+        }
+      });
+      
+      console.log('Planning - All extracted tasks:', allTasks);
+      setTasks(allTasks);
+    }
+  }, [projectContext.currentProject]);
 
-  // Fonctions utilitaires pour le calendrier
+  // Fonctions utilitaires pour le calendrier et le Gantt
   const getCalendarDays = (date: Date): Date[] => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -61,11 +99,52 @@ export const Planning: React.FC = () => {
     return days;
   };
 
+  // Fonction pour générer les jours pour le diagramme de Gantt (30 jours à partir du début du mois)
+  const getGanttDays = (date: Date): Date[] => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    
+    const days: Date[] = [];
+    // Générer 30 jours à partir du début du mois pour le Gantt
+    for (let i = 0; i < 30; i++) {
+      const day = new Date(firstDay);
+      day.setDate(firstDay.getDate() + i);
+      days.push(day);
+    }
+    
+    return days;
+  };
+
   const getTasksForDay = (date: Date, allTasks: ProjectTask[]): ProjectTask[] => {
     return allTasks.filter(task => {
-      if (!task.dueDate) return false;
-      const taskDate = new Date(task.dueDate);
-      return taskDate.toDateString() === date.toDateString();
+      // Si la tâche a une date de début et une date de fin, vérifier si la date est dans la plage
+      if (task.startDate && task.dueDate) {
+        const startDate = new Date(task.startDate);
+        const endDate = new Date(task.dueDate);
+        const checkDate = new Date(date);
+        
+        // Normaliser les dates pour comparer seulement les jours (pas les heures)
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        checkDate.setHours(12, 0, 0, 0);
+        
+        return checkDate >= startDate && checkDate <= endDate;
+      }
+      
+      // Si seulement dueDate est définie, vérifier si c'est le jour d'échéance
+      if (task.dueDate) {
+        const taskDate = new Date(task.dueDate);
+        return taskDate.toDateString() === date.toDateString();
+      }
+      
+      // Si seulement startDate est définie, vérifier si c'est le jour de début
+      if (task.startDate) {
+        const taskDate = new Date(task.startDate);
+        return taskDate.toDateString() === date.toDateString();
+      }
+      
+      return false;
     });
   };
 
@@ -515,12 +594,238 @@ export const Planning: React.FC = () => {
 
         <div className="bg-white/50 rounded-xl p-4">
           {viewType === 'gantt' && (
-            <div className="w-full">
-              <SimpleGanttChart 
-                tasks={tasks} 
-                onTaskUpdate={handleTaskUpdate}
-                teamMembers={teamMembers}
-              />
+            <div className="space-y-4">
+              {/* En-tête du Gantt avec navigation temporelle */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => {
+                      const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+                      setCurrentDate(prevMonth);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    ←
+                  </button>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                  </h3>
+                  <button 
+                    onClick={() => {
+                      const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                      setCurrentDate(nextMonth);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    →
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setCurrentDate(new Date())}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    Aujourd'hui
+                  </button>
+                  <div className="text-sm text-gray-600">
+                    {tasks.length} tâche(s)
+                  </div>
+                </div>
+              </div>
+
+              {/* Diagramme de Gantt */}
+              {tasks.length === 0 ? (
+                <div className="text-center py-12">
+                  <Target className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                  <p className="text-gray-500">Aucune tâche à afficher dans le diagramme de Gantt</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border overflow-hidden">
+                  {/* En-tête des colonnes */}
+                  <div className="border-b bg-gray-50">
+                    <div className="flex">
+                      {/* Colonne des tâches (fixe) */}
+                      <div className="w-80 p-4 border-r bg-gray-50 font-medium text-gray-700">
+                        Tâches
+                      </div>
+                      {/* Colonnes des dates (scrollable) */}
+                      <div className="flex-1 overflow-x-auto">
+                        <div className="flex min-w-max">
+                          {getGanttDays(currentDate).map((day: Date, index: number) => {
+                            const isToday = day.toDateString() === new Date().toDateString();
+                            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                            return (
+                              <div 
+                                key={index}
+                                className={`w-12 p-2 text-center text-xs border-r ${
+                                  isToday ? 'bg-blue-100 text-blue-800 font-medium' : 
+                                  isWeekend ? 'bg-gray-100 text-gray-500' : 'text-gray-600'
+                                }`}
+                              >
+                                <div className="font-medium">{day.getDate()}</div>
+                                <div className="text-xs opacity-75">
+                                  {day.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 2)}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lignes des tâches */}
+                  <div className="max-h-96 overflow-y-auto">
+                    {tasks.map((task, taskIndex) => {
+                      const taskStartDate = task.startDate ? new Date(task.startDate) : null;
+                      const taskEndDate = task.dueDate ? new Date(task.dueDate) : null;
+                      const assignedNames = getAssignedMemberNames(task.assignedTo);
+                      
+                      return (
+                        <div key={task.id} className={`flex border-b hover:bg-gray-50 ${
+                          taskIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                        }`}>
+                          {/* Colonne des informations de tâche (fixe) */}
+                          <div className="w-80 p-4 border-r">
+                            <div className="space-y-1">
+                              <div className="font-medium text-gray-900 truncate" title={task.name}>
+                                {task.name}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  task.status === 'done' ? 'bg-green-100 text-green-800' :
+                                  task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {task.status === 'done' ? 'Terminé' :
+                                   task.status === 'in_progress' ? 'En cours' : 'À faire'}
+                                </div>
+                                {task.priority && (
+                                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                    task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-green-100 text-green-800'
+                                  }`}>
+                                    {task.priority === 'high' ? 'Haute' :
+                                     task.priority === 'medium' ? 'Moyenne' : 'Basse'}
+                                  </div>
+                                )}
+                              </div>
+                              {assignedNames !== 'Non assigné' && (
+                                <div className="text-xs text-gray-600 truncate" title={assignedNames}>
+                                  👤 {assignedNames}
+                                </div>
+                              )}
+                              {(taskStartDate || taskEndDate) && (
+                                <div className="text-xs text-gray-500">
+                                  {taskStartDate && taskEndDate ? (
+                                    `${taskStartDate.toLocaleDateString('fr-FR')} → ${taskEndDate.toLocaleDateString('fr-FR')}`
+                                  ) : taskStartDate ? (
+                                    `Début: ${taskStartDate.toLocaleDateString('fr-FR')}`
+                                  ) : (
+                                    `Échéance: ${taskEndDate?.toLocaleDateString('fr-FR')}`
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Timeline (scrollable) */}
+                          <div className="flex-1 overflow-x-auto">
+                            <div className="relative flex min-w-max h-20">
+                              {(() => {
+                                const ganttDays = getGanttDays(currentDate);
+                                const taskStart = taskStartDate ? new Date(taskStartDate) : null;
+                                const taskEnd = taskEndDate ? new Date(taskEndDate) : null;
+                                
+                                // Calculer les positions de début et fin de la barre
+                                let barStartIndex = -1;
+                                let barEndIndex = -1;
+                                
+                                if (taskStart && taskEnd) {
+                                  ganttDays.forEach((day, index) => {
+                                    const dayStr = day.toDateString();
+                                    if (taskStart.toDateString() === dayStr) barStartIndex = index;
+                                    if (taskEnd.toDateString() === dayStr) barEndIndex = index;
+                                  });
+                                }
+                                
+                                return ganttDays.map((day: Date, dayIndex: number) => {
+                                  const isToday = day.toDateString() === new Date().toDateString();
+                                  const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                                  const isInTaskRange = taskStart && taskEnd && 
+                                    day >= taskStart && day <= taskEnd;
+                                  
+                                  // Déterminer le style de la barre selon la position
+                                  let barStyle = '';
+                                  if (isInTaskRange) {
+                                    if (dayIndex === barStartIndex && dayIndex === barEndIndex) {
+                                      // Tâche d'un seul jour
+                                      barStyle = 'rounded';
+                                    } else if (dayIndex === barStartIndex) {
+                                      // Début de la tâche
+                                      barStyle = 'rounded-l';
+                                    } else if (dayIndex === barEndIndex) {
+                                      // Fin de la tâche
+                                      barStyle = 'rounded-r';
+                                    } else {
+                                      // Milieu de la tâche
+                                      barStyle = '';
+                                    }
+                                  }
+                                  
+                                  return (
+                                    <div 
+                                      key={dayIndex}
+                                      className={`w-12 border-r relative ${
+                                        isToday ? 'bg-blue-50' : 
+                                        isWeekend ? 'bg-gray-50' : 'bg-white'
+                                      }`}
+                                    >
+                                      {isInTaskRange && (
+                                        <div className={`absolute inset-x-0 top-1/2 transform -translate-y-1/2 h-6 ${
+                                          task.status === 'done' ? 'bg-green-400' :
+                                          task.status === 'in_progress' ? 'bg-blue-400' :
+                                          'bg-gray-400'
+                                        } ${barStyle}`} title={`${task.name} - ${assignedNames}`}>
+                                          <div className="w-full h-full opacity-80"></div>
+                                        </div>
+                                      )}
+                                      {isToday && (
+                                        <div className="absolute inset-x-0 top-0 bottom-0 border-l-2 border-blue-500 opacity-50"></div>
+                                      )}
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Légende */}
+              <div className="flex items-center justify-center gap-6 mt-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-gray-400 rounded"></div>
+                  <span className="text-sm text-gray-600">À faire</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-blue-400 rounded"></div>
+                  <span className="text-sm text-gray-600">En cours</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-green-400 rounded"></div>
+                  <span className="text-sm text-gray-600">Terminé</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 bg-blue-500"></div>
+                  <span className="text-sm text-gray-600">Aujourd'hui</span>
+                </div>
+              </div>
             </div>
           )}
           {viewType === 'calendar' && (
@@ -586,19 +891,25 @@ export const Planning: React.FC = () => {
                         {day.getDate()}
                       </div>
                       <div className="space-y-1">
-                        {dayTasks.slice(0, 3).map(task => (
-                          <div 
-                            key={task.id}
-                            className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 ${
-                              task.status === 'done' ? 'bg-green-100 text-green-800' :
-                              task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}
-                            title={task.name}
-                          >
-                            {task.name}
-                          </div>
-                        ))}
+                        {dayTasks.slice(0, 3).map(task => {
+                          const assignedNames = getAssignedMemberNames(task.assignedTo);
+                          return (
+                            <div 
+                              key={task.id}
+                              className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 ${
+                                task.status === 'done' ? 'bg-green-100 text-green-800' :
+                                task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}
+                              title={`${task.name}${assignedNames !== 'Non assigné' ? ` - ${assignedNames}` : ''}`}
+                            >
+                              <div className="font-medium">{task.name}</div>
+                              {assignedNames !== 'Non assigné' && (
+                                <div className="text-xs opacity-75 mt-0.5">{assignedNames}</div>
+                              )}
+                            </div>
+                          );
+                        })}
                         {dayTasks.length > 3 && (
                           <div className="text-xs text-gray-500 text-center">
                             +{dayTasks.length - 3} autres
@@ -714,7 +1025,7 @@ export const Planning: React.FC = () => {
                               {task.assignedTo && (
                                 <div className="flex items-center gap-1">
                                   <Users size={14} />
-                                  <span>{task.assignedTo}</span>
+                                  <span>{getAssignedMemberNames(task.assignedTo)}</span>
                                 </div>
                               )}
                               {task.dueDate && (

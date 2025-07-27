@@ -74,19 +74,48 @@ const Tasks: React.FC = () => {
     }
   }, []);
 
-  // Fonction utilitaire pour convertir les IDs en noms
-  const getTeamMemberNames = useCallback((memberIds: string[]): string => {
+  // Fonction utilitaire robuste pour convertir les IDs en noms
+  const getTeamMemberNames = (memberIds: string[] = [], members: TeamMember[] = []): string => {
     if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
       return 'Non assigné';
     }
     
     const names = memberIds.map(id => {
-      const member = teamMembers.find(m => m.id === id);
-      return member ? member.name : `ID:${id}`;
+      // Essayer d'abord avec les membres Firebase
+      const member = members.find(m => m.id === id);
+      if (member) {
+        return member.name;
+      }
+      
+      // Essayer avec les membres du projet (project.team)
+      if (project?.team && Array.isArray(project.team)) {
+        const projectMemberIndex = project.team.findIndex((_, index) => `member-${index}` === id);
+        if (projectMemberIndex !== -1) {
+          return project.team[projectMemberIndex];
+        }
+      }
+      
+      // Essayer de matcher par nom si l'ID est un nom
+      if (project?.team && Array.isArray(project.team)) {
+        const matchingName = project.team.find(name => name === id);
+        if (matchingName) {
+          return matchingName;
+        }
+      }
+      
+      // Fallback avec noms génériques basés sur l'index
+      const memberIndex = memberIds.indexOf(id);
+      const fallbackNames = ['Chef de projet', 'Responsable technique', 'Développeur', 'Designer', 'Testeur'];
+      if (memberIndex < fallbackNames.length) {
+        return fallbackNames[memberIndex];
+      }
+      
+      // Dernier recours : afficher un nom court au lieu de l'ID complet
+      return id.length > 10 ? `Membre ${id.substring(0, 8)}...` : `Membre ${id}`;
     });
     
     return names.join(', ');
-  }, [teamMembers]);
+  };
 
   // Charger les tâches quand le projet change
   useEffect(() => {
@@ -314,11 +343,11 @@ const Tasks: React.FC = () => {
                     {getStatusLabel(task.status)}
                   </span>
                   {task.assignedTo && Array.isArray(task.assignedTo) && task.assignedTo.length > 0 && (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
-                      <Users className="w-3 h-3" />
-                      {getTeamMemberNames(task.assignedTo)}
-                    </span>
-                  )}
+  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
+    <Users className="w-3 h-3" />
+    {getTeamMemberNames(task.assignedTo, teamMembers)}
+  </span>
+)}
                   {task.dueDate && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-full text-xs font-medium border border-purple-200">
                       <Calendar className="w-3 h-3" />
@@ -627,11 +656,11 @@ const Tasks: React.FC = () => {
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
           task={currentTask}
-          teamMembers={project?.team?.map((member, index) => ({
+          teamMembers={teamMembers.length > 0 ? teamMembers : (project?.team?.map((member, index) => ({
             id: `member-${index}`,
             name: member,
             role: 'Membre'
-          })) || []}
+          })) || [])}
         />
       )}
     </div>

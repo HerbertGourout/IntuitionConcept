@@ -353,39 +353,59 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     projectId: string,
     phaseId: string,
     task: Omit<ProjectTask, 'id'>,
-    parentTaskId?: string
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _parentTaskId?: string
   ) => {
     const projectRef = doc(db, 'projects', projectId);
     const projectSnap = await getDoc(projectRef);
     if (!projectSnap.exists()) return;
     const projectData = projectSnap.data() as Project;
+    
+    const newTask: ProjectTask = {
+      id: `task-${Date.now()}`,
+      name: typeof task.name === 'string' && task.name.trim() ? task.name : 'Tâche sans nom',
+      description: typeof task.description === 'string' ? task.description : '',
+      status: task.status as ProjectTask['status'] || 'todo',
+      priority: task.priority as ProjectTask['priority'] || 'medium',
+      assignedTo: Array.isArray(task.assignedTo) ? task.assignedTo : [],
+      startDate: task.startDate ? (typeof task.startDate === 'string' ? task.startDate : new Date(task.startDate).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+      endDate: task.endDate ? (typeof task.endDate === 'string' ? task.endDate : new Date(task.endDate).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+      budget: typeof task.budget === 'number' && !isNaN(task.budget) ? task.budget : 0,
+      spent: typeof task.spent === 'number' && !isNaN(task.spent) ? task.spent : 0,
+      dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
+      costItems: Array.isArray(task.costItems) ? task.costItems : [],
+      precision: typeof task.precision === 'number' ? task.precision : 3,
+      subTasks: Array.isArray(task.subTasks) ? task.subTasks.map(subTask => ({
+        ...subTask,
+        id: subTask.id || `subtask-${Date.now()}-${Math.random()}`,
+        name: typeof subTask.name === 'string' && subTask.name.trim() ? subTask.name : 'Sous-tâche sans nom',
+        description: typeof subTask.description === 'string' ? subTask.description : '',
+        status: subTask.status as ProjectTask['status'] || 'todo',
+        priority: subTask.priority as ProjectTask['priority'] || 'medium',
+        assignedTo: Array.isArray(subTask.assignedTo) ? subTask.assignedTo : [],
+        startDate: subTask.startDate ? (typeof subTask.startDate === 'string' ? subTask.startDate : new Date(subTask.startDate || new Date()).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+        endDate: subTask.endDate ? (typeof subTask.endDate === 'string' ? subTask.endDate : new Date(subTask.endDate || new Date()).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+        budget: typeof subTask.budget === 'number' && !isNaN(subTask.budget) ? subTask.budget : 0,
+        spent: typeof subTask.spent === 'number' && !isNaN(subTask.spent) ? subTask.spent : 0,
+        dependencies: Array.isArray(subTask.dependencies) ? subTask.dependencies : [],
+        costItems: Array.isArray(subTask.costItems) ? subTask.costItems : [],
+        precision: typeof subTask.precision === 'number' ? subTask.precision : 3,
+        subTasks: [],
+        updatedAt: new Date().toISOString()
+      })) : [],
+      updatedAt: new Date().toISOString()
+    };
+
     const updatedPhases = (projectData.phases || []).map(phase => {
       if (phase.id === phaseId) {
-        if (!parentTaskId) {
-          // Ajout tâche principale
-          return {
-            ...phase,
-            tasks: [
-              ...phase.tasks,
-              {
-                id: `task-${Date.now()}`,
-                ...task
-              }
-            ]
-          };
-        } else {
-          // Ajout sous-tâche (arborescence)
-          return {
-            ...phase,
-            tasks: addSubTaskRecursive(phase.tasks || [], parentTaskId, {
-              ...task,
-              id: `task-${Date.now()}`
-            })
-          };
-        }
+        return {
+          ...phase,
+          tasks: [...(phase.tasks || []), newTask]
+        };
       }
       return phase;
     });
+    
     await updateDoc(projectRef, { phases: updatedPhases });
   };
 
@@ -399,27 +419,50 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     const projectSnap = await getDoc(projectRef);
     if (!projectSnap.exists()) return;
     const projectData = projectSnap.data() as Project;
+    
     const updatedPhases = (projectData.phases || []).map(phase => {
       if (phase.id === phaseId) {
-        // Utilitaire récursif à implémenter pour updateTaskRecursive
         const updateTaskRecursive = (tasks: ProjectTask[]): ProjectTask[] =>
           tasks.map(task => {
             if (task.id === taskId) {
-              return { ...task, ...updates };
+              return {
+                ...task,
+                ...updates,
+                name: typeof (updates.name ?? task.name) === 'string' && (updates.name ?? task.name).trim() ? (updates.name ?? task.name) : 'Tâche sans nom',
+                description: typeof (updates.description ?? task.description) === 'string' ? (updates.description ?? task.description) : '',
+                status: (updates.status ?? task.status) as ProjectTask['status'] || 'todo',
+                priority: (updates.priority ?? task.priority) as ProjectTask['priority'] || 'medium',
+                assignedTo: Array.isArray(updates.assignedTo ?? task.assignedTo) ? (updates.assignedTo ?? task.assignedTo) : [],
+                startDate: updates.startDate ? (typeof updates.startDate === 'string' ? updates.startDate : new Date(updates.startDate).toISOString().split('T')[0]) : (typeof task.startDate === 'string' ? task.startDate : task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+                endDate: updates.endDate ? (typeof updates.endDate === 'string' ? updates.endDate : new Date(updates.endDate).toISOString().split('T')[0]) : (typeof task.endDate === 'string' ? task.endDate : task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+                budget: (() => {
+                  const budgetValue = updates.budget ?? task.budget;
+                  return typeof budgetValue === 'number' && !isNaN(budgetValue) ? budgetValue : 0;
+                })(),
+                spent: (() => {
+                  const spentValue = updates.spent ?? task.spent;
+                  return typeof spentValue === 'number' && !isNaN(spentValue) ? spentValue : 0;
+                })(),
+                dependencies: Array.isArray(updates.dependencies ?? task.dependencies) ? (updates.dependencies ?? task.dependencies) : [],
+                costItems: Array.isArray(updates.costItems ?? task.costItems) ? (updates.costItems ?? task.costItems) : [],
+                precision: typeof (updates.precision ?? task.precision) === 'number' ? (updates.precision ?? task.precision) : 3,
+                subTasks: Array.isArray(updates.subTasks ?? task.subTasks) ? (updates.subTasks ?? task.subTasks) : [],
+                updatedAt: new Date().toISOString()
+              };
             }
             if (task.subTasks) {
-              // On ne modifie pas les sous-tâches ici
-              return { ...task, subTasks: task.subTasks };
+              return { ...task, subTasks: updateTaskRecursive(task.subTasks) };
             }
             return task;
           });
         return {
           ...phase,
-          tasks: updateTaskRecursive(phase.tasks)
+          tasks: updateTaskRecursive(phase.tasks || [])
         };
       }
       return phase;
     });
+    
     await updateDoc(projectRef, { phases: updatedPhases });
   };
 

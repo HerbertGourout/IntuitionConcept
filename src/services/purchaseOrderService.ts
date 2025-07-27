@@ -60,8 +60,8 @@ export class PurchaseOrderService {
     try {
       const q = query(
         collection(db, PURCHASE_ORDERS_COLLECTION), 
-        where('projectId', '==', projectId),
-        orderBy('createdAt', 'desc')
+        where('projectId', '==', projectId)
+        // orderBy('createdAt', 'desc') - Temporairement désactivé en attendant l'index Firebase
       );
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => {

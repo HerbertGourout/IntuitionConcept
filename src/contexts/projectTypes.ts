@@ -60,13 +60,13 @@ export interface ProjectPhase {
 }
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskStatus = 'todo' | 'planned' | 'in_progress' | 'done' | 'on_hold' | 'cancelled';
+export type TaskStatus = 'todo' | 'planned' | 'in_progress' | 'done' | 'on_hold' | 'cancelled' | 'blocked';
 
 export interface ProjectTask {
   id: string;
   name: string;
   description?: string;
-  status: 'todo' | 'planned' | 'in_progress' | 'done' | 'on_hold' | 'cancelled';
+  status: TaskStatus;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   assignedTo: string[];
   startDate?: string;

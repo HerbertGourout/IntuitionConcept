@@ -1,18 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { ProjectTask } from '../../contexts/projectTypes';
 import { TeamMember } from '../../types/team';
-import { GanttChartSquare, Calendar as CalendarIcon, List, ChevronLeft, ChevronRight, Users, CalendarDays, Hash } from 'lucide-react';
+import { GanttChartSquare, CalendarDays, List, ChevronLeft, ChevronRight } from 'lucide-react';
 import GanttView from './GanttView';
+import TaskListView from './TaskListView';
 import { AnimatePresence, motion } from 'framer-motion';
 
-// Props for the main component
+// Props du composant principal
 interface PlanningViewsProps {
   tasks: ProjectTask[];
   teamMembers?: TeamMember[];
   onTaskUpdate: (taskId: string, updates: Partial<ProjectTask>) => void;
 }
 
-// Utility to get member names from IDs
+// Utilitaire pour obtenir les noms des membres à partir de leurs IDs
 const getTeamMemberNames = (memberIds: string[] | undefined, teamMembers: TeamMember[]): string => {
   if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
     return 'Non assigné';
@@ -24,21 +25,18 @@ const getTeamMemberNames = (memberIds: string[] | undefined, teamMembers: TeamMe
   return names.join(', ');
 };
 
-// --- Calendar View Component ---
-const CalendarView: React.FC<{ tasks: ProjectTask[], teamMembers: TeamMember[] }> = ({ tasks, teamMembers }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+// --- Vue Calendrier ---
+const CalendarView: React.FC<{ tasks: ProjectTask[]; teamMembers: TeamMember[] }> = ({ tasks, teamMembers }) => {
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
   const startOfMonth = useMemo(() => new Date(currentDate.getFullYear(), currentDate.getMonth(), 1), [currentDate]);
-  const endOfMonth = useMemo(() => new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0), [currentDate]);
 
+  // Génère tous les jours du mois (avec décalage pour commencer lundi)
   const daysInMonth = useMemo(() => {
-    const days = [];
+    const days: (Date | null)[] = [];
     const day = new Date(startOfMonth);
-    // Adjust to start the week on Monday
     const startingDay = (day.getDay() + 6) % 7;
-    for (let i = 0; i < startingDay; i++) {
-      days.push(null);
-    }
+    for (let i = 0; i < startingDay; i++) days.push(null);
     while (day.getMonth() === startOfMonth.getMonth()) {
       days.push(new Date(day));
       day.setDate(day.getDate() + 1);
@@ -46,34 +44,35 @@ const CalendarView: React.FC<{ tasks: ProjectTask[], teamMembers: TeamMember[] }
     return days;
   }, [startOfMonth]);
 
+  // Regroupe les tâches par date - affiche sur toute la plage (startDate à dueDate)
   const tasksByDate = useMemo(() => {
-    const mappedTasks: { [key: string]: ProjectTask[] } = {};
-    console.log('CalendarView - Tasks received:', tasks);
+    const mapped: Record<string, ProjectTask[]> = {};
     tasks.forEach(task => {
-      console.log('CalendarView - Processing task:', task.name, 'startDate:', task.startDate, 'dueDate:', task.dueDate);
-      if (task.name.includes('topographique')) {
-        console.log('🎯 FOUND TARGET TASK:', task.name, 'startDate:', task.startDate, 'dueDate:', task.dueDate);
-      }
-      if (task.startDate) {
-        // Use yyyy-mm-dd format for reliable matching
-        const date = new Date(task.startDate).toISOString().slice(0, 10);
-        console.log('CalendarView - Mapped date:', date);
-        if (!mappedTasks[date]) {
-          mappedTasks[date] = [];
+      if (task.startDate && task.dueDate) {
+        // Tâche avec plage de dates - afficher sur tous les jours entre startDate et dueDate
+        const start = new Date(task.startDate);
+        const end = new Date(task.dueDate);
+        const current = new Date(start);
+        
+        while (current <= end) {
+          const dateStr = current.toISOString().slice(0, 10);
+          if (!mapped[dateStr]) mapped[dateStr] = [];
+          mapped[dateStr].push(task);
+          current.setDate(current.getDate() + 1);
         }
-        mappedTasks[date].push(task);
+      } else if (task.startDate) {
+        // Seulement date de début
+        const dateStr = new Date(task.startDate).toISOString().slice(0, 10);
+        if (!mapped[dateStr]) mapped[dateStr] = [];
+        mapped[dateStr].push(task);
       } else if (task.dueDate) {
-        // Fallback to dueDate if no startDate
-        const date = new Date(task.dueDate).toISOString().slice(0, 10);
-        console.log('CalendarView - Mapped dueDate:', date);
-        if (!mappedTasks[date]) {
-          mappedTasks[date] = [];
-        }
-        mappedTasks[date].push(task);
+        // Seulement date de fin
+        const dateStr = new Date(task.dueDate).toISOString().slice(0, 10);
+        if (!mapped[dateStr]) mapped[dateStr] = [];
+        mapped[dateStr].push(task);
       }
     });
-    console.log('CalendarView - Final mappedTasks:', mappedTasks);
-    return mappedTasks;
+    return mapped;
   }, [tasks]);
 
   const changeMonth = (offset: number) => {
@@ -99,11 +98,15 @@ const CalendarView: React.FC<{ tasks: ProjectTask[], teamMembers: TeamMember[] }
               <>
                 <span className="font-bold">{day.getDate()}</span>
                 <div className="mt-1 overflow-y-auto scrollbar-thin">
-                  {tasksByDate[day.toISOString().slice(0,10)]?.map(task => (
-                    <div key={task.id} className="text-xs bg-blue-100 text-blue-800 rounded px-1 mb-1 truncate" title={task.name}>
-                      {task.name}
-                    </div>
-                  ))}
+                  {tasksByDate[day.toISOString().slice(0,10)]?.map(task => {
+                    const assignedNames = getTeamMemberNames(task.assignedTo, teamMembers);
+                    return (
+                      <div key={task.id} className="text-xs bg-blue-100 text-blue-800 rounded px-1 mb-1 truncate" title={`${task.name} - ${assignedNames}`}>
+                        <div className="font-medium">{task.name}</div>
+                        <div className="text-xs opacity-75">{assignedNames}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -114,72 +117,21 @@ const CalendarView: React.FC<{ tasks: ProjectTask[], teamMembers: TeamMember[] }
   );
 };
 
-// --- List View Component ---
-const ListView: React.FC<{ tasks: ProjectTask[], teamMembers: TeamMember[] }> = ({ tasks, teamMembers }) => {
-  const getStatusChip = (status: ProjectTask['status']) => {
-    const styles = {
-      planned: 'bg-gray-200 text-gray-800',
-      in_progress: 'bg-blue-200 text-blue-800',
-      on_hold: 'bg-yellow-200 text-yellow-800',
-      todo: 'bg-gray-100 text-gray-600',
-      done: 'bg-green-300 text-green-900',
-      cancelled: 'bg-red-200 text-red-800',
-    };
-    const text = {
-      planned: 'Planifié',
-      in_progress: 'En cours',
-      on_hold: 'En attente',
-      todo: 'À faire',
-      done: 'Terminé',
-      cancelled: 'Annulée',
-    }
-    return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${styles[status] || styles.planned}`}>{text[status] || 'Planifié'}</span>;
-  };
-
+// --- Vue Liste ---
+const ListView: React.FC<{ tasks: ProjectTask[]; teamMembers: TeamMember[] }> = ({ tasks, teamMembers }) => {
   return (
-    <div className="bg-white/50 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50/50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tâche</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigné à</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {tasks.map(task => (
-            <tr key={task.id} className="hover:bg-gray-50 transition">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{task.name}</div>
-                <div className="text-xs text-gray-500">{task.phaseId ? `Phase #${task.phaseId.substring(0, 5)}` : 'N/A'}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{getTeamMemberNames(task.assignedTo, teamMembers)}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {task.startDate ? new Date(task.startDate).toLocaleDateString('fr-FR') : 'N/D'} - {task.endDate ? new Date(task.endDate).toLocaleDateString('fr-FR') : 'N/D'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">{getStatusChip(task.status)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {tasks.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-            <List className="mx-auto h-12 w-12 text-gray-400"/>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Aucune tâche</h3>
-            <p className="mt-1 text-sm text-gray-500">Il n'y a aucune tâche à afficher pour le moment.</p>
-        </div>
-      )}
+    <div className="bg-white/50 backdrop-blur-sm rounded-lg shadow-lg p-4">
+      <TaskListView tasks={tasks} teamMembers={teamMembers} />
     </div>
   );
 };
 
-// --- Main Component ---
+// --- Composant Principal ---
 const GanttChart: React.FC<PlanningViewsProps> = ({ tasks, onTaskUpdate, teamMembers = [] }) => {
   type View = 'gantt' | 'calendar' | 'list';
   const [activeView, setActiveView] = useState<View>('gantt');
 
-  const viewComponents: { [key in View]: React.ReactNode } = {
+  const viewComponents: Record<View, React.ReactNode> = {
     gantt: <GanttView tasks={tasks} onTaskUpdate={onTaskUpdate} teamMembers={teamMembers} />,
     calendar: <CalendarView tasks={tasks} teamMembers={teamMembers} />,
     list: <ListView tasks={tasks} teamMembers={teamMembers} />,

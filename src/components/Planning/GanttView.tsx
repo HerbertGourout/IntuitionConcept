@@ -59,34 +59,53 @@ const GanttView: React.FC<GanttViewProps> = ({
   };
 
   const getFixedDateRange = () => {
+    // Calculer la plage de dates basée sur les tâches existantes
+    let minDate = new Date();
+    let maxDate = new Date();
+    
+    // Trouver les dates min/max des tâches
+    if (tasks.length > 0) {
+      const taskDates: Date[] = [];
+      tasks.forEach(task => {
+        if (task.startDate) taskDates.push(new Date(task.startDate));
+        if (task.dueDate) taskDates.push(new Date(task.dueDate));
+      });
+      
+      if (taskDates.length > 0) {
+        minDate = new Date(Math.min(...taskDates.map(d => d.getTime())));
+        maxDate = new Date(Math.max(...taskDates.map(d => d.getTime())));
+      }
+    }
+    
+    // Ajouter une marge autour des tâches
     const today = new Date();
     switch (viewMode) {
       case 'days': {
-        const dayStart = new Date(today);
-        dayStart.setDate(dayStart.getDate() - 30);
-        const dayEnd = new Date(today);
-        dayEnd.setDate(dayEnd.getDate() + 30);
+        const dayStart = new Date(Math.min(minDate.getTime(), today.getTime()));
+        dayStart.setDate(dayStart.getDate() - 15); // 15 jours avant
+        const dayEnd = new Date(Math.max(maxDate.getTime(), today.getTime()));
+        dayEnd.setDate(dayEnd.getDate() + 15); // 15 jours après
         return { start: dayStart, end: dayEnd };
       }
       case 'weeks': {
-        const weekStart = new Date(today);
-        weekStart.setMonth(weekStart.getMonth() - 3);
-        const weekEnd = new Date(today);
-        weekEnd.setMonth(weekEnd.getMonth() + 3);
+        const weekStart = new Date(Math.min(minDate.getTime(), today.getTime()));
+        weekStart.setDate(weekStart.getDate() - 30); // 30 jours avant
+        const weekEnd = new Date(Math.max(maxDate.getTime(), today.getTime()));
+        weekEnd.setDate(weekEnd.getDate() + 30); // 30 jours après
         return { start: weekStart, end: weekEnd };
       }
       case 'months': {
-        const monthStart = new Date(today);
-        monthStart.setFullYear(monthStart.getFullYear() - 1);
-        const monthEnd = new Date(today);
-        monthEnd.setFullYear(monthEnd.getFullYear() + 1);
+        const monthStart = new Date(Math.min(minDate.getTime(), today.getTime()));
+        monthStart.setMonth(monthStart.getMonth() - 2); // 2 mois avant
+        const monthEnd = new Date(Math.max(maxDate.getTime(), today.getTime()));
+        monthEnd.setMonth(monthEnd.getMonth() + 2); // 2 mois après
         return { start: monthStart, end: monthEnd };
       }
       default: {
-        const defaultStart = new Date(today);
-        defaultStart.setMonth(defaultStart.getMonth() - 3);
-        const defaultEnd = new Date(today);
-        defaultEnd.setMonth(defaultEnd.getMonth() + 3);
+        const defaultStart = new Date(Math.min(minDate.getTime(), today.getTime()));
+        defaultStart.setMonth(defaultStart.getMonth() - 1);
+        const defaultEnd = new Date(Math.max(maxDate.getTime(), today.getTime()));
+        defaultEnd.setMonth(defaultEnd.getMonth() + 1);
         return { start: defaultStart, end: defaultEnd };
       }
     }
@@ -167,30 +186,48 @@ const GanttView: React.FC<GanttViewProps> = ({
   };
 
   const getTaskPosition = (task: ProjectTask) => {
-    if (!task.startDate || !task.endDate) {
+    if (!task.startDate || !task.dueDate) {
+      console.log('Task missing dates:', task.name, 'startDate:', task.startDate, 'dueDate:', task.dueDate);
       return { left: 0, width: 0 };
     }
+    
     const taskStart = new Date(task.startDate);
-    const taskEnd = new Date(task.endDate);
+    const taskEnd = new Date(task.dueDate);
     const ganttStartDate = new Date(startDate);
+    
+    // Calculer les offsets en jours
     const startOffset = (taskStart.getTime() - ganttStartDate.getTime()) / (1000 * 60 * 60 * 24);
-    const duration = (taskEnd.getTime() - taskStart.getTime()) / (1000 * 60 * 60 * 24);
+    const duration = (taskEnd.getTime() - taskStart.getTime()) / (1000 * 60 * 60 * 24) + 1; // +1 pour inclure le dernier jour
+    
+    console.log('Task position calc:', {
+      taskName: task.name,
+      taskStart: taskStart.toLocaleDateString('fr-FR'),
+      taskEnd: taskEnd.toLocaleDateString('fr-FR'),
+      ganttStart: ganttStartDate.toLocaleDateString('fr-FR'),
+      startOffset,
+      duration,
+      viewMode
+    });
+    
     let left = 0;
     let width = 0;
+    
     switch (viewMode) {
       case 'days':
-        left = startOffset * columnWidth;
-        width = duration * columnWidth;
+        left = Math.max(0, startOffset * columnWidth);
+        width = Math.max(columnWidth, duration * columnWidth);
         break;
       case 'weeks':
-        left = (startOffset / 7) * columnWidth;
-        width = (duration / 7) * columnWidth;
+        left = Math.max(0, (startOffset / 7) * columnWidth);
+        width = Math.max(columnWidth, (duration / 7) * columnWidth);
         break;
       case 'months':
-        left = (startOffset / 30.44) * columnWidth;
-        width = (duration / 30.44) * columnWidth;
+        left = Math.max(0, (startOffset / 30.44) * columnWidth);
+        width = Math.max(columnWidth, (duration / 30.44) * columnWidth);
         break;
     }
+    
+    console.log('Final position:', { left, width });
     return { left, width };
   };
 
