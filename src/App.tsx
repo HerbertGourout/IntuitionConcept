@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ProjectProvider } from './contexts/ProjectContext';
-import { PurchaseOrderProvider } from './contexts/PurchaseOrderContext';
 import type { Project } from './contexts/projectTypes';
 import { useProjects } from './hooks/useProjects';
 
@@ -59,7 +57,6 @@ const AppContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [showQuickCommand, setShowQuickCommand] = useState(false);
 
   const { toasts, success, removeToast } = useToast() as { 
@@ -339,15 +336,9 @@ const AppContent: React.FC = () => {
   );
 }
 
-// Composant racine de l'application qui fournit le contexte des projets
+// Composant racine de l'application (les providers sont maintenant dans AppRouter)
 const App: React.FC = () => {
-  return (
-    <ProjectProvider>
-      <PurchaseOrderProvider>
-        <AppContent />
-      </PurchaseOrderProvider>
-    </ProjectProvider>
-  );
+  return <AppContent />;
 };
 
 // Ajout de la configuration pour les animations de page
