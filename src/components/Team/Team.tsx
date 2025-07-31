@@ -714,7 +714,7 @@ const Team: React.FC = () => {
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                      placeholder="Jean Dupont"
+                      placeholder="Nom complet"
                     />
                   </div>
                   
@@ -727,7 +727,7 @@ const Team: React.FC = () => {
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                      placeholder="jean.dupont@example.com (optionnel)"
+                      placeholder="email@example.com (optionnel)"
                     />
                   </div>
                   

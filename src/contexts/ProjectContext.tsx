@@ -31,8 +31,12 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   useEffect(() => {
     const loadProjects = async (): Promise<void> => {
       try {
+        console.log('🔄 ProjectContext - Début du chargement des projets...');
         setLoadingProjects(true);
         const firebaseProjects = await ProjectService.getAllProjects();
+        
+        console.log('📊 ProjectContext - Projets récupérés depuis Firebase:', firebaseProjects.length);
+        console.log('📊 ProjectContext - Données brutes:', firebaseProjects);
         
         // Convertir les projets Firebase vers le format du contexte
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,11 +61,17 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           history: cleanHistory((fbProject.history as Array<{date?: string, action?: string, user?: string, details?: string}>) || [])
         }));
         
+        console.log('✅ ProjectContext - Projets convertis:', convertedProjects.length);
+        console.log('✅ ProjectContext - Projets convertis détail:', convertedProjects);
+        
         setProjects(convertedProjects);
+        console.log('🎯 ProjectContext - Projets définis dans l\'état');
       } catch (error) {
-        console.error('Erreur lors du chargement des projets:', error);
+        console.error('❌ ProjectContext - Erreur lors du chargement des projets:', error);
+        console.error('❌ ProjectContext - Stack trace:', error);
       } finally {
         setLoadingProjects(false);
+        console.log('🏁 ProjectContext - Chargement terminé');
       }
     };
 

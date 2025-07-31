@@ -1,10 +1,12 @@
 import React from 'react';
-import { 
-  Building2, 
-  Users, 
-  Calendar, 
-  DollarSign, 
-  FileText, 
+import { Link } from 'react-router-dom'; // 🔽 Ajouté
+import { motion } from 'framer-motion'; // 🔽 Ajouté
+import {
+  Building2,
+  Users,
+  Calendar,
+  DollarSign,
+  FileText,
   BarChart3,
   CheckCircle,
   ArrowRight,
@@ -87,7 +89,7 @@ const HomePage: React.FC = () => {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -100,7 +102,7 @@ const HomePage: React.FC = () => {
               <span className="text-orange-400">en Afrique</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
-              La plateforme SaaS de gestion de projets conçue spécialement pour l'Afrique francophone. 
+              La plateforme SaaS de gestion de projets conçue spécialement pour l'Afrique francophone.
               Avec paiements Mobile Money intégrés.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -120,7 +122,6 @@ const HomePage: React.FC = () => {
             </div>
           </motion.div>
         </div>
-        
         {/* Floating elements */}
         <div className="absolute top-20 left-10 w-20 h-20 bg-orange-400/20 rounded-full blur-xl"></div>
         <div className="absolute bottom-20 right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-xl"></div>
@@ -162,7 +163,6 @@ const HomePage: React.FC = () => {
               Une suite complète d'outils pour gérer efficacement vos projets de construction
             </p>
           </motion.div>
-
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
@@ -224,7 +224,6 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
             </motion.div>
-            
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -265,7 +264,6 @@ const HomePage: React.FC = () => {
               Rejoignez des centaines d'entreprises qui nous font confiance
             </p>
           </motion.div>
-
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
               <motion.div

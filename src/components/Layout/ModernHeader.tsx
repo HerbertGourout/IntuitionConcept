@@ -10,7 +10,6 @@ import {
   BarChart3,
   Calendar,
   FileText,
-  Globe,
   Smartphone,
   Shield,
   ArrowRight
@@ -37,25 +36,26 @@ const ModernHeader: React.FC = () => {
       href: '#',
       hasDropdown: true,
       dropdownItems: [
-        { name: 'Gestion de Projets', href: '/features/projects', icon: BarChart3, description: 'Organisez vos projets efficacement' },
-        { name: 'Équipes & Collaboration', href: '/features/teams', icon: Users, description: 'Travaillez en équipe facilement' },
-        { name: 'Planning & Gantt', href: '/features/planning', icon: Calendar, description: 'Planifiez avec des diagrammes Gantt' },
-        { name: 'Documents', href: '/features/documents', icon: FileText, description: 'Gérez vos documents en un lieu' },
-        { name: 'Paiements Mobile Money', href: '/features/payments', icon: Smartphone, description: 'Paiements adaptés à l\'Afrique' },
+        { name: 'Gestion de Projets', href: '/app/projects', icon: BarChart3, description: 'Organisez vos projets efficacement' },
+        { name: 'Équipes & Collaboration', href: '/app/team', icon: Users, description: 'Travaillez en équipe facilement' },
+        { name: 'Planning & Gantt', href: '/app/planning', icon: Calendar, description: 'Planifiez avec des diagrammes Gantt' },
+        { name: 'Documents', href: '/app/documents', icon: FileText, description: 'Gérez vos documents en un lieu' },
+        { name: 'Finances & Paiements', href: '/app/finances', icon: Smartphone, description: 'Gestion financière et paiements' },
       ]
     },
     {
-      name: 'Solutions',
+      name: 'Outils',
       href: '#',
       hasDropdown: true,
       dropdownItems: [
-        { name: 'PME & Startups', href: '/solutions/sme', icon: Zap, description: 'Solutions pour petites entreprises' },
-        { name: 'Grandes Entreprises', href: '/solutions/enterprise', icon: Shield, description: 'Solutions d\'entreprise' },
-        { name: 'Afrique Francophone', href: '/solutions/francophone', icon: Globe, description: 'Adapté aux marchés africains' },
+        { name: 'Tableau de Bord', href: '/app/dashboard', icon: BarChart3, description: 'Vue d\'ensemble de vos projets' },
+        { name: 'Tâches', href: '/app/tasks', icon: Calendar, description: 'Gestion des tâches' },
+        { name: 'Équipements', href: '/app/equipment', icon: Shield, description: 'Gestion des équipements' },
+        { name: 'Bons de Commande', href: '/app/purchase-orders', icon: FileText, description: 'Gestion des commandes' },
       ]
     },
     { name: 'Tarification', href: '/pricing' },
-    { name: 'À propos', href: '/about' },
+    { name: 'Connexion', href: '/login' },
   ];
 
   const headerVariants = {
@@ -77,21 +77,6 @@ const ModernHeader: React.FC = () => {
       scale: 1.05,
       color: "#3B82F6",
       transition: { duration: 0.2 }
-    }
-  };
-
-  const dropdownVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: -10, 
-      scale: 0.95,
-      transition: { duration: 0.2 }
-    },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      scale: 1,
-      transition: { duration: 0.3, ease: "easeOut" }
     }
   };
 
@@ -191,10 +176,10 @@ const ModernHeader: React.FC = () => {
                 <AnimatePresence>
                   {item.hasDropdown && activeDropdown === item.name && (
                     <motion.div
-                      variants={dropdownVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="hidden"
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.3 }}
                       className="absolute top-full left-0 mt-2 w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 p-6"
                     >
                       <div className="space-y-4">

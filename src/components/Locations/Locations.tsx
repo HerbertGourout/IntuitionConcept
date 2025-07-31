@@ -487,7 +487,7 @@ const Locations: React.FC = () => {
                 name={['contact', 'name']}
                 label="Nom du responsable"
               >
-                <Input placeholder="Jean Dupont" />
+                <Input placeholder="Nom du contact" />
               </Form.Item>
 
               <Form.Item

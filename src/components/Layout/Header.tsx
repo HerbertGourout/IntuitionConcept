@@ -32,7 +32,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
               <User className="w-4 h-4 text-white" />
             </div>
             <div className="hidden md:block">
-              <p className="text-sm font-medium text-gray-900">Pierre Dubois</p>
+              <p className="text-sm font-medium text-gray-900">Utilisateur</p>
               <p className="text-xs text-gray-500">Chef de Projet</p>
             </div>
           </div>
