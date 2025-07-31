@@ -335,9 +335,10 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
 
       {/* Timeline et barres */}
       <div className="overflow-x-auto">
-        <div className="relative" style={{ width: daysToShow * dayWidth, minWidth: daysToShow * dayWidth, maxWidth: daysToShow * dayWidth }}>
-          {/* Timeline (dates) */}
-          <div className="flex border-b border-gray-200 bg-gray-50 relative" style={{ width: daysToShow * dayWidth, minWidth: daysToShow * dayWidth, maxWidth: daysToShow * dayWidth }}>
+        <div className="relative w-full flex justify-center">
+          <div className="relative" style={{ width: daysToShow * dayWidth, minWidth: daysToShow * dayWidth, maxWidth: daysToShow * dayWidth }}>
+            {/* Timeline (dates) */}
+            <div className="flex border-b border-gray-200 bg-gray-50 relative" style={{ width: daysToShow * dayWidth, minWidth: daysToShow * dayWidth, maxWidth: daysToShow * dayWidth }}>
             {timelineDates.map((date, idx) => {
               return (
                 <div
@@ -456,6 +457,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
               }
               return null;
             })()}
+            </div>
           </div>
         </div>
       </div>
