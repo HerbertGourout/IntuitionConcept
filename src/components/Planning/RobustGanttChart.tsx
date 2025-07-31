@@ -97,21 +97,19 @@ class TaskProcessor {
   }
 }
 
-// Classe pour calculer les positions des barres
+// Classe pour calculer les positions des barres avec pourcentages
 class BarCalculator {
   static calculateBar(
     task: ProjectTask,
     visibleStart: Date,
     visibleEnd: Date,
-    dayWidth: number = 40
+    daysToShow: number
   ): {
-    left: number;
-    width: number;
+    leftPercent: number;
+    widthPercent: number;
     isVisible: boolean;
     startsBeforeWindow: boolean;
     endsAfterWindow: boolean;
-    clippedLeft: number;
-    clippedWidth: number;
   } | null {
     
     const validation = TaskProcessor.validateTask(task);
@@ -133,39 +131,41 @@ class BarCalculator {
       return null;
     }
 
+    // Calcul des indicateurs de débordement
+    const startsBeforeWindow = start < windowStart;
+    const endsAfterWindow = end > windowEnd;
+    
     // Clipping effectif
     const clippedStart = start < windowStart ? windowStart : start;
     const clippedEnd = end > windowEnd ? windowEnd : end;
     
-    // Décalage à gauche (jours depuis début de fenêtre)
+    // Calcul en jours depuis le début de la fenêtre
     const leftDays = DateUtils.daysBetween(windowStart, clippedStart);
     const durationDays = DateUtils.daysBetween(clippedStart, clippedEnd) + 1;
     
-    // Position et largeur clippées
-    const clippedLeft = leftDays * dayWidth;
-    const clippedWidth = durationDays * dayWidth;
+    // Vérifications de sécurité
+    if (durationDays <= 0) {
+      console.warn(`⚠️ Durée nulle pour "${task.name}"`);
+      return null;
+    }
     
-    const startsBeforeWindow = start < windowStart;
-    const endsAfterWindow = end > windowEnd;
+    // Calcul en pourcentage pour s'adapter à la largeur disponible
+    const leftPercent = Math.max(0, (leftDays / daysToShow) * 100);
+    const widthPercent = Math.min((durationDays / daysToShow) * 100, ((daysToShow - leftDays) / daysToShow) * 100);
     
-    console.log('🟦 CLIP DEBUG', {
+    console.log('🟦 PERCENTAGE DEBUG', {
       name: task.name,
-      start, end, windowStart, windowEnd,
-      clippedStart, clippedEnd,
-      leftDays, durationDays, clippedLeft, clippedWidth
+      leftDays, durationDays, daysToShow,
+      leftPercent: leftPercent.toFixed(1) + '%',
+      widthPercent: widthPercent.toFixed(1) + '%'
     });
     
-    const left = leftDays * dayWidth;
-    const width = durationDays * dayWidth;
-    
     return {
-      left,
-      width,
+      leftPercent,
+      widthPercent,
       isVisible,
       startsBeforeWindow,
-      endsAfterWindow,
-      clippedLeft,
-      clippedWidth
+      endsAfterWindow
     };
   }
 }
@@ -178,7 +178,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
   daysToShow
 }) => {
   const [debug, setDebug] = React.useState(false);
-  const dayWidth = 40;
+  const dayWidth = 60; // Augmenté pour plus d'aération
 
   const processedTasks = useMemo(() => {
     return tasks.map(task => {
@@ -203,12 +203,13 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
     return dates;
   }, [visibleStartDate, daysToShow]);
 
+  // Calcul des barres avec clipping en pourcentages
   const taskBars = useMemo(() => {
-    return processedTasks.map(task => ({
-      task,
-      bar: BarCalculator.calculateBar(task, visibleStartDate, visibleEndDate, dayWidth)
-    })).filter(item => item.bar !== null);
-  }, [processedTasks, visibleStartDate, visibleEndDate, dayWidth]);
+    return processedTasks.map(task => {
+      const bar = BarCalculator.calculateBar(task, visibleStartDate, visibleEndDate, daysToShow);
+      return { task: { ...task, color: TaskProcessor.getTaskColor(task) }, bar };
+    }).filter(item => item.bar !== null);
+  }, [processedTasks, visibleStartDate, visibleEndDate, daysToShow]);
 
   // Navigation
   const goPrev = () => {
@@ -312,7 +313,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
       
       {/* Informations de debug */}
       <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <strong>Tâches valides:</strong> {processedTasks.length}/{tasks.length}
           </div>
@@ -321,9 +322,6 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
           </div>
           <div>
             <strong>Barres affichées:</strong> {taskBars.length}
-          </div>
-          <div>
-            <strong>Largeur jour:</strong> {dayWidth}px
           </div>
         </div>
         {debug && (
@@ -335,24 +333,19 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
 
       {/* Timeline et barres */}
       <div className="overflow-x-auto">
-        <div className="relative w-full flex justify-center">
-          <div className="relative" style={{ width: daysToShow * dayWidth, minWidth: daysToShow * dayWidth, maxWidth: daysToShow * dayWidth }}>
+        <div className="relative w-full">
+          <div className="relative w-full">
             {/* Timeline (dates) */}
-            <div className="flex border-b border-gray-200 bg-gray-50 relative" style={{ width: daysToShow * dayWidth, minWidth: daysToShow * dayWidth, maxWidth: daysToShow * dayWidth }}>
+            <div className="flex border-b border-gray-200 bg-gray-50 relative w-full">
             {timelineDates.map((date, idx) => {
               return (
                 <div
                   key={idx}
-                  className={`text-xs text-center py-2 border-r border-gray-100 ${
-                    date.toDateString() === new Date().toDateString()
-                      ? 'bg-blue-100 text-blue-700 font-semibold'
-                      : 'text-gray-600'
+                  className={`text-xs font-medium text-gray-600 text-center border-r border-gray-200 last:border-r-0 py-2 px-1 flex-1 ${date.toDateString() === new Date().toDateString()
+                      ? 'bg-blue-100 text-blue-700 font-bold'
+                      : 'text-gray-700 hover:bg-gray-50'
                   } ${debug ? 'relative' : ''}`}
                   style={{
-                    width: `${dayWidth}px`,
-                    minWidth: `${dayWidth}px`,
-                    maxWidth: `${dayWidth}px`,
-                    flex: 'none',
                     borderTop: debug ? '2px solid red' : undefined
                   }}
                 >
@@ -372,12 +365,9 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
 
           {/* Barres de tâches */}
           <div
-            className="relative bg-gray-50"
+            className="relative bg-white w-full"
             style={{
-              height: processedTasks.length > 0 ? processedTasks.length * 40 + 8 : 60,
-              width: daysToShow * dayWidth,
-              minWidth: daysToShow * dayWidth,
-              maxWidth: daysToShow * dayWidth
+              height: Math.max(processedTasks.length * 60, 120)
             }}
           >
             {processedTasks.length === 0 ? (
@@ -390,20 +380,20 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
                   <div key={task.id} className="relative">
                     {/* Barre de tâche */}
                     <div
-                      className={`absolute h-8 rounded ${task.color} flex items-center text-white text-xs px-2 shadow-md border-2 border-white overflow-hidden ${debug ? 'ring-2 ring-red-400' : ''}`}
+                      className={`absolute h-10 rounded-lg ${task.color} flex items-center text-white text-sm px-4 shadow-lg border-2 border-white/20 overflow-hidden ${debug ? 'ring-2 ring-red-400' : ''}`}
                       style={{
-                        left: `${bar!.clippedLeft}px`,
-                        width: `${bar!.clippedWidth}px`,
-                        top: idx * 40 + 4,
+                        left: `${bar!.leftPercent}%`,
+                        width: `${bar!.widthPercent}%`,
+                        top: idx * 60 + 12,
                         zIndex: 10
                       }}
                       title={`${task.name} | ${getAssignedMemberNames(task.assignedTo)} | ${task.validation.duration} jours`}
                     >
                       {debug && (
                         <div className="absolute left-0 top-0 text-[10px] bg-white text-red-700 border border-red-300 px-1 z-50 pointer-events-none">
-                          left: {bar!.clippedLeft}px
+                          left: {bar!.leftPercent.toFixed(1)}%
                           <br />
-                          width: {bar!.clippedWidth}px
+                          width: {bar!.widthPercent.toFixed(1)}%
                         </div>
                       )}
                       {/* Indicateur de débordement à gauche */}
@@ -420,15 +410,14 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
                     </div>
                     {/* Ligne de tâche (fond) */}
                     <div
-                      className="absolute h-8 bg-gray-100 border border-gray-200"
+                      className="absolute h-10 bg-gray-100 border border-gray-200 rounded-md w-full"
                       style={{
                         left: 0,
-                        width: `${daysToShow * dayWidth}px`,
-                        top: idx * 40 + 4,
+                        top: idx * 60 + 12,
                         zIndex: 1
                       }}
                     />
-                    {debug && (!bar || bar.clippedWidth <= 0) && (
+                    {debug && (!bar || bar.widthPercent <= 0) && (
                       <div className="absolute left-0 top-0 text-xs text-red-700 bg-white px-2 rounded shadow z-50">
                         ⚠️ Tâche hors fenêtre ou largeur nulle !
                       </div>
@@ -444,13 +433,13 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
               const todayOffset = DateUtils.daysBetween(visibleStartDate, today);
               
               if (todayOffset >= 0 && todayOffset < daysToShow) {
-                // Calculer la position en pixels
-                const positionPx = todayOffset * dayWidth + dayWidth / 2;
+                // Calculer la position en pourcentage
+                const positionPercent = (todayOffset + 0.5) / daysToShow * 100;
                 
                 return (
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
-                    style={{ left: `${positionPx}px` }}
+                    style={{ left: `${positionPercent}%` }}
                     title="Aujourd'hui"
                   />
                 );

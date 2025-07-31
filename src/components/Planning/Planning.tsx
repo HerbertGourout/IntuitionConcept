@@ -155,7 +155,7 @@ export const Planning: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="py-6 space-y-6">
       {/* Header */}
       <GlassCard className="bg-gradient-to-r from-blue-50 via-white to-purple-50">
         <div className="flex items-center justify-between">
@@ -387,8 +387,8 @@ export const Planning: React.FC = () => {
       </GlassCard>
 
       {/* Gantt Chart */}
-      <GlassCard>
-        <div className="flex items-center justify-between mb-6">
+      <GlassCard className="!p-0 !m-0 overflow-hidden">
+        <div className="flex items-center justify-between mb-6 px-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
               <BarChart3 className="w-6 h-6 text-white" />
@@ -425,7 +425,7 @@ export const Planning: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white/50 rounded-xl p-4">
+        <div className="bg-white/50 rounded-xl">
           {viewType === 'gantt' && (
             <RobustGanttChart 
               tasks={tasks} 
