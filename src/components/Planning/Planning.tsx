@@ -24,8 +24,6 @@ export const Planning: React.FC = () => {
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   
-  // Récupérer les phases du projet actuel
-  const phases = projectContext.currentProject?.phases || [];
   const [viewType, setViewType] = useState<ViewType>('gantt');
   const [isPhaseModalOpen, setIsPhaseModalOpen] = useState(false);
   const [phaseModalMode, setPhaseModalMode] = useState<'create' | 'edit'>('create');
@@ -142,26 +140,7 @@ export const Planning: React.FC = () => {
     }
   };
 
-  // Gestion de la mise à jour d'une tâche
-  const handleTaskUpdate = (taskId: string, updates: Partial<ProjectTask>) => {
-    if (!projectContext.currentProject) return;
-    
-    // Trouver la phase contenant la tâche
-    const phases = projectContext.currentProject.phases || [];
-    const phaseId = phases.find(phase => 
-      (phase.tasks || []).some(task => task.id === taskId)
-    )?.id;
 
-    if (phaseId) {
-      // Mettre à jour la tâche dans le contexte
-      projectContext.updateTask(projectContext.currentProject.id, phaseId, taskId, updates);
-      
-      // Mettre à jour l'état local
-      setTasks(prevTasks => prevTasks.map(task => 
-        task.id === taskId ? { ...task, ...updates } : task
-      ));
-    }
-  };
 
   if (!projectContext.currentProject) {
     return (

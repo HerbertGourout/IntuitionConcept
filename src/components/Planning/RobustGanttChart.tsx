@@ -119,44 +119,44 @@ class BarCalculator {
       console.warn(`❌ Tâche "${task.name}" invalide:`, validation.errors);
       return null;
     }
-    
-    const { startDate, endDate, duration } = validation;
-    
+
+    // Normalisation UTC minuit
+    const norm = (d: Date) => { const n = new Date(d); n.setUTCHours(0,0,0,0); return n; };
+    const start = norm(validation.startDate);
+    const end = norm(validation.endDate);
+    const windowStart = norm(visibleStart);
+    const windowEnd = norm(visibleEnd);
+
     // Vérifier si la tâche intersecte avec la fenêtre visible
-    const isVisible = !(endDate < visibleStart || startDate > visibleEnd);
+    const isVisible = !(end < windowStart || start > windowEnd);
     if (!isVisible) {
       return null;
     }
+
+    // Clipping effectif
+    const clippedStart = start < windowStart ? windowStart : start;
+    const clippedEnd = end > windowEnd ? windowEnd : end;
     
-    // Calculs de position RÉELS (non clippés)
-    const leftDays = DateUtils.daysBetween(visibleStart, startDate);
-    const left = leftDays * dayWidth;
-    const width = duration * dayWidth;
+    // Décalage à gauche (jours depuis début de fenêtre)
+    const leftDays = DateUtils.daysBetween(windowStart, clippedStart);
+    const durationDays = DateUtils.daysBetween(clippedStart, clippedEnd) + 1;
     
-    // Indicateurs de débordement
-    const startsBeforeWindow = startDate < visibleStart;
-    const endsAfterWindow = endDate > visibleEnd;
+    // Position et largeur clippées
+    const clippedLeft = leftDays * dayWidth;
+    const clippedWidth = durationDays * dayWidth;
     
-    // Calculs clippés pour l'affichage - CORRECTION DÉFINITIVE
-    const clippedStartDate = startDate < visibleStart ? visibleStart : startDate;
-    const clippedEndDate = endDate > visibleEnd ? visibleEnd : endDate;
+    const startsBeforeWindow = start < windowStart;
+    const endsAfterWindow = end > windowEnd;
     
-    const clippedLeftDays = DateUtils.daysBetween(visibleStart, clippedStartDate);
-    const clippedDuration = DateUtils.daysBetween(clippedStartDate, clippedEndDate) + 1;
-    
-    // CORRECTION DÉFINITIVE: Clipper VRAIMENT la largeur à la fenêtre visible
-    const clippedLeft = Math.max(0, clippedLeftDays * dayWidth);
-    const clippedWidth = Math.max(dayWidth, clippedDuration * dayWidth); // Largeur RÉELLEMENT clippée
-    
-    console.log(`📊 Barre calculée pour "${task.name}":`, {
-      realLeft: left,
-      realWidth: width,
-      clippedLeft,
-      clippedWidth,
-      duration,
-      startsBeforeWindow,
-      endsAfterWindow
+    console.log('🟦 CLIP DEBUG', {
+      name: task.name,
+      start, end, windowStart, windowEnd,
+      clippedStart, clippedEnd,
+      leftDays, durationDays, clippedLeft, clippedWidth
     });
+    
+    const left = leftDays * dayWidth;
+    const width = durationDays * dayWidth;
     
     return {
       left,
@@ -177,13 +177,10 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
   setVisibleStartDate,
   daysToShow
 }) => {
-  // Couleur par statut (logique intégrée dans TaskProcessor.getTaskColor)
+  const [debug, setDebug] = React.useState(false);
   const dayWidth = 40;
-  
-  // Validation et traitement des tâches
+
   const processedTasks = useMemo(() => {
-    console.log('🔄 Traitement des tâches:', tasks.length);
-    
     return tasks.map(task => {
       const validation = TaskProcessor.validateTask(task);
       return {
@@ -193,13 +190,11 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
       };
     }).filter(task => task.validation.isValid);
   }, [tasks]);
-  
-  // Calcul de la date de fin visible
+
   const visibleEndDate = useMemo(() => {
     return DateUtils.addDays(visibleStartDate, daysToShow - 1);
   }, [visibleStartDate, daysToShow]);
-  
-  // Génération de la timeline (fenêtre glissante de 14 jours)
+
   const timelineDates = useMemo(() => {
     const dates: Date[] = [];
     for (let i = 0; i < daysToShow; i++) {
@@ -207,81 +202,51 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
     }
     return dates;
   }, [visibleStartDate, daysToShow]);
-  
+
+  const taskBars = useMemo(() => {
+    return processedTasks.map(task => ({
+      task,
+      bar: BarCalculator.calculateBar(task, visibleStartDate, visibleEndDate, dayWidth)
+    })).filter(item => item.bar !== null);
+  }, [processedTasks, visibleStartDate, visibleEndDate, dayWidth]);
+
   // Navigation
   const goPrev = () => {
     setVisibleStartDate(DateUtils.addDays(visibleStartDate, -daysToShow));
   };
-  
+
   const goNext = () => {
     setVisibleStartDate(DateUtils.addDays(visibleStartDate, daysToShow));
   };
-  
+
   const goToday = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    setVisibleStartDate(today);
+    setVisibleStartDate(DateUtils.addDays(today, -Math.floor(daysToShow / 2)));
   };
-  
+
   const fitToTasks = () => {
     if (processedTasks.length === 0) return;
     
-    const validDates = processedTasks
-      .filter(task => task.validation.startDate && task.validation.endDate)
-      .flatMap(task => [task.validation.startDate!, task.validation.endDate!]);
+    let earliestStart: Date | null = null;
+    let latestEnd: Date | null = null;
     
-    if (validDates.length === 0) return;
-    
-    const minDate = new Date(Math.min(...validDates.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...validDates.map(d => d.getTime())));
-    
-    // Ajouter une marge
-    const startWithMargin = DateUtils.addDays(minDate, -2);
-    setVisibleStartDate(startWithMargin);
-    
-    console.log('📅 Vue ajustée aux tâches:', {
-      minDate: DateUtils.formatDate(minDate),
-      maxDate: DateUtils.formatDate(maxDate),
-      tasksCount: processedTasks.length
+    processedTasks.forEach(task => {
+      if (task.validation.startDate && task.validation.endDate) {
+        if (!earliestStart || task.validation.startDate < earliestStart) {
+          earliestStart = task.validation.startDate;
+        }
+        if (!latestEnd || task.validation.endDate > latestEnd) {
+          latestEnd = task.validation.endDate;
+        }
+      }
     });
+    
+    if (earliestStart) {
+      setVisibleStartDate(DateUtils.addDays(earliestStart, -2));
+    }
   };
-  
-  // Calcul de la largeur pour fenêtre de 14 jours (utiliser largeur disponible)
-  const optimalWidth = useMemo(() => {
-    // Utiliser une largeur plus grande pour étendre les colonnes
-    // Au lieu de 560px (14*40), utiliser au moins 800px pour étendre les colonnes
-    const minWidth = daysToShow * dayWidth; // 560px
-    const expandedWidth = Math.max(minWidth, 800); // Au moins 800px pour étendre
-    
-    console.log('📀 Largeur fenêtre étendue:', {
-      daysToShow,
-      dayWidth,
-      minWidth,
-      expandedWidth,
-      columnWidth: expandedWidth / daysToShow
-    });
-    
-    return expandedWidth;
-  }, [daysToShow, dayWidth]);
-  
-  // Calcul des barres pour toutes les tâches avec colonnes flexibles
-  const taskBars = useMemo(() => {
-    // Avec flex-1, chaque colonne prend la largeur disponible / nombre de colonnes
-    // Nous utilisons une largeur de référence plus large pour que les barres s'étendent
-    const flexColumnWidth = Math.max(dayWidth, 60); // Au moins 60px par colonne pour étendre
-    
-    console.log('📀 Calcul barres avec colonnes flexibles:', {
-      dayWidth,
-      flexColumnWidth,
-      daysToShow
-    });
-    
-    return processedTasks.map(task => ({
-      task,
-      bar: BarCalculator.calculateBar(task, visibleStartDate, visibleEndDate, flexColumnWidth)
-    })).filter(item => item.bar !== null);
-  }, [processedTasks, visibleStartDate, visibleEndDate, dayWidth, daysToShow]);
-  
+
   // Fonction pour obtenir les noms des membres assignés
   const getAssignedMemberNames = (assignedTo: string[] = []): string => {
     if (!assignedTo || assignedTo.length === 0) return 'Non assigné';
@@ -335,6 +300,12 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
               <Target className="w-4 h-4" />
               Ajuster aux tâches
             </button>
+            
+            {/* Switch debug visuel */}
+            <label className="flex items-center gap-1 ml-3 cursor-pointer select-none">
+              <input type="checkbox" checked={debug} onChange={e => setDebug(e.target.checked)} />
+              <span className="text-xs">Debug visuel</span>
+            </label>
           </div>
         </div>
       </div>
@@ -355,38 +326,57 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
             <strong>Largeur jour:</strong> {dayWidth}px
           </div>
         </div>
+        {debug && (
+          <div className="mt-2 text-xs text-red-700">
+            <strong>MODE DEBUG VISUEL ACTIVÉ</strong> : surlignage, overlays, alertes. Vérifiez les valeurs left/width et la synchronisation timeline/barres.
+          </div>
+        )}
       </div>
-      
+
       {/* Timeline et barres */}
       <div className="overflow-x-auto">
-        <div className="relative w-full" style={{ minWidth: Math.max(optimalWidth, daysToShow * dayWidth) }}>
+        <div className="relative" style={{ width: daysToShow * dayWidth, minWidth: daysToShow * dayWidth, maxWidth: daysToShow * dayWidth }}>
           {/* Timeline (dates) */}
-          <div className="flex border-b border-gray-200 bg-gray-50">
+          <div className="flex border-b border-gray-200 bg-gray-50 relative" style={{ width: daysToShow * dayWidth, minWidth: daysToShow * dayWidth, maxWidth: daysToShow * dayWidth }}>
             {timelineDates.map((date, idx) => {
               return (
                 <div
                   key={idx}
-                  className={`flex-1 text-xs text-center py-2 border-r border-gray-100 ${
-                    date.toDateString() === new Date().toDateString() 
-                      ? 'bg-blue-100 text-blue-700 font-semibold' 
+                  className={`text-xs text-center py-2 border-r border-gray-100 ${
+                    date.toDateString() === new Date().toDateString()
+                      ? 'bg-blue-100 text-blue-700 font-semibold'
                       : 'text-gray-600'
-                  }`}
-                  style={{ 
-                    minWidth: `${dayWidth}px` // Largeur minimale pour éviter que les colonnes soient trop petites
+                  } ${debug ? 'relative' : ''}`}
+                  style={{
+                    width: `${dayWidth}px`,
+                    minWidth: `${dayWidth}px`,
+                    maxWidth: `${dayWidth}px`,
+                    flex: 'none',
+                    borderTop: debug ? '2px solid red' : undefined
                   }}
                 >
                   {DateUtils.formatDate(date)}
+                  {debug && (
+                    <div className="absolute left-0 top-0 w-full text-[10px] text-red-600 bg-white/80 border-t border-red-400">
+                      #{idx} | {date.toISOString().slice(0, 10)} | {idx * dayWidth}px
+                    </div>
+                  )}
                 </div>
               );
             })}
+            {debug && (
+              <div className="absolute inset-0 pointer-events-none border-2 border-red-500 rounded-xl z-40"></div>
+            )}
           </div>
-          
+
           {/* Barres de tâches */}
-          <div 
-            className="relative bg-gray-50" 
-            style={{ 
+          <div
+            className="relative bg-gray-50"
+            style={{
               height: processedTasks.length > 0 ? processedTasks.length * 40 + 8 : 60,
-              width: optimalWidth 
+              width: daysToShow * dayWidth,
+              minWidth: daysToShow * dayWidth,
+              maxWidth: daysToShow * dayWidth
             }}
           >
             {processedTasks.length === 0 ? (
@@ -394,48 +384,58 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
                 Aucune tâche valide à afficher
               </div>
             ) : (
-              taskBars.map(({ task, bar }, idx) => (
-                <div key={task.id} className="relative">
-                  {/* Barre de tâche */}
-                  <div
-                    className={`absolute h-8 rounded ${task.color} flex items-center text-white text-xs px-2 shadow-md border-2 border-white overflow-hidden`}
-                    style={{
-                      left: `${bar!.clippedLeft}px`,
-                      width: `${bar!.clippedWidth}px`,
-                      top: idx * 40 + 4,
-                      zIndex: 10,
-                    }}
-                    title={`${task.name} | ${getAssignedMemberNames(task.assignedTo)} | ${task.validation.duration} jours`}
-                  >
-                    {/* Indicateur de débordement à gauche */}
-                    {bar!.startsBeforeWindow && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-white/50" />
-                    )}
-                    
-                    <span className="truncate flex-1">
-                      {task.name}
-                    </span>
-                    
-                    {/* Indicateur de débordement à droite */}
-                    {bar!.endsAfterWindow && (
-                      <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/50" />
+              taskBars.map(({ task, bar }, idx) => {
+                return (
+                  <div key={task.id} className="relative">
+                    {/* Barre de tâche */}
+                    <div
+                      className={`absolute h-8 rounded ${task.color} flex items-center text-white text-xs px-2 shadow-md border-2 border-white overflow-hidden ${debug ? 'ring-2 ring-red-400' : ''}`}
+                      style={{
+                        left: `${bar!.clippedLeft}px`,
+                        width: `${bar!.clippedWidth}px`,
+                        top: idx * 40 + 4,
+                        zIndex: 10
+                      }}
+                      title={`${task.name} | ${getAssignedMemberNames(task.assignedTo)} | ${task.validation.duration} jours`}
+                    >
+                      {debug && (
+                        <div className="absolute left-0 top-0 text-[10px] bg-white text-red-700 border border-red-300 px-1 z-50 pointer-events-none">
+                          left: {bar!.clippedLeft}px
+                          <br />
+                          width: {bar!.clippedWidth}px
+                        </div>
+                      )}
+                      {/* Indicateur de débordement à gauche */}
+                      {bar!.startsBeforeWindow && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-white/50" />
+                      )}
+                      <span className="truncate flex-1">
+                        {task.name}
+                      </span>
+                      {/* Indicateur de débordement à droite */}
+                      {bar!.endsAfterWindow && (
+                        <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/50" />
+                      )}
+                    </div>
+                    {/* Ligne de tâche (fond) */}
+                    <div
+                      className="absolute h-8 bg-gray-100 border border-gray-200"
+                      style={{
+                        left: 0,
+                        width: `${daysToShow * dayWidth}px`,
+                        top: idx * 40 + 4,
+                        zIndex: 1
+                      }}
+                    />
+                    {debug && (!bar || bar.clippedWidth <= 0) && (
+                      <div className="absolute left-0 top-0 text-xs text-red-700 bg-white px-2 rounded shadow z-50">
+                        ⚠️ Tâche hors fenêtre ou largeur nulle !
+                      </div>
                     )}
                   </div>
-                  
-                  {/* Ligne de tâche (fond) */}
-                  <div
-                    className="absolute h-8 bg-gray-100 border border-gray-200"
-                    style={{
-                      left: 0,
-                      width: `${optimalWidth}px`,
-                      top: idx * 40 + 4,
-                      zIndex: 1,
-                    }}
-                  />
-                </div>
-              ))
+                );
+              })
             )}
-            
             {/* Ligne "aujourd'hui" */}
             {(() => {
               const today = new Date();
@@ -443,13 +443,13 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
               const todayOffset = DateUtils.daysBetween(visibleStartDate, today);
               
               if (todayOffset >= 0 && todayOffset < daysToShow) {
-                // Avec les colonnes flexibles, calculer la position en pourcentage
-                const positionPercent = ((todayOffset + 0.5) / daysToShow) * 100;
+                // Calculer la position en pixels
+                const positionPx = todayOffset * dayWidth + dayWidth / 2;
                 
                 return (
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
-                    style={{ left: `${positionPercent}%` }}
+                    style={{ left: `${positionPx}px` }}
                     title="Aujourd'hui"
                   />
                 );
