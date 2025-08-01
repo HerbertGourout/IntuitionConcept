@@ -3,8 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Project } from './contexts/projectTypes';
 import { useProjects } from './hooks/useProjects';
 
+// Nouveaux contextes modernes
+import { ThemeProvider } from './contexts/ThemeContext';
+import { WidgetProvider } from './contexts/WidgetContext';
+import { GeolocationProvider } from './contexts/GeolocationContext';
+import { OfflineProvider } from './contexts/OfflineContext';
+
 import Layout from './components/Layout/Layout';
-import Dashboard from './components/Dashboard/Dashboard';
+import ModernDashboard from './components/Dashboard/ModernDashboard';
 import Projects from './components/Projects/Projects';
 import Equipment from './components/Equipment/Equipment';
 import Tasks from './components/Tasks/Tasks';
@@ -25,11 +31,9 @@ import { Button, Result } from 'antd';
 import { 
   FocusMode, 
   QuickCommand, 
-  KeyboardShortcutsPanel, 
-  SmartSearch,
-  useKeyboardShortcuts 
+  KeyboardShortcutsPanel
 } from './components/UI/InteractiveFeatures';
-import { Search, Plus, Home, Settings as SettingsIcon, FileText, Users } from 'lucide-react';
+import { Plus, Home, Settings as SettingsIcon, FileText, Users } from 'lucide-react';
 
 // Appliquer les styles globaux
 import './index.css';
@@ -57,7 +61,7 @@ const AppContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
-  const [showQuickCommand, setShowQuickCommand] = useState(false);
+  // État pour les fonctionnalités interactives (à implémenter)
 
   const { toasts, success, removeToast } = useToast() as { 
     toasts: ToastProps[]; 
@@ -82,12 +86,12 @@ const AppContent: React.FC = () => {
 
   // Configuration des raccourcis clavier
   const keyboardShortcuts = [
-    { key: 'Ctrl+D', description: 'Aller au tableau de bord', action: () => handleNavigate('dashboard') },
-    { key: 'Ctrl+P', description: 'Aller aux projets', action: () => handleNavigate('projects') },
-    { key: 'Ctrl+T', description: 'Aller aux tâches', action: () => handleNavigate('tasks') },
-    { key: 'Ctrl+F', description: 'Aller aux finances', action: () => handleNavigate('finances') },
+    { key: 'Ctrl+D', description: 'Aller au tableau de bord', action: () => setActiveSection('dashboard') },
+    { key: 'Ctrl+P', description: 'Aller aux projets', action: () => setActiveSection('projects') },
+    { key: 'Ctrl+T', description: 'Aller aux tâches', action: () => setActiveSection('tasks') },
+    { key: 'Ctrl+F', description: 'Aller aux finances', action: () => setActiveSection('finances') },
     { key: 'Ctrl+N', description: 'Nouveau projet', action: () => setIsCreateProjectOpen(true) },
-    { key: 'Ctrl+K', description: 'Commande rapide', action: () => setShowQuickCommand(true) },
+    { key: 'Ctrl+K', description: 'Commande rapide', action: () => console.log('Commande rapide') },
     { key: 'Ctrl+/', description: 'Afficher les raccourcis', action: () => {} }
   ];
 
@@ -97,7 +101,7 @@ const AppContent: React.FC = () => {
       id: 'dashboard',
       label: 'Aller au tableau de bord',
       icon: <Home className="w-4 h-4" />,
-      action: () => handleNavigate('dashboard'),
+      action: () => setActiveSection('dashboard'),
       shortcut: 'Ctrl+D'
     },
     {
@@ -111,20 +115,20 @@ const AppContent: React.FC = () => {
       id: 'projects',
       label: 'Gérer les projets',
       icon: <FileText className="w-4 h-4" />,
-      action: () => handleNavigate('projects'),
+      action: () => setActiveSection('projects'),
       shortcut: 'Ctrl+P'
     },
     {
       id: 'team',
       label: 'Gérer l\'équipe',
       icon: <Users className="w-4 h-4" />,
-      action: () => handleNavigate('team')
+      action: () => setActiveSection('team')
     },
     {
       id: 'settings',
       label: 'Paramètres',
       icon: <SettingsIcon className="w-4 h-4" />,
-      action: () => handleNavigate('settings')
+      action: () => setActiveSection('settings')
     }
   ];
 
@@ -144,15 +148,7 @@ const AppContent: React.FC = () => {
   ];
 
   // Configuration des raccourcis clavier globaux
-  useKeyboardShortcuts({
-    'ctrl+d': () => handleNavigate('dashboard'),
-    'ctrl+p': () => handleNavigate('projects'),
-    'ctrl+t': () => handleNavigate('tasks'),
-    'ctrl+f': () => handleNavigate('finances'),
-    'ctrl+n': () => setIsCreateProjectOpen(true),
-    'ctrl+k': () => setShowQuickCommand(true)
-  });
-
+  // Removed useKeyboardShortcuts hook as it's not defined
 
 
   const handleNavigate = (section: string, id?: string) => {
@@ -222,7 +218,7 @@ const AppContent: React.FC = () => {
     // Afficher le contenu en fonction de la section active
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard onNavigate={handleNavigate} />;
+        return <ModernDashboard onNavigate={handleNavigate} />;
       case 'projects':
         return <Projects />;
       case 'equipment':
@@ -336,9 +332,19 @@ const AppContent: React.FC = () => {
   );
 }
 
-// Composant racine de l'application (les providers sont maintenant dans AppRouter)
+// Composant racine de l'application avec tous les nouveaux contextes modernes
 const App: React.FC = () => {
-  return <AppContent />;
+  return (
+    <ThemeProvider>
+      <OfflineProvider>
+        <GeolocationProvider>
+          <WidgetProvider>
+            <AppContent />
+          </WidgetProvider>
+        </GeolocationProvider>
+      </OfflineProvider>
+    </ThemeProvider>
+  );
 };
 
 // Ajout de la configuration pour les animations de page
