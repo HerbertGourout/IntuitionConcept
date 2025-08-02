@@ -4,15 +4,12 @@ import {
   MapPin, 
   Users, 
   Shield, 
-  AlertTriangle, 
-  Navigation, 
-  Zap,
+  Navigation,
   Clock,
   Phone,
-  MessageCircle,
-  Settings
+  MessageCircle
 } from 'lucide-react';
-import { useGeolocation, TeamMember, GeofenceZone, LocationEvent } from '../../contexts/GeolocationContext';
+import { useGeolocation, TeamMember, GeofenceZone } from '../../contexts/GeolocationContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface TeamTrackingMapProps {
@@ -35,12 +32,10 @@ const TeamTrackingMap: React.FC<TeamTrackingMapProps> = ({
     locationEvents,
     enableLocation,
     isLocationEnabled,
-    calculateDistance,
   } = useGeolocation();
   const { resolvedTheme } = useTheme();
   
   const [mapCenter, setMapCenter] = useState({ lat: 14.6928, lng: -17.4467 }); // Dakar par défaut
-  const [zoom, setZoom] = useState(12);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [selectedZone, setSelectedZone] = useState<GeofenceZone | null>(null);
   const [showMemberDetails, setShowMemberDetails] = useState(false);
@@ -174,7 +169,7 @@ const TeamTrackingMap: React.FC<TeamTrackingMapProps> = ({
         {geofenceZones.map((zone, index) => (
           <motion.div
             key={zone.id}
-            className={`absolute border-2 border-dashed rounded-full ${getZoneColor(zone)}`}
+            className={`absolute border-2 border-dashed rounded-full ${getZoneColor(zone)} cursor-pointer`}
             style={{
               left: `${30 + index * 15}%`,
               top: `${20 + index * 20}%`,
@@ -188,9 +183,11 @@ const TeamTrackingMap: React.FC<TeamTrackingMapProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               setSelectedZone(zone);
+              if (selectedZone?.id !== zone.id) {
+                console.log('Zone sélectionnée:', zone.name);
+              }
             }}
             whileHover={{ scale: 1.05 }}
-            className={`${getZoneColor(zone)} cursor-pointer`}
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <Shield className="w-4 h-4 text-current" />
@@ -254,7 +251,7 @@ const TeamTrackingMap: React.FC<TeamTrackingMapProps> = ({
         })}
 
         {/* Événements récents */}
-        {locationEvents.slice(0, 3).map((event, index) => (
+        {locationEvents.slice(0, 3).map((event: { id: string; type: string }, index: number) => (
           <motion.div
             key={event.id}
             className={`

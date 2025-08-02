@@ -573,6 +573,11 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     ? (currentProject.phases || []).reduce((sum, phase) => sum + sumTaskBudgets(phase.tasks || []), 0)
     : 0;
 
+  // Debug logs pour vérifier les changements de projet
+  console.log('🎯 ProjectContext - currentProjectId:', currentProjectId);
+  console.log('🎯 ProjectContext - currentProject:', currentProject?.name || 'Aucun');
+  console.log('🎯 ProjectContext - Nombre de projets:', projects.length);
+
   return (
     <ProjectContext.Provider
       value={{

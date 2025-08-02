@@ -10,7 +10,7 @@ import { GeolocationProvider } from './contexts/GeolocationContext';
 import { OfflineProvider } from './contexts/OfflineContext';
 
 import Layout from './components/Layout/Layout';
-import ModernDashboard from './components/Dashboard/ModernDashboard';
+import Dashboard from './components/Dashboard/Dashboard';
 import Projects from './components/Projects/Projects';
 import Equipment from './components/Equipment/Equipment';
 import Tasks from './components/Tasks/Tasks';
@@ -27,6 +27,8 @@ import { ToastContainer } from './components/UI/Toast';
 import type { ToastProps } from './components/UI/Toast';
 import { useToast } from './hooks/useToast';
 import ProjectBudget from './pages/ProjectBudget';
+import Quotes from './pages/Quotes';
+import QuoteCreatorSimple from './components/Quotes/QuoteCreatorSimple';
 import { Button, Result } from 'antd';
 import { 
   FocusMode, 
@@ -218,7 +220,7 @@ const AppContent: React.FC = () => {
     // Afficher le contenu en fonction de la section active
     switch (activeSection) {
       case 'dashboard':
-        return <ModernDashboard onNavigate={handleNavigate} />;
+        return <Dashboard onNavigate={handleNavigate} />;
       case 'projects':
         return <Projects />;
       case 'equipment':
@@ -233,6 +235,10 @@ const AppContent: React.FC = () => {
         return <Documents />;
       case 'project-budget':
         return <ProjectBudget />;
+      case 'quotes':
+        return <Quotes />;
+      case 'quote-creator':
+        return <QuoteCreatorSimple />;
       case 'reports':
         return <Reports />;
       case 'team':

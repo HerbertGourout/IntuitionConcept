@@ -17,6 +17,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { currentProject, projects } = useProjects();
   const { formatAmount } = useCurrency();
   
+  // Debug logs pour vérifier les changements de projet
+  console.log('🔍 Dashboard - Projet actuel:', currentProject?.name || 'Aucun');
+  console.log('🔍 Dashboard - ID du projet:', currentProject?.id || 'Aucun');
+  console.log('🔍 Dashboard - Nombre de projets disponibles:', projects.length);
+  
   // Vérifie que le projet sélectionné existe vraiment dans la liste
   const validProject = projects.find(p => p.id === currentProject?.id);
   // Convertir le projet actuel au format attendu par les composants enfants

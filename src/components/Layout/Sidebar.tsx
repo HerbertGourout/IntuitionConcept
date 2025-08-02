@@ -138,6 +138,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       status: currentProjectId ? 'active' : 'disabled'
     },
     { 
+      id: 'quotes', 
+      label: 'Devis', 
+      icon: Euro, 
+      color: 'text-green-500',
+      bgColor: 'bg-green-500/10',
+      hoverColor: 'hover:bg-green-500/20',
+      description: 'Création et gestion des devis'
+    },
+    { 
       id: 'reports', 
       label: 'Rapports', 
       icon: BarChart3, 

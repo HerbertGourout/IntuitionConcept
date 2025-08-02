@@ -1,48 +1,49 @@
 import React, { useState } from 'react';
+import type { OfflineReport } from '../../hooks/useOfflineData';
 import { motion } from 'framer-motion';
-import { 
-  FileText, 
-  Camera, 
-  Mic, 
-  MapPin, 
-  Save,
-  WifiOff
+import {
+    FileText,
+    Camera,
+    Mic,
+    MapPin,
+    Save,
+    WifiOff
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOfflineReports } from '../../hooks/useOfflineData';
 import { useGeolocation } from '../../contexts/GeolocationContext';
 
 interface ReportData {
-  title: string;
-  description: string;
-  category: string;
-  priority: string;
-  site: string;
-  author: string;
-  photos: File[];
-  audioNote: File | null;
-  weather: string;
-  temperature: string;
-  workersPresent: string;
-  equipmentUsed: string;
-  issues: string;
-  nextSteps: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    accuracy?: number;
-  } | null;
-  timestamp: string;
-  deviceInfo: {
-    userAgent: string;
-    platform: string;
-    language: string;
-  };
+    title: string;
+    description: string;
+    category: string;
+    priority: string;
+    site: string;
+    author: string;
+    photos: File[];
+    audioNote: File | null;
+    weather: string;
+    temperature: string;
+    workersPresent: string;
+    equipmentUsed: string;
+    issues: string;
+    nextSteps: string;
+    location?: {
+        latitude: number;
+        longitude: number;
+        accuracy?: number;
+    } | null;
+    timestamp: string;
+    deviceInfo: {
+        userAgent: string;
+        platform: string;
+        language: string;
+    };
 }
 
 interface OfflineReportFormProps {
-  onSubmit?: (report: ReportData) => void;
-  onCancel?: () => void;
+    onSubmit?: (report: ReportData) => void;
+    onCancel?: () => void;
 }
 
 const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCancel }) => {
@@ -166,7 +167,7 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                 }
             };
 
-            await createReport(reportData);
+            await createReport(reportData as unknown as Partial<OfflineReport>);
 
             // Réinitialiser le formulaire
             setFormData({
@@ -199,8 +200,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
     return (
         <motion.div
             className={`max-w-4xl mx-auto p-6 rounded-xl shadow-lg ${resolvedTheme === 'dark'
-                    ? 'bg-gray-800 border border-gray-700'
-                    : 'bg-white border border-gray-200'
+                ? 'bg-gray-800 border border-gray-700'
+                : 'bg-white border border-gray-200'
                 }`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -237,8 +238,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                             value={formData.title}
                             onChange={(e) => handleInputChange('title', e.target.value)}
                             className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
                                 }`}
                             placeholder="Ex: Avancement fondations - Zone A"
                             required
@@ -254,8 +255,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                             value={formData.author}
                             onChange={(e) => handleInputChange('author', e.target.value)}
                             className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
                                 }`}
                             placeholder="Nom du responsable"
                         />
@@ -272,8 +273,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                             value={formData.category}
                             onChange={(e) => handleInputChange('category', e.target.value)}
                             className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
                                 }`}
                         >
                             {categories.map(cat => (
@@ -292,8 +293,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                             value={formData.priority}
                             onChange={(e) => handleInputChange('priority', e.target.value)}
                             className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
                                 }`}
                         >
                             {priorities.map(priority => (
@@ -315,8 +316,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                         onChange={(e) => handleInputChange('description', e.target.value)}
                         rows={4}
                         className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                ? 'bg-gray-700 border-gray-600 text-white'
-                                : 'bg-white border-gray-300 text-gray-900'
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300 text-gray-900'
                             }`}
                         placeholder="Décrivez en détail la situation, les observations, les mesures prises..."
                     />
@@ -333,8 +334,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                             value={formData.site}
                             onChange={(e) => handleInputChange('site', e.target.value)}
                             className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
                                 }`}
                             placeholder="Zone A, Bâtiment 1..."
                         />
@@ -349,8 +350,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                             value={formData.workersPresent}
                             onChange={(e) => handleInputChange('workersPresent', e.target.value)}
                             className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
                                 }`}
                             placeholder="Nombre"
                         />
@@ -365,8 +366,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                             value={formData.temperature}
                             onChange={(e) => handleInputChange('temperature', e.target.value)}
                             className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
                                 }`}
                             placeholder="25"
                         />
@@ -417,8 +418,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                                     type="button"
                                     onClick={handleAudioRecord}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isRecording
-                                            ? 'bg-red-500 text-white animate-pulse'
-                                            : 'bg-green-500 text-white hover:bg-green-600'
+                                        ? 'bg-red-500 text-white animate-pulse'
+                                        : 'bg-green-500 text-white hover:bg-green-600'
                                         }`}
                                 >
                                     <Mic className="w-4 h-4" />
@@ -445,8 +446,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                             onChange={(e) => handleInputChange('equipmentUsed', e.target.value)}
                             rows={3}
                             className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
                                 }`}
                             placeholder="Excavatrice, grue, bétonnière..."
                         />
@@ -461,8 +462,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                             onChange={(e) => handleInputChange('issues', e.target.value)}
                             rows={3}
                             className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
+                                ? 'bg-gray-700 border-gray-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
                                 }`}
                             placeholder="Difficultés, retards, incidents..."
                         />
@@ -479,8 +480,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                         onChange={(e) => handleInputChange('nextSteps', e.target.value)}
                         rows={3}
                         className={`w-full p-3 rounded-lg border ${resolvedTheme === 'dark'
-                                ? 'bg-gray-700 border-gray-600 text-white'
-                                : 'bg-white border-gray-300 text-gray-900'
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-white border-gray-300 text-gray-900'
                             }`}
                         placeholder="Actions à prévoir, matériaux à commander, rendez-vous à planifier..."
                     />
@@ -489,8 +490,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                 {/* Localisation */}
                 {currentLocation && (
                     <div className={`p-4 rounded-lg ${resolvedTheme === 'dark'
-                            ? 'bg-green-900/20 border border-green-700'
-                            : 'bg-green-50 border border-green-200'
+                        ? 'bg-green-900/20 border border-green-700'
+                        : 'bg-green-50 border border-green-200'
                         }`}>
                         <div className="flex items-center gap-2 mb-2">
                             <MapPin className="w-4 h-4 text-green-600" />
@@ -509,8 +510,8 @@ const OfflineReportForm: React.FC<OfflineReportFormProps> = ({ onSubmit, onCance
                         type="button"
                         onClick={onCancel}
                         className={`px-6 py-3 rounded-lg transition-colors ${resolvedTheme === 'dark'
-                                ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
                             }`}
                     >
                         Annuler

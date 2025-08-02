@@ -3,7 +3,7 @@ import { useOffline } from '../contexts/OfflineContext';
 import { toast } from 'react-hot-toast';
 
 // Hook pour gérer les données avec support offline
-export const useOfflineData = <T>(collection: string, initialData: T[] = []) => {
+export const useOfflineData = <T extends { id: string }>(collection: string, initialData: T[] = []) => {
   const { 
     isOnline, 
     cacheData, 
@@ -37,11 +37,11 @@ export const useOfflineData = <T>(collection: string, initialData: T[] = []) => 
           const freshData = await fetchFromAPI(collection);
           
           // Mettre en cache les nouvelles données
-          freshData.forEach((item: any) => {
+          freshData.forEach((item) => {
             cacheData(collection, item.id, item);
           });
           
-          setData(freshData);
+          setData(freshData as T[]);
           console.log(`🌐 Données fraîches récupérées: ${collection}`);
         } catch (apiError) {
           console.warn('Erreur API, utilisation du cache:', apiError);
@@ -72,7 +72,7 @@ export const useOfflineData = <T>(collection: string, initialData: T[] = []) => 
         const createdItem = await createInAPI(collection, itemWithId);
         
         // Mettre à jour les données locales
-        setData(prev => [...prev, createdItem]);
+        setData(prev => [...prev, createdItem as T]);
         cacheData(collection, createdItem.id, createdItem);
         
         toast.success('✅ Élément créé avec succès');
@@ -100,7 +100,8 @@ export const useOfflineData = <T>(collection: string, initialData: T[] = []) => 
   // Mettre à jour un élément
   const updateItem = useCallback(async (id: string, updates: Partial<T>) => {
     try {
-      const updatedItem = { ...data.find(item => (item as any).id === id), ...updates } as T;
+      const foundItem = data.find(item => item.id === id);
+      const updatedItem = { ...foundItem, ...updates } as T;
 
       if (isOnline) {
         // Essayer de mettre à jour en ligne
@@ -108,7 +109,7 @@ export const useOfflineData = <T>(collection: string, initialData: T[] = []) => 
         
         // Mettre à jour les données locales
         setData(prev => prev.map(item => 
-          (item as any).id === id ? serverItem : item
+          item.id === id ? serverItem : item
         ));
         cacheData(collection, id, serverItem);
         
@@ -124,7 +125,7 @@ export const useOfflineData = <T>(collection: string, initialData: T[] = []) => 
         
         // Mettre à jour l'interface immédiatement
         setData(prev => prev.map(item => 
-          (item as any).id === id ? updatedItem : item
+          item.id === id ? updatedItem : item
         ));
         
         return updatedItem;
@@ -144,7 +145,7 @@ export const useOfflineData = <T>(collection: string, initialData: T[] = []) => 
         await deleteFromAPI(collection, id);
         
         // Mettre à jour les données locales
-        setData(prev => prev.filter(item => (item as any).id !== id));
+        setData(prev => prev.filter(item => item.id !== id));
         
         toast.success('✅ Élément supprimé');
       } else {
@@ -156,7 +157,7 @@ export const useOfflineData = <T>(collection: string, initialData: T[] = []) => 
         });
         
         // Mettre à jour l'interface immédiatement
-        setData(prev => prev.filter(item => (item as any).id !== id));
+        setData(prev => prev.filter(item => item.id !== id));
         
         toast.success('📝 Suppression programmée');
       }
@@ -184,13 +185,22 @@ export const useOfflineData = <T>(collection: string, initialData: T[] = []) => 
   };
 };
 
+// Type strict pour les rapports offline
+export interface OfflineReport {
+  id: string;
+  createdAt: string;
+  isOffline: boolean;
+  // Ajoutez d'autres propriétés selon vos besoins
+  [key: string]: unknown;
+}
+
 // Hook pour les rapports offline
 export const useOfflineReports = () => {
   const { queueAction, isOnline } = useOffline();
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<OfflineReport[]>([]);
 
-  const createReport = useCallback(async (reportData: any) => {
-    const report = {
+  const createReport = useCallback(async (reportData: Partial<OfflineReport>) => {
+    const report: OfflineReport = {
       ...reportData,
       id: `report_${Date.now()}`,
       createdAt: new Date().toISOString(),
@@ -200,11 +210,12 @@ export const useOfflineReports = () => {
     if (isOnline) {
       try {
         // Envoyer directement si en ligne
-        const savedReport = await submitReportToAPI(report);
+        const savedReport = await submitReportToAPI(report) as OfflineReport;
         setReports(prev => [...prev, savedReport]);
         toast.success('📊 Rapport envoyé avec succès');
         return savedReport;
       } catch (error) {
+        console.error('Erreur d\'envoi du rapport:', error);
         // Si échec, basculer en mode offline
         queueAction({
           type: 'create',
@@ -212,7 +223,7 @@ export const useOfflineReports = () => {
           data: report
         });
         setReports(prev => [...prev, report]);
-        toast.warning('📝 Rapport sauvegardé - Sera envoyé à la reconnexion');
+        toast('📝 Rapport sauvegardé - Sera envoyé à la reconnexion', { icon: '⚠️' });
         return report;
       }
     } else {
@@ -236,12 +247,12 @@ export const useOfflineReports = () => {
 };
 
 // Fonctions simulées d'API (à remplacer par vos vraies API)
-const fetchFromAPI = async (collection: string): Promise<any[]> => {
+const fetchFromAPI = async (collection: string): Promise<Array<{ id: string; [key: string]: unknown }>> => {
   // Simuler un délai réseau
   await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
   
   // Simuler des données selon la collection
-  const mockData: Record<string, any[]> = {
+  const mockData: Record<string, Array<{ id: string; [key: string]: unknown }>> = {
     projects: [
       { id: '1', name: 'Projet Alpha', status: 'active', progress: 75 },
       { id: '2', name: 'Projet Beta', status: 'planning', progress: 25 }
@@ -259,22 +270,22 @@ const fetchFromAPI = async (collection: string): Promise<any[]> => {
   return mockData[collection] || [];
 };
 
-const createInAPI = async (collection: string, item: any): Promise<any> => {
+const createInAPI = async <T extends { id: string }>(_collection: string, item: T): Promise<T> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  return { ...item, id: `api_${Date.now()}`, createdAt: new Date().toISOString() };
+  return { ...item, id: `api_${Date.now()}`, createdAt: new Date().toISOString() } as T;
 };
 
-const updateInAPI = async (collection: string, id: string, item: any): Promise<any> => {
+const updateInAPI = async <T extends { id: string }>(_collection: string, _id: string, item: T): Promise<T> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  return { ...item, updatedAt: new Date().toISOString() };
+  return { ...item, updatedAt: new Date().toISOString() } as T;
 };
 
-const deleteFromAPI = async (collection: string, id: string): Promise<void> => {
+const deleteFromAPI = async (_collection: string, id: string): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 300));
-  console.log(`Deleted ${id} from ${collection}`);
+  console.log(`Deleted ${id} from collection`);
 };
 
-const submitReportToAPI = async (report: any): Promise<any> => {
+const submitReportToAPI = async (report: Record<string, unknown>): Promise<Record<string, unknown>> => {
   await new Promise(resolve => setTimeout(resolve, 500));
   return { ...report, submittedAt: new Date().toISOString() };
 };
