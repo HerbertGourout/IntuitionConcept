@@ -134,8 +134,7 @@ const Equipment: React.FC = () => {
   const equipmentTypes = Array.from(new Set(equipment.map(item => item.type)));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
         {/* Header avec design glassmorphism */}
         <div className="glass-card p-6 rounded-xl">
           <div className="flex items-center justify-between mb-6">
@@ -379,7 +378,6 @@ const Equipment: React.FC = () => {
             </button>
           </div>
         )}
-      </div>
     </div>
   );
 };

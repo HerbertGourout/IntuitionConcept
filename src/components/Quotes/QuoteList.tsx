@@ -110,12 +110,10 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         });
 
     return (
-        <div className={`min-h-screen p-6 ${
-            resolvedTheme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
-        }`}>
+        <div className="space-y-6">
             {/* En-tête */}
             <motion.div
-                className={`max-w-7xl mx-auto mb-6 p-6 rounded-xl shadow-lg ${
+                className={`glass-card p-6 rounded-xl border border-white/20 ${
                     resolvedTheme === 'dark'
                         ? 'bg-gray-800 border border-gray-700'
                         : 'bg-white border border-gray-200'

@@ -10,7 +10,7 @@ import { GeolocationProvider } from './contexts/GeolocationContext';
 import { OfflineProvider } from './contexts/OfflineContext';
 
 import Layout from './components/Layout/Layout';
-import Dashboard from './components/Dashboard/Dashboard';
+import ModernProjectDashboard from './components/Dashboard/ModernProjectDashboard';
 import Projects from './components/Projects/Projects';
 import Equipment from './components/Equipment/Equipment';
 import Tasks from './components/Tasks/Tasks';
@@ -134,20 +134,7 @@ const AppContent: React.FC = () => {
     }
   ];
 
-  // Suggestions de recherche
-  const searchSuggestions = [
-    'Tableau de bord',
-    'Projets',
-    'Tâches',
-    'Équipements',
-    'Planning',
-    'Finances',
-    'Documents',
-    'Rapports',
-    'Équipe',
-    'Localisation',
-    'Paramètres'
-  ];
+
 
   // Configuration des raccourcis clavier globaux
   // Removed useKeyboardShortcuts hook as it's not defined
@@ -220,7 +207,7 @@ const AppContent: React.FC = () => {
     // Afficher le contenu en fonction de la section active
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard onNavigate={handleNavigate} />;
+        return <ModernProjectDashboard onNavigate={handleNavigate} />;
       case 'projects':
         return <Projects />;
       case 'equipment':

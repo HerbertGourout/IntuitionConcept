@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOfflineReports } from '../../hooks/useOfflineData';
+import { QuotesService } from '../../services/quotesService';
 
 // Types pour le module de devis structuré
 interface Article {
@@ -50,7 +51,7 @@ interface Quote {
     taxRate: number;
     taxAmount: number;
     totalAmount: number;
-    status: 'draft' | 'sent' | 'accepted' | 'rejected';
+    status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
     validityDays: number;
     notes: string;
     paymentTerms: string;
@@ -134,21 +135,105 @@ const QuoteCreatorSimple: React.FC = () => {
         setIsDirty(true);
     };
 
-    const addPhase = () => {
-        const newPhase: Phase = {
+
+
+    const startNewQuote = () => {
+        // Créer une première phase par défaut pour structurer le devis
+        const firstPhase: Phase = {
             id: `phase-${Date.now()}`,
-            name: `Phase ${quote.phases.length + 1}`,
-            description: '',
+            name: 'Phase 1 - Préparation',
+            description: 'Première phase du projet',
             tasks: [],
             totalPrice: 0,
             expanded: true
         };
-        updateQuote({ phases: [...quote.phases, newPhase] });
+
+        const newQuote: Quote = {
+            id: `DEVIS-${Date.now()}`,
+            title: 'Nouveau Devis',
+            clientName: '',
+            clientEmail: '',
+            clientPhone: '',
+            projectType: 'construction',
+            phases: [firstPhase], // Devis structuré avec une phase par défaut
+            subtotal: 0,
+            taxRate: 18,
+            taxAmount: 0,
+            totalAmount: 0,
+            status: 'draft',
+            validityDays: 30,
+            notes: '',
+            paymentTerms: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        setQuote(newQuote);
+        setIsDirty(true); // Marquer comme modifié car on a créé une structure
     };
 
-    const handleSave = () => {
-        console.log('Sauvegarde du devis:', quote);
-                setIsDirty(false);
+    const handleSave = async () => {
+        try {
+            // Validation basique
+            if (!quote.clientName.trim()) {
+                alert('⚠️ Veuillez saisir le nom du client');
+                return;
+            }
+            
+            if (quote.phases.length === 0) {
+                alert('⚠️ Veuillez ajouter au moins une phase au devis');
+                return;
+            }
+            
+            // Sauvegarder dans Firebase
+            const quoteData = {
+                title: quote.title,
+                clientName: quote.clientName,
+                clientEmail: quote.clientEmail,
+                clientPhone: quote.clientPhone,
+                projectType: quote.projectType,
+                phases: quote.phases,
+                subtotal: quote.subtotal,
+                taxRate: quote.taxRate,
+                taxAmount: quote.taxAmount,
+                totalAmount: quote.totalAmount,
+                status: quote.status,
+                validityDays: quote.validityDays,
+                notes: quote.notes,
+                paymentTerms: quote.paymentTerms,
+                createdAt: quote.createdAt,
+                updatedAt: new Date().toISOString()
+            };
+            
+            const quoteId = await QuotesService.createQuote(quoteData);
+            
+            // Confirmation
+            alert(`✅ Devis "${quote.title}" sauvegardé avec succès dans Firebase !\n🆔 ID: ${quoteId}\n💰 Montant total: ${formatCurrency(quote.totalAmount)}`);
+            
+            // Réinitialiser le formulaire pour un nouveau devis
+            startNewQuote();
+            
+            console.log('Devis sauvegardé dans Firebase:', quoteId);
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde:', error);
+            alert('❌ Erreur lors de la sauvegarde du devis dans Firebase');
+        }
+    };
+    
+    const viewSavedQuotes = async () => {
+        try {
+            const savedQuotes = await QuotesService.getAllQuotes();
+            if (savedQuotes.length === 0) {
+                alert('📝 Aucun devis sauvegardé pour le moment dans Firebase');
+            } else {
+                const quotesInfo = savedQuotes.map((q: Quote, index: number) => 
+                    `${index + 1}. ${q.title} - ${q.clientName} (${formatCurrency(q.totalAmount)}) - ${q.status}`
+                ).join('\n');
+                alert(`📋 Devis sauvegardés dans Firebase (${savedQuotes.length}):\n\n${quotesInfo}`);
+            }
+        } catch (error) {
+            console.error('Erreur lors de la récupération des devis:', error);
+            alert('❌ Erreur lors de la récupération des devis depuis Firebase');
+        }
     };
 
     const handleExport = () => {
@@ -301,14 +386,285 @@ const QuoteCreatorSimple: React.FC = () => {
 
                     <div className="mt-4 flex items-center justify-center">
                         <button
-                            onClick={addPhase}
-                            className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            onClick={startNewQuote}
+                            className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg"
                         >
-                            <Plus className="w-5 h-5" />
-                            Commencer un nouveau devis
+                            <FileText className="w-6 h-6" />
+                            <span className="font-semibold">Commencer un nouveau devis structuré</span>
                         </button>
                     </div>
+                    <div className="mt-3 text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            📋 Un devis structuré avec une première phase sera créé automatiquement
+                        </p>
+                    </div>
                 </div>
+
+                {/* Affichage et édition des phases */}
+                {quote.phases.length > 0 && (
+                    <div className="space-y-4 mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Phases du devis</h3>
+                        {quote.phases.map((phase, phaseIndex) => (
+                            <div key={phase.id} className={`p-4 rounded-xl border ${
+                                resolvedTheme === 'dark'
+                                    ? 'bg-gray-800 border-gray-700'
+                                    : 'bg-white border-gray-200'
+                            }`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <input
+                                        type="text"
+                                        value={phase.name}
+                                        onChange={(e) => {
+                                            const updatedPhases = [...quote.phases];
+                                            updatedPhases[phaseIndex].name = e.target.value;
+                                            updateQuote({ phases: updatedPhases });
+                                        }}
+                                        className={`text-lg font-bold bg-transparent border-none outline-none ${
+                                            resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                                        }`}
+                                        placeholder="Nom de la phase"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => {
+                                                const newTask = {
+                                                    id: `task-${Date.now()}`,
+                                                    name: `Tâche ${phase.tasks.length + 1}`,
+                                                    description: '',
+                                                    articles: [],
+                                                    totalPrice: 0,
+                                                    expanded: true
+                                                };
+                                                const updatedPhases = [...quote.phases];
+                                                updatedPhases[phaseIndex].tasks.push(newTask);
+                                                updateQuote({ phases: updatedPhases });
+                                            }}
+                                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                                        >
+                                            + Tâche
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const updatedPhases = quote.phases.filter((_, i) => i !== phaseIndex);
+                                                updateQuote({ phases: updatedPhases });
+                                            }}
+                                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                                        >
+                                            Supprimer
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <textarea
+                                    value={phase.description}
+                                    onChange={(e) => {
+                                        const updatedPhases = [...quote.phases];
+                                        updatedPhases[phaseIndex].description = e.target.value;
+                                        updateQuote({ phases: updatedPhases });
+                                    }}
+                                    className={`w-full p-2 rounded border mb-3 ${
+                                        resolvedTheme === 'dark'
+                                            ? 'bg-gray-700 border-gray-600 text-white'
+                                            : 'bg-gray-50 border-gray-300 text-gray-900'
+                                    }`}
+                                    placeholder="Description de la phase"
+                                    rows={2}
+                                />
+
+                                {/* Tâches de la phase */}
+                                {phase.tasks.map((task, taskIndex) => (
+                                    <div key={task.id} className={`ml-4 p-3 rounded-lg border mb-2 ${
+                                        resolvedTheme === 'dark'
+                                            ? 'bg-gray-700 border-gray-600'
+                                            : 'bg-gray-50 border-gray-300'
+                                    }`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <input
+                                                type="text"
+                                                value={task.name}
+                                                onChange={(e) => {
+                                                    const updatedPhases = [...quote.phases];
+                                                    updatedPhases[phaseIndex].tasks[taskIndex].name = e.target.value;
+                                                    updateQuote({ phases: updatedPhases });
+                                                }}
+                                                className={`font-medium bg-transparent border-none outline-none ${
+                                                    resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                                                }`}
+                                                placeholder="Nom de la tâche"
+                                            />
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        const newArticle = {
+                                                            id: `article-${Date.now()}`,
+                                                            description: 'Nouvel article',
+                                                            quantity: 1,
+                                                            unit: 'unité',
+                                                            unitPrice: 0,
+                                                            totalPrice: 0
+                                                        };
+                                                        const updatedPhases = [...quote.phases];
+                                                        updatedPhases[phaseIndex].tasks[taskIndex].articles.push(newArticle);
+                                                        updateQuote({ phases: updatedPhases });
+                                                    }}
+                                                    className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    + Article
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        const updatedPhases = [...quote.phases];
+                                                        updatedPhases[phaseIndex].tasks = updatedPhases[phaseIndex].tasks.filter((_, i) => i !== taskIndex);
+                                                        updateQuote({ phases: updatedPhases });
+                                                    }}
+                                                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Articles de la tâche */}
+                                        {task.articles.map((article, articleIndex) => (
+                                            <div key={article.id} className={`ml-4 p-2 rounded border mb-1 ${
+                                                resolvedTheme === 'dark'
+                                                    ? 'bg-gray-600 border-gray-500'
+                                                    : 'bg-white border-gray-200'
+                                            }`}>
+                                                <div className="grid grid-cols-5 gap-2 text-sm">
+                                                    <input
+                                                        type="text"
+                                                        value={article.description}
+                                                        onChange={(e) => {
+                                                            const updatedPhases = [...quote.phases];
+                                                            updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].description = e.target.value;
+                                                            updateQuote({ phases: updatedPhases });
+                                                        }}
+                                                        className={`p-1 rounded border ${
+                                                            resolvedTheme === 'dark'
+                                                                ? 'bg-gray-700 border-gray-600 text-white'
+                                                                : 'bg-white border-gray-300 text-gray-900'
+                                                        }`}
+                                                        placeholder="Description"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        value={article.quantity}
+                                                        onChange={(e) => {
+                                                            const updatedPhases = [...quote.phases];
+                                                            updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].quantity = Number(e.target.value);
+                                                            updateQuote({ phases: updatedPhases });
+                                                        }}
+                                                        className={`p-1 rounded border ${
+                                                            resolvedTheme === 'dark'
+                                                                ? 'bg-gray-700 border-gray-600 text-white'
+                                                                : 'bg-white border-gray-300 text-gray-900'
+                                                        }`}
+                                                        placeholder="Qté"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={article.unit}
+                                                        onChange={(e) => {
+                                                            const updatedPhases = [...quote.phases];
+                                                            updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].unit = e.target.value;
+                                                            updateQuote({ phases: updatedPhases });
+                                                        }}
+                                                        className={`p-1 rounded border ${
+                                                            resolvedTheme === 'dark'
+                                                                ? 'bg-gray-700 border-gray-600 text-white'
+                                                                : 'bg-white border-gray-300 text-gray-900'
+                                                        }`}
+                                                        placeholder="Unité"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        value={article.unitPrice}
+                                                        onChange={(e) => {
+                                                            const updatedPhases = [...quote.phases];
+                                                            updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].unitPrice = Number(e.target.value);
+                                                            updateQuote({ phases: updatedPhases });
+                                                        }}
+                                                        className={`p-1 rounded border ${
+                                                            resolvedTheme === 'dark'
+                                                                ? 'bg-gray-700 border-gray-600 text-white'
+                                                                : 'bg-white border-gray-300 text-gray-900'
+                                                        }`}
+                                                        placeholder="Prix unitaire"
+                                                    />
+                                                    <div className="flex items-center justify-between">
+                                                        <span className={`font-medium ${
+                                                            resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                                                        }`}>
+                                                            {formatCurrency(article.quantity * article.unitPrice)}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => {
+                                                                const updatedPhases = [...quote.phases];
+                                                                updatedPhases[phaseIndex].tasks[taskIndex].articles = 
+                                                                    updatedPhases[phaseIndex].tasks[taskIndex].articles.filter((_, i) => i !== articleIndex);
+                                                                updateQuote({ phases: updatedPhases });
+                                                            }}
+                                                            className="text-red-500 hover:text-red-700 text-xs"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        
+                                        {task.articles.length === 0 && (
+                                            <div className="ml-4 text-sm text-gray-500 italic">
+                                                Aucun article. Cliquez sur "+ Article" pour en ajouter.
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                
+                                {phase.tasks.length === 0 && (
+                                    <div className="ml-4 text-sm text-gray-500 italic">
+                                        Aucune tâche. Cliquez sur "+ Tâche" pour en ajouter.
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Message si aucune phase */}
+                {quote.phases.length === 0 && (
+                    <div className={`p-8 rounded-xl border-2 border-dashed mb-6 text-center ${
+                        resolvedTheme === 'dark'
+                            ? 'border-gray-600 bg-gray-800/50'
+                            : 'border-gray-300 bg-gray-50'
+                    }`}>
+                        <FileText className={`w-16 h-16 mx-auto mb-4 ${
+                            resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-400'
+                        }`} />
+                        <h3 className={`text-xl font-bold mb-3 ${
+                            resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
+                            Prêt à créer votre devis structuré ?
+                        </h3>
+                        <div className={`text-sm space-y-2 mb-6 ${
+                            resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                            <p>📋 <strong>Étape 1</strong> : Cliquez sur "Commencer un nouveau devis structuré"</p>
+                            <p>🏗️ <strong>Étape 2</strong> : Une première phase sera créée automatiquement</p>
+                            <p>✅ <strong>Étape 3</strong> : Ajoutez des tâches et articles à vos phases</p>
+                            <p>💾 <strong>Étape 4</strong> : Sauvegardez votre devis dans Firebase</p>
+                        </div>
+                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
+                            resolvedTheme === 'dark' 
+                                ? 'bg-blue-900/30 text-blue-300 border border-blue-700'
+                                : 'bg-blue-50 text-blue-600 border border-blue-200'
+                        }`}>
+                            <FileText className="w-4 h-4" />
+                            <span className="text-sm font-medium">Structure : Devis → Phases → Tâches → Articles</span>
+                        </div>
+                    </div>
+                )}
 
                 {/* Résumé financier */}
                 <div className={`p-6 rounded-xl shadow-sm border ${
@@ -342,13 +698,20 @@ const QuoteCreatorSimple: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="mt-6 flex gap-2">
+                    <div className="mt-6 flex flex-wrap gap-2">
                         <button
                             onClick={handleSave}
                             className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                         >
                             <Save className="w-4 h-4" />
                             Sauvegarder
+                        </button>
+                        <button
+                            onClick={viewSavedQuotes}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
+                        >
+                            <FileText className="w-4 h-4" />
+                            Voir mes devis
                         </button>
                         <button
                             onClick={handleExport}

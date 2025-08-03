@@ -3,14 +3,18 @@ import { motion } from 'framer-motion';
 import {
     FileText,
     TrendingUp,
-    Euro,
     Clock,
     CheckCircle,
-    Send,
-    BarChart3,
-    PieChart
+    BarChart3
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
+
+interface Quote {
+    id: string;
+    status: 'draft' | 'sent' | 'accepted' | 'rejected';
+    totalAmount: number;
+    [key: string]: unknown; // Pour les autres propriétés optionnelles
+}
 
 interface QuoteStats {
     total: number;
@@ -20,7 +24,6 @@ interface QuoteStats {
     rejected: number;
     totalValue: number;
     acceptedValue: number;
-    conversionRate: number;
 }
 
 const QuoteStatsWidget: React.FC = () => {
@@ -32,8 +35,7 @@ const QuoteStatsWidget: React.FC = () => {
         accepted: 0,
         rejected: 0,
         totalValue: 0,
-        acceptedValue: 0,
-        conversionRate: 0
+        acceptedValue: 0
     });
 
     useEffect(() => {
@@ -41,24 +43,19 @@ const QuoteStatsWidget: React.FC = () => {
     }, []);
 
     const calculateStats = () => {
-        const quotes = JSON.parse(localStorage.getItem('quotes') || '[]');
+        const quotes: Quote[] = JSON.parse(localStorage.getItem('quotes') || '[]');
         
         const stats: QuoteStats = {
             total: quotes.length,
-            draft: quotes.filter((q: any) => q.status === 'draft').length,
-            sent: quotes.filter((q: any) => q.status === 'sent').length,
-            accepted: quotes.filter((q: any) => q.status === 'accepted').length,
-            rejected: quotes.filter((q: any) => q.status === 'rejected').length,
-            totalValue: quotes.reduce((sum: number, q: any) => sum + (q.totalAmount || 0), 0),
+            draft: quotes.filter((q: Quote) => q.status === 'draft').length,
+            sent: quotes.filter((q: Quote) => q.status === 'sent').length,
+            accepted: quotes.filter((q: Quote) => q.status === 'accepted').length,
+            rejected: quotes.filter((q: Quote) => q.status === 'rejected').length,
+            totalValue: quotes.reduce((sum: number, q: Quote) => sum + (q.totalAmount || 0), 0),
             acceptedValue: quotes
-                .filter((q: any) => q.status === 'accepted')
-                .reduce((sum: number, q: any) => sum + (q.totalAmount || 0), 0),
-            conversionRate: 0
+                .filter((q: Quote) => q.status === 'accepted')
+                .reduce((sum: number, q: Quote) => sum + (q.totalAmount || 0), 0)
         };
-
-        if (stats.sent > 0) {
-            stats.conversionRate = (stats.accepted / stats.sent) * 100;
-        }
 
         setStats(stats);
     };
@@ -86,11 +83,11 @@ const QuoteStatsWidget: React.FC = () => {
             suffix: ''
         },
         {
-            title: 'Taux Conversion',
-            value: stats.conversionRate,
+            title: 'Rejetés',
+            value: stats.rejected,
             icon: TrendingUp,
-            color: 'purple',
-            suffix: '%'
+            color: 'red',
+            suffix: ''
         }
     ];
 
@@ -171,14 +168,6 @@ const QuoteStatsWidget: React.FC = () => {
                         {stats.acceptedValue.toLocaleString()} FCFA
                     </span>
                 </div>
-                {stats.totalValue > 0 && (
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm opacity-70">Taux de réussite:</span>
-                        <span className="font-bold text-purple-600">
-                            {((stats.acceptedValue / stats.totalValue) * 100).toFixed(1)}%
-                        </span>
-                    </div>
-                )}
             </div>
 
             {/* Barre de progression */}

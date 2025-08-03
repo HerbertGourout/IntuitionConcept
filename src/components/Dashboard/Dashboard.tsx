@@ -1,12 +1,7 @@
 import React, { useMemo } from 'react';
 import { useProjects } from '../../hooks/useProjects';
-import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap } from 'lucide-react';
-import WeatherWidget from './widgets/WeatherWidget';
-import CircularProgressWidget from './widgets/CircularProgressWidget';
+import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap, TrendingUp, CheckCircle, XCircle, Pause } from 'lucide-react';
 import ActivityTimelineWidget from './widgets/ActivityTimelineWidget';
-import AnimatedStatsCard from './widgets/AnimatedStatsCard';
-import RealTimeChartWidget from './widgets/RealTimeChartWidget';
-import { AnimatedBackground, GlassCard } from '../UI/VisualEffects';
 import { useCurrency } from '../../hooks/useCurrency';
 
 interface DashboardProps {
