@@ -5,6 +5,9 @@ import { HelpCircle, Keyboard, Search, Command, Zap, Eye, EyeOff } from 'lucide-
 export const useKeyboardShortcuts = (shortcuts: Record<string, () => void>) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Vérifier que event.key existe avant d'appeler toLowerCase
+      if (!event.key) return;
+      
       const key = event.key.toLowerCase();
       const ctrlKey = event.ctrlKey || event.metaKey;
       const altKey = event.altKey;

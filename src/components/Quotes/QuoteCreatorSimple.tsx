@@ -3,7 +3,6 @@ import {
     Save,
     Download,
     Send,
-    Plus,
     AlertTriangle,
     FileText
 } from 'lucide-react';
@@ -85,6 +84,15 @@ const QuoteCreatorSimple: React.FC = () => {
 
     const [isDirty, setIsDirty] = useState(false);
     
+    // États pour l'interface moderne
+    const [isLoading, setIsLoading] = useState(false);
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [showErrorToast, setShowErrorToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [showQuotesModal, setShowQuotesModal] = useState(false);
+    const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
+    const [showExportModal, setShowExportModal] = useState(false);
+    
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('fr-FR', {
             style: 'currency',
@@ -137,6 +145,75 @@ const QuoteCreatorSimple: React.FC = () => {
 
 
 
+    const showToast = (message: string, type: 'success' | 'error') => {
+        setToastMessage(message);
+        if (type === 'success') {
+            setShowSuccessToast(true);
+            setTimeout(() => setShowSuccessToast(false), 4000);
+        } else {
+            setShowErrorToast(true);
+            setTimeout(() => setShowErrorToast(false), 4000);
+        }
+    };
+
+    // Charger les devis sauvegardés depuis Firebase
+    const loadSavedQuotes = async () => {
+        try {
+            setIsLoading(true);
+            const quotes = await QuotesService.getAllQuotes();
+            setSavedQuotes(quotes);
+        } catch (error) {
+            console.error('Erreur lors du chargement des devis:', error);
+            showToast('❌ Erreur lors du chargement des devis', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Charger un devis pour édition
+    const loadQuoteForEdit = (quoteToEdit: Quote) => {
+        setQuote(quoteToEdit);
+        setIsDirty(true);
+        setShowQuotesModal(false);
+        showToast(`📝 Devis "${quoteToEdit.title}" chargé pour édition`, 'success');
+    };
+
+    // Supprimer un devis
+    const deleteQuote = async (quoteId: string, quoteTitle: string) => {
+        if (!window.confirm(`⚠️ Êtes-vous sûr de vouloir supprimer le devis "${quoteTitle}" ?\n\nCette action est irréversible.`)) {
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            await QuotesService.deleteQuote(quoteId);
+            showToast(`✅ Devis "${quoteTitle}" supprimé avec succès`, 'success');
+            // Recharger la liste
+            await loadSavedQuotes();
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            showToast('❌ Erreur lors de la suppression du devis', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Dupliquer un devis
+    const duplicateQuote = (originalQuote: Quote) => {
+        const duplicatedQuote: Quote = {
+            ...originalQuote,
+            id: `DEVIS-${Date.now()}`,
+            title: `${originalQuote.title} (Copie)`,
+            status: 'draft',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        setQuote(duplicatedQuote);
+        setIsDirty(true);
+        setShowQuotesModal(false);
+        showToast(`📋 Devis dupliqué : "${duplicatedQuote.title}"`, 'success');
+    };
+
     const startNewQuote = () => {
         // Créer une première phase par défaut pour structurer le devis
         const firstPhase: Phase = {
@@ -173,75 +250,197 @@ const QuoteCreatorSimple: React.FC = () => {
 
     const handleSave = async () => {
         try {
+            setIsLoading(true);
+            
             // Validation basique
             if (!quote.clientName.trim()) {
-                alert('⚠️ Veuillez saisir le nom du client');
+                showToast('⚠️ Veuillez saisir le nom du client', 'error');
                 return;
             }
             
             if (quote.phases.length === 0) {
-                alert('⚠️ Veuillez ajouter au moins une phase au devis');
+                showToast('⚠️ Veuillez ajouter au moins une phase au devis', 'error');
                 return;
             }
             
-            // Sauvegarder dans Firebase
-            const quoteData = {
-                title: quote.title,
-                clientName: quote.clientName,
-                clientEmail: quote.clientEmail,
-                clientPhone: quote.clientPhone,
-                projectType: quote.projectType,
-                phases: quote.phases,
-                subtotal: quote.subtotal,
-                taxRate: quote.taxRate,
-                taxAmount: quote.taxAmount,
-                totalAmount: quote.totalAmount,
-                status: quote.status,
-                validityDays: quote.validityDays,
-                notes: quote.notes,
-                paymentTerms: quote.paymentTerms,
-                createdAt: quote.createdAt,
+            // Calculer les totaux avant sauvegarde
+            const updatedQuote = calculateTotals({
+                ...quote,
                 updatedAt: new Date().toISOString()
-            };
+            });
             
-            const quoteId = await QuotesService.createQuote(quoteData);
+            // Sauvegarder dans Firebase
+            const quoteId = await QuotesService.createQuote(updatedQuote);
             
-            // Confirmation
-            alert(`✅ Devis "${quote.title}" sauvegardé avec succès dans Firebase !\n🆔 ID: ${quoteId}\n💰 Montant total: ${formatCurrency(quote.totalAmount)}`);
+            showToast(`✅ Devis "${updatedQuote.title}" sauvegardé avec succès !\n💰 Montant: ${formatCurrency(updatedQuote.totalAmount)}`, 'success');
             
-            // Réinitialiser le formulaire pour un nouveau devis
-            startNewQuote();
+            // Marquer comme sauvegardé (ne pas réinitialiser automatiquement)
+            setIsDirty(false);
             
             console.log('Devis sauvegardé dans Firebase:', quoteId);
         } catch (error) {
             console.error('Erreur lors de la sauvegarde:', error);
-            alert('❌ Erreur lors de la sauvegarde du devis dans Firebase');
+            showToast('❌ Erreur lors de la sauvegarde du devis dans Firebase', 'error');
+        } finally {
+            // Toujours arrêter le loading, même en cas d'erreur
+            setIsLoading(false);
         }
     };
     
-    const viewSavedQuotes = async () => {
+
+
+    const handleSend = async () => {
         try {
-            const savedQuotes = await QuotesService.getAllQuotes();
-            if (savedQuotes.length === 0) {
-                alert('📝 Aucun devis sauvegardé pour le moment dans Firebase');
-            } else {
-                const quotesInfo = savedQuotes.map((q: Quote, index: number) => 
-                    `${index + 1}. ${q.title} - ${q.clientName} (${formatCurrency(q.totalAmount)}) - ${q.status}`
-                ).join('\n');
-                alert(`📋 Devis sauvegardés dans Firebase (${savedQuotes.length}):\n\n${quotesInfo}`);
+            setIsLoading(true);
+            
+            // Validation avant envoi
+            if (!quote.clientName.trim()) {
+                showToast('⚠️ Veuillez saisir le nom du client avant l\'envoi', 'error');
+                return;
             }
+            
+            if (!quote.clientEmail.trim()) {
+                showToast('⚠️ Veuillez saisir l\'email du client avant l\'envoi', 'error');
+                return;
+            }
+            
+            if (quote.phases.length === 0) {
+                showToast('⚠️ Veuillez ajouter au moins une phase avant l\'envoi', 'error');
+                return;
+            }
+            
+            // Calculer les totaux pour l'envoi
+            const sendQuote = calculateTotals(quote);
+            
+            // Générer le contenu email
+            const emailSubject = `Devis ${sendQuote.id} - ${sendQuote.title}`;
+            const emailBody = generateEmailBody(sendQuote);
+            
+            // Créer le lien mailto
+            const mailtoLink = `mailto:${sendQuote.clientEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+            
+            // Ouvrir le client email
+            window.open(mailtoLink);
+            
+            showToast(`📧 Email préparé pour ${sendQuote.clientName}\nVérifiez votre client email`, 'success');
+            
         } catch (error) {
-            console.error('Erreur lors de la récupération des devis:', error);
-            alert('❌ Erreur lors de la récupération des devis depuis Firebase');
+            console.error('Erreur lors de l\'envoi:', error);
+            showToast('❌ Erreur lors de la préparation de l\'email', 'error');
+        } finally {
+            setIsLoading(false);
         }
     };
-
-    const handleExport = () => {
-        alert('🚀 Export PDF - Fonctionnalité à venir !');
+    
+    // Fonction pour générer le HTML du devis
+    const generateQuoteHTML = (exportQuote: Quote) => {
+        return `
+            <div class="header">
+                <h1>DEVIS</h1>
+                <h2>${exportQuote.title}</h2>
+                <p><strong>N° ${exportQuote.id}</strong></p>
+                <p>Date: ${new Date(exportQuote.createdAt).toLocaleDateString('fr-FR')}</p>
+            </div>
+            
+            <div class="client-info">
+                <h3>Informations Client</h3>
+                <p><strong>Nom:</strong> ${exportQuote.clientName}</p>
+                <p><strong>Email:</strong> ${exportQuote.clientEmail}</p>
+                <p><strong>Téléphone:</strong> ${exportQuote.clientPhone || 'Non renseigné'}</p>
+                <p><strong>Type de projet:</strong> ${exportQuote.projectType}</p>
+            </div>
+            
+            <div class="phases">
+                <h3>Détail des Prestations</h3>
+                ${exportQuote.phases.map(phase => `
+                    <div class="phase">
+                        <h4>${phase.name}</h4>
+                        <p>${phase.description}</p>
+                        ${phase.tasks.map(task => `
+                            <div class="task">
+                                <h5>${task.name}</h5>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Quantité</th>
+                                            <th>Unité</th>
+                                            <th>Prix unitaire</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${task.articles.map(article => `
+                                            <tr>
+                                                <td>${article.description}</td>
+                                                <td>${article.quantity}</td>
+                                                <td>${article.unit}</td>
+                                                <td>${formatCurrency(article.unitPrice)}</td>
+                                                <td>${formatCurrency(article.totalPrice)}</td>
+                                            </tr>
+                                        `).join('')}
+                                        <tr class="total">
+                                            <td colspan="4"><strong>Total ${task.name}</strong></td>
+                                            <td><strong>${formatCurrency(task.totalPrice)}</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        `).join('')}
+                        <p><strong>Total ${phase.name}: ${formatCurrency(phase.totalPrice)}</strong></p>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="totals">
+                <table>
+                    <tr>
+                        <td><strong>Sous-total HT:</strong></td>
+                        <td><strong>${formatCurrency(exportQuote.subtotal)}</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>TVA (${exportQuote.taxRate}%):</strong></td>
+                        <td><strong>${formatCurrency(exportQuote.taxAmount)}</strong></td>
+                    </tr>
+                    <tr class="total">
+                        <td><strong>TOTAL TTC:</strong></td>
+                        <td><strong>${formatCurrency(exportQuote.totalAmount)}</strong></td>
+                    </tr>
+                </table>
+            </div>
+            
+            ${exportQuote.notes ? `
+                <div class="notes">
+                    <h3>Notes</h3>
+                    <p>${exportQuote.notes}</p>
+                </div>
+            ` : ''}
+            
+            ${exportQuote.paymentTerms ? `
+                <div class="payment-terms">
+                    <h3>Conditions de paiement</h3>
+                    <p>${exportQuote.paymentTerms}</p>
+                </div>
+            ` : ''}
+            
+            <div class="validity">
+                <p><em>Devis valable ${exportQuote.validityDays} jours à compter de la date d'émission.</em></p>
+            </div>
+        `;
     };
-
-    const handleSend = () => {
-        alert('📧 Envoi par email - Fonctionnalité à venir !');
+    
+    // Fonction pour générer le corps de l'email
+    const generateEmailBody = (sendQuote: Quote) => {
+        return `Bonjour ${sendQuote.clientName},\n\nVeuillez trouver ci-joint votre devis:\n\n` +
+               `Devis N° ${sendQuote.id}\n` +
+               `Titre: ${sendQuote.title}\n` +
+               `Montant total: ${formatCurrency(sendQuote.totalAmount)}\n\n` +
+               `Détail des prestations:\n` +
+               sendQuote.phases.map(phase => 
+                   `- ${phase.name}: ${formatCurrency(phase.totalPrice)}`
+               ).join('\n') +
+               `\n\nCe devis est valable ${sendQuote.validityDays} jours.\n\n` +
+               `Cordialement,\n[Votre nom]`;
     };
 
     const getStats = () => {
@@ -548,14 +747,23 @@ const QuoteCreatorSimple: React.FC = () => {
                                                         placeholder="Description"
                                                     />
                                                     <input
-                                                        type="number"
-                                                        value={article.quantity}
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={article.quantity || ''}
                                                         onChange={(e) => {
-                                                            const updatedPhases = [...quote.phases];
-                                                            updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].quantity = Number(e.target.value);
-                                                            updateQuote({ phases: updatedPhases });
+                                                            const value = e.target.value;
+                                                            // Permettre les nombres décimaux et vides
+                                                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                                                const updatedPhases = [...quote.phases];
+                                                                updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].quantity = value === '' ? 0 : Number(value);
+                                                                updateQuote({ phases: updatedPhases });
+                                                            }
                                                         }}
-                                                        className={`p-1 rounded border ${
+                                                        onFocus={(e) => {
+                                                            // Sélectionner tout le texte au focus pour faciliter la saisie
+                                                            e.target.select();
+                                                        }}
+                                                        className={`p-1 rounded border text-center ${
                                                             resolvedTheme === 'dark'
                                                                 ? 'bg-gray-700 border-gray-600 text-white'
                                                                 : 'bg-white border-gray-300 text-gray-900'
@@ -578,19 +786,28 @@ const QuoteCreatorSimple: React.FC = () => {
                                                         placeholder="Unité"
                                                     />
                                                     <input
-                                                        type="number"
-                                                        value={article.unitPrice}
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={article.unitPrice || ''}
                                                         onChange={(e) => {
-                                                            const updatedPhases = [...quote.phases];
-                                                            updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].unitPrice = Number(e.target.value);
-                                                            updateQuote({ phases: updatedPhases });
+                                                            const value = e.target.value;
+                                                            // Permettre les nombres décimaux et vides
+                                                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                                                const updatedPhases = [...quote.phases];
+                                                                updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].unitPrice = value === '' ? 0 : Number(value);
+                                                                updateQuote({ phases: updatedPhases });
+                                                            }
                                                         }}
-                                                        className={`p-1 rounded border ${
+                                                        onFocus={(e) => {
+                                                            // Sélectionner tout le texte au focus pour faciliter la saisie
+                                                            e.target.select();
+                                                        }}
+                                                        className={`p-1 rounded border text-right ${
                                                             resolvedTheme === 'dark'
                                                                 ? 'bg-gray-700 border-gray-600 text-white'
                                                                 : 'bg-white border-gray-300 text-gray-900'
                                                         }`}
-                                                        placeholder="Prix unitaire"
+                                                        placeholder="0.00"
                                                     />
                                                     <div className="flex items-center justify-between">
                                                         <span className={`font-medium ${
@@ -698,38 +915,314 @@ const QuoteCreatorSimple: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="mt-6 flex flex-wrap gap-2">
+                    <div className="mt-6 flex gap-4 flex-wrap">
                         <button
                             onClick={handleSave}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                            disabled={isLoading}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all transform hover:scale-105 ${
+                                isLoading 
+                                    ? 'bg-gray-400 cursor-not-allowed' 
+                                    : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg'
+                            } text-white font-semibold`}
                         >
-                            <Save className="w-4 h-4" />
-                            Sauvegarder
+                            <Save className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                            {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
                         </button>
                         <button
-                            onClick={viewSavedQuotes}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
-                        >
-                            <FileText className="w-4 h-4" />
-                            Voir mes devis
-                        </button>
-                        <button
-                            onClick={handleExport}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            onClick={() => {
+                                setShowQuotesModal(true);
+                                loadSavedQuotes();
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg font-semibold"
                         >
                             <Download className="w-4 h-4" />
-                            Export PDF
+                            Mes devis ({savedQuotes.length})
                         </button>
-                        <button
-                            onClick={handleSend}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                        <button 
+                            onClick={() => setShowExportModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all transform hover:scale-105 shadow-lg font-semibold"
                         >
                             <Send className="w-4 h-4" />
-                            Envoyer
+                            Export & Envoi
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Toast de succès */}
+            {showSuccessToast && (
+                <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right duration-300">
+                    <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg max-w-md">
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                                <svg className="w-5 h-5 text-green-200" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-medium text-sm whitespace-pre-line">{toastMessage}</p>
+                            </div>
+                            <button 
+                                onClick={() => setShowSuccessToast(false)}
+                                className="flex-shrink-0 text-green-200 hover:text-white transition-colors"
+                            >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast d'erreur */}
+            {showErrorToast && (
+                <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right duration-300">
+                    <div className="bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg max-w-md">
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                                <svg className="w-5 h-5 text-red-200" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-medium text-sm whitespace-pre-line">{toastMessage}</p>
+                            </div>
+                            <button 
+                                onClick={() => setShowErrorToast(false)}
+                                className="flex-shrink-0 text-red-200 hover:text-white transition-colors"
+                            >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal des devis sauvegardés */}
+            {showQuotesModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div className={`w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-xl shadow-2xl ${
+                        resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'
+                    }`}>
+                        <div className="flex flex-col h-full">
+                            {/* En-tête */}
+                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                                <div>
+                                    <h2 className={`text-2xl font-bold ${
+                                        resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                                    }`}>
+                                        📋 Mes Devis Sauvegardés
+                                    </h2>
+                                    <p className={`text-sm mt-1 ${
+                                        resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                                    }`}>
+                                        {savedQuotes.length} devis trouvé{savedQuotes.length > 1 ? 's' : ''}
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={() => setShowQuotesModal(false)}
+                                    className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Contenu */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                {isLoading ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                                        <span className="ml-3 text-gray-600 dark:text-gray-400">Chargement des devis...</span>
+                                    </div>
+                                ) : savedQuotes.length === 0 ? (
+                                    <div className={`text-center py-12 ${
+                                        resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                                    }`}>
+                                        <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
+                                        </svg>
+                                        <h3 className="text-lg font-medium mb-2">Aucun devis sauvegardé</h3>
+                                        <p className="text-sm">Créez votre premier devis pour le voir apparaître ici</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-4">
+                                        {savedQuotes.map((savedQuote) => (
+                                            <div key={savedQuote.id} className={`border rounded-lg p-4 transition-all hover:shadow-md ${
+                                                resolvedTheme === 'dark' 
+                                                    ? 'border-gray-600 bg-gray-700 hover:bg-gray-650' 
+                                                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                                            }`}>
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <h3 className={`font-semibold text-lg ${
+                                                                resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                                                            }`}>
+                                                                {savedQuote.title}
+                                                            </h3>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                savedQuote.status === 'draft' 
+                                                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                                    : savedQuote.status === 'sent'
+                                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                                                    : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                            }`}>
+                                                                {savedQuote.status === 'draft' ? 'Brouillon' : 
+                                                                 savedQuote.status === 'sent' ? 'Envoyé' : 'Accepté'}
+                                                            </span>
+                                                        </div>
+                                                        <div className={`text-sm space-y-1 ${
+                                                            resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                                                        }`}>
+                                                            <p><strong>Client :</strong> {savedQuote.clientName || 'Non spécifié'}</p>
+                                                            <p><strong>Montant :</strong> {formatCurrency(savedQuote.totalAmount)}</p>
+                                                            <p><strong>Phases :</strong> {savedQuote.phases.length}</p>
+                                                            <p><strong>Créé le :</strong> {new Date(savedQuote.createdAt).toLocaleDateString('fr-FR')}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2 ml-4">
+                                                        <button
+                                                            onClick={() => loadQuoteForEdit(savedQuote)}
+                                                            className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                                            </svg>
+                                                            Éditer
+                                                        </button>
+                                                        <button
+                                                            onClick={() => duplicateQuote(savedQuote)}
+                                                            className="flex items-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
+                                                                <path d="M3 5a2 2 0 012-2 3 3 0 003 3h6a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L14.586 13H19v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11.586V9a1 1 0 00-1-1H9.414l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L8.414 10H14a1 1 0 001 1v.586z" />
+                                                            </svg>
+                                                            Dupliquer
+                                                        </button>
+                                                        <button
+                                                            onClick={() => deleteQuote(savedQuote.id, savedQuote.title)}
+                                                            className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
+                                                                <path fillRule="evenodd" d="M4 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 112 0v4a1 1 0 11-2 0V9zm4 0a1 1 0 112 0v4a1 1 0 11-2 0V9z" clipRule="evenodd" />
+                                                            </svg>
+                                                            Supprimer
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Pied de page */}
+                            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+                                <div className="flex items-center justify-between">
+                                    <button
+                                        onClick={loadSavedQuotes}
+                                        disabled={isLoading}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
+                                    >
+                                        <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                                        </svg>
+                                        Actualiser
+                                    </button>
+                                    <button
+                                        onClick={() => setShowQuotesModal(false)}
+                                        className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                                    >
+                                        Fermer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal d'export et envoi */}
+            {showExportModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className={`w-full max-w-md rounded-xl shadow-2xl ${
+                        resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'
+                    }`}>
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className={`text-xl font-bold ${
+                                    resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                                }`}>
+                                    📤 Export & Envoi
+                                </h2>
+                                <button 
+                                    onClick={() => setShowExportModal(false)}
+                                    className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div className="space-y-3">
+                                <button 
+                                    onClick={() => {
+                                        handleExport();
+                                        setShowExportModal(false);
+                                    }}
+                                    disabled={isLoading}
+                                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                                        isLoading 
+                                            ? 'bg-gray-400 cursor-not-allowed' 
+                                            : 'bg-red-500 text-white hover:bg-red-600'
+                                    }`}
+                                >
+                                    <svg className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
+                                    </svg>
+                                    <span>{isLoading ? 'Génération...' : 'Télécharger PDF'}</span>
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        handleSend();
+                                        setShowExportModal(false);
+                                    }}
+                                    disabled={isLoading}
+                                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                                        isLoading 
+                                            ? 'bg-gray-400 cursor-not-allowed' 
+                                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                                    }`}
+                                >
+                                    <svg className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                    </svg>
+                                    <span>{isLoading ? 'Préparation...' : 'Envoyer par email'}</span>
+                                </button>
+                                <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                                    </svg>
+                                    <span>Partager le lien</span>
+                                </button>
+                            </div>
+                            <p className={`mt-4 text-sm text-center ${
+                                resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
+                                Export PDF et envoi par email maintenant fonctionnels !
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
