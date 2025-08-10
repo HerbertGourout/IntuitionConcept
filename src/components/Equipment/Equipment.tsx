@@ -71,8 +71,8 @@ const Equipment: React.FC = () => {
   useEffect(() => {
     const loadEquipment = async () => {
       try {
-        // Initialiser les données de test si nécessaire
-        await EquipmentService.initializeTestData();
+        // Ne plus initialiser automatiquement les données de test
+        // Les données de test doivent être ajoutées manuellement via une action spécifique si nécessaire
         
         // Charger les équipements
         const equipmentList = await EquipmentService.getAllEquipment();
@@ -336,9 +336,20 @@ const Equipment: React.FC = () => {
             }}
             onDelete={async (toDelete) => {
               try {
-                await EquipmentService.deleteEquipment(toDelete.id);
-                setSelectedEquipment(null);
+                // Fermer la modale immédiatement pour une meilleure réactivité
                 setShowDetailModal(false);
+                
+                // Supprimer l'équipement
+                await EquipmentService.deleteEquipment(toDelete.id);
+                
+                // Mettre à jour l'état local pour refléter la suppression
+                setEquipment(prevEquipment => 
+                  prevEquipment.filter(eq => eq.id !== toDelete.id)
+                );
+                
+                // S'assurer que l'équipement sélectionné est bien effacé
+                setSelectedEquipment(null);
+                
               } catch (error) {
                 console.error('Erreur lors de la suppression:', error);
                 alert('Erreur lors de la suppression de l\'équipement.');

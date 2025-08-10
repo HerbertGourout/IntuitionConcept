@@ -429,6 +429,53 @@ const QuoteCreatorSimple: React.FC = () => {
         `;
     };
     
+    // Fonction pour gérer l'export PDF
+    const handleExport = async () => {
+        try {
+            setIsLoading(true);
+            
+            // Vérifier que le devis a un client
+            if (!quote.clientName.trim()) {
+                showToast('⚠️ Veuillez saisir le nom du client avant l\'export', 'error');
+                return;
+            }
+            
+            // Vérifier qu'il y a des phases
+            if (quote.phases.length === 0) {
+                showToast('⚠️ Veuillez ajouter au moins une phase avant l\'export', 'error');
+                return;
+            }
+            
+            // Générer le contenu HTML du devis
+            const htmlContent = generateQuoteHTML(quote);
+            
+            // Créer un nouvel onglet pour l'aperçu avant impression
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                throw new Error('Impossible d\'ouvrir une nouvelle fenêtre. Veuillez vérifier les bloqueurs de fenêtres popup.');
+            }
+            
+            // Générer le contenu HTML complet avec styles
+            printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Devis ${quote.id}</title><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }.header { text-align: center; margin-bottom: 30px; }h1 { color: #1a365d; margin-bottom: 5px; }h2 { color: #2c5282; margin-top: 0; }.client-info, .summary, .phases { margin-bottom: 20px; }table { width: 100%; border-collapse: collapse; margin: 15px 0; }th { background-color: #f7fafc; text-align: left; padding: 10px; border: 1px solid #e2e8f0; }td { padding: 10px; border: 1px solid #e2e8f0; }.text-right { text-align: right; }.total { font-weight: bold; font-size: 1.1em; }.phase { margin-bottom: 20px; }.phase-header { background-color: #ebf8ff; padding: 10px; margin-bottom: 10px; }.task { margin-bottom: 15px; }.task-header { font-weight: bold; margin: 10px 0; }.notes, .payment-terms { margin-top: 30px; padding: 15px; background-color: #f7fafc; border-radius: 4px; }.validity { margin-top: 20px; font-style: italic; text-align: center; }@media print {body { font-size: 12px; }.no-print { display: none; }}</style></head><body>${htmlContent}<div class="no-print" style="margin-top: 30px; text-align: center; padding: 20px; border-top: 1px solid #eee;"><p>Document généré le ${new Date().toLocaleDateString('fr-FR')} - ${new Date().toLocaleTimeString('fr-FR')}</p><button onclick="window.print()" style="padding: 10px 20px; background-color: #3182ce; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;">Imprimer / Enregistrer en PDF</button></div><script>window.onafterprint = function() {window.close();};</script></body></html>`);
+            
+            printWindow.document.close();
+            
+            // Attendre que le contenu soit chargé avant d'imprimer
+            printWindow.onload = function() {
+                // Laisser l'utilisateur choisir d'imprimer ou non
+                // printWindow.print(); // Décommenter pour imprimer automatiquement
+            };
+            
+            showToast('📄 Aperçu du devis généré. Utilisez le bouton d\'impression pour enregistrer en PDF.', 'success');
+            
+        } catch (error) {
+            console.error('Erreur lors de la génération du PDF:', error);
+            showToast('❌ Erreur lors de la génération du PDF', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Fonction pour générer le corps de l'email
     const generateEmailBody = (sendQuote: Quote) => {
         return `Bonjour ${sendQuote.clientName},\n\nVeuillez trouver ci-joint votre devis:\n\n` +

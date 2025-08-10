@@ -159,6 +159,7 @@ export const initializeAllFirebaseTestData = async (): Promise<void> => {
 
 /**
  * Migration complète : nettoyer les données locales et initialiser Firebase
+ * NOTE: L'initialisation automatique des données de test est désactivée pour éviter la réinsertion non désirée
  */
 export const performFullMigration = async (): Promise<void> => {
   try {
@@ -170,8 +171,13 @@ export const performFullMigration = async (): Promise<void> => {
     // 2. Attendre un peu pour s'assurer que tout est nettoyé
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 3. Initialiser les données de test Firebase
-    await initializeAllFirebaseTestData();
+    // 3. DÉSACTIVÉ: L'initialisation automatique des données de test
+    // pour éviter la réinsertion non désirée des équipements supprimés
+    console.log('ℹ️ L\'initialisation automatique des données de test est désactivée');
+    console.log('   Utilisez les commandes manuelles pour ajouter des données de test si nécessaire');
+    
+    // Ancien code commenté pour référence
+    // await initializeAllFirebaseTestData();
 
     console.log('🎉 Migration complète terminée avec succès !');
     console.log('📱 L\'application utilise maintenant exclusivement Firebase');

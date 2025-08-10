@@ -8,7 +8,7 @@ import { DocumentService } from './documentService';
 import { EquipmentService } from './equipmentService';
 import { ProjectService } from './projectService';
 import { LocationService } from './locationService';
-import { clearAllLocalData, initializeAllFirebaseTestData } from '../utils/clearAllData';
+import { clearAllLocalData } from '../utils/clearAllData';
 
 export interface MigrationStatus {
   isComplete: boolean;
@@ -63,7 +63,11 @@ export class MigrationService {
   /**
    * Initialiser les données de test pour un module spécifique
    */
-  static async initializeModuleData(moduleName: string): Promise<boolean> {
+  static async initializeModuleData(moduleName: string, force = false): Promise<boolean> {
+    if (!force) {
+      console.log(`💡 Initialisation pour le module '${moduleName}' ignorée (force est false).`);
+      return true; // Considéré comme un succès car c'est le comportement attendu
+    }
     try {
       console.log(`🚀 Initialisation des données ${moduleName}...`);
       
@@ -101,21 +105,26 @@ export class MigrationService {
   static async checkModuleData(moduleName: string): Promise<boolean> {
     try {
       switch (moduleName.toLowerCase()) {
-        case 'tasks':
+        case 'tasks': {
           const tasks = await TaskService.getAllTasks();
           return tasks.length > 0;
-        case 'documents':
+        }
+        case 'documents': {
           const documents = await DocumentService.getAllDocuments();
           return documents.length > 0;
-        case 'equipment':
+        }
+        case 'equipment': {
           const equipment = await EquipmentService.getAllEquipment();
           return equipment.length > 0;
-        case 'projects':
+        }
+        case 'projects': {
           const projects = await ProjectService.getAllProjects();
           return projects.length > 0;
-        case 'locations':
+        }
+        case 'locations': {
           const locations = await LocationService.getAllLocations();
           return locations.length > 0;
+        }
         default:
           return false;
       }
@@ -128,7 +137,7 @@ export class MigrationService {
   /**
    * Effectuer la migration complète
    */
-  static async performFullMigration(): Promise<MigrationStatus> {
+  static async performFullMigration(force = false): Promise<MigrationStatus> {
     console.log('🔄 Début de la migration complète vers Firebase...');
     
     const status: MigrationStatus = {
@@ -151,9 +160,9 @@ export class MigrationService {
           
           if (!hasData) {
             console.log(`📦 Initialisation du module ${moduleName}...`);
-            const success = await this.initializeModuleData(moduleName);
+            const initialized = await this.initializeModuleData(moduleName, force);
             
-            if (success) {
+            if (initialized) {
               status.completedModules.push(moduleName);
             } else {
               status.errors.push(`Échec de l'initialisation de ${moduleName}`);

@@ -5,6 +5,15 @@
 
 import { MigrationService } from '../services/migrationService';
 
+// Définir une interface pour étendre l'objet window pour le débogage en console
+declare global {
+  interface Window {
+    executeMigration: () => Promise<void>;
+    resetAndMigrate: () => Promise<void>;
+    checkMigrationStatus: () => Promise<void>;
+  }
+}
+
 /**
  * Exécuter la migration complète
  */
@@ -32,7 +41,7 @@ export const executeMigration = async (): Promise<void> => {
 
     // 2. Effectuer la migration
     console.log('🔄 Exécution de la migration...');
-    const migrationResult = await MigrationService.performFullMigration();
+    const migrationResult = await MigrationService.performFullMigration(true);
     
     // 3. Afficher les résultats
     console.log('📋 Résultats de la migration:');
@@ -121,9 +130,9 @@ export const checkMigrationStatus = async (): Promise<void> => {
 
 // Exporter les fonctions pour utilisation dans la console du navigateur
 if (typeof window !== 'undefined') {
-  (window as any).executeMigration = executeMigration;
-  (window as any).resetAndMigrate = resetAndMigrate;
-  (window as any).checkMigrationStatus = checkMigrationStatus;
+  window.executeMigration = executeMigration;
+  window.resetAndMigrate = resetAndMigrate;
+  window.checkMigrationStatus = checkMigrationStatus;
   
   console.log('🔧 Fonctions de migration disponibles dans la console:');
   console.log('- executeMigration() : Exécuter la migration complète');

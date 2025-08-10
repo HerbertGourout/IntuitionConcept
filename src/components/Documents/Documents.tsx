@@ -281,9 +281,6 @@ const Documents: React.FC = () => {
       try {
         setLoading(true);
         
-        // Initialiser les données de test si nécessaire
-        await DocumentService.initializeTestData();
-        
         // Charger les documents
         const docs = await DocumentService.getAllDocuments();
         setDocuments(docs);

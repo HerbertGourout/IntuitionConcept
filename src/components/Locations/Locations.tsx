@@ -56,9 +56,6 @@ const Locations: React.FC = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        // Initialiser les données de test si nécessaire
-        await LocationService.initializeTestData();
-        
         // Récupérer les localisations depuis Firebase
         const firebaseLocations = await LocationService.getAllLocations();
         
