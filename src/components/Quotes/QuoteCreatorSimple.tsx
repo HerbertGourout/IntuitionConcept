@@ -3,6 +3,7 @@ import { Plus, FileText, ChevronDown, ChevronUp, Save, X } from 'lucide-react';
 import { Quote, Phase, Task, Article, QuotesService } from '../../services/quotesService';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
+import { generateQuotePdf } from '../../services/pdf/quotePdf';
 
 interface QuoteCreatorSimpleProps {
   onClose: () => void;
@@ -48,6 +49,36 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  // Export PDF
+  const handleExportPdf = () => {
+    const quoteForPdf: Quote = {
+      id: editQuote?.id || `DEVIS-${Date.now()}`,
+      title,
+      clientName,
+      companyName,
+      clientEmail,
+      clientPhone,
+      projectType,
+      phases,
+      subtotal,
+      taxRate,
+      taxAmount,
+      totalAmount,
+      status: (editQuote?.status as Quote['status']) || 'draft',
+      validityDays,
+      notes,
+      paymentTerms,
+      createdAt: editQuote?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    try {
+      generateQuotePdf(quoteForPdf);
+    } catch (e) {
+      console.error(e);
+      toast.error("Échec de l'export PDF");
+    }
   };
 
   // Calcul automatique des totaux
@@ -282,7 +313,8 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
         taxRate,
         taxAmount,
         totalAmount,
-        status: 'draft' as const,
+        // Préserver le statut existant en édition, sinon défaut brouillon en création
+        status: (editQuote?.status as Quote['status']) ?? 'draft',
         validityDays,
         notes,
         paymentTerms
@@ -768,6 +800,14 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
               * Champs obligatoires
             </div>
             <div className="flex space-x-3">
+              <button
+                onClick={handleExportPdf}
+                className="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                title="Exporter en PDF"
+              >
+                <FileText className="w-5 h-5" />
+                <span>Exporter PDF</span>
+              </button>
               <button
                 onClick={onClose}
                 className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"

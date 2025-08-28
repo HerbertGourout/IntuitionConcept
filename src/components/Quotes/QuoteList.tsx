@@ -9,10 +9,12 @@ import {
     Trash2,
     Clock,
     CheckCircle,
-    XCircle
+    XCircle,
+    Download
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { QuotesService, Quote } from '../../services/quotesService';
+import { generateQuotePdf } from '../../services/pdf/quotePdf';
 
 interface QuoteListProps {
     onCreateNew: () => void;
@@ -311,6 +313,15 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                     >
                                         <FileText className="w-3 h-3" />
                                         Dupliquer
+                                    </button>
+
+                                    <button
+                                        onClick={() => generateQuotePdf(quote)}
+                                        className="flex items-center gap-1 px-3 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors text-sm"
+                                        title="Télécharger PDF"
+                                    >
+                                        <Download className="w-3 h-3" />
+                                        PDF
                                     </button>
 
                                     <div className="flex-1" />
