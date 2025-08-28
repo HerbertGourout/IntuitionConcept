@@ -17,22 +17,28 @@ interface QuoteCreatorProps {
 const QuoteCreator: React.FC<QuoteCreatorProps> = ({ selectedQuoteId, onClose, onQuoteCreated }) => {
     const [editQuote, setEditQuote] = useState<Quote | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isReady, setIsReady] = useState(false);
 
     useEffect(() => {
         if (selectedQuoteId) {
             setIsLoading(true);
-            setEditQuote(null); // Reset d'abord pour éviter les données obsolètes
+            setIsReady(false);
             QuotesService.getQuoteById(selectedQuoteId)
                 .then(quote => {
                     if (quote) {
                         setEditQuote(quote);
+                        setIsReady(true);
                     } else {
                         toast.error('Devis introuvable');
+                        setEditQuote(null);
+                        setIsReady(true);
                     }
                 })
                 .catch(error => {
                     console.error('Erreur lors du chargement du devis:', error);
                     toast.error('Erreur lors du chargement du devis');
+                    setEditQuote(null);
+                    setIsReady(true);
                 })
                 .finally(() => {
                     setIsLoading(false);
@@ -40,6 +46,7 @@ const QuoteCreator: React.FC<QuoteCreatorProps> = ({ selectedQuoteId, onClose, o
         } else {
             setEditQuote(null);
             setIsLoading(false);
+            setIsReady(true);
         }
     }, [selectedQuoteId]);
 
@@ -49,6 +56,18 @@ const QuoteCreator: React.FC<QuoteCreatorProps> = ({ selectedQuoteId, onClose, o
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
                     <p className="text-gray-600">Chargement du devis...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Ne rendre QuoteCreatorSimple qu'une seule fois avec des données stables
+    if (!isReady) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Préparation du formulaire...</p>
                 </div>
             </div>
         );

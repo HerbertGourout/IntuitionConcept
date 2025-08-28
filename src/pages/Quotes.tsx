@@ -42,26 +42,13 @@ const Quotes: React.FC = () => {
                 )}
 
                 {(viewMode === 'create' || viewMode === 'edit') && (
-                    <motion.div
-                        key="create-edit"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                    >
-                        <div className="p-6">
-                            <button
-                                onClick={handleBackToList}
-                                className="mb-4 flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                            >
-                                ← Retour à la liste
-                            </button>
-                            <QuoteCreator 
-                                selectedQuoteId={selectedQuoteId}
-                                onClose={handleBackToList}
-                                onQuoteCreated={handleBackToList}
-                            />
-                        </div>
-                    </motion.div>
+                    <div key="create-edit">
+                        <QuoteCreator
+                            selectedQuoteId={selectedQuoteId}
+                            onClose={handleBackToList}
+                            onQuoteCreated={handleBackToList}
+                        />
+                    </div>
                 )}
             </AnimatePresence>
         </div>

@@ -18,20 +18,20 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   // États principaux
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(editQuote ? false : true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // États du devis
-  const [title, setTitle] = useState(() => editQuote?.title || '');
-  const [clientName, setClientName] = useState(() => editQuote?.clientName || '');
-  const [companyName, setCompanyName] = useState(() => editQuote?.companyName || '');
-  const [clientEmail, setClientEmail] = useState(() => editQuote?.clientEmail || '');
-  const [clientPhone, setClientPhone] = useState(() => editQuote?.clientPhone || '');
-  const [projectType, setProjectType] = useState(() => editQuote?.projectType || '');
-  const [phases, setPhases] = useState<Phase[]>(() => editQuote?.phases || []);
-  const [notes, setNotes] = useState(() => editQuote?.notes || '');
-  const [paymentTerms, setPaymentTerms] = useState(() => editQuote?.paymentTerms || 'Paiement à 30 jours');
+  // États du devis - initialisés vides pour éviter le flash
+  const [title, setTitle] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [projectType, setProjectType] = useState('');
+  const [phases, setPhases] = useState<Phase[]>([]);
+  const [notes, setNotes] = useState('');
+  const [paymentTerms, setPaymentTerms] = useState('Paiement à 30 jours');
   const [validityDays] = useState(30);
-  const [taxRate, setTaxRate] = useState(() => (editQuote?.taxRate ?? 18));
+  const [taxRate, setTaxRate] = useState(18);
 
   // États calculés
   const [subtotal, setSubtotal] = useState(0);
@@ -82,6 +82,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   // Charger les données du devis à éditer (avant le paint pour éviter le flicker)
   useLayoutEffect(() => {
     if (editQuote) {
+      // Hydratation synchrone de tous les états
       setTitle(editQuote.title || '');
       setClientName(editQuote.clientName || '');
       setCompanyName(editQuote.companyName || '');
@@ -92,6 +93,20 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
       setNotes(editQuote.notes || '');
       setPaymentTerms(editQuote.paymentTerms || 'Paiement à 30 jours');
       setTaxRate(editQuote.taxRate || 18);
+      // Marquer comme initialisé APRÈS l'hydratation
+      setIsInitialized(true);
+    } else if (editQuote === null) {
+      // Mode création - initialiser avec valeurs par défaut
+      setTitle('');
+      setClientName('');
+      setCompanyName('');
+      setClientEmail('');
+      setClientPhone('');
+      setProjectType('');
+      setPhases([]);
+      setNotes('');
+      setPaymentTerms('Paiement à 30 jours');
+      setTaxRate(18);
       setIsInitialized(true);
     }
   }, [editQuote]);
@@ -100,6 +115,22 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   useEffect(() => {
     calculateTotals();
   }, [calculateTotals]);
+
+  // Garde de rendu globale pour éviter tout flash avant initialisation
+  if (!isInitialized) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white/95 rounded-2xl shadow-2xl w-full max-w-md p-8 text-center border border-white/20">
+          <div className="flex items-center justify-center text-gray-600">
+            <svg className="animate-spin h-5 w-5 mr-3 text-gray-400" viewBox="0 0 24 24" />
+            <span>Chargement du devis…</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // TOUT LE CONTENU DU FORMULAIRE DOIT ÊTRE APRÈS CETTE GARDE
 
   // Fonctions de gestion des phases
   const addPhase = () => {
@@ -282,40 +313,37 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
     }
   };
 
+  // RENDU CONDITIONNEL COMPLET - RIEN NE S'AFFICHE AVANT INITIALISATION
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden border border-white/20">
-        {/* En-tête */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-                <FileText className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">
-                  {editQuote ? 'Modifier le devis' : 'Nouveau devis'}
-                </h2>
-                <p className="text-blue-100">Créez un devis professionnel en quelques clics</p>
+        {isInitialized ? (
+          <>
+            {/* En-tête */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">
+                      {editQuote ? 'Modifier le devis' : 'Nouveau devis'}
+                    </h2>
+                    <p className="text-blue-100">Créez un devis professionnel en quelques clics</p>
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-xl transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
 
         {/* Contenu principal */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          {editQuote && !isInitialized ? (
-            <div className="flex items-center justify-center py-16 text-gray-500">
-              <svg className="animate-spin h-5 w-5 mr-3 text-gray-400" viewBox="0 0 24 24"></svg>
-              <span>Chargement du devis…</span>
-            </div>
-          ) : (
           <div className="space-y-8">
             {/* Section informations client */}
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">
@@ -731,7 +759,6 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
               </div>
             )}
           </div>
-        )}
         </div>
 
         {/* Pied de page */}
@@ -758,6 +785,13 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
             </div>
           </div>
         </div>
+        </>
+        ) : (
+          <div className="flex items-center justify-center py-16 text-gray-600">
+            <svg className="animate-spin h-5 w-5 mr-3 text-gray-400" viewBox="0 0 24 24" />
+            <span>Chargement du devis…</span>
+          </div>
+        )}
       </div>
     </div>
   );
