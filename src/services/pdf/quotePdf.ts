@@ -43,57 +43,73 @@ export const generateQuotePdf = (
     companyName?: string;
     companyAddress?: string;
     footerContact?: string;
+    logoDataUrl?: string; // optional base64 image
+    logoWidthPt?: number; // optional width in pt
   }
 ) => {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const marginX = 40;
   
-  // Classic header (blue model)
-  // Top thin blue rule across the page to match the reference
+  // Header data with env fallbacks to avoid hardcoded defaults
+  const envName = (import.meta as any)?.env?.VITE_COMPANY_NAME as string | undefined;
+  const envAddr = (import.meta as any)?.env?.VITE_COMPANY_ADDRESS as string | undefined;
+  const envFooter = (import.meta as any)?.env?.VITE_FOOTER_CONTACT as string | undefined;
+  const companyName = branding?.companyName ?? envName ?? 'Intuition Concept';
+  const companyAddress = branding?.companyAddress ?? envAddr ?? "Abidjan, Côte d'Ivoire";
+  const footerContact = branding?.footerContact ?? envFooter ?? 'contact@intuitionconcept.com  ·  +225 00 00 00 00';
+
+  // Modern header: thin top rule, logo left, company block right, pill title centered
   doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
   doc.setLineWidth(1);
-  doc.line(marginX, 20, pageWidth - marginX, 20);
+  doc.line(marginX, 24, pageWidth - marginX, 24);
 
-  const companyName = branding?.companyName || 'Intuition Concept';
-  const companyAddress = branding?.companyAddress || "Abidjan, Côte d'Ivoire";
-  const footerContact = branding?.footerContact || 'contact@intuitionconcept.com  ·  +225 00 00 00 00';
-
+  let headerBottomY = 0;
+  const logoMaxW = branding?.logoWidthPt ?? 80;
+  const logoY = 34;
+  let contentLeftX = marginX;
+  if (branding?.logoDataUrl) {
+    try {
+      doc.addImage(branding.logoDataUrl, 'PNG', marginX, logoY, logoMaxW, 32, undefined, 'FAST');
+      contentLeftX = marginX + logoMaxW + 14;
+    } catch {
+      // ignore logo errors
+    }
+  }
+  const rightBlockX = pageWidth - marginX - 240;
+  // Company block on the right
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
+  doc.setFontSize(12);
   doc.setTextColor(colors.slate[700][0], colors.slate[700][1], colors.slate[700][2]);
-  doc.text(companyName, marginX, 30);
-  doc.setFontSize(10);
+  doc.text(companyName, rightBlockX, 42);
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
   doc.setTextColor(colors.slate[500][0], colors.slate[500][1], colors.slate[500][2]);
-  doc.text(companyAddress, marginX, 44);
-  // Separator line
-  doc.setDrawColor(colors.slate[200][0], colors.slate[200][1], colors.slate[200][2]);
-  doc.line(marginX, 50, pageWidth - marginX, 50);
-  // Title centered
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+  if (companyAddress) doc.text(companyAddress, rightBlockX, 58);
+  headerBottomY = 70;
+
+  // Centered pill title
   const title = 'DEVIS COMMERCIAL';
-  doc.text(title, pageWidth / 2, 85, { align: 'center' });
-  // Double underline under the title
-  const titleWidth = doc.getTextWidth(title);
-  const underlineStartX = pageWidth / 2 - titleWidth / 2 - 6;
-  const underlineEndX = pageWidth / 2 + titleWidth / 2 + 6;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  const padX = 14;
+  const padY = 6;
+  const tWidth = doc.getTextWidth(title) + padX * 2;
+  const pillX = pageWidth / 2 - tWidth / 2;
+  const pillY = headerBottomY + 6;
+  doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
   doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-  doc.setLineWidth(0.7);
-  doc.line(underlineStartX, 89, underlineEndX, 89);
-  doc.setLineWidth(0.5);
-  doc.line(underlineStartX, 92, underlineEndX, 92);
-  // Subtitle (client name) centered italic
+  doc.roundedRect(pillX, pillY, tWidth, 24, 12, 12, 'FD');
+  doc.setTextColor(255, 255, 255);
+  doc.text(title, pageWidth / 2, pillY + 16, { align: 'center' });
+  // Optional subtitle (client)
   if (quote.clientName) {
     doc.setFont('helvetica', 'italic');
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(colors.slate[600][0], colors.slate[600][1], colors.slate[600][2]);
-    doc.text(String(quote.clientName), pageWidth / 2, 105, { align: 'center' });
+    doc.text(String(quote.clientName), pageWidth / 2, pillY + 36, { align: 'center' });
   }
-  
-  let cursorY = 125;
+  let cursorY = pillY + 56;
   
   // Single info box with vertical divider
   const boxWidth = pageWidth - marginX * 2;
