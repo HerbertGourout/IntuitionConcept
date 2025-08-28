@@ -3,12 +3,18 @@ import {
     addDoc, 
     getDocs, 
     doc, 
+    getDoc,
+    setDoc,
     updateDoc, 
     deleteDoc, 
     query, 
     orderBy, 
     where,
-    Timestamp 
+    Timestamp,
+    onSnapshot,
+    QuerySnapshot,
+    Unsubscribe,
+    DocumentData
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -19,6 +25,7 @@ export interface Quote {
     clientName: string;
     clientEmail: string;
     clientPhone: string;
+    companyName: string;
     projectType: string;
     phases: Phase[];
     subtotal: number;
@@ -53,6 +60,7 @@ export interface Task {
 
 export interface Article {
     id: string;
+    name: string;
     description: string;
     quantity: number;
     unit: string;
@@ -72,8 +80,14 @@ export class QuotesService {
      */
     static async createQuote(quote: Omit<Quote, 'id'>): Promise<string> {
         try {
+            // Ne jamais stocker un champ "id" dans le document Firestore
+            // même si on nous passe un objet contenant potentiellement un id accidentellement.
+            // On s'assure ici que le payload ne contient pas de clé id.
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { /* id: _ignoredId, */ ...safeQuote } = (quote as unknown) as Record<string, unknown>;
+
             const quoteData = {
-                ...quote,
+                ...(safeQuote as Omit<Quote, 'id'>),
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now()
             };
@@ -84,6 +98,28 @@ export class QuotesService {
         } catch (error) {
             console.error('Erreur lors de la création du devis:', error);
             throw new Error('Impossible de créer le devis');
+        }
+
+    }
+
+    /**
+     * Récupérer un devis par ID
+     */
+    static async getQuoteById(id: string): Promise<Quote | null> {
+        try {
+            const ref = doc(db, QUOTES_COLLECTION, id);
+            const snap = await getDoc(ref);
+            if (!snap.exists()) return null;
+            const data = snap.data() as DocumentData;
+            return {
+                ...data,
+                id: snap.id, // s'assurer que l'id du document Firestore prévaut
+                createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+                updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+            } as Quote;
+        } catch (error) {
+            console.error('Erreur lors de la récupération du devis par ID:', error);
+            throw new Error('Impossible de récupérer le devis');
         }
     }
 
@@ -103,8 +139,8 @@ export class QuotesService {
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 quotes.push({
-                    id: doc.id,
                     ...data,
+                    id: doc.id, // id en dernier pour éviter d'être écrasé par data.id
                     createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
                     updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
                 } as Quote);
@@ -115,6 +151,40 @@ export class QuotesService {
             console.error('Erreur lors de la récupération des devis:', error);
             throw new Error('Impossible de récupérer les devis');
         }
+    }
+
+    /**
+     * S'abonner en temps réel à la liste des devis (trié par date de création desc)
+     */
+    static subscribeToQuotes(callback: (quotes: Quote[]) => void): Unsubscribe {
+        const q = query(
+            collection(db, QUOTES_COLLECTION),
+            orderBy('createdAt', 'desc')
+        );
+        return onSnapshot(q, (snapshot: QuerySnapshot) => {
+            const quotes: Quote[] = snapshot.docs.map((d) => {
+                const data = d.data() as DocumentData;
+                return {
+                    ...data,
+                    id: d.id, // id en dernier
+                    createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+                    updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+                } as Quote;
+            });
+            callback(quotes);
+        });
+    }
+
+    /**
+     * S'abonner en temps réel au compteur total des devis
+     */
+    static subscribeToQuoteCount(callback: (count: number) => void): Unsubscribe {
+        const q = query(
+            collection(db, QUOTES_COLLECTION)
+        );
+        return onSnapshot(q, (snapshot: QuerySnapshot) => {
+            callback(snapshot.size);
+        });
     }
 
     /**
@@ -154,8 +224,11 @@ export class QuotesService {
     static async updateQuote(quoteId: string, updates: Partial<Quote>): Promise<void> {
         try {
             const quoteRef = doc(db, QUOTES_COLLECTION, quoteId);
+            // Ne jamais pousser 'id' (ou écraser createdAt) dans Firestore
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { id: _ignoredId, createdAt: _ignoredCreatedAt, ...rest } = (updates as Partial<Quote>);
             const updateData = {
-                ...updates,
+                ...rest,
                 updatedAt: Timestamp.now()
             };
             
@@ -172,8 +245,9 @@ export class QuotesService {
      */
     static async deleteQuote(quoteId: string): Promise<void> {
         try {
-            await deleteDoc(doc(db, QUOTES_COLLECTION, quoteId));
-            console.log('Devis supprimé:', quoteId);
+            const docRef = doc(db, QUOTES_COLLECTION, quoteId);
+            await deleteDoc(docRef);
+            console.log('Devis supprimé avec succès:', quoteId);
         } catch (error) {
             console.error('Erreur lors de la suppression du devis:', error);
             throw new Error('Impossible de supprimer le devis');
@@ -195,6 +269,55 @@ export class QuotesService {
         } catch (error) {
             console.error('Erreur lors de la recherche de devis:', error);
             throw new Error('Impossible de rechercher les devis');
+        }
+    }
+
+    /**
+     * Sauvegarder un devis (créer ou mettre à jour selon l'existence dans Firebase)
+     */
+    static async saveQuote(quote: Quote): Promise<string> {
+        try {
+            // Si le devis a un ID, vérifier s'il existe dans Firebase
+            if (quote.id && quote.id.length > 0) {
+                try {
+                    const docRef = doc(db, QUOTES_COLLECTION, quote.id);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        // Le document existe, on le met à jour (exclure l'ID)
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const { id: _id, ...updateData } = quote as Quote;
+                        await this.updateQuote(quote.id, updateData as Partial<Omit<Quote, 'id'>>);
+                        return quote.id;
+                    } else {
+                        // Le document n'existe pas, on le crée avec l'ID spécifié
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const { id: _id, ...rest } = quote as Quote;
+                        const quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: Timestamp; updatedAt: Timestamp } = {
+                            ...(rest as Omit<Quote, 'id' | 'createdAt' | 'updatedAt'>),
+                            createdAt: Timestamp.now(),
+                            updatedAt: Timestamp.now()
+                        };
+                        await setDoc(docRef, quoteData as unknown as DocumentData);
+                        return quote.id;
+                    }
+                } catch (checkError) {
+                    console.error('Erreur lors de la vérification du document:', checkError);
+                    // En cas d'erreur de vérification, essayer de créer un nouveau document
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const { id: _id, ...quoteWithoutId } = quote as Quote;
+                    const newId = await this.createQuote(quoteWithoutId as Omit<Quote, 'id'>);
+                    return newId;
+                }
+            } else {
+                // Pas d'ID, créer un nouveau devis
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { id: _id, ...quoteWithoutId } = quote as Quote;
+                const newId = await this.createQuote(quoteWithoutId as Omit<Quote, 'id'>);
+                return newId;
+            }
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde du devis:', error);
+            throw new Error('Impossible de sauvegarder le devis');
         }
     }
 }

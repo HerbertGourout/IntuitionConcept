@@ -8,13 +8,7 @@ import {
     BarChart3
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
-
-interface Quote {
-    id: string;
-    status: 'draft' | 'sent' | 'accepted' | 'rejected';
-    totalAmount: number;
-    [key: string]: unknown; // Pour les autres propriétés optionnelles
-}
+import { QuotesService, Quote } from '../../../services/quotesService';
 
 interface QuoteStats {
     total: number;
@@ -39,26 +33,22 @@ const QuoteStatsWidget: React.FC = () => {
     });
 
     useEffect(() => {
-        calculateStats();
+        const unsubscribe = QuotesService.subscribeToQuotes((quotes: Quote[]) => {
+            const next: QuoteStats = {
+                total: quotes.length,
+                draft: quotes.filter((q) => q.status === 'draft').length,
+                sent: quotes.filter((q) => q.status === 'sent').length,
+                accepted: quotes.filter((q) => q.status === 'accepted').length,
+                rejected: quotes.filter((q) => q.status === 'rejected').length,
+                totalValue: quotes.reduce((sum, q) => sum + (q.totalAmount || 0), 0),
+                acceptedValue: quotes
+                    .filter((q) => q.status === 'accepted')
+                    .reduce((sum, q) => sum + (q.totalAmount || 0), 0)
+            };
+            setStats(next);
+        });
+        return () => unsubscribe();
     }, []);
-
-    const calculateStats = () => {
-        const quotes: Quote[] = JSON.parse(localStorage.getItem('quotes') || '[]');
-        
-        const stats: QuoteStats = {
-            total: quotes.length,
-            draft: quotes.filter((q: Quote) => q.status === 'draft').length,
-            sent: quotes.filter((q: Quote) => q.status === 'sent').length,
-            accepted: quotes.filter((q: Quote) => q.status === 'accepted').length,
-            rejected: quotes.filter((q: Quote) => q.status === 'rejected').length,
-            totalValue: quotes.reduce((sum: number, q: Quote) => sum + (q.totalAmount || 0), 0),
-            acceptedValue: quotes
-                .filter((q: Quote) => q.status === 'accepted')
-                .reduce((sum: number, q: Quote) => sum + (q.totalAmount || 0), 0)
-        };
-
-        setStats(stats);
-    };
 
     const statCards = [
         {

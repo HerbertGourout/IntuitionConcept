@@ -7,21 +7,21 @@ type ViewMode = 'list' | 'create' | 'edit';
 
 const Quotes: React.FC = () => {
     const [viewMode, setViewMode] = useState<ViewMode>('list');
-    const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+    const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
 
     const handleCreateNew = () => {
-        setEditingQuoteId(null);
         setViewMode('create');
+        setSelectedQuoteId(null);
     };
 
-    const handleEditQuote = (quoteId: string) => {
-        setEditingQuoteId(quoteId);
+    const handleEditQuote = async (quoteId: string) => {
+        setSelectedQuoteId(quoteId);
         setViewMode('edit');
     };
 
     const handleBackToList = () => {
+        setSelectedQuoteId(null);
         setViewMode('list');
-        setEditingQuoteId(null);
     };
 
     return (
@@ -55,7 +55,11 @@ const Quotes: React.FC = () => {
                             >
                                 ← Retour à la liste
                             </button>
-                            <QuoteCreator />
+                            <QuoteCreator 
+                                selectedQuoteId={selectedQuoteId}
+                                onClose={handleBackToList}
+                                onQuoteCreated={handleBackToList}
+                            />
                         </div>
                     </motion.div>
                 )}

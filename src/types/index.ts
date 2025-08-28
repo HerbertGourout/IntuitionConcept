@@ -104,6 +104,15 @@ export interface FinancialRecord {
   invoiceNumber?: string;
   vendor?: string;
   approved: boolean;
+  status: 'planned' | 'actual' | 'pending';
+  // Propriétés pour l'intégration budgétaire avancée
+  phaseId?: string;
+  taskId?: string;
+  purchaseOrderId?: string;
+  deliveryNoteId?: string;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface WorkReport {

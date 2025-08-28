@@ -1,4 +1,4 @@
-import UserSettingsService from './userSettingsService';
+import UserSettingsService, { UserSettings } from './userSettingsService';
 
 export interface CurrencySettings {
   code: string;
@@ -97,13 +97,13 @@ export class CurrencyService {
       };
 
       // Construire l'objet de paramètres complet à mettre à jour
-      const settingsToUpdate = {
+      const settingsToUpdate: Partial<UserSettings> = {
         ...(currentSettings || {}),
         preferences: updatedPreferences,
       };
 
-      // Forcer le type pour correspondre à ce que attend updateUserSettings
-      await UserSettingsService.updateUserSettings(userId, settingsToUpdate as any);
+      // Mettre à jour avec des types explicites
+      await UserSettingsService.updateUserSettings(userId, settingsToUpdate);
 
     } catch (error) {
       console.error('Erreur lors de la définition de la monnaie par défaut:', error);

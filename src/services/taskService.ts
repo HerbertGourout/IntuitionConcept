@@ -2,6 +2,7 @@ import {
   collection, 
   doc, 
   getDocs, 
+  getDoc,
   addDoc, 
   updateDoc, 
   deleteDoc, 
@@ -53,6 +54,13 @@ export interface Task {
 
 const COLLECTION_NAME = 'tasks';
 
+type FirestoreCommentRaw = {
+  id: string;
+  author: string;
+  content: string;
+  createdAt?: Timestamp | Date;
+};
+
 export class TaskService {
   /**
    * Récupérer toutes les tâches
@@ -69,9 +77,11 @@ export class TaskService {
         completedDate: doc.data().completedDate?.toDate() || undefined,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        comments: doc.data().comments?.map((comment: any) => ({
+        comments: (doc.data().comments as FirestoreCommentRaw[] | undefined)?.map((comment) => ({
           ...comment,
-          createdAt: comment.createdAt?.toDate() || new Date()
+          createdAt: comment.createdAt instanceof Timestamp
+            ? comment.createdAt.toDate()
+            : (comment.createdAt ?? new Date())
         })) || []
       })) as Task[];
     } catch (error) {
@@ -99,9 +109,11 @@ export class TaskService {
         completedDate: doc.data().completedDate?.toDate() || undefined,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        comments: doc.data().comments?.map((comment: any) => ({
+        comments: (doc.data().comments as FirestoreCommentRaw[] | undefined)?.map((comment) => ({
           ...comment,
-          createdAt: comment.createdAt?.toDate() || new Date()
+          createdAt: comment.createdAt instanceof Timestamp
+            ? comment.createdAt.toDate()
+            : (comment.createdAt ?? new Date())
         })) || []
       })) as Task[];
     } catch (error) {
@@ -129,9 +141,11 @@ export class TaskService {
         completedDate: doc.data().completedDate?.toDate() || undefined,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        comments: doc.data().comments?.map((comment: any) => ({
+        comments: (doc.data().comments as FirestoreCommentRaw[] | undefined)?.map((comment) => ({
           ...comment,
-          createdAt: comment.createdAt?.toDate() || new Date()
+          createdAt: comment.createdAt instanceof Timestamp
+            ? comment.createdAt.toDate()
+            : (comment.createdAt ?? new Date())
         })) || []
       })) as Task[];
     } catch (error) {
@@ -159,9 +173,11 @@ export class TaskService {
         completedDate: doc.data().completedDate?.toDate() || undefined,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        comments: doc.data().comments?.map((comment: any) => ({
+        comments: (doc.data().comments as FirestoreCommentRaw[] | undefined)?.map((comment) => ({
           ...comment,
-          createdAt: comment.createdAt?.toDate() || new Date()
+          createdAt: comment.createdAt instanceof Timestamp
+            ? comment.createdAt.toDate()
+            : (comment.createdAt ?? new Date())
         })) || []
       })) as Task[];
     } catch (error) {
@@ -202,26 +218,27 @@ export class TaskService {
   static async updateTask(id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<void> {
     try {
       const taskRef = doc(db, COLLECTION_NAME, id);
-      const updateData: any = { ...updates };
-      
-      if (updateData.dueDate) {
-        updateData.dueDate = Timestamp.fromDate(updateData.dueDate);
+      // Construire un payload Firestore indépendant des types Task (évite Date vs Timestamp sur le type TS)
+      const payload: Record<string, unknown> = { ...updates };
+
+      if (updates.dueDate) {
+        payload.dueDate = Timestamp.fromDate(updates.dueDate);
       }
-      if (updateData.startDate) {
-        updateData.startDate = Timestamp.fromDate(updateData.startDate);
+      if (updates.startDate) {
+        payload.startDate = Timestamp.fromDate(updates.startDate);
       }
-      if (updateData.completedDate) {
-        updateData.completedDate = Timestamp.fromDate(updateData.completedDate);
+      if (updates.completedDate) {
+        payload.completedDate = Timestamp.fromDate(updates.completedDate);
       }
-      if (updateData.comments) {
-        updateData.comments = updateData.comments.map((comment: any) => ({
+      if (updates.comments) {
+        payload.comments = updates.comments.map((comment) => ({
           ...comment,
           createdAt: comment.createdAt instanceof Date ? Timestamp.fromDate(comment.createdAt) : comment.createdAt
         }));
       }
-      
+
       await updateDoc(taskRef, {
-        ...updateData,
+        ...payload,
         updatedAt: Timestamp.now()
       });
       console.log('Tâche mise à jour:', id);
@@ -250,23 +267,33 @@ export class TaskService {
   static async updateTaskStatus(id: string, status: Task['status']): Promise<void> {
     try {
       const taskRef = doc(db, COLLECTION_NAME, id);
-      const updateData: any = { 
+      
+      // Construire l'objet de mise à jour avec des types explicites
+      const baseUpdate = {
         status,
         updatedAt: Timestamp.now()
       };
       
       // Si la tâche est marquée comme terminée, ajouter la date de completion
       if (status === 'done') {
-        updateData.completedDate = Timestamp.now();
+        await updateDoc(taskRef, {
+          ...baseUpdate,
+          completedDate: Timestamp.now()
+        });
       } else if (status === 'in_progress') {
-        // Si la tâche passe en cours, ajouter la date de début si pas déjà définie
-        const taskDoc = await getDocs(query(collection(db, COLLECTION_NAME), where('__name__', '==', id)));
-        if (!taskDoc.empty && !taskDoc.docs[0].data().startDate) {
-          updateData.startDate = Timestamp.now();
+        // Si la tâche passe en cours, récupérer le document pour vérifier startDate
+        const taskSnapshot = await getDoc(taskRef);
+        if (taskSnapshot.exists() && !taskSnapshot.data().startDate) {
+          await updateDoc(taskRef, {
+            ...baseUpdate,
+            startDate: Timestamp.now()
+          });
+        } else {
+          await updateDoc(taskRef, baseUpdate);
         }
+      } else {
+        await updateDoc(taskRef, baseUpdate);
       }
-      
-      await updateDoc(taskRef, updateData);
       console.log('Statut tâche mis à jour:', id, status);
     } catch (error) {
       console.error('Erreur lors de la mise à jour du statut:', error);
@@ -297,10 +324,10 @@ export class TaskService {
   static async addComment(id: string, comment: { author: string; content: string }): Promise<void> {
     try {
       const taskRef = doc(db, COLLECTION_NAME, id);
-      const taskDoc = await getDocs(query(collection(db, COLLECTION_NAME), where('__name__', '==', id)));
+      const taskSnapshot = await getDoc(taskRef);
       
-      if (!taskDoc.empty) {
-        const currentComments = taskDoc.docs[0].data().comments || [];
+      if (taskSnapshot.exists()) {
+        const currentComments = taskSnapshot.data().comments || [];
         const newComment = {
           id: `comment-${Date.now()}`,
           ...comment,
@@ -334,9 +361,11 @@ export class TaskService {
         completedDate: doc.data().completedDate?.toDate() || undefined,
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        comments: doc.data().comments?.map((comment: any) => ({
+        comments: (doc.data().comments as FirestoreCommentRaw[] | undefined)?.map((comment) => ({
           ...comment,
-          createdAt: comment.createdAt?.toDate() || new Date()
+          createdAt: comment.createdAt instanceof Timestamp
+            ? comment.createdAt.toDate()
+            : (comment.createdAt ?? new Date())
         })) || []
       })) as Task[];
       

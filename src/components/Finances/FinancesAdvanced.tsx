@@ -1,35 +1,29 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  DollarSign,
   TrendingUp,
   TrendingDown,
   Plus,
   Calculator,
-  PieChart,
   BarChart3,
   AlertTriangle,
-  CheckCircle,
-  Clock,
   Wrench,
   FileText,
   Target,
   Activity,
-  Zap,
   Users,
   Building,
-  Calendar,
   ArrowUp,
   ArrowDown,
   Percent,
-  LineChart,
-  CurrencyIcon
+  LineChart
 } from 'lucide-react';
 import { Transaction } from '../../types/finance';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import TransactionTable from './TransactionTable';
 import TransactionModal from './TransactionModal';
 import { CurrencyService } from '../../services/currencyService';
-import { v4 as uuidv4 } from 'uuid';
+import { transactionService } from '../../services/transactionService';
+import { financialService } from '../../services/financialService';
 
 interface FinancialSummary {
   totalBudget: number;
@@ -56,7 +50,7 @@ interface FinancialMetric {
   label: string;
   value: string;
   change: number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   color: string;
   trend: 'up' | 'down' | 'stable';
 }
@@ -67,13 +61,16 @@ const FinancesAdvanced: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'analytics' | 'budget' | 'forecast'>('overview');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [monthlyTrends, setMonthlyTrends] = useState<{ month: string; income: number; expenses: number; }[]>([]);
   
   // État pour la monnaie
   const [currency, setCurrency] = useState({ symbol: 'FCFA', position: 'after' as 'before' | 'after' });
   
   const currentProject = projectContext.currentProject;
   
-  // Charger la monnaie par défaut
+  // Charger la monnaie par défaut et les transactions
   useEffect(() => {
     const loadCurrency = async () => {
       try {
@@ -85,6 +82,57 @@ const FinancesAdvanced: React.FC = () => {
     };
     loadCurrency();
   }, []);
+
+  // Charger les transactions et tendances mensuelles du projet actuel
+  useEffect(() => {
+    if (!currentProject?.id) {
+      setTransactions([]);
+      setMonthlyTrends([]);
+      return;
+    }
+
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        setLoadingMessage('Chargement des données financières...');
+        
+        // Charger les transactions
+        const projectTransactions = await transactionService.getTransactionsByProject(currentProject.id);
+        setTransactions(projectTransactions);
+        
+        // Charger les tendances mensuelles réelles depuis Firebase
+        const realTrends = await financialService.calculateMonthlyTrends(currentProject.id, 6);
+        setMonthlyTrends(realTrends);
+        
+        console.log('✅ Données financières chargées:', {
+          transactions: projectTransactions.length,
+          trends: realTrends.length
+        });
+      } catch (error) {
+        console.error('❌ Erreur lors du chargement des données financières:', error);
+      } finally {
+        setIsLoading(false);
+        setLoadingMessage('');
+      }
+    };
+
+    loadData();
+
+    // Écouter les changements en temps réel
+    const unsubscribe = transactionService.subscribeToTransactions(
+      currentProject.id,
+      (updatedTransactions) => {
+        setTransactions(updatedTransactions);
+        // Recharger les tendances quand les transactions changent
+        financialService.calculateMonthlyTrends(currentProject.id, 6)
+          .then((realTrends: { month: string; income: number; expenses: number; }[]) => setMonthlyTrends(realTrends))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .catch((error: any) => console.error('Erreur rechargement tendances:', error));
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentProject?.id]);
   
   // Fonction pour formater les montants
   const formatAmount = (amount: number) => {
@@ -197,13 +245,14 @@ const FinancesAdvanced: React.FC = () => {
       });
     }
     
-    // Tendance mensuelle (simulation)
-    const monthlyTrend = [
-      { month: 'Jan', income: totalIncome * 0.1, expenses: totalExpenses * 0.08 },
-      { month: 'Fév', income: totalIncome * 0.15, expenses: totalExpenses * 0.12 },
-      { month: 'Mar', income: totalIncome * 0.2, expenses: totalExpenses * 0.18 },
-      { month: 'Avr', income: totalIncome * 0.25, expenses: totalExpenses * 0.22 },
-      { month: 'Mai', income: totalIncome * 0.3, expenses: totalExpenses * 0.4 }
+    // Tendances mensuelles réelles depuis Firebase
+    const monthlyTrend = monthlyTrends.length > 0 ? monthlyTrends : [
+      { month: 'Jan', income: 0, expenses: 0 },
+      { month: 'Fév', income: 0, expenses: 0 },
+      { month: 'Mar', income: 0, expenses: 0 },
+      { month: 'Avr', income: 0, expenses: 0 },
+      { month: 'Mai', income: 0, expenses: 0 },
+      { month: 'Jun', income: 0, expenses: 0 }
     ];
     
     // Niveau de risque
@@ -235,7 +284,7 @@ const FinancesAdvanced: React.FC = () => {
       forecastedCompletion,
       varianceFromBudget
     };
-  }, [currentProject, transactions]);
+  }, [currentProject, transactions, monthlyTrends]);
 
   // Métriques financières pour l'affichage
   const financialMetrics: FinancialMetric[] = [
@@ -300,19 +349,45 @@ const FinancesAdvanced: React.FC = () => {
     setModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await transactionService.deleteTransaction(id);
+      // Les transactions seront automatiquement mises à jour via l'abonnement temps réel
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      alert('Erreur lors de la suppression de la transaction');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSave = (data: Omit<Transaction, 'id'>) => {
-    if (editing) {
-      setTransactions(prev => prev.map(t => t.id === editing.id ? { ...data, id: editing.id } : t));
-    } else {
-      const newTransaction: Transaction = { ...data, id: uuidv4() };
-      setTransactions(prev => [...prev, newTransaction]);
+  const handleSave = async (data: Omit<Transaction, 'id'>) => {
+    try {
+      setIsLoading(true);
+      
+      if (editing) {
+        await transactionService.updateTransaction(editing.id, data);
+      } else {
+        await transactionService.createTransaction({
+          ...data,
+          projectId: currentProject?.id || data.projectId
+        });
+      }
+      
+      // Les transactions seront automatiquement mises à jour via l'abonnement temps réel
+      setModalOpen(false);
+      setEditing(null);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      alert('Erreur lors de la sauvegarde de la transaction');
+    } finally {
+      setIsLoading(false);
     }
-    setModalOpen(false);
-    setEditing(null);
   };
 
   if (!currentProject) {
@@ -366,7 +441,7 @@ const FinancesAdvanced: React.FC = () => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'transactions' | 'analytics' | 'budget' | 'forecast')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   activeTab === tab.id
                     ? 'bg-white shadow-md text-blue-600 border border-blue-200'
@@ -383,6 +458,16 @@ const FinancesAdvanced: React.FC = () => {
         {/* Contenu selon l'onglet actif */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Indicateur de chargement */}
+            {isLoading && (
+              <div className="glass-card p-4 rounded-xl">
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-sm text-gray-600">{loadingMessage || 'Chargement...'}</span>
+                </div>
+              </div>
+            )}
+            
             {/* Métriques financières principales */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               {financialMetrics.map((metric, index) => {

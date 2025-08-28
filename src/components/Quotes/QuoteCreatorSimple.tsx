@@ -1,1277 +1,766 @@
-import React, { useState } from 'react';
-import {
-    Save,
-    Download,
-    Send,
-    AlertTriangle,
-    FileText
-} from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useOfflineReports } from '../../hooks/useOfflineData';
-import { QuotesService } from '../../services/quotesService';
+import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
+import { Plus, FileText, ChevronDown, ChevronUp, Save, X } from 'lucide-react';
+import { Quote, Phase, Task, Article, QuotesService } from '../../services/quotesService';
+import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 
-// Types pour le module de devis structuré
-interface Article {
-    id: string;
-    description: string;
-    quantity: number;
-    unit: string;
-    unitPrice: number;
-    totalPrice: number;
+interface QuoteCreatorSimpleProps {
+  onClose: () => void;
+  onQuoteCreated?: (quote: Quote) => void;
+  editQuote?: Quote | null;
 }
 
-interface Task {
-    id: string;
-    name: string;
-    description: string;
-    articles: Article[];
-    totalPrice: number;
-    expanded: boolean;
-}
+const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
+  onClose,
+  onQuoteCreated,
+  editQuote
+}) => {
+  // États principaux
+  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(editQuote ? false : true);
 
-interface Phase {
-    id: string;
-    name: string;
-    description: string;
-    tasks: Task[];
-    totalPrice: number;
-    expanded: boolean;
-}
+  // États du devis
+  const [title, setTitle] = useState(() => editQuote?.title || '');
+  const [clientName, setClientName] = useState(() => editQuote?.clientName || '');
+  const [companyName, setCompanyName] = useState(() => editQuote?.companyName || '');
+  const [clientEmail, setClientEmail] = useState(() => editQuote?.clientEmail || '');
+  const [clientPhone, setClientPhone] = useState(() => editQuote?.clientPhone || '');
+  const [projectType, setProjectType] = useState(() => editQuote?.projectType || '');
+  const [phases, setPhases] = useState<Phase[]>(() => editQuote?.phases || []);
+  const [notes, setNotes] = useState(() => editQuote?.notes || '');
+  const [paymentTerms, setPaymentTerms] = useState(() => editQuote?.paymentTerms || 'Paiement à 30 jours');
+  const [validityDays] = useState(30);
+  const [taxRate, setTaxRate] = useState(() => (editQuote?.taxRate ?? 18));
 
-interface Quote {
-    id: string;
-    title: string;
-    clientName: string;
-    clientEmail: string;
-    clientPhone: string;
-    projectType: string;
-    phases: Phase[];
-    subtotal: number;
-    taxRate: number;
-    taxAmount: number;
-    totalAmount: number;
-    status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
-    validityDays: number;
-    notes: string;
-    paymentTerms: string;
-    createdAt: string;
-    updatedAt: string;
-}
+  // États calculés
+  const [subtotal, setSubtotal] = useState(0);
+  const [taxAmount, setTaxAmount] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
 
-const QuoteCreatorSimple: React.FC = () => {
-    const { resolvedTheme } = useTheme();
-    const { isOnline } = useOfflineReports();
+  // Fonctions utilitaires
+  const generateId = () => Math.random().toString(36).substr(2, 9);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XAF',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Calcul automatique des totaux
+  const calculateTotals = useCallback(() => {
+    let newSubtotal = 0;
     
-    const [quote, setQuote] = useState<Quote>({
-        id: `DEVIS-${Date.now()}`,
-        title: 'Nouveau Devis',
-        clientName: '',
-        clientEmail: '',
-        clientPhone: '',
-        projectType: 'construction',
-        phases: [],
-        subtotal: 0,
-        taxRate: 18,
-        taxAmount: 0,
-        totalAmount: 0,
-        status: 'draft',
-        validityDays: 30,
-        notes: '',
-        paymentTerms: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+    phases.forEach(phase => {
+      let phaseTotal = 0;
+      if (phase.tasks) {
+        phase.tasks.forEach(task => {
+          let taskTotal = 0;
+          if (task.articles) {
+            task.articles.forEach(article => {
+              const articleTotal = (article.quantity || 0) * (article.unitPrice || 0);
+              taskTotal += articleTotal;
+            });
+          }
+          phaseTotal += taskTotal;
+        });
+      }
+      newSubtotal += phaseTotal;
     });
 
-    const [isDirty, setIsDirty] = useState(false);
-    
-    // États pour l'interface moderne
-    const [isLoading, setIsLoading] = useState(false);
-    const [showSuccessToast, setShowSuccessToast] = useState(false);
-    const [showErrorToast, setShowErrorToast] = useState(false);
-    const [toastMessage, setToastMessage] = useState('');
-    const [showQuotesModal, setShowQuotesModal] = useState(false);
-    const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
-    const [showExportModal, setShowExportModal] = useState(false);
-    
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: 'XOF',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount).replace('XOF', 'FCFA');
-    };
+    const newTaxAmount = (newSubtotal * taxRate) / 100;
+    const newTotalAmount = newSubtotal + newTaxAmount;
 
-    const calculateTotals = (updatedQuote: Quote) => {
-        // Calculer totaux des articles pour chaque tâche
-        const phasesWithTaskTotals = updatedQuote.phases.map(phase => ({
+    setSubtotal(newSubtotal);
+    setTaxAmount(newTaxAmount);
+    setTotalAmount(newTotalAmount);
+  }, [phases, taxRate]);
+
+  // Charger les données du devis à éditer (avant le paint pour éviter le flicker)
+  useLayoutEffect(() => {
+    if (editQuote) {
+      setTitle(editQuote.title || '');
+      setClientName(editQuote.clientName || '');
+      setCompanyName(editQuote.companyName || '');
+      setClientEmail(editQuote.clientEmail || '');
+      setClientPhone(editQuote.clientPhone || '');
+      setProjectType(editQuote.projectType || '');
+      setPhases(editQuote.phases || []);
+      setNotes(editQuote.notes || '');
+      setPaymentTerms(editQuote.paymentTerms || 'Paiement à 30 jours');
+      setTaxRate(editQuote.taxRate || 18);
+      setIsInitialized(true);
+    }
+  }, [editQuote]);
+
+  // Recalculer les totaux quand les phases changent
+  useEffect(() => {
+    calculateTotals();
+  }, [calculateTotals]);
+
+  // Fonctions de gestion des phases
+  const addPhase = () => {
+    const newPhase: Phase = {
+      id: generateId(),
+      name: `Phase ${phases.length + 1}`,
+      description: '',
+      tasks: [],
+      totalPrice: 0,
+      expanded: true
+    };
+    setPhases([...phases, newPhase]);
+  };
+
+  const updatePhase = (phaseId: string, updates: Partial<Phase>) => {
+    setPhases(phases.map(phase => 
+      phase.id === phaseId ? { ...phase, ...updates } : phase
+    ));
+  };
+
+  const deletePhase = (phaseId: string) => {
+    setPhases(phases.filter(phase => phase.id !== phaseId));
+  };
+
+  // Fonctions de gestion des tâches
+  const addTask = (phaseId: string) => {
+    const newTask: Task = {
+      id: generateId(),
+      name: 'Nouvelle tâche',
+      description: '',
+      articles: [],
+      totalPrice: 0,
+      expanded: true
+    };
+    
+    setPhases(phases.map(phase => 
+      phase.id === phaseId 
+        ? { ...phase, tasks: [...phase.tasks, newTask] }
+        : phase
+    ));
+  };
+
+  const updateTask = (phaseId: string, taskId: string, updates: Partial<Task>) => {
+    setPhases(phases.map(phase => 
+      phase.id === phaseId 
+        ? {
             ...phase,
-            tasks: phase.tasks.map(task => ({
-                ...task,
-                totalPrice: task.articles.reduce((sum, article) => {
-                    article.totalPrice = article.quantity * article.unitPrice;
-                    return sum + article.totalPrice;
-                }, 0)
-            }))
-        }));
+            tasks: phase.tasks.map(task => 
+              task.id === taskId ? { ...task, ...updates } : task
+            )
+          }
+        : phase
+    ));
+  };
 
-        // Calculer totaux des tâches pour chaque phase
-        const phasesWithTotals = phasesWithTaskTotals.map(phase => ({
+  const deleteTask = (phaseId: string, taskId: string) => {
+    setPhases(phases.map(phase => 
+      phase.id === phaseId 
+        ? { ...phase, tasks: phase.tasks.filter(task => task.id !== taskId) }
+        : phase
+    ));
+  };
+
+  // Fonctions de gestion des articles
+  const addArticle = (phaseId: string, taskId: string) => {
+    const newArticle: Article = {
+      id: generateId(),
+      name: 'Nouvel article',
+      description: '',
+      quantity: 1,
+      unit: 'unité',
+      unitPrice: 0,
+      totalPrice: 0
+    };
+    
+    setPhases(phases.map(phase => 
+      phase.id === phaseId 
+        ? {
             ...phase,
-            totalPrice: phase.tasks.reduce((sum, task) => sum + task.totalPrice, 0)
-        }));
+            tasks: phase.tasks.map(task => 
+              task.id === taskId 
+                ? { ...task, articles: [...task.articles, newArticle] }
+                : task
+            )
+          }
+        : phase
+    ));
+  };
 
-        // Calculer sous-total global
-        const subtotal = phasesWithTotals.reduce((sum, phase) => sum + phase.totalPrice, 0);
-        const taxAmount = (subtotal * updatedQuote.taxRate) / 100;
-        const totalAmount = subtotal + taxAmount;
+  const updateArticle = (phaseId: string, taskId: string, articleId: string, updates: Partial<Article>) => {
+    setPhases(phases.map(phase => 
+      phase.id === phaseId 
+        ? {
+            ...phase,
+            tasks: phase.tasks.map(task => 
+              task.id === taskId 
+                ? {
+                    ...task,
+                    articles: task.articles.map(article => 
+                      article.id === articleId 
+                        ? { 
+                            ...article, 
+                            ...updates,
+                            totalPrice: (updates.quantity ?? article.quantity) * (updates.unitPrice ?? article.unitPrice)
+                          }
+                        : article
+                    )
+                  }
+                : task
+            )
+          }
+        : phase
+    ));
+  };
 
-        return {
-            ...updatedQuote,
-            phases: phasesWithTotals,
-            subtotal,
-            taxAmount,
-            totalAmount,
-            updatedAt: new Date().toISOString()
-        };
-    };
+  const deleteArticle = (phaseId: string, taskId: string, articleId: string) => {
+    setPhases(phases.map(phase => 
+      phase.id === phaseId 
+        ? {
+            ...phase,
+            tasks: phase.tasks.map(task => 
+              task.id === taskId 
+                ? { ...task, articles: task.articles.filter(article => article.id !== articleId) }
+                : task
+            )
+          }
+        : phase
+    ));
+  };
 
-    const updateQuote = (updates: Partial<Quote>) => {
-        const updatedQuote = { ...quote, ...updates };
-        const recalculatedQuote = calculateTotals(updatedQuote);
-        setQuote(recalculatedQuote);
-        setIsDirty(true);
-    };
+  // Fonction de sauvegarde
+  const handleSave = async () => {
+    if (!user || !title || !clientName || !clientEmail) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
 
+    setIsSaving(true);
+    try {
+      const quoteData = {
+        title,
+        clientName,
+        companyName,
+        clientEmail,
+        clientPhone,
+        projectType,
+        phases,
+        subtotal,
+        taxRate,
+        taxAmount,
+        totalAmount,
+        status: 'draft' as const,
+        validityDays,
+        notes,
+        paymentTerms
+      };
 
+      if (editQuote) {
+        await QuotesService.updateQuote(editQuote.id, quoteData);
+        toast.success('Devis modifié avec succès');
+        onQuoteCreated?.(editQuote);
+      } else {
+        const { ...quoteDataForCreate } = quoteData;
+        const newQuoteId = await QuotesService.createQuote({
+          ...quoteDataForCreate,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        const newQuote = { ...quoteData, id: newQuoteId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Quote;
+        toast.success('Devis créé avec succès');
+        onQuoteCreated?.(newQuote);
+      }
 
-    const showToast = (message: string, type: 'success' | 'error') => {
-        setToastMessage(message);
-        if (type === 'success') {
-            setShowSuccessToast(true);
-            setTimeout(() => setShowSuccessToast(false), 4000);
-        } else {
-            setShowErrorToast(true);
-            setTimeout(() => setShowErrorToast(false), 4000);
-        }
-    };
+      onClose();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast.error('Erreur lors de la sauvegarde du devis');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-    // Charger les devis sauvegardés depuis Firebase
-    const loadSavedQuotes = async () => {
-        try {
-            setIsLoading(true);
-            const quotes = await QuotesService.getAllQuotes();
-            setSavedQuotes(quotes);
-        } catch (error) {
-            console.error('Erreur lors du chargement des devis:', error);
-            showToast('❌ Erreur lors du chargement des devis', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Charger un devis pour édition
-    const loadQuoteForEdit = (quoteToEdit: Quote) => {
-        setQuote(quoteToEdit);
-        setIsDirty(true);
-        setShowQuotesModal(false);
-        showToast(`📝 Devis "${quoteToEdit.title}" chargé pour édition`, 'success');
-    };
-
-    // Supprimer un devis
-    const deleteQuote = async (quoteId: string, quoteTitle: string) => {
-        if (!window.confirm(`⚠️ Êtes-vous sûr de vouloir supprimer le devis "${quoteTitle}" ?\n\nCette action est irréversible.`)) {
-            return;
-        }
-
-        try {
-            setIsLoading(true);
-            await QuotesService.deleteQuote(quoteId);
-            showToast(`✅ Devis "${quoteTitle}" supprimé avec succès`, 'success');
-            // Recharger la liste
-            await loadSavedQuotes();
-        } catch (error) {
-            console.error('Erreur lors de la suppression:', error);
-            showToast('❌ Erreur lors de la suppression du devis', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Dupliquer un devis
-    const duplicateQuote = (originalQuote: Quote) => {
-        const duplicatedQuote: Quote = {
-            ...originalQuote,
-            id: `DEVIS-${Date.now()}`,
-            title: `${originalQuote.title} (Copie)`,
-            status: 'draft',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        setQuote(duplicatedQuote);
-        setIsDirty(true);
-        setShowQuotesModal(false);
-        showToast(`📋 Devis dupliqué : "${duplicatedQuote.title}"`, 'success');
-    };
-
-    const startNewQuote = () => {
-        // Créer une première phase par défaut pour structurer le devis
-        const firstPhase: Phase = {
-            id: `phase-${Date.now()}`,
-            name: 'Phase 1 - Préparation',
-            description: 'Première phase du projet',
-            tasks: [],
-            totalPrice: 0,
-            expanded: true
-        };
-
-        const newQuote: Quote = {
-            id: `DEVIS-${Date.now()}`,
-            title: 'Nouveau Devis',
-            clientName: '',
-            clientEmail: '',
-            clientPhone: '',
-            projectType: 'construction',
-            phases: [firstPhase], // Devis structuré avec une phase par défaut
-            subtotal: 0,
-            taxRate: 18,
-            taxAmount: 0,
-            totalAmount: 0,
-            status: 'draft',
-            validityDays: 30,
-            notes: '',
-            paymentTerms: '',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        setQuote(newQuote);
-        setIsDirty(true); // Marquer comme modifié car on a créé une structure
-    };
-
-    const handleSave = async () => {
-        try {
-            setIsLoading(true);
-            
-            // Validation basique
-            if (!quote.clientName.trim()) {
-                showToast('⚠️ Veuillez saisir le nom du client', 'error');
-                return;
-            }
-            
-            if (quote.phases.length === 0) {
-                showToast('⚠️ Veuillez ajouter au moins une phase au devis', 'error');
-                return;
-            }
-            
-            // Calculer les totaux avant sauvegarde
-            const updatedQuote = calculateTotals({
-                ...quote,
-                updatedAt: new Date().toISOString()
-            });
-            
-            // Sauvegarder dans Firebase
-            const quoteId = await QuotesService.createQuote(updatedQuote);
-            
-            showToast(`✅ Devis "${updatedQuote.title}" sauvegardé avec succès !\n💰 Montant: ${formatCurrency(updatedQuote.totalAmount)}`, 'success');
-            
-            // Marquer comme sauvegardé (ne pas réinitialiser automatiquement)
-            setIsDirty(false);
-            
-            console.log('Devis sauvegardé dans Firebase:', quoteId);
-        } catch (error) {
-            console.error('Erreur lors de la sauvegarde:', error);
-            showToast('❌ Erreur lors de la sauvegarde du devis dans Firebase', 'error');
-        } finally {
-            // Toujours arrêter le loading, même en cas d'erreur
-            setIsLoading(false);
-        }
-    };
-    
-
-
-    const handleSend = async () => {
-        try {
-            setIsLoading(true);
-            
-            // Validation avant envoi
-            if (!quote.clientName.trim()) {
-                showToast('⚠️ Veuillez saisir le nom du client avant l\'envoi', 'error');
-                return;
-            }
-            
-            if (!quote.clientEmail.trim()) {
-                showToast('⚠️ Veuillez saisir l\'email du client avant l\'envoi', 'error');
-                return;
-            }
-            
-            if (quote.phases.length === 0) {
-                showToast('⚠️ Veuillez ajouter au moins une phase avant l\'envoi', 'error');
-                return;
-            }
-            
-            // Calculer les totaux pour l'envoi
-            const sendQuote = calculateTotals(quote);
-            
-            // Générer le contenu email
-            const emailSubject = `Devis ${sendQuote.id} - ${sendQuote.title}`;
-            const emailBody = generateEmailBody(sendQuote);
-            
-            // Créer le lien mailto
-            const mailtoLink = `mailto:${sendQuote.clientEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-            
-            // Ouvrir le client email
-            window.open(mailtoLink);
-            
-            showToast(`📧 Email préparé pour ${sendQuote.clientName}\nVérifiez votre client email`, 'success');
-            
-        } catch (error) {
-            console.error('Erreur lors de l\'envoi:', error);
-            showToast('❌ Erreur lors de la préparation de l\'email', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
-    // Fonction pour générer le HTML du devis
-    const generateQuoteHTML = (exportQuote: Quote) => {
-        return `
-            <div class="header">
-                <h1>DEVIS</h1>
-                <h2>${exportQuote.title}</h2>
-                <p><strong>N° ${exportQuote.id}</strong></p>
-                <p>Date: ${new Date(exportQuote.createdAt).toLocaleDateString('fr-FR')}</p>
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden border border-white/20">
+        {/* En-tête */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">
+                  {editQuote ? 'Modifier le devis' : 'Nouveau devis'}
+                </h2>
+                <p className="text-blue-100">Créez un devis professionnel en quelques clics</p>
+              </div>
             </div>
-            
-            <div class="client-info">
-                <h3>Informations Client</h3>
-                <p><strong>Nom:</strong> ${exportQuote.clientName}</p>
-                <p><strong>Email:</strong> ${exportQuote.clientEmail}</p>
-                <p><strong>Téléphone:</strong> ${exportQuote.clientPhone || 'Non renseigné'}</p>
-                <p><strong>Type de projet:</strong> ${exportQuote.projectType}</p>
-            </div>
-            
-            <div class="phases">
-                <h3>Détail des Prestations</h3>
-                ${exportQuote.phases.map(phase => `
-                    <div class="phase">
-                        <h4>${phase.name}</h4>
-                        <p>${phase.description}</p>
-                        ${phase.tasks.map(task => `
-                            <div class="task">
-                                <h5>${task.name}</h5>
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Description</th>
-                                            <th>Quantité</th>
-                                            <th>Unité</th>
-                                            <th>Prix unitaire</th>
-                                            <th>Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${task.articles.map(article => `
-                                            <tr>
-                                                <td>${article.description}</td>
-                                                <td>${article.quantity}</td>
-                                                <td>${article.unit}</td>
-                                                <td>${formatCurrency(article.unitPrice)}</td>
-                                                <td>${formatCurrency(article.totalPrice)}</td>
-                                            </tr>
-                                        `).join('')}
-                                        <tr class="total">
-                                            <td colspan="4"><strong>Total ${task.name}</strong></td>
-                                            <td><strong>${formatCurrency(task.totalPrice)}</strong></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        `).join('')}
-                        <p><strong>Total ${phase.name}: ${formatCurrency(phase.totalPrice)}</strong></p>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div class="totals">
-                <table>
-                    <tr>
-                        <td><strong>Sous-total HT:</strong></td>
-                        <td><strong>${formatCurrency(exportQuote.subtotal)}</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>TVA (${exportQuote.taxRate}%):</strong></td>
-                        <td><strong>${formatCurrency(exportQuote.taxAmount)}</strong></td>
-                    </tr>
-                    <tr class="total">
-                        <td><strong>TOTAL TTC:</strong></td>
-                        <td><strong>${formatCurrency(exportQuote.totalAmount)}</strong></td>
-                    </tr>
-                </table>
-            </div>
-            
-            ${exportQuote.notes ? `
-                <div class="notes">
-                    <h3>Notes</h3>
-                    <p>${exportQuote.notes}</p>
-                </div>
-            ` : ''}
-            
-            ${exportQuote.paymentTerms ? `
-                <div class="payment-terms">
-                    <h3>Conditions de paiement</h3>
-                    <p>${exportQuote.paymentTerms}</p>
-                </div>
-            ` : ''}
-            
-            <div class="validity">
-                <p><em>Devis valable ${exportQuote.validityDays} jours à compter de la date d'émission.</em></p>
-            </div>
-        `;
-    };
-    
-    // Fonction pour gérer l'export PDF
-    const handleExport = async () => {
-        try {
-            setIsLoading(true);
-            
-            // Vérifier que le devis a un client
-            if (!quote.clientName.trim()) {
-                showToast('⚠️ Veuillez saisir le nom du client avant l\'export', 'error');
-                return;
-            }
-            
-            // Vérifier qu'il y a des phases
-            if (quote.phases.length === 0) {
-                showToast('⚠️ Veuillez ajouter au moins une phase avant l\'export', 'error');
-                return;
-            }
-            
-            // Générer le contenu HTML du devis
-            const htmlContent = generateQuoteHTML(quote);
-            
-            // Créer un nouvel onglet pour l'aperçu avant impression
-            const printWindow = window.open('', '_blank');
-            if (!printWindow) {
-                throw new Error('Impossible d\'ouvrir une nouvelle fenêtre. Veuillez vérifier les bloqueurs de fenêtres popup.');
-            }
-            
-            // Générer le contenu HTML complet avec styles
-            printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Devis ${quote.id}</title><style>body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }.header { text-align: center; margin-bottom: 30px; }h1 { color: #1a365d; margin-bottom: 5px; }h2 { color: #2c5282; margin-top: 0; }.client-info, .summary, .phases { margin-bottom: 20px; }table { width: 100%; border-collapse: collapse; margin: 15px 0; }th { background-color: #f7fafc; text-align: left; padding: 10px; border: 1px solid #e2e8f0; }td { padding: 10px; border: 1px solid #e2e8f0; }.text-right { text-align: right; }.total { font-weight: bold; font-size: 1.1em; }.phase { margin-bottom: 20px; }.phase-header { background-color: #ebf8ff; padding: 10px; margin-bottom: 10px; }.task { margin-bottom: 15px; }.task-header { font-weight: bold; margin: 10px 0; }.notes, .payment-terms { margin-top: 30px; padding: 15px; background-color: #f7fafc; border-radius: 4px; }.validity { margin-top: 20px; font-style: italic; text-align: center; }@media print {body { font-size: 12px; }.no-print { display: none; }}</style></head><body>${htmlContent}<div class="no-print" style="margin-top: 30px; text-align: center; padding: 20px; border-top: 1px solid #eee;"><p>Document généré le ${new Date().toLocaleDateString('fr-FR')} - ${new Date().toLocaleTimeString('fr-FR')}</p><button onclick="window.print()" style="padding: 10px 20px; background-color: #3182ce; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;">Imprimer / Enregistrer en PDF</button></div><script>window.onafterprint = function() {window.close();};</script></body></html>`);
-            
-            printWindow.document.close();
-            
-            // Attendre que le contenu soit chargé avant d'imprimer
-            printWindow.onload = function() {
-                // Laisser l'utilisateur choisir d'imprimer ou non
-                // printWindow.print(); // Décommenter pour imprimer automatiquement
-            };
-            
-            showToast('📄 Aperçu du devis généré. Utilisez le bouton d\'impression pour enregistrer en PDF.', 'success');
-            
-        } catch (error) {
-            console.error('Erreur lors de la génération du PDF:', error);
-            showToast('❌ Erreur lors de la génération du PDF', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Fonction pour générer le corps de l'email
-    const generateEmailBody = (sendQuote: Quote) => {
-        return `Bonjour ${sendQuote.clientName},\n\nVeuillez trouver ci-joint votre devis:\n\n` +
-               `Devis N° ${sendQuote.id}\n` +
-               `Titre: ${sendQuote.title}\n` +
-               `Montant total: ${formatCurrency(sendQuote.totalAmount)}\n\n` +
-               `Détail des prestations:\n` +
-               sendQuote.phases.map(phase => 
-                   `- ${phase.name}: ${formatCurrency(phase.totalPrice)}`
-               ).join('\n') +
-               `\n\nCe devis est valable ${sendQuote.validityDays} jours.\n\n` +
-               `Cordialement,\n[Votre nom]`;
-    };
-
-    const getStats = () => {
-        const totalPhases = quote.phases.length;
-        const totalTasks = quote.phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
-        const totalArticles = quote.phases.reduce((sum, phase) => 
-            sum + phase.tasks.reduce((taskSum, task) => taskSum + task.articles.length, 0), 0
-        );
-        const completionRate = totalArticles > 0 ? 
-            Math.round((quote.phases.filter(p => p.tasks.some(t => t.articles.length > 0)).length / Math.max(totalPhases, 1)) * 100) : 0;
-        
-        return { totalPhases, totalTasks, totalArticles, completionRate };
-    };
-
-    const stats = getStats();
-
-    return (
-        <div className={`min-h-screen ${resolvedTheme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            {/* En-tête du devis */}
-            <div className={`border-b ${
-                resolvedTheme === 'dark'
-                    ? 'bg-gray-800 border-gray-700'
-                    : 'bg-white border-gray-200'
-            }`}>
-                <div className="max-w-7xl mx-auto p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-                                <FileText className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-3">
-                                    <h1 className="text-2xl font-bold">Créateur de Devis Structuré</h1>
-                                    {isDirty && (
-                                        <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/20 rounded-full">
-                                            <AlertTriangle className="w-3 h-3 text-orange-600" />
-                                            <span className="text-xs text-orange-600 font-medium">Non sauvegardé</span>
-                                        </div>
-                                    )}
-                                </div>
-                                <p className="text-sm opacity-70">
-                                    Phases → Tâches → Articles • ID: {quote.id}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            {!isOnline && (
-                                <div className="flex items-center gap-2 px-3 py-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
-                                    <AlertTriangle className="w-4 h-4 text-orange-600" />
-                                    <span className="text-sm text-orange-600 font-medium">Hors ligne</span>
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-4 text-sm opacity-70">
-                                <div className="text-center">
-                                    <div className="font-bold text-lg text-blue-600">{stats.totalPhases}</div>
-                                    <div>Phases</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="font-bold text-lg text-purple-600">{stats.totalTasks}</div>
-                                    <div>Tâches</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="font-bold text-lg text-green-600">{stats.totalArticles}</div>
-                                    <div>Articles</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Informations client */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input
-                            type="text"
-                            value={quote.clientName}
-                            onChange={(e) => updateQuote({ clientName: e.target.value })}
-                            className={`w-full p-3 rounded-lg border transition-colors ${
-                                resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500'
-                                    : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
-                            } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                            placeholder="Nom du client"
-                        />
-                        <input
-                            type="email"
-                            value={quote.clientEmail}
-                            onChange={(e) => updateQuote({ clientEmail: e.target.value })}
-                            className={`w-full p-3 rounded-lg border transition-colors ${
-                                resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500'
-                                    : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
-                            } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                            placeholder="Email du client"
-                        />
-                        <input
-                            type="text"
-                            value={quote.title}
-                            onChange={(e) => updateQuote({ title: e.target.value })}
-                            className={`w-full p-3 rounded-lg border transition-colors ${
-                                resolvedTheme === 'dark'
-                                    ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500'
-                                    : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
-                            } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                            placeholder="Titre du devis"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Message de démonstration */}
-            <div className="max-w-7xl mx-auto p-6">
-                <div className={`p-6 rounded-xl shadow-sm border mb-6 ${
-                    resolvedTheme === 'dark'
-                        ? 'bg-blue-900/20 border-blue-700'
-                        : 'bg-blue-50 border-blue-200'
-                }`}>
-                    <div className="flex items-center gap-3">
-                        <FileText className="w-6 h-6 text-blue-600" />
-                        <div>
-                            <h2 className="text-lg font-bold text-blue-600">Module de Devis Structuré</h2>
-                            <p className="text-sm text-blue-600/80">
-                                Structure hiérarchique : Phases → Tâches → Articles avec calculs automatiques
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="text-center">
-                            <div className="font-bold text-2xl text-blue-600">{stats.totalPhases}</div>
-                            <div className="text-sm text-blue-600/80">Phases créées</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="font-bold text-2xl text-purple-600">{stats.totalTasks}</div>
-                            <div className="text-sm text-purple-600/80">Tâches ajoutées</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="font-bold text-2xl text-green-600">{stats.totalArticles}</div>
-                            <div className="text-sm text-green-600/80">Articles détaillés</div>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-center">
-                        <button
-                            onClick={startNewQuote}
-                            className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl hover:from-green-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg"
-                        >
-                            <FileText className="w-6 h-6" />
-                            <span className="font-semibold">Commencer un nouveau devis structuré</span>
-                        </button>
-                    </div>
-                    <div className="mt-3 text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            📋 Un devis structuré avec une première phase sera créé automatiquement
-                        </p>
-                    </div>
-                </div>
-
-                {/* Affichage et édition des phases */}
-                {quote.phases.length > 0 && (
-                    <div className="space-y-4 mb-6">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Phases du devis</h3>
-                        {quote.phases.map((phase, phaseIndex) => (
-                            <div key={phase.id} className={`p-4 rounded-xl border ${
-                                resolvedTheme === 'dark'
-                                    ? 'bg-gray-800 border-gray-700'
-                                    : 'bg-white border-gray-200'
-                            }`}>
-                                <div className="flex items-center justify-between mb-3">
-                                    <input
-                                        type="text"
-                                        value={phase.name}
-                                        onChange={(e) => {
-                                            const updatedPhases = [...quote.phases];
-                                            updatedPhases[phaseIndex].name = e.target.value;
-                                            updateQuote({ phases: updatedPhases });
-                                        }}
-                                        className={`text-lg font-bold bg-transparent border-none outline-none ${
-                                            resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                                        }`}
-                                        placeholder="Nom de la phase"
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => {
-                                                const newTask = {
-                                                    id: `task-${Date.now()}`,
-                                                    name: `Tâche ${phase.tasks.length + 1}`,
-                                                    description: '',
-                                                    articles: [],
-                                                    totalPrice: 0,
-                                                    expanded: true
-                                                };
-                                                const updatedPhases = [...quote.phases];
-                                                updatedPhases[phaseIndex].tasks.push(newTask);
-                                                updateQuote({ phases: updatedPhases });
-                                            }}
-                                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                                        >
-                                            + Tâche
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const updatedPhases = quote.phases.filter((_, i) => i !== phaseIndex);
-                                                updateQuote({ phases: updatedPhases });
-                                            }}
-                                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                                        >
-                                            Supprimer
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <textarea
-                                    value={phase.description}
-                                    onChange={(e) => {
-                                        const updatedPhases = [...quote.phases];
-                                        updatedPhases[phaseIndex].description = e.target.value;
-                                        updateQuote({ phases: updatedPhases });
-                                    }}
-                                    className={`w-full p-2 rounded border mb-3 ${
-                                        resolvedTheme === 'dark'
-                                            ? 'bg-gray-700 border-gray-600 text-white'
-                                            : 'bg-gray-50 border-gray-300 text-gray-900'
-                                    }`}
-                                    placeholder="Description de la phase"
-                                    rows={2}
-                                />
-
-                                {/* Tâches de la phase */}
-                                {phase.tasks.map((task, taskIndex) => (
-                                    <div key={task.id} className={`ml-4 p-3 rounded-lg border mb-2 ${
-                                        resolvedTheme === 'dark'
-                                            ? 'bg-gray-700 border-gray-600'
-                                            : 'bg-gray-50 border-gray-300'
-                                    }`}>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <input
-                                                type="text"
-                                                value={task.name}
-                                                onChange={(e) => {
-                                                    const updatedPhases = [...quote.phases];
-                                                    updatedPhases[phaseIndex].tasks[taskIndex].name = e.target.value;
-                                                    updateQuote({ phases: updatedPhases });
-                                                }}
-                                                className={`font-medium bg-transparent border-none outline-none ${
-                                                    resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                                                }`}
-                                                placeholder="Nom de la tâche"
-                                            />
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        const newArticle = {
-                                                            id: `article-${Date.now()}`,
-                                                            description: 'Nouvel article',
-                                                            quantity: 1,
-                                                            unit: 'unité',
-                                                            unitPrice: 0,
-                                                            totalPrice: 0
-                                                        };
-                                                        const updatedPhases = [...quote.phases];
-                                                        updatedPhases[phaseIndex].tasks[taskIndex].articles.push(newArticle);
-                                                        updateQuote({ phases: updatedPhases });
-                                                    }}
-                                                    className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-                                                >
-                                                    + Article
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        const updatedPhases = [...quote.phases];
-                                                        updatedPhases[phaseIndex].tasks = updatedPhases[phaseIndex].tasks.filter((_, i) => i !== taskIndex);
-                                                        updateQuote({ phases: updatedPhases });
-                                                    }}
-                                                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Articles de la tâche */}
-                                        {task.articles.map((article, articleIndex) => (
-                                            <div key={article.id} className={`ml-4 p-2 rounded border mb-1 ${
-                                                resolvedTheme === 'dark'
-                                                    ? 'bg-gray-600 border-gray-500'
-                                                    : 'bg-white border-gray-200'
-                                            }`}>
-                                                <div className="grid grid-cols-5 gap-2 text-sm">
-                                                    <input
-                                                        type="text"
-                                                        value={article.description}
-                                                        onChange={(e) => {
-                                                            const updatedPhases = [...quote.phases];
-                                                            updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].description = e.target.value;
-                                                            updateQuote({ phases: updatedPhases });
-                                                        }}
-                                                        className={`p-1 rounded border ${
-                                                            resolvedTheme === 'dark'
-                                                                ? 'bg-gray-700 border-gray-600 text-white'
-                                                                : 'bg-white border-gray-300 text-gray-900'
-                                                        }`}
-                                                        placeholder="Description"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        inputMode="decimal"
-                                                        value={article.quantity || ''}
-                                                        onChange={(e) => {
-                                                            const value = e.target.value;
-                                                            // Permettre les nombres décimaux et vides
-                                                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                                                                const updatedPhases = [...quote.phases];
-                                                                updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].quantity = value === '' ? 0 : Number(value);
-                                                                updateQuote({ phases: updatedPhases });
-                                                            }
-                                                        }}
-                                                        onFocus={(e) => {
-                                                            // Sélectionner tout le texte au focus pour faciliter la saisie
-                                                            e.target.select();
-                                                        }}
-                                                        className={`p-1 rounded border text-center ${
-                                                            resolvedTheme === 'dark'
-                                                                ? 'bg-gray-700 border-gray-600 text-white'
-                                                                : 'bg-white border-gray-300 text-gray-900'
-                                                        }`}
-                                                        placeholder="Qté"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={article.unit}
-                                                        onChange={(e) => {
-                                                            const updatedPhases = [...quote.phases];
-                                                            updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].unit = e.target.value;
-                                                            updateQuote({ phases: updatedPhases });
-                                                        }}
-                                                        className={`p-1 rounded border ${
-                                                            resolvedTheme === 'dark'
-                                                                ? 'bg-gray-700 border-gray-600 text-white'
-                                                                : 'bg-white border-gray-300 text-gray-900'
-                                                        }`}
-                                                        placeholder="Unité"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        inputMode="decimal"
-                                                        value={article.unitPrice || ''}
-                                                        onChange={(e) => {
-                                                            const value = e.target.value;
-                                                            // Permettre les nombres décimaux et vides
-                                                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                                                                const updatedPhases = [...quote.phases];
-                                                                updatedPhases[phaseIndex].tasks[taskIndex].articles[articleIndex].unitPrice = value === '' ? 0 : Number(value);
-                                                                updateQuote({ phases: updatedPhases });
-                                                            }
-                                                        }}
-                                                        onFocus={(e) => {
-                                                            // Sélectionner tout le texte au focus pour faciliter la saisie
-                                                            e.target.select();
-                                                        }}
-                                                        className={`p-1 rounded border text-right ${
-                                                            resolvedTheme === 'dark'
-                                                                ? 'bg-gray-700 border-gray-600 text-white'
-                                                                : 'bg-white border-gray-300 text-gray-900'
-                                                        }`}
-                                                        placeholder="0.00"
-                                                    />
-                                                    <div className="flex items-center justify-between">
-                                                        <span className={`font-medium ${
-                                                            resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                                                        }`}>
-                                                            {formatCurrency(article.quantity * article.unitPrice)}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => {
-                                                                const updatedPhases = [...quote.phases];
-                                                                updatedPhases[phaseIndex].tasks[taskIndex].articles = 
-                                                                    updatedPhases[phaseIndex].tasks[taskIndex].articles.filter((_, i) => i !== articleIndex);
-                                                                updateQuote({ phases: updatedPhases });
-                                                            }}
-                                                            className="text-red-500 hover:text-red-700 text-xs"
-                                                        >
-                                                            ×
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        
-                                        {task.articles.length === 0 && (
-                                            <div className="ml-4 text-sm text-gray-500 italic">
-                                                Aucun article. Cliquez sur "+ Article" pour en ajouter.
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                                
-                                {phase.tasks.length === 0 && (
-                                    <div className="ml-4 text-sm text-gray-500 italic">
-                                        Aucune tâche. Cliquez sur "+ Tâche" pour en ajouter.
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Message si aucune phase */}
-                {quote.phases.length === 0 && (
-                    <div className={`p-8 rounded-xl border-2 border-dashed mb-6 text-center ${
-                        resolvedTheme === 'dark'
-                            ? 'border-gray-600 bg-gray-800/50'
-                            : 'border-gray-300 bg-gray-50'
-                    }`}>
-                        <FileText className={`w-16 h-16 mx-auto mb-4 ${
-                            resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-400'
-                        }`} />
-                        <h3 className={`text-xl font-bold mb-3 ${
-                            resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                        }`}>
-                            Prêt à créer votre devis structuré ?
-                        </h3>
-                        <div className={`text-sm space-y-2 mb-6 ${
-                            resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                        }`}>
-                            <p>📋 <strong>Étape 1</strong> : Cliquez sur "Commencer un nouveau devis structuré"</p>
-                            <p>🏗️ <strong>Étape 2</strong> : Une première phase sera créée automatiquement</p>
-                            <p>✅ <strong>Étape 3</strong> : Ajoutez des tâches et articles à vos phases</p>
-                            <p>💾 <strong>Étape 4</strong> : Sauvegardez votre devis dans Firebase</p>
-                        </div>
-                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
-                            resolvedTheme === 'dark' 
-                                ? 'bg-blue-900/30 text-blue-300 border border-blue-700'
-                                : 'bg-blue-50 text-blue-600 border border-blue-200'
-                        }`}>
-                            <FileText className="w-4 h-4" />
-                            <span className="text-sm font-medium">Structure : Devis → Phases → Tâches → Articles</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Résumé financier */}
-                <div className={`p-6 rounded-xl shadow-sm border ${
-                    resolvedTheme === 'dark'
-                        ? 'bg-gray-800 border-gray-700'
-                        : 'bg-white border-gray-200'
-                }`}>
-                    <h3 className="text-lg font-bold mb-4">💰 Résumé Financier</h3>
-                    
-                    <div className="space-y-3">
-                        <div className="flex justify-between">
-                            <span>Sous-total HT:</span>
-                            <span className="font-medium">{formatCurrency(quote.subtotal)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>TVA ({quote.taxRate}%):</span>
-                            <span className="font-medium">{formatCurrency(quote.taxAmount)}</span>
-                        </div>
-                        <div className="border-t pt-3 flex justify-between text-lg font-bold">
-                            <span>TOTAL TTC:</span>
-                            <span className="text-green-600">{formatCurrency(quote.totalAmount)}</span>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 pt-6 border-t">
-                        <h4 className="font-medium mb-2">Informations</h4>
-                        <div className="text-sm space-y-1 opacity-70">
-                            <p>• Phases: {quote.phases.length}</p>
-                            <p>• Statut: {quote.status}</p>
-                            <p>• Créé: {new Date(quote.createdAt).toLocaleDateString()}</p>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 flex gap-4 flex-wrap">
-                        <button
-                            onClick={handleSave}
-                            disabled={isLoading}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all transform hover:scale-105 ${
-                                isLoading 
-                                    ? 'bg-gray-400 cursor-not-allowed' 
-                                    : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg'
-                            } text-white font-semibold`}
-                        >
-                            <Save className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-                            {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
-                        </button>
-                        <button
-                            onClick={() => {
-                                setShowQuotesModal(true);
-                                loadSavedQuotes();
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg font-semibold"
-                        >
-                            <Download className="w-4 h-4" />
-                            Mes devis ({savedQuotes.length})
-                        </button>
-                        <button 
-                            onClick={() => setShowExportModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all transform hover:scale-105 shadow-lg font-semibold"
-                        >
-                            <Send className="w-4 h-4" />
-                            Export & Envoi
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Toast de succès */}
-            {showSuccessToast && (
-                <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right duration-300">
-                    <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg max-w-md">
-                        <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0">
-                                <svg className="w-5 h-5 text-green-200" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium text-sm whitespace-pre-line">{toastMessage}</p>
-                            </div>
-                            <button 
-                                onClick={() => setShowSuccessToast(false)}
-                                className="flex-shrink-0 text-green-200 hover:text-white transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Toast d'erreur */}
-            {showErrorToast && (
-                <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right duration-300">
-                    <div className="bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg max-w-md">
-                        <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0">
-                                <svg className="w-5 h-5 text-red-200" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium text-sm whitespace-pre-line">{toastMessage}</p>
-                            </div>
-                            <button 
-                                onClick={() => setShowErrorToast(false)}
-                                className="flex-shrink-0 text-red-200 hover:text-white transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal des devis sauvegardés */}
-            {showQuotesModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-                    <div className={`w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-xl shadow-2xl ${
-                        resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'
-                    }`}>
-                        <div className="flex flex-col h-full">
-                            {/* En-tête */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                                <div>
-                                    <h2 className={`text-2xl font-bold ${
-                                        resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                                    }`}>
-                                        📋 Mes Devis Sauvegardés
-                                    </h2>
-                                    <p className={`text-sm mt-1 ${
-                                        resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                        {savedQuotes.length} devis trouvé{savedQuotes.length > 1 ? 's' : ''}
-                                    </p>
-                                </div>
-                                <button 
-                                    onClick={() => setShowQuotesModal(false)}
-                                    className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            {/* Contenu */}
-                            <div className="flex-1 overflow-y-auto p-6">
-                                {isLoading ? (
-                                    <div className="flex items-center justify-center py-12">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                                        <span className="ml-3 text-gray-600 dark:text-gray-400">Chargement des devis...</span>
-                                    </div>
-                                ) : savedQuotes.length === 0 ? (
-                                    <div className={`text-center py-12 ${
-                                        resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                        <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
-                                        </svg>
-                                        <h3 className="text-lg font-medium mb-2">Aucun devis sauvegardé</h3>
-                                        <p className="text-sm">Créez votre premier devis pour le voir apparaître ici</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid gap-4">
-                                        {savedQuotes.map((savedQuote) => (
-                                            <div key={savedQuote.id} className={`border rounded-lg p-4 transition-all hover:shadow-md ${
-                                                resolvedTheme === 'dark' 
-                                                    ? 'border-gray-600 bg-gray-700 hover:bg-gray-650' 
-                                                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-                                            }`}>
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <h3 className={`font-semibold text-lg ${
-                                                                resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                                                            }`}>
-                                                                {savedQuote.title}
-                                                            </h3>
-                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                                savedQuote.status === 'draft' 
-                                                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                                    : savedQuote.status === 'sent'
-                                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                                                                    : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                            }`}>
-                                                                {savedQuote.status === 'draft' ? 'Brouillon' : 
-                                                                 savedQuote.status === 'sent' ? 'Envoyé' : 'Accepté'}
-                                                            </span>
-                                                        </div>
-                                                        <div className={`text-sm space-y-1 ${
-                                                            resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                                                        }`}>
-                                                            <p><strong>Client :</strong> {savedQuote.clientName || 'Non spécifié'}</p>
-                                                            <p><strong>Montant :</strong> {formatCurrency(savedQuote.totalAmount)}</p>
-                                                            <p><strong>Phases :</strong> {savedQuote.phases.length}</p>
-                                                            <p><strong>Créé le :</strong> {new Date(savedQuote.createdAt).toLocaleDateString('fr-FR')}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col gap-2 ml-4">
-                                                        <button
-                                                            onClick={() => loadQuoteForEdit(savedQuote)}
-                                                            className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                                            </svg>
-                                                            Éditer
-                                                        </button>
-                                                        <button
-                                                            onClick={() => duplicateQuote(savedQuote)}
-                                                            className="flex items-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
-                                                                <path d="M3 5a2 2 0 012-2 3 3 0 003 3h6a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L14.586 13H19v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11.586V9a1 1 0 00-1-1H9.414l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L8.414 10H14a1 1 0 001 1v.586z" />
-                                                            </svg>
-                                                            Dupliquer
-                                                        </button>
-                                                        <button
-                                                            onClick={() => deleteQuote(savedQuote.id, savedQuote.title)}
-                                                            className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
-                                                                <path fillRule="evenodd" d="M4 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 112 0v4a1 1 0 11-2 0V9zm4 0a1 1 0 112 0v4a1 1 0 11-2 0V9z" clipRule="evenodd" />
-                                                            </svg>
-                                                            Supprimer
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Pied de page */}
-                            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
-                                <div className="flex items-center justify-between">
-                                    <button
-                                        onClick={loadSavedQuotes}
-                                        disabled={isLoading}
-                                        className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
-                                    >
-                                        <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                                        </svg>
-                                        Actualiser
-                                    </button>
-                                    <button
-                                        onClick={() => setShowQuotesModal(false)}
-                                        className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                                    >
-                                        Fermer
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal d'export et envoi */}
-            {showExportModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className={`w-full max-w-md rounded-xl shadow-2xl ${
-                        resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'
-                    }`}>
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className={`text-xl font-bold ${
-                                    resolvedTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                                }`}>
-                                    📤 Export & Envoi
-                                </h2>
-                                <button 
-                                    onClick={() => setShowExportModal(false)}
-                                    className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div className="space-y-3">
-                                <button 
-                                    onClick={() => {
-                                        handleExport();
-                                        setShowExportModal(false);
-                                    }}
-                                    disabled={isLoading}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                                        isLoading 
-                                            ? 'bg-gray-400 cursor-not-allowed' 
-                                            : 'bg-red-500 text-white hover:bg-red-600'
-                                    }`}
-                                >
-                                    <svg className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
-                                    </svg>
-                                    <span>{isLoading ? 'Génération...' : 'Télécharger PDF'}</span>
-                                </button>
-                                <button 
-                                    onClick={() => {
-                                        handleSend();
-                                        setShowExportModal(false);
-                                    }}
-                                    disabled={isLoading}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                                        isLoading 
-                                            ? 'bg-gray-400 cursor-not-allowed' 
-                                            : 'bg-blue-500 text-white hover:bg-blue-600'
-                                    }`}
-                                >
-                                    <svg className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                    </svg>
-                                    <span>{isLoading ? 'Préparation...' : 'Envoyer par email'}</span>
-                                </button>
-                                <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors">
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                                    </svg>
-                                    <span>Partager le lien</span>
-                                </button>
-                            </div>
-                            <p className={`mt-4 text-sm text-center ${
-                                resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                            }`}>
-                                Export PDF et envoi par email maintenant fonctionnels !
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
-    );
+
+        {/* Contenu principal */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+          {editQuote && !isInitialized ? (
+            <div className="flex items-center justify-center py-16 text-gray-500">
+              <svg className="animate-spin h-5 w-5 mr-3 text-gray-400" viewBox="0 0 24 24"></svg>
+              <span>Chargement du devis…</span>
+            </div>
+          ) : (
+          <div className="space-y-8">
+            {/* Section informations client */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">
+              <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                Informations client
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Titre du devis *
+                  </label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Ex: Développement site web e-commerce"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type de projet
+                  </label>
+                  <select
+                    value={projectType}
+                    onChange={(e) => setProjectType(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Sélectionner un type</option>
+                    <option value="web">Développement Web</option>
+                    <option value="mobile">Application Mobile</option>
+                    <option value="desktop">Application Desktop</option>
+                    <option value="consulting">Conseil</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="other">Autre</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom du client *
+                  </label>
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Nom complet du client"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Entreprise
+                  </label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Nom de l'entreprise"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="email@exemple.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="+33 1 23 45 67 89"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section contenu du devis */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-800 flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                  Contenu du devis
+                </h3>
+                <button
+                  onClick={addPhase}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Ajouter une phase</span>
+                </button>
+              </div>
+
+              {isInitialized && phases.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg mb-2">Aucune phase ajoutée</p>
+                  <p className="text-sm">Commencez par ajouter une phase pour structurer votre devis</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {phases.map((phase) => (
+                    <div key={phase.id} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200/50 overflow-hidden">
+                      {/* En-tête de phase */}
+                      <div className="p-4 bg-gradient-to-r from-blue-100/50 to-purple-100/50 border-b border-blue-200/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3 flex-1">
+                            <button
+                              onClick={() => updatePhase(phase.id, { expanded: !phase.expanded })}
+                              className="p-1 hover:bg-white/50 rounded-lg transition-colors"
+                            >
+                              {phase.expanded ? (
+                                <ChevronDown className="w-5 h-5 text-blue-600" />
+                              ) : (
+                                <ChevronUp className="w-5 h-5 text-blue-600" />
+                              )}
+                            </button>
+                            <input
+                              type="text"
+                              value={phase.name}
+                              onChange={(e) => updatePhase(phase.id, { name: e.target.value })}
+                              className="text-lg font-semibold bg-transparent border-none outline-none text-gray-800 flex-1"
+                              placeholder="Nom de la phase"
+                            />
+                            {(() => {
+                              const phaseTotal = phase.tasks?.reduce((sum, task) => 
+                                sum + (task.articles?.reduce((taskSum, article) => 
+                                  taskSum + ((article.quantity || 0) * (article.unitPrice || 0)), 0) || 0), 0) || 0;
+                              return phaseTotal > 0 ? (
+                                <div className="text-sm font-medium text-blue-600">
+                                  {formatCurrency(phaseTotal)}
+                                </div>
+                              ) : null;
+                            })()}
+                          </div>
+                          <div className="flex items-center space-x-3 ml-4">
+                            <button
+                              onClick={() => addTask(phase.id)}
+                              className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium flex items-center space-x-1"
+                              title="Ajouter une tâche"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Tâche</span>
+                            </button>
+                            <button
+                              onClick={() => deletePhase(phase.id)}
+                              className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-500"
+                              title="Supprimer la phase"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {phase.expanded && (
+                          <div className="mt-3">
+                            <textarea
+                              value={phase.description}
+                              onChange={(e) => updatePhase(phase.id, { description: e.target.value })}
+                              className="w-full px-3 py-2 bg-white/70 border border-blue-200/50 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Description de la phase..."
+                              rows={2}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tâches de la phase */}
+                      {phase.expanded && (
+                        <div className="p-4 space-y-3">
+                          {phase.tasks.map((task) => (
+                            <div key={task.id} className="bg-white/70 rounded-lg border border-gray-200/50 overflow-hidden">
+                              {/* En-tête de tâche */}
+                              <div className="p-3 bg-gray-50/50 border-b border-gray-200/30">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3 flex-1">
+                                    <button
+                                      onClick={() => updateTask(phase.id, task.id, { expanded: !task.expanded })}
+                                      className="p-1 hover:bg-white/50 rounded transition-colors"
+                                    >
+                                      {task.expanded ? (
+                                        <ChevronDown className="w-4 h-4 text-gray-600" />
+                                      ) : (
+                                        <ChevronUp className="w-4 h-4 text-gray-600" />
+                                      )}
+                                    </button>
+                                    <input
+                                      type="text"
+                                      value={task.name}
+                                      onChange={(e) => updateTask(phase.id, task.id, { name: e.target.value })}
+                                      className="font-medium bg-transparent border-none outline-none text-gray-700 flex-1"
+                                      placeholder="Nom de la tâche"
+                                    />
+                                    {(() => {
+                                      const taskTotal = task.articles?.reduce((sum, article) => 
+                                        sum + ((article.quantity || 0) * (article.unitPrice || 0)), 0) || 0;
+                                      return taskTotal > 0 ? (
+                                        <div className="text-sm text-gray-600">
+                                          {formatCurrency(taskTotal)}
+                                        </div>
+                                      ) : null;
+                                    })()}
+                                  </div>
+                                  <div className="flex items-center space-x-3 ml-4">
+                                    <button
+                                      onClick={() => addArticle(phase.id, task.id)}
+                                      className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition-colors text-xs font-medium flex items-center space-x-1"
+                                      title="Ajouter un article"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                      <span>Article</span>
+                                    </button>
+                                    <button
+                                      onClick={() => deleteTask(phase.id, task.id)}
+                                      className="p-1 hover:bg-red-100 rounded transition-colors text-red-500"
+                                      title="Supprimer la tâche"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                                
+                                {task.expanded && task.description !== undefined && (
+                                  <div className="mt-2">
+                                    <textarea
+                                      value={task.description}
+                                      onChange={(e) => updateTask(phase.id, task.id, { description: e.target.value })}
+                                      className="w-full px-3 py-2 bg-white/70 border border-gray-200/50 rounded resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                      placeholder="Description de la tâche..."
+                                      rows={1}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Articles de la tâche */}
+                              {task.expanded && (
+                                <div className="p-3">
+                                  {task.articles.length === 0 ? (
+                                    <div className="text-center py-4 text-gray-400 text-sm">
+                                      Aucun article. Cliquez sur + pour en ajouter.
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      {task.articles.map((article) => (
+                                        <div key={article.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-white/80 rounded-lg border border-gray-100">
+                                          <div className="col-span-3">
+                                            <input
+                                              type="text"
+                                              value={article.name}
+                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { name: e.target.value })}
+                                              className="w-full px-2 py-1 text-sm bg-transparent border-none outline-none"
+                                              placeholder="Nom de l'article"
+                                            />
+                                          </div>
+                                          <div className="col-span-3">
+                                            <input
+                                              type="text"
+                                              value={article.description}
+                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { description: e.target.value })}
+                                              className="w-full px-2 py-1 text-sm bg-transparent border-none outline-none"
+                                              placeholder="Description"
+                                            />
+                                          </div>
+                                          <div className="col-span-1">
+                                            <input
+                                              type="number"
+                                              value={article.quantity || ''}
+                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { quantity: Number(e.target.value) || 0 })}
+                                              className="w-full px-2 py-1 text-sm text-center bg-transparent border-none outline-none"
+                                              placeholder="Qté"
+                                              min="0"
+                                            />
+                                          </div>
+                                          <div className="col-span-1">
+                                            <input
+                                              type="text"
+                                              value={article.unit}
+                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { unit: e.target.value })}
+                                              className="w-full px-2 py-1 text-sm text-center bg-transparent border-none outline-none"
+                                              placeholder="Unité"
+                                            />
+                                          </div>
+                                          <div className="col-span-2">
+                                            <input
+                                              type="number"
+                                              value={article.unitPrice || ''}
+                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { unitPrice: Number(e.target.value) || 0 })}
+                                              className="w-full px-2 py-1 text-sm text-right bg-transparent border-none outline-none"
+                                              placeholder="Prix unitaire"
+                                              min="0"
+                                            />
+                                          </div>
+                                          <div className="col-span-1 text-sm text-right font-medium text-gray-700">
+                                            {formatCurrency((article.quantity || 0) * (article.unitPrice || 0))}
+                                          </div>
+                                          <div className="col-span-1 text-center">
+                                            <button
+                                              onClick={() => deleteArticle(phase.id, task.id, article.id)}
+                                              className="p-1 hover:bg-red-100 rounded transition-colors text-red-500"
+                                              title="Supprimer l'article"
+                                            >
+                                              <X className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          
+                          {phase.tasks.length === 0 && (
+                            <div className="text-center py-6 text-gray-400">
+                              <p className="text-sm">Aucune tâche dans cette phase</p>
+                              <p className="text-xs">Cliquez sur + pour ajouter une tâche</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            
+            {phases.length > 0 && (
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 backdrop-blur-sm rounded-2xl p-6 border border-green-200/50 shadow-lg">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  Récapitulatif financier
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white/70 rounded-xl p-4 border border-green-200/30">
+                    <div className="text-sm text-gray-600 mb-1">Sous-total HT</div>
+                    <div className="text-2xl font-bold text-gray-800">{formatCurrency(subtotal)}</div>
+                  </div>
+                  
+                  <div className="bg-white/70 rounded-xl p-4 border border-green-200/30">
+                    <div className="text-sm text-gray-600 mb-1 flex items-center justify-between">
+                      <span>TVA</span>
+                      <input
+                        type="number"
+                        value={taxRate}
+                        onChange={(e) => setTaxRate(Number(e.target.value) || 0)}
+                        className="w-16 px-2 py-1 text-xs bg-transparent border border-gray-300 rounded text-center"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="text-xs">%</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-800">{formatCurrency(taxAmount)}</div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-xl p-4 border border-green-300/50">
+                    <div className="text-sm text-gray-700 mb-1 font-medium">Total TTC</div>
+                    <div className="text-3xl font-bold text-green-700">{formatCurrency(totalAmount)}</div>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes et conditions
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                      placeholder="Notes, conditions particulières..."
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Conditions de paiement
+                    </label>
+                    <textarea
+                      value={paymentTerms}
+                      onChange={(e) => setPaymentTerms(e.target.value)}
+                      className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                      placeholder="Conditions de paiement..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        </div>
+
+        {/* Pied de page */}
+        <div className="bg-gray-50/80 backdrop-blur-sm p-6 border-t border-gray-200/50">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              * Champs obligatoires
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={onClose}
+                className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!title || !clientName || !clientEmail || isSaving}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center space-x-2"
+              >
+                <Save className="w-5 h-5" />
+                <span>{isSaving ? 'Enregistrement...' : 'Enregistrer'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default QuoteCreatorSimple;

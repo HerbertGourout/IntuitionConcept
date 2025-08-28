@@ -82,7 +82,7 @@ export interface Role {
   description: string;
   permissions: string[];
   color: string;
-  icon: any;
+  icon: string;
   level: number;
 }
 

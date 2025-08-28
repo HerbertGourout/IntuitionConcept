@@ -5,12 +5,13 @@ import ReactDOM from 'react-dom';
 import {
   X, Calendar, AlertTriangle,
   Target, Users, DollarSign, FileText, Flag,
-  Layers, ArrowUp, ArrowDown
+  Layers, ArrowUp, ArrowDown, Receipt, TrendingDown
 } from 'lucide-react';
 import { ProjectTask, TaskStatus, TaskPriority } from '../../contexts/projectTypes';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import TeamService from '../../services/teamService';
 import { TeamMember } from '../../types/team';
+import transactionService from '../../services/transactionService';
 
 // TaskPriority is now imported from projectTypes
 
@@ -29,6 +30,12 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
   const phases = currentProject?.phases || [];
   const [showConfirm, setShowConfirm] = useState(false);
   const [firebaseTeamMembers, setFirebaseTeamMembers] = useState<TeamMember[]>([]);
+  const [realExpenses, setRealExpenses] = useState<{
+    totalSpent: number;
+    transactionCount: number;
+    lastExpenseDate?: string;
+  }>({ totalSpent: 0, transactionCount: 0 });
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
   const [formData, setFormData] = useState<Partial<ProjectTask> & {
     status: TaskStatus;
     priority: TaskPriority;
@@ -121,6 +128,30 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     }
   }, [task, isOpen]);
 
+  // Charger les dépenses réelles depuis les transactions Firebase
+  useEffect(() => {
+    const loadRealExpenses = async () => {
+      if (task?.id && currentProject?.id) {
+        setLoadingExpenses(true);
+        try {
+          const expenses = await transactionService.calculateTaskExpenses(currentProject.id, task.id);
+          setRealExpenses(expenses);
+        } catch (error) {
+          console.error('❌ Erreur lors du chargement des dépenses réelles:', error);
+          setRealExpenses({ totalSpent: 0, transactionCount: 0 });
+        } finally {
+          setLoadingExpenses(false);
+        }
+      } else {
+        setRealExpenses({ totalSpent: 0, transactionCount: 0 });
+      }
+    };
+
+    if (isOpen) {
+      loadRealExpenses();
+    }
+  }, [task?.id, currentProject?.id, isOpen]);
+
   const handleInputChange = <K extends keyof typeof formData>(field: K, value: (typeof formData)[K]) => {
     setFormData((prev) => ({
       ...prev,
@@ -133,19 +164,57 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: { [key: string]: string } = {};
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
 
+    // Validation nom obligatoire
     if (!formData.name || formData.name.trim().length < 2) {
-      errors.name = 'Le nom de la tâche est obligatoire.';
+      errors.name = 'Le nom de la tâche est obligatoire (minimum 2 caractères).';
     }
+    
+    // Validation dates obligatoires
     if (!formData.startDate) {
       errors.startDate = 'La date de début est obligatoire.';
     }
     if (!formData.endDate) {
       errors.endDate = 'La date de fin est obligatoire.';
     }
+    
+    // Validation cohérence des dates
     if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
       errors.dates = 'La date de début doit être antérieure à la date de fin.';
     }
+    
+    // Validation dates dans les limites de la phase
+    if (formData.phaseId && currentProject) {
+      const phase = phases.find(p => p.id === formData.phaseId);
+      if (phase) {
+        if (phase.startDate && formData.startDate && formData.startDate < phase.startDate) {
+          errors.startDate = `La date de début de la tâche ne peut pas être antérieure à celle de la phase (${new Date(phase.startDate).toLocaleDateString('fr-FR')}).`;
+        }
+        if (phase.endDate && formData.endDate && formData.endDate > phase.endDate) {
+          errors.endDate = `La date de fin de la tâche ne peut pas être postérieure à celle de la phase (${new Date(phase.endDate).toLocaleDateString('fr-FR')}).`;
+        }
+      }
+    }
+    
+    // Validation cohérence statut/dates
+    if (formData.status === 'in_progress') {
+      if (formData.startDate && formData.startDate > today) {
+        errors.status = 'Une tâche "En cours" ne peut pas avoir une date de début future.';
+      }
+    }
+    if (formData.status === 'done') {
+      if (formData.endDate && formData.endDate > today) {
+        errors.status = 'Une tâche "Terminée" ne peut pas avoir une date de fin future.';
+      }
+    }
+    
+    // Validation assignation obligatoire
+    if (!formData.assignedTo || formData.assignedTo.length === 0) {
+      errors.assignedTo = "Au moins une personne doit être assignée à la tâche.";
+    }
+    
     if (formData.budget !== undefined && formData.budget < 0) {
       errors.budget = 'Le budget ne peut pas être négatif.';
     }
@@ -259,22 +328,34 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
           <div className="glass-card p-6 space-y-6">
-            {/* Sélection de la phase */}
+            {/* Sélection de la phase - Toujours modifiable */}
             <div className="space-y-2">
               <label htmlFor="task-phase" className="flex items-center space-x-2 text-sm font-medium text-gray-700">
                 <Flag className="w-4 h-4 text-purple-500" />
-                <span>Phase du projet</span>
+                <span>Phase du projet *</span>
+                {task && (
+                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                    Modification de phase autorisée
+                  </span>
+                )}
               </label>
               <select
                 id="task-phase"
                 className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 border-white/30"
                 value={formData.phaseId || ''}
-                onChange={e => setFormData(prev => ({ ...prev, phaseId: e.target.value }))}
+                onChange={e => {
+                  const newPhaseId = e.target.value;
+                  setFormData(prev => ({ ...prev, phaseId: newPhaseId }));
+                  // Réinitialiser les erreurs de budget car la phase a changé
+                  setFormErrors(prev => ({ ...prev, budget: '', spent: '' }));
+                }}
                 required
               >
                 <option value="" disabled>Sélectionnez une phase...</option>
                 {phases.map(phase => (
-                  <option key={phase.id} value={phase.id}>{phase.name}</option>
+                  <option key={phase.id} value={phase.id}>
+                    {phase.name} - Budget: {(phase.estimatedBudget || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}
+                  </option>
                 ))}
               </select>
               {formErrors.phaseId && (
@@ -398,6 +479,57 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
                 </div>
               );
             })()}
+
+            {/* Section des dépenses réelles depuis les transactions */}
+            {task?.id && (
+              <div className="glass-card p-4 border rounded-xl border-blue-200 bg-gradient-to-br from-blue-50/60 to-white/60">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Receipt className="w-5 h-5 text-blue-600" />
+                  <h4 className="text-sm font-semibold text-blue-800">Dépenses réelles (Transactions Firebase)</h4>
+                  {loadingExpenses && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-3 bg-white/50 rounded-lg">
+                    <div className="text-xs text-gray-600 mb-1">Montant dépensé</div>
+                    <div className="text-lg font-bold text-blue-700">
+                      {realExpenses.totalSpent.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-white/50 rounded-lg">
+                    <div className="text-xs text-gray-600 mb-1">Nombre de transactions</div>
+                    <div className="text-lg font-bold text-blue-700">
+                      {realExpenses.transactionCount}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-white/50 rounded-lg">
+                    <div className="text-xs text-gray-600 mb-1">Dernière dépense</div>
+                    <div className="text-sm font-medium text-blue-700">
+                      {realExpenses.lastExpenseDate 
+                        ? new Date(realExpenses.lastExpenseDate).toLocaleDateString('fr-FR')
+                        : 'Aucune'
+                      }
+                    </div>
+                  </div>
+                </div>
+                
+                {realExpenses.totalSpent > 0 && formData.budget && realExpenses.totalSpent > formData.budget && (
+                  <div className="mt-3 p-2 bg-orange-100 border border-orange-300 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <TrendingDown className="w-4 h-4 text-orange-600" />
+                      <span className="text-xs text-orange-700">
+                        Les dépenses réelles ({realExpenses.totalSpent.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}) 
+                        dépassent le budget estimé ({formData.budget.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })})
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Budget estimé et dépense réelle */}
             <div className="flex flex-col md:flex-row gap-4">

@@ -11,6 +11,23 @@ import { collection, addDoc, updateDoc, deleteDoc, query, where, getDocs, Timest
 export class BudgetIntegrationService {
   
   /**
+   * Mappe le type de fournisseur vers une catégorie de dépense
+   */
+  private static mapSupplierTypeToCategory(supplierType: string): 'materials' | 'equipment' | 'labor' | 'permits' | 'other' {
+    const mapping: Record<string, 'materials' | 'equipment' | 'labor' | 'permits' | 'other'> = {
+      'materials': 'materials',
+      'equipment': 'equipment',
+      'labor': 'labor',
+      'permits': 'permits',
+      'services': 'other',
+      'transport': 'other',
+      'utilities': 'other'
+    };
+    
+    return mapping[supplierType] || 'other';
+  }
+
+  /**
    * Synchronise un bon d'achat approuvé avec le budget du projet
    * Crée une entrée de dépense prévisionnelle dans le projet
    */
@@ -31,12 +48,12 @@ export class BudgetIntegrationService {
         description: `Bon d'achat ${purchaseOrder.orderNumber} - ${purchaseOrder.supplier.name}`,
         date: purchaseOrder.approvedDate || purchaseOrder.orderDate,
         projectId: purchaseOrder.projectId,
+        approved: true, // Bons d'achat approuvés sont automatiquement approuvés
         phaseId: purchaseOrder.phaseId,
         taskId: purchaseOrder.taskId,
         purchaseOrderId: purchaseOrder.id,
         status: 'planned', // Dépense planifiée
         tags: ['purchase_order', purchaseOrder.supplier.type],
-        attachments: purchaseOrder.attachments || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -101,6 +118,7 @@ export class BudgetIntegrationService {
           description: `Livraison ${deliveryNote.deliveryNumber} - ${purchaseOrder.supplier.name}`,
           date: deliveryNote.actualDeliveryDate || deliveryNote.deliveryDate,
           projectId: purchaseOrder.projectId,
+          approved: true, // Livraisons sont automatiquement approuvées
           phaseId: purchaseOrder.phaseId,
           taskId: purchaseOrder.taskId,
           purchaseOrderId: purchaseOrder.id,
@@ -194,18 +212,7 @@ export class BudgetIntegrationService {
     }
   }
 
-  /**
-   * Mappe le type de fournisseur vers une catégorie de dépense
-   */
-  private static mapSupplierTypeToCategory(supplierType: string): string {
-    const mapping: { [key: string]: string } = {
-      'materials': 'materials',
-      'equipment': 'equipment',
-      'services': 'labor',
-      'transport': 'transport'
-    };
-    return mapping[supplierType] || 'other';
-  }
+
 
   /**
    * Calcule le montant réellement livré basé sur les quantités reçues
@@ -227,7 +234,10 @@ export class BudgetIntegrationService {
    * Groupe les dépenses par catégorie
    */
   private static groupExpensesByCategory(expenses: (FinancialRecord & { id: string })[]) {
-    return expenses.reduce((acc, expense) => {
+    type CategorySummary = { count: number; amount: number };
+    type CategoryGroup = Record<string, CategorySummary>;
+    
+    return expenses.reduce((acc: CategoryGroup, expense) => {
       const category = expense.category || 'other';
       if (!acc[category]) {
         acc[category] = { count: 0, amount: 0 };
@@ -235,14 +245,17 @@ export class BudgetIntegrationService {
       acc[category].count++;
       acc[category].amount += expense.amount;
       return acc;
-    }, {});
+    }, {} as CategoryGroup);
   }
 
   /**
    * Groupe les bons d'achat par type de fournisseur
    */
   private static groupPurchaseOrdersBySupplierType(purchaseOrders: PurchaseOrder[]) {
-    return purchaseOrders.reduce((acc, po) => {
+    type SupplierTypeSummary = { count: number; amount: number };
+    type SupplierTypeGroup = Record<string, SupplierTypeSummary>;
+    
+    return purchaseOrders.reduce((acc: SupplierTypeGroup, po) => {
       const type = po.supplier.type;
       if (!acc[type]) {
         acc[type] = { count: 0, amount: 0 };
@@ -250,6 +263,6 @@ export class BudgetIntegrationService {
       acc[type].count++;
       acc[type].amount += po.totalAmount;
       return acc;
-    }, {} as Record<string, { count: number; amount: number }>);
+    }, {} as SupplierTypeGroup);
   }
 }

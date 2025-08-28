@@ -291,6 +291,79 @@ class FinancialService {
     }
   }
 
+  /**
+   * Calculer les tendances mensuelles réelles basées sur les transactions Firebase
+   */
+  async calculateMonthlyTrends(projectId: string, months: number = 6): Promise<{ month: string; income: number; expenses: number; }[]> {
+    try {
+      // Récupérer toutes les transactions du projet
+      const transactionsQuery = query(
+        collection(db, 'transactions'),
+        where('projectId', '==', projectId),
+        orderBy('date', 'desc')
+      );
+      
+      const transactionsSnapshot = await getDocs(transactionsQuery);
+      const transactions = transactionsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Créer un objet pour stocker les données par mois
+      const monthlyData: Record<string, { income: number; expenses: number }> = {};
+      
+      // Générer les derniers mois
+      const currentDate = new Date();
+      const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+      
+      for (let i = months - 1; i >= 0; i--) {
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        monthlyData[monthKey] = { income: 0, expenses: 0 };
+      }
+
+      // Traiter les transactions
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      transactions.forEach((transaction: any) => {
+        const transactionDate = new Date(transaction.date);
+        const monthKey = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (monthlyData[monthKey]) {
+          const amount = Math.abs(transaction.amount || 0);
+          
+          // Catégoriser comme revenus ou dépenses
+          if (transaction.category === 'revenue' || transaction.category === 'client_payment' || transaction.amount > 0) {
+            monthlyData[monthKey].income += amount;
+          } else {
+            monthlyData[monthKey].expenses += amount;
+          }
+        }
+      });
+
+      // Convertir en format attendu
+      const result = Object.entries(monthlyData).map(([monthKey, data]) => {
+        const [, month] = monthKey.split('-');
+        const monthIndex = parseInt(month) - 1;
+        const monthLabel = monthNames[monthIndex];
+        
+        return {
+          month: monthLabel,
+          income: data.income,
+          expenses: data.expenses
+        };
+      });
+
+      console.log('✅ Tendances mensuelles calculées depuis Firebase:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Erreur lors du calcul des tendances mensuelles:', error);
+      // Retourner des données vides en cas d'erreur
+      const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
+      return monthNames.map(month => ({ month, income: 0, expenses: 0 }));
+    }
+  }
+
   async getBudgetSummary(projectId: string, phaseId?: string, taskId?: string): Promise<BudgetSummary | null> {
     try {
       const summaryId = taskId || phaseId || projectId;

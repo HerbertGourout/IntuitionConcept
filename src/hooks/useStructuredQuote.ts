@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { StructuredQuote, Phase, Task, Article, QuoteTemplate } from '../types/StructuredQuote';
 import { useGeolocation } from '../contexts/GeolocationContext';
 import { useOfflineReports } from './useOfflineData';
+import { QuotesService, Quote as FirebaseQuote } from '../services/quotesService';
 
 export const useStructuredQuote = (initialQuote?: Partial<StructuredQuote>) => {
     const { currentLocation } = useGeolocation();
@@ -81,7 +82,7 @@ export const useStructuredQuote = (initialQuote?: Partial<StructuredQuote>) => {
     // Recalculer automatiquement quand les données changent
     useEffect(() => {
         calculateTotals();
-    }, [quote.phases, quote.taxRate, quote.discountRate]);
+    }, [quote.phases, quote.taxRate, quote.discountRate, calculateTotals]);
 
     // Gestion des phases
     const addPhase = useCallback((template?: Partial<Phase>) => {
@@ -361,24 +362,42 @@ export const useStructuredQuote = (initialQuote?: Partial<StructuredQuote>) => {
     const saveQuote = useCallback(async () => {
         try {
             setIsCalculating(true);
-            
-            // Sauvegarder localement
-            const savedQuotes = JSON.parse(localStorage.getItem('structuredQuotes') || '[]');
-            const existingIndex = savedQuotes.findIndex((q: StructuredQuote) => q.id === quote.id);
-            
-            if (existingIndex >= 0) {
-                savedQuotes[existingIndex] = quote;
-            } else {
-                savedQuotes.push(quote);
+
+            // Convertir StructuredQuote vers Quote pour Firebase
+            const firebaseQuote: FirebaseQuote = {
+                id: quote.id,
+                title: quote.title,
+                clientName: quote.clientName,
+                clientEmail: quote.clientEmail,
+                clientPhone: quote.clientPhone,
+                companyName: '', // Champ requis par Quote mais absent de StructuredQuote
+                projectType: quote.projectType,
+                phases: quote.phases,
+                subtotal: quote.subtotal,
+                taxRate: quote.taxRate,
+                taxAmount: quote.taxAmount,
+                totalAmount: quote.totalAmount,
+                status: quote.status as 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired',
+                validityDays: quote.validityDays,
+                notes: quote.notes,
+                paymentTerms: quote.paymentTerms,
+                createdAt: quote.createdAt,
+                updatedAt: quote.updatedAt
+            };
+
+            // Déléguer la logique create/update au service (garantit la cohérence d'ID)
+            const savedId = await QuotesService.saveQuote(firebaseQuote);
+
+            // S'assurer que l'état local porte l'ID Firestore
+            if (savedId && savedId !== quote.id) {
+                setQuote(prev => ({ ...prev, id: savedId }));
             }
-            
-            localStorage.setItem('structuredQuotes', JSON.stringify(savedQuotes));
 
             // Sauvegarder hors-ligne si nécessaire
             if (currentLocation) {
                 await createReport({
                     type: 'structured_quote',
-                    data: quote,
+                    data: { ...quote, id: savedId || quote.id },
                     location: currentLocation,
                     timestamp: new Date().toISOString()
                 });

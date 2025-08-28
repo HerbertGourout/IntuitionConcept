@@ -173,11 +173,17 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                 Montant (FCFA) *
               </label>
               <input
-                type="number"
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300 placeholder-gray-400"
+                type="text"
+                inputMode="decimal"
+                value={formData.amount === 0 ? '' : formData.amount.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setFormData({ ...formData, amount: value === '' ? 0 : parseFloat(value) || 0 });
+                  }
+                }}
+                onFocus={(e) => e.target.select()}
+                className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300 placeholder-gray-400 text-right"
                 placeholder="0.00"
                 required
               />
@@ -297,9 +303,13 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                 className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 hover:border-green-300 transition-all duration-300"
               >
                 <option value="">Aucun équipement</option>
-                {equipment.map(eq => (
-                  <option key={eq.id} value={eq.id}>{eq.name}</option>
-                ))}
+                {equipment && equipment.length > 0 ? (
+                  equipment.map(eq => (
+                    <option key={eq.id} value={eq.id}>{eq.name}</option>
+                  ))
+                ) : (
+                  <option value="" disabled className="text-gray-400">Aucun équipement disponible</option>
+                )}
               </select>
             </div>
             </div>

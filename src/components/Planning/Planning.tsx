@@ -8,7 +8,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Target,
-  Settings,
+  X,
 } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask, ProjectPhase } from '../../contexts/projectTypes';
@@ -23,6 +23,7 @@ export const Planning: React.FC = () => {
   type ViewType = 'gantt' | 'calendar' | 'list';
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   
   const [viewType, setViewType] = useState<ViewType>('gantt');
   const [isPhaseModalOpen, setIsPhaseModalOpen] = useState(false);
@@ -51,16 +52,22 @@ export const Planning: React.FC = () => {
     loadTeamMembers();
   }, [loadTeamMembers]);
 
-  // Charger les tâches à partir des phases du projet
+  // Charger les tâches à partir des phases du projet avec filtrage
   useEffect(() => {
     if (!projectContext.currentProject) return;
     
     console.log('🔍 DEBUG Planning - Projet actuel:', projectContext.currentProject);
     console.log('🔍 DEBUG Planning - Phases du projet:', projectContext.currentProject.phases);
+    console.log('🔍 DEBUG Planning - Phase sélectionnée:', selectedPhaseId);
     
     const allTasks: ProjectTask[] = [];
 
     (projectContext.currentProject.phases || []).forEach((phase: ProjectPhase, phaseIndex) => {
+      // Filtrer par phase si une phase est sélectionnée
+      if (selectedPhaseId && phase.id !== selectedPhaseId) {
+        return; // Ignorer cette phase
+      }
+      
       console.log(`📁 Phase ${phaseIndex + 1}:`, {
         name: phase.name,
         startDate: phase.startDate,
@@ -86,9 +93,9 @@ export const Planning: React.FC = () => {
       }
     });
 
-    console.log('📊 Total tâches extraites:', allTasks.length);
+    console.log('📊 Total tâches extraites (après filtrage):', allTasks.length);
     setTasks(allTasks);
-  }, [projectContext.currentProject]);
+  }, [projectContext.currentProject, selectedPhaseId]);
 
   // Générer un ID unique de manière sécurisée
   const generateId = () => {
@@ -96,6 +103,48 @@ export const Planning: React.FC = () => {
       return crypto.randomUUID();
     }
     return Math.random().toString(36).substr(2, 9);
+  };
+
+  // Calculer le statut d'une phase selon ses tâches
+  const calculatePhaseStatus = (phase: ProjectPhase): 'planned' | 'in_progress' | 'completed' | 'on_hold' => {
+    const tasks = phase.tasks || [];
+    
+    if (tasks.length === 0) {
+      return 'planned'; // Phase sans tâches = planifiée
+    }
+    
+    const taskCounts = {
+      todo: tasks.filter(t => t.status === 'todo').length,
+      planned: tasks.filter(t => t.status === 'planned').length,
+      in_progress: tasks.filter(t => t.status === 'in_progress').length,
+      done: tasks.filter(t => t.status === 'done').length,
+      on_hold: tasks.filter(t => t.status === 'on_hold').length,
+      cancelled: tasks.filter(t => t.status === 'cancelled').length,
+      blocked: tasks.filter(t => t.status === 'blocked').length
+    };
+    
+    // Si toutes les tâches sont terminées
+    if (taskCounts.done === tasks.length) {
+      return 'completed';
+    }
+    
+    // Si toutes les tâches sont en attente ou bloquées
+    if (taskCounts.on_hold + taskCounts.blocked === tasks.length) {
+      return 'on_hold';
+    }
+    
+    // Si au moins une tâche est en cours
+    if (taskCounts.in_progress > 0) {
+      return 'in_progress';
+    }
+    
+    // Si toutes les tâches sont à faire ou planifiées
+    if (taskCounts.todo + taskCounts.planned + taskCounts.cancelled === tasks.length) {
+      return 'planned';
+    }
+    
+    // Par défaut, en cours si mélange de statuts
+    return 'in_progress';
   };
 
   // Gestion de la sauvegarde d'une phase
@@ -293,8 +342,21 @@ export const Planning: React.FC = () => {
                   <div className="text-xs text-gray-500 mb-1">
                     {phase.startDate} — {phase.endDate}
                   </div>
-                  <div className="text-xs text-gray-600">
-                    {phase.tasks?.length || 0} tâche{(phase.tasks?.length || 0) > 1 ? 's' : ''}
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="text-xs text-gray-600">
+                      {phase.tasks?.length || 0} tâche{(phase.tasks?.length || 0) > 1 ? 's' : ''}
+                    </div>
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      calculatePhaseStatus(phase) === 'completed' ? 'bg-green-100 text-green-700' :
+                      calculatePhaseStatus(phase) === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                      calculatePhaseStatus(phase) === 'on_hold' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {calculatePhaseStatus(phase) === 'completed' ? '✅ Terminée' :
+                       calculatePhaseStatus(phase) === 'in_progress' ? '🔄 En cours' :
+                       calculatePhaseStatus(phase) === 'on_hold' ? '⏸️ En attente' :
+                       '📋 Planifiée'}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -373,16 +435,33 @@ export const Planning: React.FC = () => {
         )}
       </div>
 
-      {/* Filtres (placeholder) */}
+      {/* Filtrage par phase */}
       <GlassCard className="mb-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <Filter className="text-purple-500 w-6 h-6" />
-          <span className="text-gray-600">Filtres</span>
+          <span className="text-gray-600 font-medium">Filtrer par phase :</span>
+          <select
+            value={selectedPhaseId || ''}
+            onChange={(e) => setSelectedPhaseId(e.target.value || null)}
+            className="px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 min-w-[200px]"
+          >
+            <option value="">Toutes les phases</option>
+            {projectContext.currentProject?.phases?.map((phase) => (
+              <option key={phase.id} value={phase.id}>
+                {phase.name} ({phase.tasks?.length || 0} tâche{(phase.tasks?.length || 0) !== 1 ? 's' : ''})
+              </option>
+            ))}
+          </select>
           <div className="flex-1"></div>
-          <button className="glass-card px-4 py-2 flex items-center gap-2 hover:scale-105 transition">
-            <Settings className="text-purple-500" />
-            <span className="font-medium">Appliquer</span>
-          </button>
+          {selectedPhaseId && (
+            <button 
+              onClick={() => setSelectedPhaseId(null)}
+              className="glass-card px-4 py-2 flex items-center gap-2 hover:scale-105 transition bg-red-50 border-red-200 text-red-700"
+            >
+              <X className="w-4 h-4" />
+              <span className="font-medium">Réinitialiser</span>
+            </button>
+          )}
         </div>
       </GlassCard>
 

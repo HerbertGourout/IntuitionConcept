@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 
 export type WidgetSize = 'small' | 'medium' | 'large' | 'xl';
 export type WidgetType = 
@@ -23,7 +22,7 @@ export interface Widget {
   size: WidgetSize;
   position: { x: number; y: number };
   isVisible: boolean;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   lastUpdated?: Date;
 }
 

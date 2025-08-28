@@ -12,18 +12,7 @@ import {
     XCircle
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-
-interface Quote {
-    id: string;
-    title: string;
-    clientName: string;
-    clientEmail: string;
-    projectType: string;
-    totalAmount: number;
-    status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
-    createdAt: string;
-    validityDays: number;
-}
+import { QuotesService, Quote } from '../../services/quotesService';
 
 interface QuoteListProps {
     onCreateNew: () => void;
@@ -38,33 +27,52 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
     const [sortBy, setSortBy] = useState<'date' | 'amount' | 'client'>('date');
 
     useEffect(() => {
-        loadQuotes();
+        // S'abonner en temps réel aux devis Firebase
+        const unsubscribe = QuotesService.subscribeToQuotes((list) => {
+            setQuotes(list);
+        });
+        return () => unsubscribe();
     }, []);
 
-    const loadQuotes = () => {
-        const savedQuotes = JSON.parse(localStorage.getItem('quotes') || '[]');
-        setQuotes(savedQuotes);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
+
+    const handleDeleteClick = (quote: Quote) => {
+        setQuoteToDelete(quote);
+        setShowDeleteModal(true);
     };
 
-    const deleteQuote = (quoteId: string) => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')) {
-            const updatedQuotes = quotes.filter(q => q.id !== quoteId);
-            setQuotes(updatedQuotes);
-            localStorage.setItem('quotes', JSON.stringify(updatedQuotes));
+    const confirmDelete = async () => {
+        if (!quoteToDelete) return;
+        
+        try {
+            console.log('Tentative de suppression du devis:', quoteToDelete.id);
+            await QuotesService.deleteQuote(quoteToDelete.id);
+            console.log('Suppression réussie, fermeture du modal');
+            setShowDeleteModal(false);
+            setQuoteToDelete(null);
+        } catch (e) {
+            console.error('Suppression impossible:', e);
+            alert('❌ Erreur lors de la suppression du devis');
         }
     };
 
-    const duplicateQuote = (quote: Quote) => {
-        const newQuote = {
-            ...quote,
-            id: `DEVIS-${Date.now()}`,
-            title: `${quote.title} (Copie)`,
-            status: 'draft' as const,
-            createdAt: new Date().toISOString()
-        };
-        const updatedQuotes = [...quotes, newQuote];
-        setQuotes(updatedQuotes);
-        localStorage.setItem('quotes', JSON.stringify(updatedQuotes));
+    const duplicateQuote = async (quote: Quote) => {
+        try {
+            const { id: __idToDrop, ...rest } = quote;
+            void __idToDrop; // éviter l'avertissement variable non utilisée
+            
+            await QuotesService.createQuote({
+                ...rest,
+                title: `${quote.title} (Copie)`,
+                status: 'draft',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+        } catch (e) {
+            console.error('Duplication impossible:', e);
+            alert('❌ Erreur lors de la duplication du devis');
+        }
     };
 
     const getStatusIcon = (status: string) => {
@@ -234,7 +242,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                         {filteredQuotes.map((quote, index) => (
                             <motion.div
-                                key={quote.id}
+                                key={`${quote.id}-${index}`}
                                 className={`p-6 rounded-xl shadow-lg border hover:shadow-xl transition-all ${
                                     resolvedTheme === 'dark'
                                         ? 'bg-gray-800 border-gray-700 hover:border-gray-600'
@@ -308,7 +316,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                     <div className="flex-1" />
 
                                     <button
-                                        onClick={() => deleteQuote(quote.id)}
+                                        onClick={() => handleDeleteClick(quote)}
                                         className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                                     >
                                         <Trash2 className="w-3 h-3" />
@@ -319,6 +327,52 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                     </div>
                 )}
             </div>
+
+            {/* Modal de confirmation de suppression */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <motion.div
+                        className={`p-6 rounded-xl shadow-xl max-w-md w-full mx-4 ${
+                            resolvedTheme === 'dark'
+                                ? 'bg-gray-800 border border-gray-700'
+                                : 'bg-white border border-gray-200'
+                        }`}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                    >
+                        <div className="text-center">
+                            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                                <Trash2 className="h-6 w-6 text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-medium mb-2">
+                                Supprimer le devis
+                            </h3>
+                            <p className="text-sm opacity-70 mb-6">
+                                Êtes-vous sûr de vouloir supprimer le devis "<strong>{quoteToDelete?.title}</strong>" ?
+                                <br />Cette action est irréversible.
+                            </p>
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setQuoteToDelete(null);
+                                    }}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                >
+                                    Supprimer
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 };

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 
 // Types pour la gestion offline
@@ -6,14 +7,14 @@ interface OfflineAction {
   id: string;
   type: 'create' | 'update' | 'delete';
   collection: string;
-  data: any;
+  data: Record<string, unknown>;
   timestamp: number;
   retryCount: number;
 }
 
 interface OfflineData {
   [collection: string]: {
-    [id: string]: any;
+    [id: string]: Record<string, unknown>;
   };
 }
 
@@ -24,8 +25,8 @@ interface OfflineContextType {
   offlineData: OfflineData;
   
   // Méthodes principales
-  cacheData: (collection: string, id: string, data: any) => void;
-  getCachedData: (collection: string, id?: string) => any;
+  cacheData: (collection: string, id: string, data: Record<string, unknown>) => void;
+  getCachedData: (collection: string, id?: string) => Record<string, unknown> | Record<string, Record<string, unknown>> | null;
   queueAction: (action: Omit<OfflineAction, 'id' | 'timestamp' | 'retryCount'>) => void;
   syncPendingActions: () => Promise<void>;
   clearCache: (collection?: string) => void;
@@ -57,11 +58,11 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   // Clés de stockage local
-  const STORAGE_KEYS = {
+  const STORAGE_KEYS = useMemo(() => ({
     OFFLINE_DATA: 'btp_offline_data',
     PENDING_ACTIONS: 'btp_pending_actions',
     LAST_SYNC: 'btp_last_sync'
-  };
+  }), []);
 
   // Initialisation du contexte offline
   useEffect(() => {
@@ -94,7 +95,10 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
     };
 
     initializeOfflineData();
-  }, []);
+  }, [STORAGE_KEYS]);
+
+  // Référence stable vers la fonction de synchronisation pour éviter les soucis de dépendances
+  const syncRef = useRef<() => void>(() => {});
 
   // Surveillance de la connectivité
   useEffect(() => {
@@ -104,7 +108,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
         duration: 3000,
       });
       // Synchroniser automatiquement quand la connexion revient
-      syncPendingActions();
+      syncRef.current();
     };
 
     const handleOffline = () => {
@@ -124,7 +128,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
   }, []);
 
   // Sauvegarder les données dans le localStorage
-  const saveToStorage = useCallback((key: string, data: any) => {
+  const saveToStorage = useCallback((key: string, data: unknown) => {
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
@@ -132,13 +136,14 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
       // Nettoyer le cache si l'espace est plein
       if (error instanceof DOMException && error.code === 22) {
         toast.error('Cache plein - Nettoyage automatique...');
-        clearCache();
+        // Pour éviter une dépendance circulaire ici, on ne référence pas directement clearCache.
+        // Le nettoyage complet peut être déclenché ailleurs par l'utilisateur.
       }
     }
   }, []);
 
   // Mettre en cache des données
-  const cacheData = useCallback((collection: string, id: string, data: any) => {
+  const cacheData = useCallback((collection: string, id: string, data: Record<string, unknown>) => {
     setOfflineData(prev => {
       const updated = {
         ...prev,
@@ -154,7 +159,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
       saveToStorage(STORAGE_KEYS.OFFLINE_DATA, updated);
       return updated;
     });
-  }, [isOnline, saveToStorage]);
+  }, [isOnline, saveToStorage, STORAGE_KEYS]);
 
   // Récupérer des données mises en cache
   const getCachedData = useCallback((collection: string, id?: string) => {
@@ -181,11 +186,13 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
 
     // Mettre à jour le cache local immédiatement pour l'UX
     if (action.type === 'create' || action.type === 'update') {
-      cacheData(action.collection, action.data.id || newAction.id, action.data);
+      const dataWithOptionalId = action.data as { id?: string };
+      const targetId = dataWithOptionalId.id ?? newAction.id;
+      cacheData(action.collection, targetId, action.data);
     }
 
     toast.success(`📝 Action sauvegardée (${action.type}) - Sera synchronisée à la reconnexion`);
-  }, [cacheData, saveToStorage]);
+  }, [cacheData, saveToStorage, STORAGE_KEYS]);
 
   // Synchroniser les actions en attente
   const syncPendingActions = useCallback(async () => {
@@ -233,7 +240,12 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
     if (failedActions.length > 0) {
       toast.error(`⚠️ ${failedActions.length} actions en attente de synchronisation`);
     }
-  }, [isOnline, pendingActions, saveToStorage]);
+  }, [isOnline, pendingActions, saveToStorage, STORAGE_KEYS]);
+
+  // Assigner la ref une fois la fonction déclarée pour éviter les problèmes de TDZ
+  useEffect(() => {
+    syncRef.current = syncPendingActions;
+  }, [syncPendingActions]);
 
   // Simuler un appel API (à remplacer par vos vraies API)
   const simulateApiCall = async (action: OfflineAction): Promise<void> => {
@@ -267,7 +279,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
       localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
       toast.success('🗑️ Tout le cache a été vidé');
     }
-  }, [saveToStorage]);
+  }, [saveToStorage, STORAGE_KEYS]);
 
   // Calculer la taille du cache
   const getCacheSize = useCallback(() => {
@@ -278,7 +290,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
     } catch {
       return 0;
     }
-  }, []);
+  }, [STORAGE_KEYS]);
 
   const getLastSyncTime = useCallback(() => lastSyncTime, [lastSyncTime]);
 

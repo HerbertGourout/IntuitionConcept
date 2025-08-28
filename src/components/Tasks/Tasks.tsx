@@ -4,7 +4,7 @@ import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask } from '../../contexts/projectTypes';
 import TeamService from '../../services/teamService';
 import { TeamMember } from '../../types/team';
-
+import { transactionService } from '../../services/transactionService';
 import TaskModal from './TaskModal';
 import FinancialDashboard from '../Financial/FinancialDashboard';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -19,10 +19,21 @@ const Tasks: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showFinancialDashboard, setShowFinancialDashboard] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [taskExpenses, setTaskExpenses] = useState<Record<string, { totalSpent: number; transactionCount: number }>>({});
 
   const project = projectContext?.currentProject;
   const phases = useMemo(() => project?.phases || [], [project?.phases]);
   const selectedPhase = phases.find(phase => phase.id === selectedPhaseId);
+
+  // Fonction pour formater les montants
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XOF',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount).replace('XOF', 'FCFA');
+  };
   
   // Fonction pour charger les tâches depuis les phases du projet
   const loadTasksFromProject = useCallback(() => {
@@ -129,6 +140,31 @@ const Tasks: React.FC = () => {
   useEffect(() => {
     loadTeamMembers();
   }, [loadTeamMembers]);
+
+  // Charger les dépenses réelles des tâches depuis Firebase
+  useEffect(() => {
+    const loadTaskExpenses = async () => {
+      if (!project?.id || tasks.length === 0) return;
+
+      try {
+        const expensesMap: Record<string, { totalSpent: number; transactionCount: number }> = {};
+        
+        for (const task of tasks) {
+          const expenses = await transactionService.calculateTaskExpenses(project.id, task.id);
+          expensesMap[task.id] = {
+            totalSpent: expenses.totalSpent,
+            transactionCount: expenses.transactionCount
+          };
+        }
+        
+        setTaskExpenses(expensesMap);
+      } catch (error) {
+        console.error('Erreur lors du chargement des dépenses des tâches:', error);
+      }
+    };
+
+    loadTaskExpenses();
+  }, [project?.id, tasks]);
 
   // Filtrer les tâches par phase sélectionnée
   const phaseTasks = tasks.filter(task => {
@@ -368,32 +404,30 @@ const Tasks: React.FC = () => {
                   <DollarSign className="w-4 h-4 text-green-600" />
                   <span className="text-sm font-medium text-gray-700">Informations financières</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3 text-sm">
+                <div className="grid grid-cols-3 gap-4 text-sm">
                   <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">Budget</div>
-                    <div className="font-semibold text-blue-600">
-                      {(task.budget || 0).toLocaleString()} FCFA
+                    <div className="text-blue-600 font-semibold">
+                      {formatCurrency(task.budget || 0)}
+                    </div>
+                    <div className="text-gray-500 text-xs">Budget alloué</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`font-semibold ${
+                      (taskExpenses[task.id]?.totalSpent || 0) > (task.budget || 0) ? 'text-red-600' : 'text-orange-600'
+                    }`}>
+                      {formatCurrency(taskExpenses[task.id]?.totalSpent || 0)}
+                    </div>
+                    <div className="text-gray-500 text-xs">
+                      Dépensé réel ({taskExpenses[task.id]?.transactionCount || 0} transactions)
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">Dépensé</div>
                     <div className={`font-semibold ${
-                      (task.spent || 0) > (task.budget || 0) 
-                        ? 'text-red-600' 
-                        : 'text-orange-600'
+                      ((task.budget || 0) - (taskExpenses[task.id]?.totalSpent || 0)) < 0 ? 'text-red-600' : 'text-green-600'
                     }`}>
-                      {(task.spent || 0).toLocaleString()} FCFA
+                      {formatCurrency((task.budget || 0) - (taskExpenses[task.id]?.totalSpent || 0))}
                     </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">Restant</div>
-                    <div className={`font-semibold ${
-                      ((task.budget || 0) - (task.spent || 0)) < 0 
-                        ? 'text-red-600' 
-                        : 'text-green-600'
-                    }`}>
-                      {((task.budget || 0) - (task.spent || 0)).toLocaleString()} FCFA
-                    </div>
+                    <div className="text-gray-500 text-xs">Restant</div>
                   </div>
                 </div>
                 
@@ -402,20 +436,20 @@ const Tasks: React.FC = () => {
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs text-gray-500">Utilisation du budget</span>
                     <span className="text-xs font-medium text-gray-700">
-                      {(task.budget || 0) > 0 ? Math.round(((task.spent || 0) / (task.budget || 1)) * 100) : 0}%
+                      {(task.budget || 0) > 0 ? Math.round(((taskExpenses[task.id]?.totalSpent || 0) / (task.budget || 1)) * 100) : 0}%
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className={`h-2 rounded-full transition-all duration-300 ${
-                        (task.spent || 0) > (task.budget || 0)
+                        (taskExpenses[task.id]?.totalSpent || 0) > (task.budget || 0)
                           ? 'bg-gradient-to-r from-red-500 to-red-600'
-                          : (task.spent || 0) > (task.budget || 0) * 0.8
+                          : (taskExpenses[task.id]?.totalSpent || 0) > (task.budget || 0) * 0.8
                           ? 'bg-gradient-to-r from-orange-500 to-orange-600'
                           : 'bg-gradient-to-r from-green-500 to-green-600'
                       }`}
                       style={{ 
-                        width: `${Math.min(100, (task.budget || 0) > 0 ? ((task.spent || 0) / (task.budget || 1)) * 100 : 0)}%` 
+                        width: `${Math.min(100, (task.budget || 0) > 0 ? ((taskExpenses[task.id]?.totalSpent || 0) / (task.budget || 1)) * 100 : 0)}%` 
                       }}
                     ></div>
                   </div>
@@ -436,6 +470,16 @@ const Tasks: React.FC = () => {
                   className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium text-sm"
                 >
                   Modifier
+                </button>
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Êtes-vous sûr de vouloir supprimer la tâche "${task.name}" ?\n\nCette action est irréversible.`)) {
+                      handleDeleteTask(task.id);
+                    }
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium text-sm"
+                >
+                  Supprimer
                 </button>
               </div>
             </div>

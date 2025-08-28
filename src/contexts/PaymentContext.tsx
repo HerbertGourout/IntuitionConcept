@@ -53,8 +53,8 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
       const paymentRecord: Omit<PaymentRecord, 'id'> = {
         ...paymentData,
         userId: user.uid,
-        createdAt: new Date() as any,
-        updatedAt: new Date() as any,
+        createdAt: Timestamp.fromDate(new Date()),
+        updatedAt: Timestamp.fromDate(new Date()),
       };
 
       const docRef = await addDoc(collection(db, 'payments'), paymentRecord);
@@ -91,9 +91,9 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
 
     try {
       const paymentRef = doc(db, 'payments', paymentId);
-      const updateData: any = {
+      const updateData: Partial<PaymentRecord> = {
         status,
-        updatedAt: new Date(),
+        updatedAt: Timestamp.fromDate(new Date()),
       };
 
       if (flutterwaveRef) {
@@ -105,7 +105,7 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
       // Mettre à jour l'état local
       setPayments(prev => prev.map(payment => 
         payment.id === paymentId 
-          ? { ...payment, status, flutterwaveRef, updatedAt: new Date() as any }
+          ? { ...payment, status, flutterwaveRef, updatedAt: Timestamp.fromDate(new Date()) }
           : payment
       ));
 

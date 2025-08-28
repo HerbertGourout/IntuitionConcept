@@ -1,4 +1,5 @@
 // Utilitaire global pour le formatage des montants selon la devise du projet/utilisateur
+import { useCallback } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
 
 export function formatCurrency(amount: number, currency: string = 'XOF', locale: string = 'fr-FR') {
@@ -15,6 +16,11 @@ export function safeFormatCurrency(amount: number, currency: string = 'XOF', loc
 
 // Hook React pour formatter dynamiquement selon le contexte
 export function useFormatCurrency() {
-  const { currency, locale } = useCurrency ? useCurrency() : { currency: 'XOF', locale: 'fr-FR' };
-  return (amount: number) => formatCurrency(amount, currency, locale);
+  // Appel inconditionnel d'un hook React pour respecter les règles des hooks
+  const { currency, locale } = useCurrency();
+  // Mémoïse la fonction de formatage en fonction de la devise et de la locale courantes
+  return useCallback(
+    (amount: number) => formatCurrency(amount, currency, locale),
+    [currency, locale]
+  );
 }

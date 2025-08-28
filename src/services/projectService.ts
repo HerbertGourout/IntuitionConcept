@@ -52,6 +52,15 @@ export interface FinancialRecord {
   approved: boolean;
   invoiceNumber?: string;
   supplier?: string;
+  status: 'planned' | 'actual' | 'pending';
+  // Propriétés pour l'intégration budgétaire avancée
+  phaseId?: string;
+  taskId?: string;
+  purchaseOrderId?: string;
+  deliveryNoteId?: string;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Project {
@@ -452,7 +461,8 @@ export class ProjectService {
             description: 'Béton et armatures pour fondations',
             date: '2024-02-01',
             approved: true,
-            supplier: 'Béton Express'
+            supplier: 'Béton Express',
+            status: 'actual'
           },
           {
             id: 'fin-2',
@@ -461,7 +471,8 @@ export class ProjectService {
             amount: 45000,
             description: 'Main d\'œuvre phase 1',
             date: '2024-02-15',
-            approved: true
+            approved: true,
+            status: 'actual'
           },
           {
             id: 'fin-3',
@@ -471,7 +482,8 @@ export class ProjectService {
             description: 'Location pelleteuse et grue',
             date: '2024-02-10',
             approved: true,
-            supplier: 'LocaTP'
+            supplier: 'LocaTP',
+            status: 'actual'
           },
           {
             id: 'fin-4',
@@ -481,7 +493,8 @@ export class ProjectService {
             description: 'Acompte client - Phase 1',
             date: '2024-01-20',
             approved: true,
-            invoiceNumber: 'INV-2024-001'
+            invoiceNumber: 'INV-2024-001',
+            status: 'actual'
           }
         ]
       };
