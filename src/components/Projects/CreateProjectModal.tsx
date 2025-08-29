@@ -133,7 +133,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-blue-600" />
                   Nom du Projet *
                 </label>
@@ -162,7 +162,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <User className="w-4 h-4 text-green-600" />
                   Client
                 </label>
@@ -176,7 +176,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-purple-600" />
                   Localisation *
                 </label>
@@ -214,7 +214,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
             </h3>
             
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
+              <label className="text-sm font-semibold text-gray-700 mb-3">
                 Description détaillée *
               </label>
               <div className="relative">
@@ -243,7 +243,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
 
             {/* Statut */}
             <div className="mt-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
+              <label className="text-sm font-semibold text-gray-700 mb-3">
                 Statut initial
               </label>
               <select
@@ -269,7 +269,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-green-600" />
                   Date de Début *
                 </label>
@@ -297,7 +297,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-orange-600" />
                   Date de Fin *
                 </label>
@@ -325,7 +325,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-yellow-600" />
                   Budget (FCFA) *
                 </label>

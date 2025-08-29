@@ -13,6 +13,7 @@ import {
     Download
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useBranding } from '../../contexts/BrandingContext';
 import { QuotesService, Quote } from '../../services/quotesService';
 import { generateQuotePdf } from '../../services/pdf/quotePdf';
 
@@ -23,6 +24,7 @@ interface QuoteListProps {
 
 const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
     const { resolvedTheme } = useTheme();
+    const brandingCtx = useBranding();
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -316,7 +318,16 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                     </button>
 
                                     <button
-                                        onClick={() => generateQuotePdf(quote)}
+                                        onClick={() => {
+                                            const branding = {
+                                              companyName: brandingCtx.profile?.companyName,
+                                              companyAddress: brandingCtx.profile?.companyAddress,
+                                              footerContact: brandingCtx.profile?.footerContact,
+                                              logoDataUrl: brandingCtx.logoDataUrl || undefined,
+                                              logoWidthPt: 120,
+                                            };
+                                            generateQuotePdf(quote, branding);
+                                        }}
                                         className="flex items-center gap-1 px-3 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors text-sm"
                                         title="Télécharger PDF"
                                     >

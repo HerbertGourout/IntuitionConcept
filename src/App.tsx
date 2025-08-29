@@ -8,6 +8,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { WidgetProvider } from './contexts/WidgetContext';
 import { GeolocationProvider } from './contexts/GeolocationContext';
 import { OfflineProvider } from './contexts/OfflineContext';
+import { BrandingProvider } from './contexts/BrandingContext';
 
 import Layout from './components/Layout/Layout';
 import ModernProjectDashboard from './components/Dashboard/ModernProjectDashboard';
@@ -332,7 +333,9 @@ const App: React.FC = () => {
       <OfflineProvider>
         <GeolocationProvider>
           <WidgetProvider>
-            <AppContent />
+            <BrandingProvider>
+              <AppContent />
+            </BrandingProvider>
           </WidgetProvider>
         </GeolocationProvider>
       </OfflineProvider>

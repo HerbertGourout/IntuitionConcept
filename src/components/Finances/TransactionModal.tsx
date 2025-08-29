@@ -154,7 +154,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-blue-600" />
                 Date *
               </label>
@@ -168,7 +168,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-green-600" />
                 Montant (FCFA) *
               </label>
@@ -191,7 +191,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-purple-600" />
                   Description *
                 </label>
@@ -215,7 +215,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <Tag className="w-4 h-4 text-orange-600" />
                     Catégorie
                   </label>
@@ -231,7 +231,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-yellow-600" />
                     Statut
                   </label>
@@ -257,7 +257,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <Building className="w-4 h-4 text-indigo-600" />
                   Phase
                 </label>
@@ -274,7 +274,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-teal-600" />
                   Tâche
                 </label>
@@ -293,7 +293,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
 
             <div className="mt-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <Building className="w-4 h-4 text-gray-600" />
                 Équipement
               </label>
@@ -323,7 +323,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-blue-600" />
                   Mode de paiement
                 </label>
@@ -339,7 +339,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <Receipt className="w-4 h-4 text-purple-600" />
                   N° Facture
                 </label>
@@ -354,7 +354,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
 
             <div className="mt-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <User className="w-4 h-4 text-indigo-600" />
                 Fournisseur
               </label>

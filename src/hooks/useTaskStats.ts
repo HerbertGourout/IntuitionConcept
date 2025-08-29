@@ -77,11 +77,11 @@ export const useTaskStats = (): TaskStats => {
 
     // Compter les tâches par statut
     const countTask = (task: ProjectTask, phaseId?: string) => {
-      const status = task.status || 'pending';
+      const status = task.status || 'todo';
       
       // Mise à jour des statistiques globales
       stats.total++;
-      if (status === 'completed') stats.completed++;
+      if (status === 'done') stats.completed++;
       else if (status === 'in_progress') stats.inProgress++;
       else if (status === 'blocked') stats.blocked++;
       else stats.pending++;
@@ -89,15 +89,15 @@ export const useTaskStats = (): TaskStats => {
       // Mise à jour des statistiques par phase
       if (phaseId) {
         phaseStats[phaseId].total++;
-        if (status === 'completed') phaseStats[phaseId].completed++;
+        if (status === 'done') phaseStats[phaseId].completed++;
         else if (status === 'in_progress') phaseStats[phaseId].inProgress++;
         else if (status === 'blocked') phaseStats[phaseId].blocked++;
         else phaseStats[phaseId].pending++;
       }
 
       // Compter les sous-tâches récursivement
-      if (task.subtasks?.length) {
-        task.subtasks.forEach((subTask: ProjectTask) => countTask(subTask, phaseId));
+      if (task.subTasks?.length) {
+        task.subTasks.forEach((subTask: ProjectTask) => countTask(subTask, phaseId));
       }
     };
 

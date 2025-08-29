@@ -195,7 +195,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   ];
 
-  const currentProject = projects.find(p => p.id === currentProjectId);
   const projectStats = getProjectStats(currentProjectId);
 
   return (

@@ -26,8 +26,16 @@ export interface Phase {
     expanded: boolean;
 }
 
+// Templates are definitions used to generate runtime entities. They should not require
+// fields that are created at runtime (ids, totals, UI flags).
+export type TaskTemplate = Omit<Task, 'id' | 'totalPrice' | 'expanded'>;
+export type PhaseTemplate = Omit<Phase, 'id' | 'totalPrice' | 'expanded' | 'tasks'> & {
+    tasks: TaskTemplate[];
+};
+
 export interface StructuredQuote {
     id: string;
+    reference?: string;
     title: string;
     clientName: string;
     clientEmail: string;
@@ -58,7 +66,7 @@ export interface QuoteTemplate {
     name: string;
     description: string;
     projectType: string;
-    phases: Omit<Phase, 'id' | 'totalPrice' | 'expanded'>[];
+    phases: PhaseTemplate[];
 }
 
 export const PROJECT_TYPES = [

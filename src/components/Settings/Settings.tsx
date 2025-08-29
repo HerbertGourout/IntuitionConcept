@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings as SettingsIcon, Bell, Shield, Database, Save, Upload,
   User, Globe, Clock, DollarSign, Palette, Monitor, Moon, Sun,
-  Mail, Smartphone, AlertTriangle, Lock, Key, Timer, HardDrive,
-  Cloud, Download, RefreshCw, Check, X
+  Mail, Smartphone, AlertTriangle, Key, HardDrive,
+  Cloud, Download, RefreshCw
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useBranding } from '../../contexts/BrandingContext';
 
 interface AppSettings {
   general: {
@@ -42,6 +42,22 @@ interface AppSettings {
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(false);
+  const branding = useBranding();
+  const [brandForm, setBrandForm] = useState({
+    companyName: '',
+    companyAddress: '',
+    footerContact: '',
+  });
+
+  useEffect(() => {
+    if (branding.profile) {
+      setBrandForm({
+        companyName: branding.profile.companyName || '',
+        companyAddress: branding.profile.companyAddress || '',
+        footerContact: branding.profile.footerContact || '',
+      });
+    }
+  }, [branding.profile]);
   const [settings, setSettings] = useState<AppSettings>({
     general: {
       companyName: 'Construction BTP Congo',
@@ -85,13 +101,17 @@ const Settings: React.FC = () => {
     }
   };
 
-  const updateSetting = (section: keyof AppSettings, key: string, value: any) => {
+  const updateSetting = <S extends keyof AppSettings, K extends keyof AppSettings[S]>(
+    section: S,
+    key: K,
+    value: AppSettings[S][K]
+  ) => {
     setSettings(prev => ({
       ...prev,
       [section]: {
         ...prev[section],
-        [key]: value
-      }
+        [key]: value,
+      } as AppSettings[S],
     }));
   };
 
@@ -147,6 +167,7 @@ const Settings: React.FC = () => {
               { id: 'general', label: 'Général', icon: SettingsIcon },
               { id: 'notifications', label: 'Notifications', icon: Bell },
               { id: 'security', label: 'Sécurité', icon: Shield },
+              { id: 'branding', label: 'Branding', icon: Palette },
               { id: 'backup', label: 'Sauvegarde', icon: Database }
             ].map(tab => (
               <button
@@ -261,14 +282,16 @@ const Settings: React.FC = () => {
                   Apparence
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
+                  {([
                     { id: 'light', label: 'Clair', icon: Sun },
                     { id: 'dark', label: 'Sombre', icon: Moon },
                     { id: 'auto', label: 'Automatique', icon: Monitor }
-                  ].map(theme => (
+                  ] as const).map(theme => (
                     <button
                       key={theme.id}
-                      onClick={() => updateSetting('general', 'theme', theme.id)}
+                      onClick={() =>
+                        updateSetting('general', 'theme', theme.id as AppSettings['general']['theme'])
+                      }
                       className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                         settings.general.theme === theme.id
                           ? 'border-blue-500 bg-blue-50'
@@ -284,6 +307,89 @@ const Settings: React.FC = () => {
             </div>
           )}
 
+          {activeTab === 'branding' && (
+            <div className="space-y-6">
+              <div className="glass-card p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <Palette className="h-5 w-5 mr-2 text-purple-600" />
+                  Identité de marque
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nom de l'entreprise</label>
+                      <input
+                        type="text"
+                        value={brandForm.companyName}
+                        onChange={(e) => setBrandForm(f => ({ ...f, companyName: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Adresse de l'entreprise</label>
+                      <textarea
+                        value={brandForm.companyAddress}
+                        onChange={(e) => setBrandForm(f => ({ ...f, companyAddress: e.target.value }))}
+                        rows={3}
+                        className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Contact pied de page</label>
+                      <input
+                        type="text"
+                        value={brandForm.footerContact}
+                        onChange={(e) => setBrandForm(f => ({ ...f, footerContact: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      />
+                    </div>
+                    <div className="pt-2">
+                      <button
+                        onClick={async () => {
+                          await branding.save({
+                            companyName: brandForm.companyName,
+                            companyAddress: brandForm.companyAddress,
+                            footerContact: brandForm.footerContact,
+                          });
+                          alert('Branding sauvegardé');
+                        }}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Save className="h-4 w-4" />
+                        <span>Sauvegarder le branding</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-24 h-24 rounded-lg border bg-white/60 flex items-center justify-center overflow-hidden">
+                        {branding.logoDataUrl ? (
+                          <img src={branding.logoDataUrl} alt="Logo" className="max-w-full max-h-full" />
+                        ) : (
+                          <User className="h-10 w-10 text-gray-400" />
+                        )}
+                      </div>
+                      <label className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
+                        <Upload className="h-4 w-4" />
+                        <span>Choisir un logo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) await branding.uploadLogo(file);
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'notifications' && (
             <div className="space-y-6">
               <div className="glass-card p-6">
@@ -292,14 +398,14 @@ const Settings: React.FC = () => {
                   Préférences de notification
                 </h3>
                 <div className="space-y-4">
-                  {[
+                  {([
                     { key: 'emailNotifications', label: 'Notifications par email', icon: Mail, desc: 'Recevoir des notifications par email' },
                     { key: 'pushNotifications', label: 'Notifications push', icon: Smartphone, desc: 'Notifications sur votre appareil' },
                     { key: 'taskReminders', label: 'Rappels de tâches', icon: Clock, desc: 'Rappels pour les tâches à venir' },
                     { key: 'projectUpdates', label: 'Mises à jour de projet', icon: RefreshCw, desc: 'Notifications des changements de projet' },
                     { key: 'budgetAlerts', label: 'Alertes budgétaires', icon: DollarSign, desc: 'Alertes de dépassement de budget' },
                     { key: 'maintenanceAlerts', label: 'Alertes de maintenance', icon: AlertTriangle, desc: 'Notifications de maintenance' }
-                  ].map(item => (
+                  ] as const).map(item => (
                     <div key={item.key} className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <item.icon className="h-5 w-5 text-gray-600" />
@@ -310,7 +416,9 @@ const Settings: React.FC = () => {
                       </div>
                       <ToggleSwitch
                         checked={settings.notifications[item.key as keyof typeof settings.notifications]}
-                        onChange={(checked) => updateSetting('notifications', item.key, checked)}
+                        onChange={(checked) =>
+                          updateSetting('notifications', item.key as keyof AppSettings['notifications'], checked)
+                        }
                       />
                     </div>
                   ))}
@@ -363,7 +471,13 @@ const Settings: React.FC = () => {
                       </label>
                       <select
                         value={settings.security.passwordPolicy}
-                        onChange={(e) => updateSetting('security', 'passwordPolicy', e.target.value)}
+                        onChange={(e) =>
+                          updateSetting(
+                            'security',
+                            'passwordPolicy',
+                            e.target.value as AppSettings['security']['passwordPolicy']
+                          )
+                        }
                         className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
                       >
                         <option value="basic">Basique</option>
@@ -406,7 +520,13 @@ const Settings: React.FC = () => {
                       </label>
                       <select
                         value={settings.backup.backupFrequency}
-                        onChange={(e) => updateSetting('backup', 'backupFrequency', e.target.value)}
+                        onChange={(e) =>
+                          updateSetting(
+                            'backup',
+                            'backupFrequency',
+                            e.target.value as AppSettings['backup']['backupFrequency']
+                          )
+                        }
                         className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
                       >
                         <option value="daily">Quotidienne</option>

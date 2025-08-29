@@ -6,11 +6,10 @@ import { useProjectContext } from '../../contexts/ProjectContext';
 import type { FinancialRecord } from '../../types';
 import ProjectBudgetChart from './ProjectBudgetChart';
 import PhaseBudgetChart from './PhaseBudgetChart';
-import TaskBudgetChart from './TaskBudgetChart';
 import { exportProjectBudgetToCSV } from '../../utils/exportBudget';
 
 import type { Project } from '../../contexts/projectTypes';
-import { MATERIALS_EQUIPMENTS, MaterialOrEquipment } from '../../data/materials';
+// Removed unused MATERIALS_EQUIPMENTS and MaterialOrEquipment imports
 
 interface BudgetSectionProps {
   project: Project;
@@ -44,35 +43,9 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ project }) => {
     setModalOpen(false);
     setEditingExpense(null);
   };
-  // Adaptation des données pour BudgetOverview (si besoin)
-  const overviewData = {
-    name: project.name,
-    budget: project.budget,
-    actualSpent: project.spent,
-    phases: (project.phases || []).map((ph) => {
-      // Calculer le budget et les dépenses de la phase à partir des tâches
-      const phaseBudget = ph.tasks.reduce((sum, task) => sum + (task.budget || 0), 0);
-      const phaseSpent = ph.tasks.reduce((sum, task) => sum + (task.spent || 0), 0);
-      return {
-        id: ph.id,
-        name: ph.name,
-        estimatedCost: phaseBudget,
-        actualCost: phaseSpent,
-        completion: phaseBudget > 0 ? (phaseSpent / phaseBudget) * 100 : 0
-      };
-    })
-  };
+  // Removed unused overviewData computed structure
 
-  // Récupération des tâches avec nom de phase
-  const allTasks = (project.phases || []).flatMap(phase =>
-    (phase.tasks || []).map(task => ({
-      id: task.id,
-      name: task.name,
-      budget: task.budget ?? 0,
-      spent: task.spent ?? 0,
-      phaseName: phase.name
-    }))
-  );
+  // Removed unused allTasks computation
 
   return (
     <div className="space-y-8">

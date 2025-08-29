@@ -10,6 +10,7 @@ export const useStructuredQuote = (initialQuote?: Partial<StructuredQuote>) => {
 
     const [quote, setQuote] = useState<StructuredQuote>({
         id: `DEVIS-${Date.now()}`,
+        reference: undefined,
         title: '',
         clientName: '',
         clientEmail: '',
@@ -366,6 +367,7 @@ export const useStructuredQuote = (initialQuote?: Partial<StructuredQuote>) => {
             // Convertir StructuredQuote vers Quote pour Firebase
             const firebaseQuote: FirebaseQuote = {
                 id: quote.id,
+                reference: quote.reference,
                 title: quote.title,
                 clientName: quote.clientName,
                 clientEmail: quote.clientEmail,
@@ -391,6 +393,16 @@ export const useStructuredQuote = (initialQuote?: Partial<StructuredQuote>) => {
             // S'assurer que l'état local porte l'ID Firestore
             if (savedId && savedId !== quote.id) {
                 setQuote(prev => ({ ...prev, id: savedId }));
+            }
+
+            // Récupérer la référence générée côté Firestore si absente localement
+            try {
+                const saved = await QuotesService.getQuoteById(savedId || quote.id);
+                if (saved && saved.reference && saved.reference !== quote.reference) {
+                    setQuote(prev => ({ ...prev, reference: saved.reference }));
+                }
+            } catch {
+                // silencieux: non bloquant si récupération échoue
             }
 
             // Sauvegarder hors-ligne si nécessaire

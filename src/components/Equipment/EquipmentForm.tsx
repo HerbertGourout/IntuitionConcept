@@ -115,7 +115,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ initialValues, onSubmit, 
         {/* Informations générales */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <Settings className="w-4 h-4 text-orange-600" />
               Nom de l'équipement *
             </label>
@@ -145,7 +145,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ initialValues, onSubmit, 
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <Truck className="w-4 h-4 text-blue-600" />
               Type d'équipement *
             </label>
@@ -181,7 +181,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ initialValues, onSubmit, 
         {/* Détails techniques */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <Settings className="w-4 h-4 text-purple-600" />
               Modèle *
             </label>
@@ -211,7 +211,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ initialValues, onSubmit, 
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <Settings className="w-4 h-4 text-green-600" />
               Numéro de série *
             </label>
@@ -243,7 +243,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ initialValues, onSubmit, 
 
         {/* Localisation */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
             <MapPin className="w-4 h-4 text-red-600" />
             Localisation *
           </label>
@@ -276,7 +276,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ initialValues, onSubmit, 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Statut */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <Wrench className="w-4 h-4 text-blue-600" />
               Statut *
             </label>
@@ -295,7 +295,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ initialValues, onSubmit, 
           {/* Opérateur - Affiché selon le statut */}
           {(values.status === 'in-use' || values.status === 'maintenance') && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <User className="w-4 h-4 text-green-600" />
                 {values.status === 'maintenance' ? 'Technicien responsable *' : 'Opérateur assigné *'}
               </label>

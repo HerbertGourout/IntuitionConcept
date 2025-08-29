@@ -125,7 +125,7 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ isOpen, onClose, onSave, onDele
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+          <label className="text-sm font-medium mb-1 flex items-center gap-2">
             <span>Budget estimé (FCFA)</span>
           </label>
           <input

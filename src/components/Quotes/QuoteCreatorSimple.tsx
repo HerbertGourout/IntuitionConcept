@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import { Plus, FileText, ChevronDown, ChevronUp, Save, X } from 'lucide-react';
-import { Quote, Phase, Task, Article, QuotesService } from '../../services/quotesService';
+import { Quote, QuotesService } from '../../services/quotesService';
+import type { Phase, Task, Article } from '../../types/StructuredQuote';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { generateQuotePdf } from '../../services/pdf/quotePdf';
+import { useBranding } from '../../contexts/BrandingContext';
 
 interface QuoteCreatorSimpleProps {
   onClose: () => void;
@@ -18,6 +20,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
 }) => {
   // États principaux
   const { user } = useAuth();
+  const brandingCtx = useBranding();
   const [isSaving, setIsSaving] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -51,6 +54,29 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
     }).format(amount);
   };
 
+  // Suggestions BTP
+  const BTP_TYPES = [
+    'Gros œuvre',
+    'Second œuvre',
+    'Maçonnerie',
+    'Plomberie',
+    'Électricité',
+    'Charpente',
+    'Couverture',
+    'Peinture',
+    'Menuiserie',
+    'VRD / Voirie',
+    'Terrassement',
+    'Isolation',
+    'Étanchéité',
+    'Carrelage',
+    'Climatisation',
+    'Serrurerie',
+    'Aménagement intérieur',
+  ];
+
+  const BTP_UNITS = ['u', 'm²', 'ml', 'm³', 'h', 'kg', 'lot'];
+
   // Export PDF
   const handleExportPdf = () => {
     const quoteForPdf: Quote = {
@@ -74,7 +100,14 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
       updatedAt: new Date().toISOString()
     };
     try {
-      generateQuotePdf(quoteForPdf);
+      const branding = {
+        companyName: brandingCtx.profile?.companyName,
+        companyAddress: brandingCtx.profile?.companyAddress,
+        footerContact: brandingCtx.profile?.footerContact,
+        logoDataUrl: brandingCtx.logoDataUrl || undefined,
+        logoWidthPt: 120,
+      };
+      generateQuotePdf(quoteForPdf, branding);
     } catch (e) {
       console.error(e);
       toast.error("Échec de l'export PDF");
@@ -229,10 +262,9 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   const addArticle = (phaseId: string, taskId: string) => {
     const newArticle: Article = {
       id: generateId(),
-      name: 'Nouvel article',
-      description: '',
+      description: 'Nouvel article',
       quantity: 1,
-      unit: 'unité',
+      unit: 'u',
       unitPrice: 0,
       totalPrice: 0
     };
@@ -409,12 +441,9 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                     className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
                     <option value="">Sélectionner un type</option>
-                    <option value="web">Développement Web</option>
-                    <option value="mobile">Application Mobile</option>
-                    <option value="desktop">Application Desktop</option>
-                    <option value="consulting">Conseil</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="other">Autre</option>
+                    {BTP_TYPES.map((t) => (
+                      <option value={t} key={t}>{t}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -641,18 +670,17 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                                     </div>
                                   ) : (
                                     <div className="space-y-2">
+                                      <div className="grid grid-cols-12 gap-3 items-center px-3 pt-1 pb-2 text-xs font-medium text-gray-500">
+                                        <div className="col-span-6">Description</div>
+                                        <div className="col-span-1 text-center">Quantité</div>
+                                        <div className="col-span-1 text-center">Unité</div>
+                                        <div className="col-span-2 text-right">Prix unitaire</div>
+                                        <div className="col-span-1 text-right">Total</div>
+                                        <div className="col-span-1 text-center"></div>
+                                      </div>
                                       {task.articles.map((article) => (
                                         <div key={article.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-white/80 rounded-lg border border-gray-100">
-                                          <div className="col-span-3">
-                                            <input
-                                              type="text"
-                                              value={article.name}
-                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { name: e.target.value })}
-                                              className="w-full px-2 py-1 text-sm bg-transparent border-none outline-none"
-                                              placeholder="Nom de l'article"
-                                            />
-                                          </div>
-                                          <div className="col-span-3">
+                                          <div className="col-span-6">
                                             <input
                                               type="text"
                                               value={article.description}
@@ -667,18 +695,30 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                                               value={article.quantity || ''}
                                               onChange={(e) => updateArticle(phase.id, task.id, article.id, { quantity: Number(e.target.value) || 0 })}
                                               className="w-full px-2 py-1 text-sm text-center bg-transparent border-none outline-none"
-                                              placeholder="Qté"
+                                              placeholder="Quantité"
                                               min="0"
                                             />
                                           </div>
                                           <div className="col-span-1">
-                                            <input
-                                              type="text"
+                                            <select
                                               value={article.unit}
-                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { unit: e.target.value })}
-                                              className="w-full px-2 py-1 text-sm text-center bg-transparent border-none outline-none"
-                                              placeholder="Unité"
-                                            />
+                                              onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === '__custom') {
+                                                  const input = window.prompt("Entrez une unité personnalisée (ex: sac, l, pcs)", article.unit || '');
+                                                  const custom = (input || '').trim();
+                                                  updateArticle(phase.id, task.id, article.id, { unit: custom || 'u' });
+                                                } else {
+                                                  updateArticle(phase.id, task.id, article.id, { unit: val });
+                                                }
+                                              }}
+                                              className="w-full px-2 py-1 text-sm text-center bg-transparent border border-gray-200 rounded"
+                                            >
+                                              {[...BTP_UNITS, ...(article.unit && !BTP_UNITS.includes(article.unit) ? [article.unit] : [])].map(u => (
+                                                <option value={u} key={u}>{u}</option>
+                                              ))}
+                                              <option value="__custom">Autre…</option>
+                                            </select>
                                           </div>
                                           <div className="col-span-2">
                                             <input

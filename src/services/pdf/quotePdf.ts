@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
-import { Quote, Phase, Task, Article } from '../quotesService';
+import { Quote } from '../quotesService';
+import type { Phase, Task, Article } from '../../types/StructuredQuote';
 
 // Blue model palette (classic business blue)
 const colors = {
@@ -52,12 +53,12 @@ export const generateQuotePdf = (
   const marginX = 40;
   
   // Header data with env fallbacks to avoid hardcoded defaults
-  const envName = (import.meta as any)?.env?.VITE_COMPANY_NAME as string | undefined;
-  const envAddr = (import.meta as any)?.env?.VITE_COMPANY_ADDRESS as string | undefined;
-  const envFooter = (import.meta as any)?.env?.VITE_FOOTER_CONTACT as string | undefined;
+  type ViteEnv = { env?: { [k: string]: string | undefined } };
+  const meta = (import.meta as unknown as ViteEnv);
+  const envName = meta.env?.VITE_COMPANY_NAME;
+  const envAddr = meta.env?.VITE_COMPANY_ADDRESS;
   const companyName = branding?.companyName ?? envName ?? 'Intuition Concept';
-  const companyAddress = branding?.companyAddress ?? envAddr ?? "Abidjan, Côte d'Ivoire";
-  const footerContact = branding?.footerContact ?? envFooter ?? 'contact@intuitionconcept.com  ·  +225 00 00 00 00';
+  const companyAddress = branding?.companyAddress ?? envAddr ?? '';
 
   // Modern header: thin top rule, logo left, company block right, pill title centered
   doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
@@ -67,49 +68,71 @@ export const generateQuotePdf = (
   let headerBottomY = 0;
   const logoMaxW = branding?.logoWidthPt ?? 80;
   const logoY = 34;
-  let contentLeftX = marginX;
+  const logoH = 32;
+  let logoBottom = logoY; // default if no logo
   if (branding?.logoDataUrl) {
     try {
-      doc.addImage(branding.logoDataUrl, 'PNG', marginX, logoY, logoMaxW, 32, undefined, 'FAST');
-      contentLeftX = marginX + logoMaxW + 14;
+      doc.addImage(branding.logoDataUrl, 'PNG', marginX, logoY, logoMaxW, logoH, undefined, 'FAST');
+      logoBottom = logoY + logoH;
     } catch {
       // ignore logo errors
     }
   }
   const rightBlockX = pageWidth - marginX - 240;
-  // Company block on the right
+  // Company block on the right (wrapped address, dynamic height)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(colors.slate[700][0], colors.slate[700][1], colors.slate[700][2]);
-  doc.text(companyName, rightBlockX, 42);
+  const nameY = 42;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(colors.slate[500][0], colors.slate[500][1], colors.slate[500][2]);
-  if (companyAddress) doc.text(companyAddress, rightBlockX, 58);
-  headerBottomY = 70;
+  const addrStartY = 58;
+  const addrLineH = 12;
+  let textBottom = nameY;
+  // Avoid drawing company address in header; keep it only in footer
+  const renderHeaderAddress = false;
+  if (renderHeaderAddress && companyAddress) {
+    const wrapped = doc.splitTextToSize(companyAddress, 240);
+    wrapped.forEach((line: string, idx: number) => {
+      const y = addrStartY + idx * addrLineH;
+      doc.text(line, rightBlockX, y);
+      textBottom = y;
+    });
+  }
+  // Determine header bottom from the lower of logo or text block, add padding
+  headerBottomY = Math.max(logoBottom, textBottom) + 14;
 
-  // Centered pill title
-  const title = 'DEVIS COMMERCIAL';
+  // Centered pill title with subtle shadow and badges row (Variant A - sobre/premium)
+  const title = 'Devis Commercial';
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   const padX = 14;
-  const padY = 6;
   const tWidth = doc.getTextWidth(title) + padX * 2;
   const pillX = pageWidth / 2 - tWidth / 2;
-  const pillY = headerBottomY + 6;
-  doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-  doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-  doc.roundedRect(pillX, pillY, tWidth, 24, 12, 12, 'FD');
-  doc.setTextColor(255, 255, 255);
-  doc.text(title, pageWidth / 2, pillY + 16, { align: 'center' });
-  // Optional subtitle (client)
-  if (quote.clientName) {
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(11);
+  // Pill starts after dynamic header height
+  const pillY = headerBottomY + 12;
+  // Brand caption (company name) above the title, centered and subtle
+  if (companyName) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
     doc.setTextColor(colors.slate[600][0], colors.slate[600][1], colors.slate[600][2]);
-    doc.text(String(quote.clientName), pageWidth / 2, pillY + 36, { align: 'center' });
+    doc.text(String(companyName).toUpperCase(), pageWidth / 2, pillY - 8, { align: 'center' });
   }
-  let cursorY = pillY + 56;
+  // Soft, subtle shadow
+  doc.setFillColor(colors.slate[200][0], colors.slate[200][1], colors.slate[200][2]);
+  doc.setDrawColor(colors.slate[200][0], colors.slate[200][1], colors.slate[200][2]);
+  doc.roundedRect(pillX + 1, pillY + 1, tWidth, 24, 10, 10, 'FD');
+  // Main pill (darker stroke for premium look)
+  doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+  doc.setDrawColor(colors.primaryDark[0], colors.primaryDark[1], colors.primaryDark[2]);
+  doc.roundedRect(pillX, pillY, tWidth, 24, 10, 10, 'FD');
+  doc.setTextColor(255, 255, 255);
+  // Baseline +1 for better vertical centering
+  doc.text(title, pageWidth / 2, pillY + 17, { align: 'center' });
+  
+  // Option A: remove centered badges below the title; start info card a bit below the title
+  let cursorY = pillY + 40; // slightly tighter spacing
   
   // Single info box with vertical divider
   const boxWidth = pageWidth - marginX * 2;
@@ -197,7 +220,7 @@ export const generateQuotePdf = (
           taskTotal += articleTotal;
           const qtyUnit = `${article.quantity || 0} ${article.unit || ''}`.trim();
           rows.push([
-            `${article.name || 'Article'}`,
+            `${article.description || 'Article'}`,
             qtyUnit,
             formatMoney(article.unitPrice || 0),
             formatMoney(articleTotal)
@@ -279,13 +302,31 @@ export const generateQuotePdf = (
         }
       },
       didDrawPage: (data) => {
-        // Footer only (no header date/page to keep header clean as requested)
+        // Footer with dynamic company address and meta info
         const pageWidth2 = data.doc.internal.pageSize.getWidth();
         const pageHeight2 = data.doc.internal.pageSize.getHeight();
         const margin = 40;
+        // Build meta info: Réf | Date | Validité
+        const parts: string[] = [];
+        const today = new Date().toLocaleDateString('fr-FR');
+        if (quote.id) {
+          const idStr = String(quote.id);
+          const shortId = idStr.length > 20 ? `${idStr.slice(0, 10)}…${idStr.slice(-6)}` : idStr;
+          parts.push(`Réf: ${shortId}`);
+        }
+        parts.push(`Date: ${today}`);
+        if (quote.validityDays) parts.push(`Validité: ${quote.validityDays} jours`);
+        const infoText = parts.join('  |  ');
+        data.doc.setFont('helvetica', 'normal');
         data.doc.setFontSize(9);
+        data.doc.setTextColor(colors.slate[600][0], colors.slate[600][1], colors.slate[600][2]);
+        // Meta info centered above the very bottom line
+        data.doc.text(infoText, pageWidth2 / 2, pageHeight2 - 36, { align: 'center' });
+        // Bottom line: dynamic company address (left) and page numbers (right)
         data.doc.setTextColor(colors.slate[500][0], colors.slate[500][1], colors.slate[500][2]);
-        data.doc.text(footerContact, margin, pageHeight2 - 20);
+        if (companyAddress) {
+          data.doc.text(String(companyAddress), margin, pageHeight2 - 20);
+        }
         data.doc.text(`${data.pageNumber} / ${data.doc.getNumberOfPages()}`, pageWidth2 - margin, pageHeight2 - 20, { align: 'right' });
       }
     });

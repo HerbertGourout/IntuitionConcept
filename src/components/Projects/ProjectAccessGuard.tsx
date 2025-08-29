@@ -6,7 +6,7 @@ interface ProjectAccessGuardProps {
   children: React.ReactNode;
 }
 
-const ProjectAccessGuard: React.FC<ProjectAccessGuardProps> = ({ project, children }) => {
+const ProjectAccessGuard: React.FC<ProjectAccessGuardProps> = ({ children }) => {
   // DÉVELOPPEMENT: Pas de contrôle d'accès - tous les utilisateurs ont accès
   return <>{children}</>;
 };

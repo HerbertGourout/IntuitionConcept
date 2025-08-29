@@ -14,13 +14,16 @@ import {
     onSnapshot,
     QuerySnapshot,
     Unsubscribe,
-    DocumentData
+    DocumentData,
+    runTransaction
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import type { Phase } from '../types/StructuredQuote';
 
 // Interface pour les devis (compatible avec QuoteCreatorSimple)
 export interface Quote {
     id: string;
+    reference?: string;
     title: string;
     clientName: string;
     clientEmail: string;
@@ -32,40 +35,14 @@ export interface Quote {
     taxRate: number;
     taxAmount: number;
     totalAmount: number;
+    discountRate?: number;
+    discountAmount?: number;
     status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
     validityDays: number;
-    notes: string;
-    paymentTerms: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface Phase {
-    id: string;
-    name: string;
-    description: string;
-    tasks: Task[];
-    totalPrice: number;
-    expanded: boolean;
-}
-
-export interface Task {
-    id: string;
-    name: string;
-    description: string;
-    articles: Article[];
-    totalPrice: number;
-    expanded: boolean;
-}
-
-export interface Article {
-    id: string;
-    name: string;
-    description: string;
-    quantity: number;
-    unit: string;
-    unitPrice: number;
-    totalPrice: number;
+    paymentTerms?: string;
+    notes?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 const QUOTES_COLLECTION = 'quotes';
@@ -76,6 +53,32 @@ const QUOTES_COLLECTION = 'quotes';
 export class QuotesService {
     
     /**
+     * Génère une référence de devis cohérente et séquentielle du type QU-YYYYMM-####
+     * Utilise un compteur transactionnel dans Firestore: collection `counters`, doc `quotes_YYYYMM`.
+     */
+    static async generateNextQuoteReference(date: Date = new Date()): Promise<string> {
+        const year = date.getFullYear();
+        const month = `${date.getMonth() + 1}`.padStart(2, '0');
+        const period = `${year}${month}`; // YYYYMM
+        const counterDocRef = doc(db, 'counters', `quotes_${period}`);
+
+        const seq = await runTransaction(db, async (tx) => {
+            const snap = await tx.get(counterDocRef);
+            if (!snap.exists()) {
+                tx.set(counterDocRef, { last: 1, period });
+                return 1;
+            }
+            const current = (snap.data().last as number) || 0;
+            const next = current + 1;
+            tx.update(counterDocRef, { last: next });
+            return next;
+        });
+
+        const padded = `${seq}`.padStart(4, '0');
+        return `QU-${period}-${padded}`;
+    }
+
+    /**
      * Créer un nouveau devis dans Firebase
      */
     static async createQuote(quote: Omit<Quote, 'id'>): Promise<string> {
@@ -83,11 +86,17 @@ export class QuotesService {
             // Ne jamais stocker un champ "id" dans le document Firestore
             // même si on nous passe un objet contenant potentiellement un id accidentellement.
             // On s'assure ici que le payload ne contient pas de clé id.
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { /* id: _ignoredId, */ ...safeQuote } = (quote as unknown) as Record<string, unknown>;
+
+            // Assigner une référence si absente
+            let reference = (safeQuote as Partial<Quote>).reference;
+            if (!reference) {
+                reference = await this.generateNextQuoteReference(new Date());
+            }
 
             const quoteData = {
                 ...(safeQuote as Omit<Quote, 'id'>),
+                reference,
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now()
             };

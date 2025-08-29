@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
-  FileText, Download, BarChart3, PieChart, Calendar, Users,
-  TrendingUp, DollarSign, Clock, CheckCircle, AlertTriangle,
-  Filter, Search, Eye, Printer, Mail, Share2, Settings,
+  FileText, Download, BarChart3, PieChart,
+  TrendingUp, DollarSign, Clock, CheckCircle,
+  Search, Eye,
   Target, Activity, Zap, Award
 } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
@@ -36,7 +36,6 @@ interface ReportStats {
 const Reports: React.FC = () => {
   const { projects } = useProjectContext();
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -137,7 +136,7 @@ const Reports: React.FC = () => {
   const StatsCard = ({ title, value, icon: Icon, color, subtitle }: {
     title: string;
     value: string | number;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     color: string;
     subtitle?: string;
   }) => (

@@ -91,7 +91,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         address: supplier.address || '',
         city: supplier.city || '',
         postalCode: supplier.postalCode || '',
-        country: supplier.country || 'Côte d\'Ivoire',
+        country: supplier.country || '',
         website: supplier.website || '',
         taxId: supplier.taxId || '',
         registrationNumber: supplier.registrationNumber || '',
@@ -111,7 +111,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
         address: '',
         city: '',
         postalCode: '',
-        country: 'Côte d\'Ivoire',
+        country: '',
         website: '',
         taxId: '',
         registrationNumber: '',
@@ -164,7 +164,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
       const supplierData: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt'> = {
         name: formData.name.trim(),
         type: formData.type,
-        country: formData.country.trim() || 'Côte d\'Ivoire',
+        country: formData.country.trim() || '',
         paymentTerms: parseInt(formData.paymentTerms, 10) || 30,
         rating: formData.rating,
         isActive: formData.isActive
@@ -315,7 +315,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="contact@fournisseur.com"
+                    placeholder="Adresse email"
                     className={`w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 ${
                       errors.email ? 'border-red-500' : 'border-white/30'
                     }`}
@@ -338,7 +338,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+225 XX XX XX XX"
+                    placeholder="Numéro de téléphone"
                     className={`w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 ${
                       errors.phone ? 'border-red-500' : 'border-white/30'
                     }`}
@@ -383,7 +383,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                     type="text"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Abidjan"
+                    placeholder="Ville"
                     className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
                   />
                 </div>
@@ -397,7 +397,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                     type="text"
                     value={formData.postalCode}
                     onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                    placeholder="00225"
+                    placeholder="Code postal"
                     className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
                   />
                 </div>
@@ -411,7 +411,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({ isOpen, onClose, supplier
                     type="text"
                     value={formData.country}
                     onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    placeholder="Côte d'Ivoire"
+                    placeholder="Pays"
                     className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
                   />
                 </div>

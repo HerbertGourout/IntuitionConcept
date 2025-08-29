@@ -4,8 +4,6 @@ import { motion } from 'framer-motion';
 import {
   Zap,
   Mail,
-  Phone,
-  MapPin,
   Facebook,
   Twitter,
   Linkedin,
