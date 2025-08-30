@@ -52,6 +52,14 @@ export const Planning: React.FC = () => {
     loadTeamMembers();
   }, [loadTeamMembers]);
 
+  // Sélectionner automatiquement la première phase si aucune sélection
+  useEffect(() => {
+    const phases = projectContext.currentProject?.phases || [];
+    if (phases.length > 0 && !selectedPhaseId) {
+      setSelectedPhaseId(phases[0].id);
+    }
+  }, [projectContext.currentProject, selectedPhaseId]);
+
   // Charger les tâches à partir des phases du projet avec filtrage
   useEffect(() => {
     if (!projectContext.currentProject) return;
@@ -96,6 +104,32 @@ export const Planning: React.FC = () => {
     console.log('📊 Total tâches extraites (après filtrage):', allTasks.length);
     setTasks(allTasks);
   }, [projectContext.currentProject, selectedPhaseId]);
+
+  // Ajuster automatiquement la fenêtre du Gantt sur la phase sélectionnée
+  useEffect(() => {
+    if (!selectedPhaseId || tasks.length === 0) return;
+
+    let earliest: Date | null = null;
+    let latest: Date | null = null;
+    for (const t of tasks) {
+      // Aligner avec la logique du Gantt: fallback de la fin sur startDate si due/end absents
+      if (!t.startDate) continue;
+      const s = new Date(t.startDate as unknown as string);
+      const endSource = (t.dueDate as unknown as string) || (t.endDate as unknown as string) || (t.startDate as unknown as string);
+      const e = new Date(endSource);
+      if (isNaN(s.getTime()) || isNaN(e.getTime())) continue;
+      s.setHours(0,0,0,0);
+      e.setHours(0,0,0,0);
+      if (!earliest || s < earliest) earliest = s;
+      if (!latest || e > latest) latest = e;
+    }
+    if (earliest) {
+      const start = new Date(earliest);
+      start.setDate(start.getDate() - 2); // petite marge avant
+      start.setHours(0,0,0,0);
+      setVisibleStartDate(start);
+    }
+  }, [selectedPhaseId, tasks]);
 
   // Générer un ID unique de manière sécurisée
   const generateId = () => {
@@ -339,24 +373,28 @@ export const Planning: React.FC = () => {
                     <Target className="w-5 h-5 text-orange-400" />
                     {phase.name}
                   </div>
-                  <div className="text-xs text-gray-500 mb-1">
-                    {phase.startDate} — {phase.endDate}
-                  </div>
                   <div className="flex items-center gap-2 mb-1">
                     <div className="text-xs text-gray-600">
-                      {phase.tasks?.length || 0} tâche{(phase.tasks?.length || 0) > 1 ? 's' : ''}
+                      {(phase.tasks?.length || 0)} tâche{(phase.tasks?.length || 0) > 1 ? 's' : ''}
                     </div>
-                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      calculatePhaseStatus(phase) === 'completed' ? 'bg-green-100 text-green-700' :
-                      calculatePhaseStatus(phase) === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                      calculatePhaseStatus(phase) === 'on_hold' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {calculatePhaseStatus(phase) === 'completed' ? '✅ Terminée' :
-                       calculatePhaseStatus(phase) === 'in_progress' ? '🔄 En cours' :
-                       calculatePhaseStatus(phase) === 'on_hold' ? '⏸️ En attente' :
-                       '📋 Planifiée'}
-                    </div>
+                    {(() => {
+                      const invalidCount = (phase.tasks || []).filter((t) => {
+                        if (!t?.startDate) return true;
+                        const s = new Date((t.startDate as unknown as string));
+                        const endSource = (t.dueDate as unknown as string) || (t.endDate as unknown as string) || (t.startDate as unknown as string);
+                        const e = new Date(endSource);
+                        if (isNaN(s.getTime()) || isNaN(e.getTime())) return true;
+                        s.setHours(0, 0, 0, 0);
+                        e.setHours(0, 0, 0, 0);
+                        const durationDays = Math.floor((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                        return durationDays <= 0;
+                      }).length;
+                      return invalidCount > 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                          <AlertTriangle className="w-3 h-3" /> {invalidCount} tâche{invalidCount > 1 ? 's' : ''} invalide{invalidCount > 1 ? 's' : ''}
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
                 <div className="flex gap-2">

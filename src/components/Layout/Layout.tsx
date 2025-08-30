@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import Header from './Header';
 import Sidebar from './Sidebar';
-import Footer from './Footer';
+import ModernHeader from './ModernHeader';
+import ModernFooterCompact from './ModernFooterCompact';
+import AppSubheader from './AppSubheader';
 import type { Project } from '../../contexts/projectTypes';
 
 interface LayoutProps {
@@ -24,28 +25,60 @@ const Layout: React.FC<LayoutProps> = ({
   onProjectSelect
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sectionTitles: Record<string, string> = {
+    'dashboard': 'Tableau de Bord',
+    'projects': 'Projets',
+    'project-budget': 'Budget Projet',
+    'equipment': 'Équipements',
+    'tasks': 'Tâches',
+    'planning': 'Planning',
+    'finances': 'Finances',
+    'documents': 'Documents',
+    'quotes': 'Devis',
+    'quote-creator': 'Création de Devis',
+    'reports': 'Rapports',
+    'team': 'Équipe',
+    'purchase-orders': 'Bons d\'Achat',
+    'locations': 'Localisation',
+    'settings': 'Paramètres'
+  };
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        activeSection={activeSection}
-        onNavigate={onNavigate}
-        onCreateProject={onCreateProject}
-        currentProjectId={currentProjectId}
-        projects={projects}
-        onProjectSelect={onProjectSelect}
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 flex flex-col">
+      {/* Header en haut, pleine largeur (fond solide en in-app pour lisibilité) */}
+      <ModernHeader 
+        forceSolid 
+        onNavigate={(section) => onNavigate(section)} 
+        currentSection={activeSection}
       />
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        <Header 
-          onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+
+      {/* Rangée principale: Sidebar + Contenu (décalée sous le header fixe de 80px) */}
+      <div className="flex flex-1 mt-20">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          activeSection={activeSection}
+          onNavigate={onNavigate}
+          onCreateProject={onCreateProject}
+          currentProjectId={currentProjectId}
+          projects={projects}
+          onProjectSelect={onProjectSelect}
         />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
-        </main>
-        <Footer />
+
+        <div className="flex-1 flex flex-col transition-all duration-300">
+          {/* Sous-entête sticky contextuel */}
+          <AppSubheader
+            title={sectionTitles[activeSection] || 'Section'}
+            onCreateProject={onCreateProject}
+          />
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+            {children}
+          </main>
+        </div>
       </div>
+
+      {/* Footer compact en bas, pleine largeur */}
+      <ModernFooterCompact />
     </div>
   );
 };

@@ -15,7 +15,13 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-const ModernHeader: React.FC = () => {
+interface ModernHeaderProps {
+  forceSolid?: boolean; // force un fond opaque et des textes sombres (utile en in-app)
+  onNavigate?: (section: string) => void; // navigation interne pour /app/*
+  currentSection?: string; // section active de l'app pour surligner le menu
+}
+
+const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavigate, currentSection }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -23,14 +29,52 @@ const ModernHeader: React.FC = () => {
 
   // Détection du scroll pour effet glassmorphism
   useEffect(() => {
+    if (forceSolid) {
+      setIsScrolled(true);
+      return;
+    }
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
+    handleScroll();
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [forceSolid]);
 
-  const menuItems = [
+  const solid = forceSolid || isScrolled;
+
+  // util pour router interne de l'app
+  const sectionFromHref = (href: string): string | null => {
+    const m = href.match(/^\/app\/(.+)$/);
+    return m ? m[1] : null;
+  };
+
+  // Types forts pour les éléments de menu
+  type DropdownItem = {
+    name: string;
+    href: string;
+    icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    description?: string;
+  };
+
+  type MenuItem = {
+    name: string;
+    href: string;
+    hasDropdown?: boolean;
+    dropdownItems?: DropdownItem[];
+  };
+
+  const isItemActive = (item: MenuItem): boolean => {
+    const section = sectionFromHref(item.href || '');
+    if (item.hasDropdown && item.dropdownItems) {
+      return item.dropdownItems.some((d: DropdownItem) => sectionFromHref(d.href || '') === currentSection);
+    }
+    if (section && currentSection) return section === currentSection;
+    // fallback pour liens marketing
+    return location.pathname === item.href;
+  };
+
+  const menuItems: MenuItem[] = [
     {
       name: 'Fonctionnalités',
       href: '#',
@@ -86,7 +130,7 @@ const ModernHeader: React.FC = () => {
       initial="initial"
       animate="animate"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
+        solid 
           ? 'bg-white/80 backdrop-blur-xl border-b border-gray-200/50 shadow-lg' 
           : 'bg-transparent'
       }`}
@@ -143,12 +187,21 @@ const ModernHeader: React.FC = () => {
                   transition={{ delay: index * 0.1 }}
                 >
                   {item.hasDropdown ? (
-                    <button className={`flex items-center space-x-1 font-medium transition-colors ${
-                      isScrolled 
-                        ? 'text-gray-800 hover:text-blue-600' 
-                        : 'text-white hover:text-blue-200 drop-shadow-lg'
+                    <button className={`flex items-center space-x-1 font-medium transition-colors relative ${
+                      isItemActive(item)
+                        ? 'text-blue-600'
+                        : solid 
+                          ? 'text-gray-800 hover:text-blue-600' 
+                          : 'text-white hover:text-blue-200 drop-shadow-lg'
                     }`}>
-                      <span>{item.name}</span>
+                      <span className="relative">
+                        <span>{item.name}</span>
+                        <span
+                          className={`absolute left-0 -bottom-1 h-0.5 rounded bg-blue-600 transition-all duration-200 ${
+                            isItemActive(item) ? 'w-full opacity-100' : 'w-0 opacity-0'
+                          }`}
+                        />
+                      </span>
                       <motion.div
                         animate={{ rotate: activeDropdown === item.name ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
@@ -159,15 +212,29 @@ const ModernHeader: React.FC = () => {
                   ) : (
                     <Link
                       to={item.href}
-                      className={`font-medium transition-colors ${
-                        location.pathname === item.href 
-                          ? 'text-blue-600' 
-                          : isScrolled 
+                      className={`font-medium transition-colors relative ${
+                        isItemActive(item)
+                          ? 'text-blue-600'
+                          : solid 
                             ? 'text-gray-800 hover:text-blue-600' 
                             : 'text-white hover:text-blue-200 drop-shadow-lg'
                       }`}
+                      onClick={(e) => {
+                        const section = sectionFromHref(item.href);
+                        if (section && onNavigate) {
+                          e.preventDefault();
+                          onNavigate(section);
+                        }
+                      }}
                     >
-                      {item.name}
+                      <span className="relative">
+                        <span>{item.name}</span>
+                        <span
+                          className={`absolute left-0 -bottom-1 h-0.5 rounded bg-blue-600 transition-all duration-200 ${
+                            isItemActive(item) ? 'w-full opacity-100' : 'w-0 opacity-0'
+                          }`}
+                        />
+                      </span>
                     </Link>
                   )}
                 </motion.div>
@@ -194,10 +261,21 @@ const ModernHeader: React.FC = () => {
                           >
                             <Link
                               to={dropdownItem.href}
-                              className="flex items-start space-x-3 group"
+                              className={`flex items-start space-x-3 group ${sectionFromHref(dropdownItem.href) === currentSection ? 'text-blue-600' : ''}`}
+                              onClick={(e) => {
+                                const section = sectionFromHref(dropdownItem.href);
+                                if (section && onNavigate) {
+                                  e.preventDefault();
+                                  setIsMenuOpen(false);
+                                  setActiveDropdown(null);
+                                  onNavigate(section);
+                                }
+                              }}
                             >
                               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <dropdownItem.icon className="w-5 h-5 text-white" />
+                                {dropdownItem.icon
+                                  ? React.createElement(dropdownItem.icon, { className: 'w-5 h-5 text-white' })
+                                  : null}
                               </div>
                               <div className="flex-1">
                                 <h4 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
@@ -229,7 +307,7 @@ const ModernHeader: React.FC = () => {
               <Link
                 to="/login"
                 className={`font-medium transition-colors ${
-                  isScrolled 
+                  solid 
                     ? 'text-gray-800 hover:text-blue-600' 
                     : 'text-white hover:text-blue-200 drop-shadow-lg'
                 }`}
@@ -310,7 +388,16 @@ const ModernHeader: React.FC = () => {
                     <Link
                       to={item.href}
                       className="block text-gray-700 hover:text-blue-600 font-medium py-2 transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
+                      onClick={(e) => {
+                        const section = sectionFromHref(item.href);
+                        if (section && onNavigate) {
+                          e.preventDefault();
+                          setIsMenuOpen(false);
+                          onNavigate(section);
+                        } else {
+                          setIsMenuOpen(false);
+                        }
+                      }}
                     >
                       {item.name}
                     </Link>

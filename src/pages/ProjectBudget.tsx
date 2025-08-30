@@ -4,9 +4,14 @@ import { BudgetOverview } from '../components/Costs/BudgetOverview';
 import { Calculator, Plus } from 'lucide-react';
 
 const ProjectBudget: React.FC = () => {
-    const { projects, currentProject } = useProjectContext();
+    const { projects, currentProject, loadingProjects } = useProjectContext();
 
-    // Si aucun projet n'existe, afficher un état vide
+    // Attendre la fin du chargement pour éviter un flash d'état vide
+    if (loadingProjects) {
+        return null;
+    }
+
+    // Si, après chargement, aucun projet n'existe
     if (!projects || projects.length === 0 || !currentProject) {
         return (
             <div className="p-8 flex flex-col items-center justify-center min-h-[400px]">

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { Project } from './contexts/projectTypes';
 import { useProjects } from './hooks/useProjects';
 
@@ -29,14 +29,11 @@ import type { ToastProps } from './components/UI/Toast';
 import { useToast } from './hooks/useToast';
 import ProjectBudget from './pages/ProjectBudget';
 import Quotes from './pages/Quotes';
-import QuoteCreatorSimple from './components/Quotes/QuoteCreatorSimple';
-import { Button, Result } from 'antd';
-import { 
-  FocusMode, 
-  QuickCommand, 
-  KeyboardShortcutsPanel
-} from './components/UI/InteractiveFeatures';
-import { Plus, Home, Settings as SettingsIcon, FileText, Users } from 'lucide-react';
+import QuoteCreatorSimple from './components/Quotes/QuoteCreatorSimple.tsx';
+import { Result } from 'antd';
+import { Home, Plus, FileText, Users, Settings as SettingsIcon } from 'lucide-react';
+import { FocusMode, QuickCommand, KeyboardShortcutsPanel } from './components/UI/InteractiveFeatures';
+import { AnimatePresence } from 'framer-motion';
 
 // Appliquer les styles globaux
 import './index.css';
@@ -61,7 +58,7 @@ const AnimatedPage: React.FC<{ children: React.ReactNode; pageKey?: string }> = 
 };
 
 const AppContent: React.FC = () => {
-  const [loading, setLoading] = useState(true);
+  // Utilise l'état de chargement du ProjectContext pour éviter les flashs d'état vide
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   // État pour les fonctionnalités interactives (à implémenter)
@@ -75,17 +72,11 @@ const AppContent: React.FC = () => {
     projects, 
     currentProject, 
     setCurrentProject, 
-    addProject 
+    addProject,
+    loadingProjects
   } = useProjects();
 
-  // Gérer l'état de chargement
-  useEffect(() => {
-    // Simuler un délai de chargement puis marquer comme chargé
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+  // Plus de timer local: on se base uniquement sur loadingProjects du contexte
 
   // Configuration des raccourcis clavier
   const keyboardShortcuts = [
@@ -181,15 +172,15 @@ const AppContent: React.FC = () => {
 
   // Si aucun projet n'est sélectionné mais qu'il y a des projets disponibles, sélectionner le premier
   React.useEffect(() => {
-    if (projects.length > 0 && !currentProject) {
+    if (!loadingProjects && projects.length > 0 && !currentProject) {
       setCurrentProject(projects[0].id);
     }
-    // Si les projets sont chargés (même si vide), on arrête le loading
-    setLoading(false);
-  }, [projects, currentProject, setCurrentProject]);
+  }, [loadingProjects, projects, currentProject, setCurrentProject]);
   
 
   const renderContent = () => {
+    // Évite d'afficher des états intermédiaires avant la fin du chargement
+    if (loadingProjects) return null;
     // Si aucun projet n'est sélectionné, afficher un message d'erreur
     if (!currentProject) {
       return (
@@ -226,7 +217,13 @@ const AppContent: React.FC = () => {
       case 'quotes':
         return <Quotes />;
       case 'quote-creator':
-        return <QuoteCreatorSimple />;
+        return (
+          <QuoteCreatorSimple
+            onClose={() => setActiveSection('quotes')}
+            onQuoteCreated={() => setActiveSection('quotes')}
+            editQuote={null}
+          />
+        );
       case 'reports':
         return <Reports />;
       case 'team':
@@ -243,46 +240,13 @@ const AppContent: React.FC = () => {
   };
 
   // Afficher un écran de chargement tant que les projets ne sont pas chargés
-  if (loading) {
+  if (loadingProjects) {
     return (
       <div className="app flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4" />
           <div className="text-gray-500">Chargement des projets...</div>
         </div>
-      </div>
-    );
-  }
-
-  // Afficher un écran de sélection de projet si aucun projet n'est disponible
-  if (projects.length === 0) {
-    return (
-      <div className="app">
-        <div className="no-projects-container">
-          <Result
-            status="info"
-            title="Aucun projet disponible"
-            subTitle="Commencez par créer un nouveau projet pour gérer votre chantier."
-            extra={[
-              <Button 
-                type="primary" 
-                key="create" 
-                onClick={() => setIsCreateProjectOpen(true)}
-                size="large"
-              >
-                Créer un nouveau projet
-              </Button>,
-            ]}
-          />
-        </div>
-        {isCreateProjectOpen && (
-            <CreateProjectModal 
-              isOpen={isCreateProjectOpen}
-              onCancel={() => setIsCreateProjectOpen(false)}
-              onCreate={handleCreateProject}
-            />
-          )}
-        <ToastContainer toasts={toasts} onClose={removeToast} />
       </div>
     );
   }

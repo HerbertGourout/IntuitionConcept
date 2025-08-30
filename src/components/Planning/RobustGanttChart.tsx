@@ -21,8 +21,8 @@ class DateUtils {
       const date = new Date(dateInput);
       if (isNaN(date.getTime())) return null;
       
-      // Normaliser à minuit UTC pour éviter les problèmes de fuseau
-      date.setUTCHours(0, 0, 0, 0);
+      // Normaliser à minuit LOCAL pour rester cohérent avec l'UI et éviter les décalages
+      date.setHours(0, 0, 0, 0);
       return date;
     } catch {
       return null;
@@ -38,7 +38,8 @@ class DateUtils {
   
   static daysBetween(start: Date, end: Date): number {
     const diffTime = end.getTime() - start.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Les dates étant normalisées à minuit local, un floor est plus sûr pour éviter les +1 accidentels
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   }
   
   static addDays(date: Date, days: number): Date {
@@ -60,7 +61,8 @@ class TaskProcessor {
     const errors: string[] = [];
     
     // Priorité : dueDate > endDate pour compatibilité
-    const endDateValue = task.dueDate || task.endDate;
+    // Autoriser les tâches avec seulement une date de début: fallback sur startDate pour créer une barre d'1 jour
+    const endDateValue = task.dueDate || task.endDate || task.startDate;
     
     const startDate = DateUtils.parseDate(task.startDate);
     const endDate = DateUtils.parseDate(endDateValue);
@@ -118,8 +120,8 @@ class BarCalculator {
       return null;
     }
 
-    // Normalisation UTC minuit
-    const norm = (d: Date) => { const n = new Date(d); n.setUTCHours(0,0,0,0); return n; };
+    // Normalisation à minuit LOCAL (cohérente avec DateUtils)
+    const norm = (d: Date) => { const n = new Date(d); n.setHours(0,0,0,0); return n; };
     const start = norm(validation.startDate);
     const end = norm(validation.endDate);
     const windowStart = norm(visibleStart);
@@ -178,7 +180,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
   daysToShow
 }) => {
   const [debug, setDebug] = React.useState(false);
-  const dayWidth = 60; // Augmenté pour plus d'aération
+  const rowHeight = 44; // Hauteur de ligne compacte
 
   const processedTasks = useMemo(() => {
     return tasks.map(task => {
@@ -335,118 +337,97 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
       <div className="overflow-x-auto">
         <div className="relative w-full">
           <div className="relative w-full">
-            {/* Timeline (dates) */}
-            <div className="flex border-b border-gray-200 bg-gray-50 relative w-full">
-            {timelineDates.map((date, idx) => {
-              return (
+            {/* Timeline (dates) - sticky header */}
+            <div className="flex border-b border-gray-200 bg-gray-50 relative w-full sticky top-0 z-30">
+              {timelineDates.map((date, idx) => (
                 <div
                   key={idx}
                   className={`text-xs font-medium text-gray-600 text-center border-r border-gray-200 last:border-r-0 py-2 px-1 flex-1 ${date.toDateString() === new Date().toDateString()
                       ? 'bg-blue-100 text-blue-700 font-bold'
                       : 'text-gray-700 hover:bg-gray-50'
                   } ${debug ? 'relative' : ''}`}
-                  style={{
-                    borderTop: debug ? '2px solid red' : undefined
-                  }}
+                  style={{ borderTop: debug ? '2px solid red' : undefined }}
                 >
                   {DateUtils.formatDate(date)}
                   {debug && (
                     <div className="absolute left-0 top-0 w-full text-[10px] text-red-600 bg-white/80 border-t border-red-400">
-                      #{idx} | {date.toISOString().slice(0, 10)} | {idx * dayWidth}px
+                      #{idx} | {date.toISOString().slice(0, 10)}
                     </div>
                   )}
                 </div>
-              );
-            })}
-            {debug && (
-              <div className="absolute inset-0 pointer-events-none border-2 border-red-500 rounded-xl z-40"></div>
-            )}
-          </div>
-
-          {/* Barres de tâches */}
-          <div
-            className="relative bg-white w-full"
-            style={{
-              height: Math.max(processedTasks.length * 60, 120)
-            }}
-          >
-            {processedTasks.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-                Aucune tâche valide à afficher
-              </div>
-            ) : (
-              taskBars.map(({ task, bar }, idx) => {
-                return (
+              ))}
+            </div>
+            {/* Barres de tâches - conteneur scrollable */}
+            <div
+              className="relative bg-white w-full max-h-[480px] overflow-y-auto"
+              style={{ height: Math.max(processedTasks.length * rowHeight + 24, 120) }}
+            >
+              {processedTasks.length === 0 ? (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+                  Aucune tâche valide à afficher
+                </div>
+              ) : (
+                taskBars.map(({ task, bar }, idx) => (
                   <div key={task.id} className="relative">
                     {/* Barre de tâche */}
                     <div
-                      className={`absolute h-10 rounded-lg ${task.color} flex items-center text-white text-sm px-4 shadow-lg border-2 border-white/20 overflow-hidden ${debug ? 'ring-2 ring-red-400' : ''}`}
+                      className={`absolute h-9 rounded-lg ${task.color} flex items-center text-white text-sm px-3 shadow-md border border-white/30 overflow-hidden ${debug ? 'ring-2 ring-red-400' : ''}`}
                       style={{
                         left: `${bar!.leftPercent}%`,
                         width: `${bar!.widthPercent}%`,
-                        top: idx * 60 + 12,
+                        top: idx * rowHeight + 10,
                         zIndex: 10
                       }}
                       title={`${task.name} | ${getAssignedMemberNames(task.assignedTo)} | ${task.validation.duration} jours`}
                     >
-                      {debug && (
-                        <div className="absolute left-0 top-0 text-[10px] bg-white text-red-700 border border-red-300 px-1 z-50 pointer-events-none">
-                          left: {bar!.leftPercent.toFixed(1)}%
-                          <br />
-                          width: {bar!.widthPercent.toFixed(1)}%
-                        </div>
-                      )}
-                      {/* Indicateur de débordement à gauche */}
+                      {/* Indicateurs de clipping gauche/droite */}
                       {bar!.startsBeforeWindow && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-white/50" />
+                        <div
+                          className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-black/30 to-transparent"
+                          aria-hidden
+                          title="Commence avant la fenêtre visible"
+                        />
                       )}
-                      <span className="truncate flex-1">
-                        {task.name}
-                      </span>
-                      {/* Indicateur de débordement à droite */}
                       {bar!.endsAfterWindow && (
-                        <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/50" />
+                        <div
+                          className="absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-l from-black/30 to-transparent"
+                          aria-hidden
+                          title="Se termine après la fenêtre visible"
+                        />
                       )}
+                      <span className="truncate">{task.name}</span>
                     </div>
                     {/* Ligne de tâche (fond) */}
                     <div
-                      className="absolute h-10 bg-gray-100 border border-gray-200 rounded-md w-full"
+                      className="absolute h-9 bg-gray-50 border border-gray-200 rounded-md w-full"
                       style={{
                         left: 0,
-                        top: idx * 60 + 12,
+                        top: idx * rowHeight + 10,
                         zIndex: 1
                       }}
                     />
-                    {debug && (!bar || bar.widthPercent <= 0) && (
-                      <div className="absolute left-0 top-0 text-xs text-red-700 bg-white px-2 rounded shadow z-50">
-                        ⚠️ Tâche hors fenêtre ou largeur nulle !
-                      </div>
-                    )}
                   </div>
-                );
-              })
-            )}
-            {/* Ligne "aujourd'hui" */}
-            {(() => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const todayOffset = DateUtils.daysBetween(visibleStartDate, today);
-              
-              if (todayOffset >= 0 && todayOffset < daysToShow) {
-                // Calculer la position en pourcentage
-                const positionPercent = (todayOffset + 0.5) / daysToShow * 100;
-                
-                return (
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
-                    style={{ left: `${positionPercent}%` }}
-                    title="Aujourd'hui"
-                  />
-                );
-              }
-              return null;
-            })()}
+                ))
+              )}
+              {/* Ligne verticale pour aujourd'hui */}
+              {(() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayOffset = DateUtils.daysBetween(visibleStartDate, today);
+                if (todayOffset >= 0 && todayOffset < daysToShow) {
+                  const positionPercent = (todayOffset + 0.5) / daysToShow * 100;
+                  return (
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
+                      style={{ left: `${positionPercent}%` }}
+                      title="Aujourd'hui"
+                    />
+                  );
+                }
+                return null;
+              })()}
             </div>
+            {/* Fin barres de tâches */}
           </div>
         </div>
       </div>
