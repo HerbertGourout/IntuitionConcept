@@ -15,7 +15,9 @@ import {
   Wrench,
   Clock,
   Target,
-  ShoppingCart
+  ShoppingCart,
+  CreditCard,
+  Bell
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -176,6 +178,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       status: currentProjectId ? 'active' : 'disabled'
     },
     { 
+      id: 'payments', 
+      label: 'Paiements', 
+      icon: CreditCard, 
+      color: 'text-teal-500',
+      bgColor: 'bg-teal-500/10',
+      hoverColor: 'hover:bg-teal-500/20',
+      description: 'Mobile Money et paiements'
+    },
+    { 
       id: 'locations', 
       label: 'Localisation', 
       icon: MapPin, 
@@ -183,6 +194,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       bgColor: 'bg-red-500/10',
       hoverColor: 'hover:bg-red-500/20',
       description: 'Géolocalisation'
+    },
+    { 
+      id: 'notifications', 
+      label: 'Notifications', 
+      icon: Bell, 
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10',
+      hoverColor: 'hover:bg-blue-500/20',
+      description: 'Centre de notifications'
     },
     { 
       id: 'settings', 

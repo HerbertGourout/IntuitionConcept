@@ -9,6 +9,7 @@ import { WidgetProvider } from './contexts/WidgetContext';
 import { GeolocationProvider } from './contexts/GeolocationContext';
 import { OfflineProvider } from './contexts/OfflineContext';
 import { BrandingProvider } from './contexts/BrandingContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 import Layout from './components/Layout/Layout';
 import ModernProjectDashboard from './components/Dashboard/ModernProjectDashboard';
@@ -23,6 +24,8 @@ import Team from './components/Team/Team';
 import PurchaseOrders from './components/PurchaseOrders/PurchaseOrders';
 import Locations from './components/Locations/Locations';
 import Settings from './components/Settings/Settings';
+import PaymentDashboard from './components/payments/PaymentDashboard';
+import NotificationCenter from './components/Notifications/NotificationCenter';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
 import { ToastContainer } from './components/UI/Toast';
 import type { ToastProps } from './components/UI/Toast';
@@ -230,8 +233,12 @@ const AppContent: React.FC = () => {
         return <Team />;
       case 'purchase-orders':
         return <PurchaseOrders />;
+      case 'payments':
+        return <PaymentDashboard />;
       case 'locations':
         return <Locations />;
+      case 'notifications':
+        return <NotificationCenter />;
       case 'settings':
         return <Settings />;
       default:
@@ -298,7 +305,9 @@ const App: React.FC = () => {
         <GeolocationProvider>
           <WidgetProvider>
             <BrandingProvider>
-              <AppContent />
+              <NotificationProvider>
+                <AppContent />
+              </NotificationProvider>
             </BrandingProvider>
           </WidgetProvider>
         </GeolocationProvider>

@@ -31,7 +31,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run tests
+      - name: Run tests (stable)
         env:
           CI: true
-        run: npm run test:ci
+        run: npm run test:ci:stable

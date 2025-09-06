@@ -15,9 +15,11 @@ import {
   AlertTriangle,
   Clock,
   Activity,
-  Navigation
+  Navigation,
+  Map
 } from 'lucide-react';
 import { LocationService } from '../../services/locationService';
+import InteractiveMap from '../Maps/InteractiveMap';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -52,6 +54,7 @@ const Locations: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingLocation, setEditingLocation] = useState<LocalLocation | null>(null);
   const [form] = Form.useForm();
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -273,11 +276,39 @@ const Locations: React.FC = () => {
 
       {/* Liste des localisations */}
       <div className="glass-card p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-6">
-          <Navigation className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-semibold text-gray-800">
-            Toutes les localisations ({locations.length})
-          </h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Navigation className="w-6 h-6 text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-800">
+              Toutes les localisations ({locations.length})
+            </h2>
+          </div>
+          
+          {/* Toggle Vue Liste/Carte */}
+          <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-all ${
+                viewMode === 'list'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              Liste
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-all ${
+                viewMode === 'map'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Map className="w-4 h-4" />
+              Carte
+            </button>
+          </div>
         </div>
 
         {locations.length === 0 ? (
@@ -293,6 +324,38 @@ const Locations: React.FC = () => {
             >
               Ajouter une localisation
             </button>
+          </div>
+        ) : viewMode === 'map' ? (
+          <div className="h-96">
+            <InteractiveMap
+              markers={locations
+                .filter(location => location.coordinates)
+                .map(location => ({
+                  id: location.id,
+                  lat: location.coordinates!.lat,
+                  lng: location.coordinates!.lng,
+                  title: location.name,
+                  description: `${getTypeLabel(location.type)} - ${location.address}`,
+                  type: 'project' as const,
+                  status: location.status,
+                  icon: location.type
+                }))}
+              center={
+                locations.length > 0 && locations[0].coordinates
+                  ? locations[0].coordinates
+                  : { lat: 14.6928, lng: -17.4467 }
+              }
+              zoom={10}
+              height="100%"
+              onMarkerClick={(marker) => {
+                const location = locations.find(l => l.id === marker.id);
+                if (location) {
+                  handleEdit(location);
+                }
+              }}
+              showControls={true}
+              enableGeolocation={true}
+            />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

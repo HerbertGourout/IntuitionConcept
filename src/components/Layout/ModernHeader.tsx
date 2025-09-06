@@ -14,6 +14,7 @@ import {
   Shield,
   ArrowRight
 } from 'lucide-react';
+import NotificationBell from '../Notifications/NotificationBell';
 
 interface ModernHeaderProps {
   forceSolid?: boolean; // force un fond opaque et des textes sombres (utile en in-app)
@@ -297,8 +298,18 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
             ))}
           </nav>
 
-          {/* Boutons d'action */}
+          {/* Notification Bell & Action Buttons */}
           <div className="hidden lg:flex items-center space-x-4">
+            {/* Notification Bell - only show in app context */}
+            {onNavigate && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <NotificationBell />
+              </motion.div>
+            )}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -333,8 +344,19 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
             </motion.div>
           </div>
 
-          {/* Menu mobile */}
-          <div className="lg:hidden">
+          {/* Mobile: Notification + Menu */}
+          <div className="lg:hidden flex items-center space-x-2">
+            {/* Mobile Notification Bell */}
+            {onNavigate && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <NotificationBell />
+              </motion.div>
+            )}
+            
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsMenuOpen(!isMenuOpen)}

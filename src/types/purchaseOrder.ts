@@ -2,7 +2,7 @@
 export interface Supplier {
   id: string;
   name: string;
-  type: 'materials' | 'equipment' | 'services' | 'transport';
+  type: 'materials' | 'equipment' | 'services' | 'transport' | 'labor' | 'permits' | 'utilities';
   contactPerson?: string;
   email?: string;
   phone?: string;

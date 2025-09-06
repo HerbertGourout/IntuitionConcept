@@ -97,17 +97,20 @@ export class BudgetIntegrationService {
       const q = query(expensesRef, where('purchaseOrderId', '==', purchaseOrder.id));
       const querySnapshot = await getDocs(q);
       
-      if (!querySnapshot.empty) {
-        // Mettre à jour la dépense existante
-        const expenseDoc = querySnapshot.docs[0];
-        await updateDoc(expenseDoc.ref, {
+      // Cherche une dépense planifiée à convertir en réelle
+      const docsWithData = querySnapshot.docs.map((d) => ({ doc: d, data: d.data() as Record<string, unknown> }));
+      const planned = docsWithData.find((x) => x.data.status === 'planned')?.doc;
+
+      if (planned) {
+        // Mettre à jour UNIQUEMENT la dépense planifiée
+        const plannedData = planned.data() as { description?: string };
+        await updateDoc(planned.ref, {
           amount: actualAmount,
           status: 'actual', // Dépense réelle
-          description: `${expenseDoc.data().description} - Livré le ${deliveryNote.actualDeliveryDate}`,
+          description: `${plannedData.description ?? ''} - Livré le ${deliveryNote.actualDeliveryDate}`,
           deliveryNoteId: deliveryNote.id,
           updatedAt: Timestamp.now()
         });
-        
         console.log('✅ Dépense mise à jour avec le montant réel livré');
       } else {
         // Créer une nouvelle dépense réelle si pas de prévisionnelle

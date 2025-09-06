@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { motion } from 'framer-motion';
+import ReportService from '../../services/reportService';
 
 interface ReportData {
   id: string;
@@ -122,14 +123,42 @@ const Reports: React.FC = () => {
   };
 
   const generateReport = (type: string) => {
-    console.log(`Génération du rapport: ${type}`);
-    // Ici, vous ajouteriez la logique de génération de rapport PDF
-    alert(`Génération du rapport ${type} en cours... (Fonctionnalité à implémenter)`);
+    try {
+      switch (type) {
+        case 'global':
+          ReportService.generateGlobalReport(projects);
+          break;
+        case 'financial':
+          ReportService.generateFinancialReport(projects);
+          break;
+        case 'performance':
+          ReportService.generatePerformanceReport(projects);
+          break;
+        default:
+          if (type.startsWith('project-')) {
+            const projectId = type.replace('project-', '');
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+              ReportService.generateProjectReport(project);
+            }
+          }
+          break;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la génération du rapport:', error);
+      alert('Erreur lors de la génération du rapport. Veuillez réessayer.');
+    }
   };
 
   const exportData = (format: string) => {
-    console.log(`Export des données au format: ${format}`);
-    alert(`Export ${format} en cours... (Fonctionnalité à implémenter)`);
+    try {
+      if (format === 'Excel' || format.startsWith('project-')) {
+        ReportService.exportToExcel(projects, format === 'Excel' ? 'export-global' : format);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      alert('Erreur lors de l\'export. Veuillez réessayer.');
+    }
   };
 
   // Composant pour les statistiques KPI

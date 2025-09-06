@@ -39,7 +39,9 @@ const Layout: React.FC<LayoutProps> = ({
     'reports': 'Rapports',
     'team': 'Équipe',
     'purchase-orders': 'Bons d\'Achat',
+    'payments': 'Paiements',
     'locations': 'Localisation',
+    'notifications': 'Notifications',
     'settings': 'Paramètres'
   };
 
