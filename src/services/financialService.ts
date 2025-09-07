@@ -141,10 +141,7 @@ class FinancialService {
         orderBy('createdAt', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as PurchaseOrder));
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder));
     } catch (error) {
       console.error('Erreur lors de la récupération des bons de commande:', error);
       throw error;
@@ -200,10 +197,7 @@ class FinancialService {
         orderBy('expenseDate', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Expense));
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
     } catch (error) {
       console.error('Erreur lors de la récupération des dépenses:', error);
       throw error;
@@ -302,12 +296,8 @@ class FinancialService {
         where('projectId', '==', projectId),
         orderBy('date', 'desc')
       );
-      
       const transactionsSnapshot = await getDocs(transactionsQuery);
-      const transactions = transactionsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const transactions = transactionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       // Créer un objet pour stocker les données par mois
       const monthlyData: Record<string, { income: number; expenses: number }> = {};

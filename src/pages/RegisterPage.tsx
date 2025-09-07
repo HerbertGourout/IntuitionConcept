@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+
 import {
   Mail,
   Lock,
@@ -14,8 +15,11 @@ import {
   Phone,
   MapPin,
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 
 const RegisterPage: React.FC = () => {
+  const { loginWithGoogle } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -381,6 +385,43 @@ const RegisterPage: React.FC = () => {
               </div>
             </div>
           </motion.form>
+
+          {/* Social Sign-up */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="mt-6"
+          >
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-transparent text-gray-500">ou</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await loginWithGoogle();
+                  toast.success('Inscription via Google réussie !');
+                  navigate('/app/dashboard');
+                } catch (e: any) {
+                  toast.error("Échec de l'inscription via Google");
+                }
+              }}
+              className="mt-4 w-full bg-white text-gray-800 border-2 border-gray-200 py-3 px-4 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-3 font-medium"
+            >
+              <img
+                alt="Google"
+                className="w-5 h-5"
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              />
+              Continuer avec Google
+            </button>
+          </motion.div>
 
           {/* Lien vers connexion */}
           <motion.div

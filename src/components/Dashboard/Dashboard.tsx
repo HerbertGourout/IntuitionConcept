@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { useProjects } from '../../hooks/useProjects';
-import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap, TrendingUp, CheckCircle, XCircle, Pause } from 'lucide-react';
-import ActivityTimelineWidget from './widgets/ActivityTimelineWidget';
+import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap } from 'lucide-react';
 import { useCurrency } from '../../hooks/useCurrency';
 
 interface DashboardProps {
@@ -138,139 +137,137 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   }
 
   return (
-    <AnimatedBackground variant="particles">
-      <div className="min-h-screen bg-gradient-to-br from-gray-50/80 to-blue-50/80 dark:from-gray-900/80 dark:to-gray-800/80 p-6">
-        {/* Header Hero Section */}
-        <div className="mb-8 fade-in-up">
-          <GlassCard className="p-8 hover-lift">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full pulse-glow"></div>
-                  <span className="text-sm font-medium text-green-600 dark:text-green-400">Projet Actif</span>
-                </div>
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 text-gradient">
-                  {currentProjectData.name}
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300 text-lg">
-                  {currentProjectData.description}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-6">
+      {/* Header Hero Section */}
+      <div className="mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">Projet Actif</span>
+              </div>
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                {currentProjectData.name}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300 text-lg">
+                {currentProjectData.description}
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Dernière mise à jour</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {new Date().toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                  })}
                 </p>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Dernière mise à jour</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {new Date().toLocaleDateString('fr-FR', { 
-                      day: 'numeric', 
-                      month: 'long', 
-                      year: 'numeric' 
-                    })}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* Main Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-          {/* Animated Stats Cards */}
-          <div className="lg:col-span-8 slide-in-left">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="bounce-in" style={{animationDelay: '0.1s'}}>
-                <AnimatedStatsCard
-                  title="Tâches Actives"
-                  value={stats.activeTasks}
-                  previousValue={stats.activeTasks - 2}
-                  icon={<Clock className="w-6 h-6 text-white" />}
-                  color="text-white"
-                  gradientFrom="from-blue-500"
-                  gradientTo="to-blue-600"
-                />
-              </div>
-              <div className="bounce-in" style={{animationDelay: '0.2s'}}>
-                <AnimatedStatsCard
-                  title="Budget Utilisé"
-                  value={stats.budgetSpent}
-                  previousValue={stats.budgetSpent - 50000}
-                  format="currency"
-                  icon={<Euro className="w-6 h-6 text-white" />}
-                  color="text-white"
-                  gradientFrom="from-green-500"
-                  gradientTo="to-green-600"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bounce-in" style={{animationDelay: '0.3s'}}>
-                <AnimatedStatsCard
-                  title="Progression Globale"
-                  value={currentProjectData.progress}
-                  previousValue={currentProjectData.progress - 5}
-                  format="percentage"
-                  icon={<Target className="w-6 h-6 text-white" />}
-                  color="text-white"
-                  gradientFrom="from-orange-500"
-                  gradientTo="to-orange-600"
-                />
-              </div>
-              <div className="bounce-in" style={{animationDelay: '0.4s'}}>
-                <AnimatedStatsCard
-                  title="Équipe Active"
-                  value={stats.teamMembers || 12}
-                  previousValue={10}
-                  icon={<Users className="w-6 h-6 text-white" />}
-                  color="text-white"
-                  gradientFrom="from-purple-500"
-                  gradientTo="to-purple-600"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Weather Widget */}
-          <div className="lg:col-span-4 slide-in-right">
-            <div className="float-animation">
-              <WeatherWidget location={currentProjectData.location} />
             </div>
           </div>
         </div>
-
-      {/* Progress and Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <CircularProgressWidget
-          title="Avancement Global"
-          percentage={currentProjectData.progress}
-          value={`${currentProjectData.progress}%`}
-          color="#f97316"
-          icon={<Target className="w-5 h-5" />}
-          subtitle={`${currentProjectData.completedTasks} / ${currentProjectData.tasks?.length || 0} tâches`}
-        />
-        
-        <CircularProgressWidget
-          title="Budget Consommé"
-          percentage={stats.budgetPercentage}
-          value={`${stats.budgetPercentage}%`}
-          color={stats.budgetPercentage > 80 ? '#ef4444' : '#10b981'}
-          icon={<Euro className="w-5 h-5" />}
-          subtitle={`${formatAmount(stats.budgetSpent)} / ${formatAmount(stats.budget)}`}
-        />
-        
-        <CircularProgressWidget
-          title="Efficacité Équipe"
-          percentage={stats.teamEfficiency}
-          value={`${stats.teamEfficiency}%`}
-          color="#8b5cf6"
-          icon={<Zap className="w-5 h-5" />}
-          subtitle={`${stats.teamMembers} membres actifs`}
-        />
       </div>
 
-      {/* Activity and Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActivityTimelineWidget />
-        <RealTimeChartWidget />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm font-medium">Tâches Actives</p>
+              <p className="text-3xl font-bold">{stats.activeTasks}</p>
+            </div>
+            <Clock className="w-8 h-8 text-blue-200" />
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm font-medium">Budget Utilisé</p>
+              <p className="text-3xl font-bold">{formatAmount(stats.budgetSpent)}</p>
+            </div>
+            <Euro className="w-8 h-8 text-green-200" />
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-100 text-sm font-medium">Progression</p>
+              <p className="text-3xl font-bold">{currentProjectData.progress}%</p>
+            </div>
+            <Target className="w-8 h-8 text-orange-200" />
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm font-medium">Équipe Active</p>
+              <p className="text-3xl font-bold">{stats.teamMembers || 12}</p>
+            </div>
+            <Users className="w-8 h-8 text-purple-200" />
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bars */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Avancement Global</h3>
+            <Target className="w-5 h-5 text-orange-500" />
+          </div>
+          <div className="relative">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+              <div 
+                className="bg-orange-500 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${currentProjectData.progress}%` }}
+              ></div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+              {currentProjectData.completedTasks} / {currentProjectData.tasks?.length || 0} tâches
+            </p>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Budget Consommé</h3>
+            <Euro className="w-5 h-5 text-green-500" />
+          </div>
+          <div className="relative">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+              <div 
+                className={`h-3 rounded-full transition-all duration-500 ${stats.budgetPercentage > 80 ? 'bg-red-500' : 'bg-green-500'}`}
+                style={{ width: `${Math.min(stats.budgetPercentage, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+              {formatAmount(stats.budgetSpent)} / {formatAmount(stats.budget)}
+            </p>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Efficacité Équipe</h3>
+            <Zap className="w-5 h-5 text-purple-500" />
+          </div>
+          <div className="relative">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+              <div 
+                className="bg-purple-500 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${stats.teamEfficiency}%` }}
+              ></div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+              {stats.teamMembers} membres actifs
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -330,8 +327,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
-      </div>
-    </AnimatedBackground>
+    </div>
   );
 };
 

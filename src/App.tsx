@@ -1,42 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import type { Project } from './contexts/projectTypes';
 import { useProjects } from './hooks/useProjects';
 
 // Nouveaux contextes modernes
+import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { WidgetProvider } from './contexts/WidgetContext';
 import { GeolocationProvider } from './contexts/GeolocationContext';
 import { OfflineProvider } from './contexts/OfflineContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { ProjectProvider } from './contexts/ProjectContext';
+import AuthWrapper from './components/Auth/AuthWrapper';
 
-import Layout from './components/Layout/Layout';
-import ModernProjectDashboard from './components/Dashboard/ModernProjectDashboard';
-import Projects from './components/Projects/Projects';
-import Equipment from './components/Equipment/Equipment';
-import Tasks from './components/Tasks/Tasks';
-import Finances from './components/Finances/Finances';
-import Planning from './components/Planning/Planning';
-import Documents from './components/Documents/Documents';
-import Reports from './components/Reports/Reports';
-import Team from './components/Team/Team';
-import PurchaseOrders from './components/PurchaseOrders/PurchaseOrders';
-import Locations from './components/Locations/Locations';
-import Settings from './components/Settings/Settings';
-import PaymentDashboard from './components/payments/PaymentDashboard';
-import NotificationCenter from './components/Notifications/NotificationCenter';
+import SecureLayout from './components/Layout/SecureLayout';
+import { Dashboard, Quotes, Projects, Equipment, Tasks, Finances, Planning, Documents, ProjectBudget, Reports, Team, PurchaseOrders, PaymentDashboard, Locations, NotificationCenter, Settings, QuoteCreator } from './components/LazyLoad/LazyComponents';
+import AuthTestPage from './components/Auth/AuthTestPage';
+import EmailTestPage from './components/Email/EmailTestPage';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
 import { ToastContainer } from './components/UI/Toast';
 import type { ToastProps } from './components/UI/Toast';
 import { useToast } from './hooks/useToast';
-import ProjectBudget from './pages/ProjectBudget';
-import Quotes from './pages/Quotes';
-import QuoteCreatorSimple from './components/Quotes/QuoteCreatorSimple.tsx';
 import { Result } from 'antd';
 import { Home, Plus, FileText, Users, Settings as SettingsIcon } from 'lucide-react';
+import Launchpad from './components/Launchpad/Launchpad';
 import { FocusMode, QuickCommand, KeyboardShortcutsPanel } from './components/UI/InteractiveFeatures';
 import { AnimatePresence } from 'framer-motion';
+import { usingEmulators } from './firebase';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // Appliquer les styles globaux
 import './index.css';
@@ -65,6 +57,18 @@ const AppContent: React.FC = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   // État pour les fonctionnalités interactives (à implémenter)
+
+  // Router hooks (doivent être à l'intérieur d'un composant React)
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Synchroniser la section active avec l'URL (/app/:section)
+  useEffect(() => {
+    const m = location.pathname.match(/^\/app\/(\w[\w-]*)/);
+    if (m && m[1] && m[1] !== activeSection) {
+      setActiveSection(m[1]);
+    }
+  }, [location.pathname]);
 
   const { toasts, success, removeToast } = useToast() as { 
     toasts: ToastProps[]; 
@@ -137,6 +141,8 @@ const AppContent: React.FC = () => {
 
   const handleNavigate = (section: string, id?: string) => {
     setActiveSection(section);
+    // Keep URL in sync
+    navigate(`/app/${section}`);
     if (id) {
       console.log(`Navigate to ${section} with ID: ${id}`);
       // Mettre à jour le projet sélectionné si nécessaire
@@ -184,8 +190,12 @@ const AppContent: React.FC = () => {
   const renderContent = () => {
     // Évite d'afficher des états intermédiaires avant la fin du chargement
     if (loadingProjects) return null;
-    // Si aucun projet n'est sélectionné, afficher un message d'erreur
-    if (!currentProject) {
+    // Les sections qui nécessitent un projet sélectionné
+    const requiresProject = new Set([
+      'dashboard', 'project-budget', 'equipment', 'tasks', 'planning', 'finances', 'documents', 'purchase-orders'
+    ]);
+    // Si la section requiert un projet mais qu'aucun n'est sélectionné, afficher un message d'erreur
+    if (requiresProject.has(activeSection) && !currentProject) {
       return (
         <div className="app">
           <div className="no-project-selected">
@@ -201,8 +211,10 @@ const AppContent: React.FC = () => {
 
     // Afficher le contenu en fonction de la section active
     switch (activeSection) {
+      case 'launchpad':
+        return <Launchpad onOpenSection={(s) => handleNavigate(s)} />;
       case 'dashboard':
-        return <ModernProjectDashboard onNavigate={handleNavigate} />;
+        return <Dashboard onNavigate={handleNavigate} />;
       case 'projects':
         return <Projects />;
       case 'equipment':
@@ -221,7 +233,7 @@ const AppContent: React.FC = () => {
         return <Quotes />;
       case 'quote-creator':
         return (
-          <QuoteCreatorSimple
+          <QuoteCreator
             onClose={() => setActiveSection('quotes')}
             onQuoteCreated={() => setActiveSection('quotes')}
             editQuote={null}
@@ -241,12 +253,16 @@ const AppContent: React.FC = () => {
         return <NotificationCenter />;
       case 'settings':
         return <Settings />;
+      case 'auth-test':
+        return <AuthTestPage />;
+      case 'email-test':
+        return <EmailTestPage />;
       default:
         return <div>Section non trouvée</div>;
     }
   };
 
-  // Afficher un écran de chargement tant que les projets ne sont pas chargés
+  // Afficher un écran de chargement tant que les projets ne sont pas chargés (évite page blanche)
   if (loadingProjects) {
     return (
       <div className="app flex items-center justify-center h-screen">
@@ -260,59 +276,72 @@ const AppContent: React.FC = () => {
 
   // Afficher l'interface principale avec le projet sélectionné
   return (
-    <FocusMode>
-      <div className="app">
-        <Layout
-          activeSection={activeSection}
-          onNavigate={handleNavigate}
-          onCreateProject={() => setIsCreateProjectOpen(true)}
-          currentProjectId={currentProject?.id || null}
-          projects={projects.filter(p => p.status !== 'archived')}
-          onProjectSelect={(id: string | null) => id && setCurrentProject(id)}
-        >
-          <AnimatePresence mode="wait">
-            <AnimatedPage pageKey={activeSection}>
-              {renderContent()}
-            </AnimatedPage>
-          </AnimatePresence>
-        </Layout>
-        
-        {/* Fonctionnalités Interactives */}
-        <QuickCommand commands={quickCommands} />
-        <KeyboardShortcutsPanel shortcuts={keyboardShortcuts} />
-        
-        {/* Modals */}
-        {isCreateProjectOpen && (
-          <CreateProjectModal 
-            isOpen={isCreateProjectOpen}
-            onCancel={() => setIsCreateProjectOpen(false)}
-            onCreate={handleCreateProject}
-          />
-        )}
-        
-        {/* Toast Notifications */}
-        <ToastContainer toasts={toasts} onClose={removeToast} />
-      </div>
-    </FocusMode>
+    <AuthWrapper>
+      <FocusMode>
+        <div className="app">
+          <SecureLayout
+            activeSection={activeSection}
+            onNavigate={handleNavigate}
+            onCreateProject={() => setIsCreateProjectOpen(true)}
+            currentProjectId={currentProject?.id || null}
+            projects={projects.filter(p => p.status !== 'archived')}
+            onProjectSelect={(id: string | null) => id && setCurrentProject(id)}
+          >
+            <AnimatePresence mode="wait">
+              <AnimatedPage pageKey={activeSection}>
+                {renderContent()}
+              </AnimatedPage>
+            </AnimatePresence>
+          </SecureLayout>
+          
+          {/* Fonctionnalités Interactives */}
+          <QuickCommand commands={quickCommands} />
+          <KeyboardShortcutsPanel shortcuts={keyboardShortcuts} />
+          
+          {/* Modals */}
+          {isCreateProjectOpen && (
+            <CreateProjectModal 
+              isOpen={isCreateProjectOpen}
+              onCancel={() => setIsCreateProjectOpen(false)}
+              onCreate={handleCreateProject}
+            />
+          )}
+          
+          {/* Toast Notifications */}
+          <ToastContainer toasts={toasts} onClose={removeToast} />
+
+          {/* Emulator Badge */}
+          {usingEmulators && (
+            <div className="fixed bottom-4 right-4 z-50 px-3 py-2 rounded-lg text-xs font-medium bg-orange-500/90 text-white shadow-lg border border-orange-300/50">
+              Firebase Emulators
+            </div>
+          )}
+        </div>
+      </FocusMode>
+    </AuthWrapper>
   );
 }
 
 // Composant racine de l'application avec tous les nouveaux contextes modernes
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <OfflineProvider>
-        <GeolocationProvider>
-          <WidgetProvider>
-            <BrandingProvider>
-              <NotificationProvider>
-                <AppContent />
-              </NotificationProvider>
-            </BrandingProvider>
-          </WidgetProvider>
-        </GeolocationProvider>
-      </OfflineProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <OfflineProvider>
+          <GeolocationProvider>
+            <WidgetProvider>
+              <BrandingProvider>
+                <NotificationProvider>
+                  <ProjectProvider>
+                    <AppContent />
+                  </ProjectProvider>
+                </NotificationProvider>
+              </BrandingProvider>
+            </WidgetProvider>
+          </GeolocationProvider>
+        </OfflineProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 };
 

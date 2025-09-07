@@ -67,13 +67,10 @@ class TransactionService {
         where('projectId', '==', projectId),
         orderBy('date', 'desc')
       );
-      
+
       const querySnapshot = await getDocs(q);
-      const transactions = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Transaction));
-      
+      const transactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+
       console.log(`✅ ${transactions.length} transactions récupérées pour le projet ${projectId}`);
       return transactions;
     } catch (error) {
@@ -93,13 +90,10 @@ class TransactionService {
         where('phaseId', '==', phaseId),
         orderBy('date', 'desc')
       );
-      
+
       const querySnapshot = await getDocs(q);
-      const transactions = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Transaction));
-      
+      const transactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+
       console.log(`✅ ${transactions.length} transactions récupérées pour la phase ${phaseId}`);
       return transactions;
     } catch (error) {
@@ -119,13 +113,10 @@ class TransactionService {
         where('taskId', '==', taskId),
         orderBy('date', 'desc')
       );
-      
+
       const querySnapshot = await getDocs(q);
-      const transactions = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Transaction));
-      
+      const transactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+
       console.log(`✅ ${transactions.length} transactions récupérées pour la tâche ${taskId}`);
       return transactions;
     } catch (error) {

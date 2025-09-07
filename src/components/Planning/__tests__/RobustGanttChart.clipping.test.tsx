@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
+import { describe, it, expect, vi } from 'vitest';
 import RobustGanttChart from '../RobustGanttChart';
-import type { ProjectTask } from '../../../contexts/projectTypes';
-import type { TeamMember } from '../../../types/team';
+import { TeamMember } from '../../../types/team';
+import { ProjectTask } from '../../../contexts/projectTypes';
 
 function midnight(d: Date) {
   const x = new Date(d);

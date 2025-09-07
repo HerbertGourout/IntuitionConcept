@@ -51,34 +51,42 @@ export class NotificationService {
     } = {}
   ): () => void {
     try {
-      let q = query(
-        collection(db, this.COLLECTION_NAME),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
+      // Build constraints dynamically to avoid composite index requirements.
+      // If multiple filters are applied, we avoid server orderBy and sort client-side.
+      const constraints: any[] = [where('userId', '==', userId)];
 
       if (!options.includeRead) {
-        q = query(q, where('isRead', '==', false));
+        constraints.push(where('isRead', '==', false));
       }
 
       if (!options.includeArchived) {
-        q = query(q, where('isArchived', '==', false));
+        constraints.push(where('isArchived', '==', false));
       }
 
       if (options.category) {
-        q = query(q, where('category', '==', options.category));
+        constraints.push(where('category', '==', options.category));
       }
 
       if (options.priority) {
-        q = query(q, where('priority', '==', options.priority));
+        constraints.push(where('priority', '==', options.priority));
       }
 
-      if (options.limitCount) {
-        q = query(q, limit(options.limitCount));
+      // Minimal mode (only userId filter): we can safely orderBy on server without composite index.
+      const minimalFilterCount = 1; // only userId
+      const hasMinimalFilters = constraints.length === minimalFilterCount;
+
+      if (hasMinimalFilters) {
+        constraints.push(orderBy('createdAt', 'desc'));
+        if (options.limitCount) constraints.push(limit(options.limitCount));
+      } else {
+        // No server-side orderBy to avoid composite index; we will sort locally.
+        if (options.limitCount) constraints.push(limit(options.limitCount * 3));
       }
+
+      const q = query(collection(db, this.COLLECTION_NAME), ...constraints);
 
       return onSnapshot(q, (snapshot) => {
-        const notifications: Notification[] = snapshot.docs.map(doc => ({
+        let notifications: Notification[] = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate().toISOString(),
@@ -86,7 +94,23 @@ export class NotificationService {
           expiresAt: doc.data().expiresAt?.toDate().toISOString()
         } as Notification));
 
+        if (!hasMinimalFilters) {
+          // Sort client-side by createdAt desc to emulate orderBy without requiring composite index
+          notifications = notifications
+            .sort((a, b) => {
+              const ta = a.createdAt ? Date.parse(a.createdAt) : 0;
+              const tb = b.createdAt ? Date.parse(b.createdAt) : 0;
+              return tb - ta;
+            })
+            .slice(0, options.limitCount || notifications.length);
+        }
+
         callback(notifications);
+      }, (err) => {
+        // Helpful guidance if developer hits a composite index requirement
+        if ((err as any)?.code === 'failed-precondition') {
+          console.warn('[Notifications] Cette requête nécessite un index Firestore composite. Ouvrez le lien fourni dans l\'erreur pour le créer.');
+        }
       });
     } catch (error) {
       console.error('Error subscribing to notifications:', error);

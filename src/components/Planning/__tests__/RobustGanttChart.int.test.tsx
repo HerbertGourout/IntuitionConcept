@@ -1,8 +1,16 @@
 import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import RobustGanttChart from '../RobustGanttChart';
 import type { ProjectTask } from '../../../contexts/projectTypes';
-import type { TeamMember } from '../../../types/team';
+import { TeamMember } from '../../../types/team';
+
+const mockProjects = [
+  {
+    id: '1', name: 'Project 1', startDate: '2024-01-01', endDate: '2024-01-31',
+    phases: [], status: 'active', clientName: 'Client 1'
+  }
+]
 
 function makeDate(iso: string): string {
   // Keep as ISO string; component parses to Date and normalizes to midnight

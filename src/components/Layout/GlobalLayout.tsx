@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ModernHeader from './ModernHeader';
 import ModernFooter from './ModernFooter';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface GlobalLayoutProps {
   children: React.ReactNode;
@@ -18,10 +20,23 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({
   heroSubtitle,
   heroBackground = 'bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900'
 }) => {
+  const { firebaseUser } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Rediriger automatiquement vers l'app (Launchpad) si déjà connecté depuis certaines pages publiques
+  useEffect(() => {
+    if (!firebaseUser) return;
+    // Laisser la page de tarification ET la home publique accessibles même connecté
+    const publicPaths = new Set(['/subscription', '/login', '/register']);
+    if (publicPaths.has(location.pathname)) {
+      navigate('/app/launchpad', { replace: true });
+    }
+  }, [firebaseUser, location.pathname, navigate]);
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header moderne global */}
-      <ModernHeader />
+      <ModernHeader forceSolid={!!firebaseUser} />
       
       {/* Hero section optionnelle */}
       {showHero && (

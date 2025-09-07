@@ -10,12 +10,18 @@ import {
     Clock,
     CheckCircle,
     XCircle,
-    Download
+    Download,
+    Eye,
+    Settings
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useBranding } from '../../contexts/BrandingContext';
 import { QuotesService, Quote } from '../../services/quotesService';
 import { generateQuotePdf } from '../../services/pdf/quotePdf';
+import { emailService, EmailData } from '../../services/emailService';
+import { toast } from 'react-hot-toast';
+import QuoteStatusManager from './QuoteStatusManager';
+import QuoteEmailSender from './QuoteEmailSender';
 
 interface QuoteListProps {
     onCreateNew: () => void;
@@ -40,6 +46,12 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
+    const [showStatusManager, setShowStatusManager] = useState(false);
+    const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+    const [showEmailSender, setShowEmailSender] = useState(false);
+    const [quoteToEmail, setQuoteToEmail] = useState<Quote | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
     const handleDeleteClick = (quote: Quote) => {
         setQuoteToDelete(quote);
@@ -61,6 +73,33 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         }
     };
 
+    const handleSendEmail = async (emailData: any) => {
+        try {
+            setIsLoading(true);
+            
+            // Utilisation du service d'email réel
+            const result = await emailService.sendQuoteEmail(selectedQuote!, emailData);
+            
+            if (result.success) {
+                toast.success('Email envoyé avec succès !');
+                setIsEmailModalOpen(false);
+                setSelectedQuote(null);
+                
+                // Mettre à jour le statut du devis
+                if (selectedQuote) {
+                    await updateQuoteStatus(selectedQuote.id, 'sent', 'Devis envoyé par email');
+                }
+            } else {
+                throw new Error(result.error || 'Erreur lors de l\'envoi');
+            }
+        } catch (error) {
+            console.error('Erreur envoi email:', error);
+            toast.error(`Erreur lors de l'envoi de l'email: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const duplicateQuote = async (quote: Quote) => {
         try {
             const { id: __idToDrop, ...rest } = quote;
@@ -79,13 +118,56 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         }
     };
 
+    const handleStatusClick = (quote: Quote) => {
+        setSelectedQuote(quote);
+        setShowStatusManager(true);
+    };
+
+    const handleStatusChange = async (quoteId: string, newStatus: Quote['status'], note?: string) => {
+        try {
+            await QuotesService.updateQuote(quoteId, { 
+                status: newStatus,
+                updatedAt: new Date().toISOString(),
+                ...(note && { statusNote: note })
+            });
+            setShowStatusManager(false);
+            setSelectedQuote(null);
+        } catch (e) {
+            console.error('Erreur lors du changement de statut:', e);
+            alert('❌ Erreur lors du changement de statut');
+        }
+    };
+
+    const handleEmailClick = (quote: Quote) => {
+        setQuoteToEmail(quote);
+        setShowEmailSender(true);
+    };
+
+    const handleEmailSend = async (emailData: any) => {
+        // Simulation d'envoi d'email - à remplacer par un vrai service
+        console.log('Envoi email:', emailData);
+        
+        // Mettre à jour le statut du devis vers "sent" si c'était un brouillon
+        if (quoteToEmail && quoteToEmail.status === 'draft') {
+            await QuotesService.updateQuote(quoteToEmail.id, {
+                status: 'sent',
+                updatedAt: new Date().toISOString()
+            });
+        }
+        
+        setShowEmailSender(false);
+        setQuoteToEmail(null);
+    };
+
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'draft': return <Clock className="w-4 h-4 text-yellow-500" />;
             case 'sent': return <Send className="w-4 h-4 text-blue-500" />;
             case 'accepted': return <CheckCircle className="w-4 h-4 text-green-500" />;
             case 'rejected': return <XCircle className="w-4 h-4 text-red-500" />;
+            case 'viewed': return <Eye className="w-4 h-4 text-indigo-500" />;
             case 'expired': return <Clock className="w-4 h-4 text-gray-500" />;
+            case 'cancelled': return <XCircle className="w-4 h-4 text-gray-500" />;
             default: return <FileText className="w-4 h-4" />;
         }
     };
@@ -96,7 +178,9 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
             case 'sent': return 'Envoyé';
             case 'accepted': return 'Accepté';
             case 'rejected': return 'Refusé';
+            case 'viewed': return 'Consulté';
             case 'expired': return 'Expiré';
+            case 'cancelled': return 'Annulé';
             default: return status;
         }
     };
@@ -111,7 +195,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         .sort((a, b) => {
             switch (sortBy) {
                 case 'date':
-                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
                 case 'amount':
                     return b.totalAmount - a.totalAmount;
                 case 'client':
@@ -125,11 +209,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         <div className="space-y-6">
             {/* En-tête */}
             <motion.div
-                className={`glass-card p-6 rounded-xl border border-white/20 ${
-                    resolvedTheme === 'dark'
-                        ? 'bg-gray-800 border border-gray-700'
-                        : 'bg-white border border-gray-200'
-                }`}
+                className="glass-card p-6 rounded-xl border border-white/20 bg-gradient-to-br from-white/90 to-blue-50/90 backdrop-blur-xl shadow-2xl"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
             >
@@ -266,12 +346,16 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                             {quote.clientName}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-1 ml-2">
+                                    <button
+                                        onClick={() => handleStatusClick(quote)}
+                                        className="flex items-center gap-1 ml-2 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                        title="Gérer le statut"
+                                    >
                                         {getStatusIcon(quote.status)}
                                         <span className="text-xs font-medium">
                                             {getStatusLabel(quote.status)}
                                         </span>
-                                    </div>
+                                    </button>
                                 </div>
 
                                 {/* Informations principales */}
@@ -294,7 +378,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm opacity-70">Créé le:</span>
                                         <span className="text-sm">
-                                            {new Date(quote.createdAt).toLocaleDateString()}
+                                            {new Date(quote.createdAt || 0).toLocaleDateString()}
                                         </span>
                                     </div>
                                 </div>
@@ -307,6 +391,24 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                     >
                                         <Edit className="w-3 h-3" />
                                         Modifier
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => handleStatusClick(quote)}
+                                        className="flex items-center gap-1 px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+                                        title="Gérer le statut"
+                                    >
+                                        <Settings className="w-3 h-3" />
+                                        Statut
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => handleEmailClick(quote)}
+                                        className="flex items-center gap-1 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+                                        title="Envoyer par email"
+                                    >
+                                        <Send className="w-3 h-3" />
+                                        Email
                                     </button>
                                     
                                     <button
@@ -394,6 +496,30 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                         </div>
                     </motion.div>
                 </div>
+            )}
+
+            {/* Modal de gestion des statuts */}
+            {showStatusManager && selectedQuote && (
+                <QuoteStatusManager
+                    quote={selectedQuote}
+                    onStatusChange={handleStatusChange}
+                    onClose={() => {
+                        setShowStatusManager(false);
+                        setSelectedQuote(null);
+                    }}
+                />
+            )}
+
+            {/* Modal d'envoi d'email */}
+            {showEmailSender && quoteToEmail && (
+                <QuoteEmailSender
+                    quote={quoteToEmail}
+                    onSend={handleEmailSend}
+                    onClose={() => {
+                        setShowEmailSender(false);
+                        setQuoteToEmail(null);
+                    }}
+                />
             )}
         </div>
     );

@@ -1,7 +1,84 @@
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userRole() {
+      return isSignedIn() ? request.auth.token.role : null;
+    }
+
+    function hasRole(r) {
+      return userRole() == r;
+    }
+
+    function hasAnyRole(roles) {
+      return roles.hasAny(userRole());
+    }
+
+    // Generic module permissions derived from roles
+    function canViewProjects() { return hasAnyRole(['admin','manager','supervisor','worker','client']); }
+    function canManageProjects() { return hasAnyRole(['admin','manager']); }
+    function canViewQuotes() { return hasAnyRole(['admin','manager','supervisor','client']); }
+    function canViewTasks() { return hasAnyRole(['admin','manager','supervisor','worker']); }
+    function canEditTasks() { return hasAnyRole(['admin','manager','supervisor']); }
+    function canViewFinances() { return hasAnyRole(['admin','manager','supervisor']); }
+    function canViewTeam() { return hasAnyRole(['admin','manager','supervisor']); }
+    function canViewEquipment() { return hasAnyRole(['admin','manager','supervisor','worker']); }
+    function canManageEquipment() { return hasAnyRole(['admin','manager']); }
+    function canViewDocuments() { return hasAnyRole(['admin','manager','supervisor','worker','client']); }
+    function canEditDocuments() { return hasAnyRole(['admin','manager','supervisor']); }
+
+    // Users collection: users can read their own profile; admins/managers can read all; only admin can write roles
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || hasAnyRole(['admin','manager']));
+      allow create: if isSignedIn() && request.auth.uid == uid; // self-bootstrap profile
+      allow update: if isSignedIn() && (
+        // user can update basic fields on his own doc, not role/permissions
+        (request.auth.uid == uid && !('role' in request.resource.data) && !('permissions' in request.resource.data)) ||
+        hasRole('admin')
+      );
+      allow delete: if hasRole('admin');
+    }
+
+    // Projects collection
+    match /projects/{projectId} {
+      allow read: if isSignedIn() && canViewProjects();
+      allow create, update, delete: if isSignedIn() && canManageProjects();
+
+      // Subcollections (example: tasks, documents)
+      match /tasks/{taskId} {
+        allow read: if isSignedIn() && canViewTasks();
+        allow create, update, delete: if isSignedIn() && canEditTasks();
+      }
+
+      match /documents/{docId} {
+        allow read: if isSignedIn() && canViewDocuments();
+        allow create, update, delete: if isSignedIn() && canEditDocuments();
+      }
+    }
+
+    // Quotes collection
+    match /quotes/{quoteId} {
+      allow read: if isSignedIn() && canViewQuotes();
+      allow create, update, delete: if isSignedIn() && hasAnyRole(['admin','manager','supervisor']);
+    }
+
+    // Equipment collection
+    match /equipment/{equipmentId} {
+      allow read: if isSignedIn() && canViewEquipment();
+      allow create, update, delete: if isSignedIn() && canManageEquipment();
+    }
+
+    // Documents root (if used)
+    match /documents/{docId} {
+      allow read: if isSignedIn() && canViewDocuments();
+      allow create, update, delete: if isSignedIn() && canEditDocuments();
+    }
+
+    // Fallback: deny
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

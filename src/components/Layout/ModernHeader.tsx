@@ -15,6 +15,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import NotificationBell from '../Notifications/NotificationBell';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ModernHeaderProps {
   forceSolid?: boolean; // force un fond opaque et des textes sombres (utile en in-app)
@@ -26,7 +27,10 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const location = useLocation();
+  const inApp = location.pathname.startsWith('/app');
+  const { firebaseUser, logout } = useAuth();
 
   // Détection du scroll pour effet glassmorphism
   useEffect(() => {
@@ -75,7 +79,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
     return location.pathname === item.href;
   };
 
-  const menuItems: MenuItem[] = [
+  const baseMenuItems: MenuItem[] = [
     {
       name: 'Fonctionnalités',
       href: '#',
@@ -100,8 +104,18 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
       ]
     },
     { name: 'Tarification', href: '/pricing' },
-    { name: 'Connexion', href: '/login' },
   ];
+
+  const menuItems: MenuItem[] = React.useMemo(() => {
+    const items = [...baseMenuItems];
+    if (firebaseUser) {
+      // Utilisateur connecté: ne pas afficher Connexion, ajouter Mon espace
+      items.push({ name: 'Mon espace', href: '/app/launchpad' });
+    } else {
+      items.push({ name: 'Connexion', href: '/login' });
+    }
+    return items;
+  }, [firebaseUser]);
 
   const headerVariants = {
     initial: { y: -100, opacity: 0 },
@@ -310,38 +324,114 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                 <NotificationBell />
               </motion.div>
             )}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              <Link
-                to="/login"
-                className={`font-medium transition-colors ${
-                  solid 
-                    ? 'text-gray-800 hover:text-blue-600' 
-                    : 'text-white hover:text-blue-200 drop-shadow-lg'
-                }`}
+            {firebaseUser && !inApp ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Connexion
-              </Link>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Link
-                to="/register"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
-              >
-                <span>Commencer</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </motion.div>
+                <Link
+                  to="/app/dashboard"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
+                >
+                  <span>Accéder à l'app</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </motion.div>
+            ) : firebaseUser ? null : (
+              <></>
+            )}
+
+            {/* Accès rapide minimal (option A): Launchpad uniquement */}
+            {firebaseUser && !inApp && (
+              <div className={`flex items-center gap-4 ${solid ? 'text-gray-800' : 'text-white drop-shadow-lg'}`}>
+                <Link to="/app/launchpad" className="hover:text-blue-600 transition-colors font-semibold">Launchpad</Link>
+              </div>
+            )}
+
+            {firebaseUser ? (
+              <>
+                {/* User avatar/menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen((v) => !v)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold select-none border transition-colors ${
+                      solid ? 'bg-white text-gray-700 border-gray-200' : 'bg-white/90 text-gray-800 border-white/50'
+                    }`}
+                    title="Compte"
+                  >
+                    {(firebaseUser?.displayName || firebaseUser?.email || 'U')
+                      .substring(0, 1)
+                      .toUpperCase()}
+                  </button>
+                  <AnimatePresence>
+                    {isUserMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-xl border border-gray-200/60 rounded-xl shadow-2xl overflow-hidden z-50"
+                      >
+                        <Link
+                          to="/app/settings"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          Paramètres
+                        </Link>
+                        <button
+                          onClick={async () => {
+                            setIsUserMenuOpen(false);
+                            try { await logout(); } catch {}
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          Se déconnecter
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </>
+            ) : (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Link
+                    to="/login"
+                    className={`font-medium transition-colors ${
+                      solid 
+                        ? 'text-gray-800 hover:text-blue-600' 
+                        : 'text-white hover:text-blue-200 drop-shadow-lg'
+                    }`}
+                  >
+                    Connexion
+                  </Link>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link
+                    to="/register"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
+                  >
+                    <span>Commencer</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </motion.div>
+              </>
+            )}
           </div>
 
           {/* Mobile: Notification + Menu */}
@@ -429,20 +519,45 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                 <hr className="border-gray-200" />
                 
                 <div className="space-y-3">
-                  <Link
-                    to="/login"
-                    className="block text-gray-700 hover:text-blue-600 font-medium py-2 transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Connexion
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold text-center transition-all duration-300"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Commencer
-                  </Link>
+                  {firebaseUser ? (
+                    <>
+                      <Link
+                        to="/app/dashboard"
+                        className="block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold text-center transition-all duration-300"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Accéder à l'app
+                      </Link>
+                      {/* Accès rapide mobile (option A): Launchpad uniquement */}
+                      <div className="grid grid-cols-1 gap-2 mt-1">
+                        <Link to="/app/launchpad" onClick={() => setIsMenuOpen(false)} className="block text-gray-700 hover:text-blue-600 font-semibold text-center py-2">Launchpad</Link>
+                      </div>
+                      {/* Paramètres retiré des actions rapides du header en mode connecté */}
+                      <button
+                        onClick={async () => { setIsMenuOpen(false); try { await logout(); } catch {} }}
+                        className="w-full border border-gray-200 rounded-xl py-2 text-gray-700 hover:bg-gray-100 font-medium"
+                      >
+                        Se déconnecter
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/login"
+                        className="block text-gray-700 hover:text-blue-600 font-medium py-2 transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Connexion
+                      </Link>
+                      <Link
+                        to="/register"
+                        className="block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold text-center transition-all duration-300"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Commencer
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>

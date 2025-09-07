@@ -10,6 +10,7 @@ import UltraModernHomePage from './pages/UltraModernHomePage';
 import Pricing from './pages/Pricing';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import AuthTestPage from './components/Auth/AuthTestPage';
 import Subscription from './pages/Subscription';
 
 // Application principale (existante)
@@ -25,6 +26,7 @@ const AppRouter: React.FC = () => {
             <Route path="/" element={<UltraModernHomePage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/subscription" element={<Subscription />} />
+            <Route path="/auth-test" element={<AuthTestPage />} />
             
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

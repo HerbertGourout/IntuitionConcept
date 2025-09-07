@@ -304,7 +304,7 @@ const NotificationBell: React.FC = () => {
 
   return (
     <Dropdown
-      overlay={dropdownContent}
+      menu={{ items: [{ key: 'content', label: dropdownContent }] }}
       trigger={['click']}
       placement="bottomRight"
       open={isOpen}

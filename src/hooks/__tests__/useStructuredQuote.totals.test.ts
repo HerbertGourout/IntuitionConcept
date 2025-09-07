@@ -1,13 +1,25 @@
 import { renderHook, act } from '@testing-library/react';
-import { vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { useStructuredQuote } from '../useStructuredQuote';
 
-vi.mock('../../contexts/GeolocationContext', () => ({
-  useGeolocation: () => ({ currentLocation: { latitude: 0, longitude: 0, address: 'Test' } })
+// Mock the dependencies
+vi.mock('../../contexts/CurrencyContext', () => ({
+  useCurrency: () => ({
+    formatCurrency: (amount: number) => `€${amount.toFixed(2)}`,
+    currency: 'EUR'
+  })
 }));
 
 vi.mock('../useOfflineData', () => ({
   useOfflineReports: () => ({ createReport: vi.fn() })
+}));
+
+vi.mock('../../contexts/GeolocationContext', () => ({
+  useGeolocation: () => ({
+    isEnabled: false,
+    position: null,
+    error: null,
+  })
 }));
 
 describe('useStructuredQuote totals calculation', () => {

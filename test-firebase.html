@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Firebase Auth - BTP Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        h1, h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Test Firebase Authentication - BTP Manager</h1>
+        
+        <div id="status" class="status info">
+            Initialisation de Firebase...
+        </div>
+
+        <div class="section">
+            <h2>📝 Inscription</h2>
+            <div class="form-group">
+                <label for="registerEmail">Email:</label>
+                <input type="email" id="registerEmail" value="test@btpmanager.com" placeholder="email@example.com">
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">Mot de passe:</label>
+                <input type="password" id="registerPassword" value="password123" placeholder="Minimum 6 caractères">
+            </div>
+            <div class="form-group">
+                <label for="displayName">Nom d'affichage:</label>
+                <input type="text" id="displayName" value="Utilisateur Test" placeholder="Votre nom">
+            </div>
+            <button onclick="registerUser()">S'inscrire</button>
+        </div>
+
+        <div class="section">
+            <h2>🔐 Connexion</h2>
+            <div class="form-group">
+                <label for="loginEmail">Email:</label>
+                <input type="email" id="loginEmail" value="test@btpmanager.com" placeholder="email@example.com">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Mot de passe:</label>
+                <input type="password" id="loginPassword" value="password123" placeholder="Votre mot de passe">
+            </div>
+            <button onclick="loginUser()">Se connecter</button>
+        </div>
+
+        <div class="section">
+            <h2>🔄 Réinitialisation</h2>
+            <div class="form-group">
+                <label for="resetEmail">Email:</label>
+                <input type="email" id="resetEmail" value="test@btpmanager.com" placeholder="email@example.com">
+            </div>
+            <button onclick="resetPassword()">Réinitialiser le mot de passe</button>
+        </div>
+
+        <div class="section">
+            <h2>👤 Informations utilisateur</h2>
+            <div id="userInfo" class="user-info">
+                Aucun utilisateur connecté
+            </div>
+            <button onclick="logoutUser()" id="logoutBtn" style="display: none;">Se déconnecter</button>
+        </div>
+
+        <div class="section">
+            <h2>🧪 Tests Firestore</h2>
+            <button onclick="testFirestore()">Tester Firestore</button>
+            <div id="firestoreResult"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            sendPasswordResetEmail,
+            onAuthStateChanged,
+            updateProfile,
+            sendEmailVerification
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc,
+            collection,
+            addDoc
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAVObwoBnIAGtXbt8-3td2gwtrK4gKp7_0",
+            authDomain: "intuitionconcept.firebaseapp.com",
+            projectId: "intuitionconcept",
+            storageBucket: "intuitionconcept.firebasestorage.app",
+            messagingSenderId: "4657836202",
+            appId: "1:4657836202:web:a9b0e27f4a67847033a0d3"
+        };
+
+        // Initialiser Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Fonctions globales
+        window.auth = auth;
+        window.db = db;
+
+        // Fonction d'inscription
+        window.registerUser = async () => {
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const displayName = document.getElementById('displayName').value;
+            
+            try {
+                showStatus('Inscription en cours...', 'info');
+                
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Mettre à jour le profil
+                if (displayName) {
+                    await updateProfile(user, { displayName });
+                }
+                
+                // Créer le profil utilisateur dans Firestore
+                const userProfile = {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: displayName || '',
+                    role: 'manager',
+                    permissions: ['projects.create', 'projects.edit', 'quotes.create', 'quotes.send'],
+                    createdAt: new Date().toISOString(),
+                    isActive: true
+                };
+                
+                await setDoc(doc(db, 'users', user.uid), userProfile);
+                
+                // Envoyer l'email de vérification
+                await sendEmailVerification(user);
+                
+                showStatus('✅ Inscription réussie ! Un email de vérification a été envoyé.', 'success');
+            } catch (error) {
+                console.error('Erreur inscription:', error);
+                showStatus(`❌ Erreur d'inscription: ${error.message}`, 'error');
+            }
+        };
+
+        // Fonction de connexion
+        window.loginUser = async () => {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                showStatus('Connexion en cours...', 'info');
+                
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                showStatus('✅ Connexion réussie !', 'success');
+            } catch (error) {
+                console.error('Erreur connexion:', error);
+                showStatus(`❌ Erreur de connexion: ${error.message}`, 'error');
+            }
+        };
+
+        // Fonction de déconnexion
+        window.logoutUser = async () => {
+            try {
+                await signOut(auth);
+                showStatus('✅ Déconnexion réussie !', 'success');
+            } catch (error) {
+                console.error('Erreur déconnexion:', error);
+                showStatus(`❌ Erreur de déconnexion: ${error.message}`, 'error');
+            }
+        };
+
+        // Fonction de réinitialisation
+        window.resetPassword = async () => {
+            const email = document.getElementById('resetEmail').value;
+            
+            try {
+                showStatus('Envoi de l\'email de réinitialisation...', 'info');
+                
+                await sendPasswordResetEmail(auth, email);
+                showStatus('✅ Email de réinitialisation envoyé !', 'success');
+            } catch (error) {
+                console.error('Erreur réinitialisation:', error);
+                showStatus(`❌ Erreur: ${error.message}`, 'error');
+            }
+        };
+
+        // Test Firestore
+        window.testFirestore = async () => {
+            try {
+                showFirestoreResult('Test Firestore en cours...', 'info');
+                
+                // Test d'écriture
+                const testDoc = {
+                    message: 'Test de connexion Firestore',
+                    timestamp: new Date().toISOString(),
+                    user: auth.currentUser?.email || 'anonyme'
+                };
+                
+                const docRef = await addDoc(collection(db, 'tests'), testDoc);
+                
+                // Test de lecture
+                const docSnap = await getDoc(doc(db, 'tests', docRef.id));
+                
+                if (docSnap.exists()) {
+                    showFirestoreResult(`✅ Firestore fonctionne ! Document créé avec ID: ${docRef.id}`, 'success');
+                } else {
+                    showFirestoreResult('❌ Erreur de lecture Firestore', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur Firestore:', error);
+                showFirestoreResult(`❌ Erreur Firestore: ${error.message}`, 'error');
+            }
+        };
+
+        // Écouter les changements d'authentification
+        onAuthStateChanged(auth, async (user) => {
+            const userInfoDiv = document.getElementById('userInfo');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            if (user) {
+                // Récupérer le profil utilisateur depuis Firestore
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    let userProfile = null;
+                    
+                    if (userDoc.exists()) {
+                        userProfile = userDoc.data();
+                    }
+                    
+                    userInfoDiv.innerHTML = `
+                        <h3>👤 Utilisateur connecté</h3>
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>Nom:</strong> ${user.displayName || 'Non défini'}</p>
+                        <p><strong>UID:</strong> ${user.uid}</p>
+                        <p><strong>Email vérifié:</strong> ${user.emailVerified ? '✅' : '❌'}</p>
+                        <p><strong>Créé le:</strong> ${new Date(user.metadata.creationTime).toLocaleString()}</p>
+                        <p><strong>Dernière connexion:</strong> ${new Date(user.metadata.lastSignInTime).toLocaleString()}</p>
+                        ${userProfile ? `
+                            <h4>📋 Profil Firestore</h4>
+                            <p><strong>Rôle:</strong> ${userProfile.role}</p>
+                            <p><strong>Permissions:</strong> ${userProfile.permissions?.join(', ')}</p>
+                            <p><strong>Actif:</strong> ${userProfile.isActive ? '✅' : '❌'}</p>
+                        ` : '<p><em>Aucun profil Firestore trouvé</em></p>'}
+                    `;
+                    logoutBtn.style.display = 'inline-block';
+                } catch (error) {
+                    console.error('Erreur récupération profil:', error);
+                    userInfoDiv.innerHTML = `
+                        <h3>👤 Utilisateur connecté (Firebase seulement)</h3>
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>UID:</strong> ${user.uid}</p>
+                        <p><em>Erreur de récupération du profil Firestore: ${error.message}</em></p>
+                    `;
+                    logoutBtn.style.display = 'inline-block';
+                }
+            } else {
+                userInfoDiv.innerHTML = 'Aucun utilisateur connecté';
+                logoutBtn.style.display = 'none';
+            }
+        });
+
+        // Fonction utilitaire pour afficher le statut
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        // Fonction utilitaire pour afficher les résultats Firestore
+        function showFirestoreResult(message, type) {
+            const resultDiv = document.getElementById('firestoreResult');
+            resultDiv.innerHTML = `<div class="status ${type}" style="margin-top: 10px;">${message}</div>`;
+        }
+
+        // Initialisation terminée
+        showStatus('🔥 Firebase initialisé avec succès ! Vous pouvez maintenant tester l\'authentification.', 'success');
+    </script>
+</body>
+</html>

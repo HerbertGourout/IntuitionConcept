@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
-import { Plus, FileText, ChevronDown, ChevronUp, Save, X } from 'lucide-react';
-import { Quote, QuotesService } from '../../services/quotesService';
-import type { Phase, Task, Article } from '../../types/StructuredQuote';
-import { useAuth } from '../../contexts/AuthContext';
+import { X, Plus, Save, FileText, ChevronDown, ChevronUp, Template } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { generateQuotePdf } from '../../services/pdf/quotePdf';
+import { useAuth } from '../../contexts/AuthContext';
 import { useBranding } from '../../contexts/BrandingContext';
+import { generateQuotePdf } from '../../services/pdf/quotePdf';
+import QuotesService, { Quote } from '../../services/quotesService';
+import { Task, Article, Phase } from '../../types/StructuredQuote';
+import QuoteTemplates from './QuoteTemplates';
 
 interface QuoteCreatorSimpleProps {
   onClose: () => void;
@@ -41,6 +42,11 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   const [subtotal, setSubtotal] = useState(0);
   const [taxAmount, setTaxAmount] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
+
+  // États de validation
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Fonctions utilitaires
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -79,13 +85,16 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
 
   // Export PDF
   const handleExportPdf = () => {
+    const validUntil = new Date();
+    validUntil.setDate(validUntil.getDate() + validityDays);
+    
     const quoteForPdf: Quote = {
       id: editQuote?.id || `DEVIS-${Date.now()}`,
       title,
       clientName,
-      companyName,
-      clientEmail,
-      clientPhone,
+      companyName: companyName || '',
+      clientEmail: clientEmail || '',
+      clientPhone: clientPhone || '',
       projectType,
       phases,
       subtotal,
@@ -96,6 +105,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
       validityDays,
       notes,
       paymentTerms,
+      validUntil: validUntil.toISOString(),
       createdAt: editQuote?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -118,13 +128,13 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   const calculateTotals = useCallback(() => {
     let newSubtotal = 0;
     
-    phases.forEach(phase => {
+    phases.forEach((phase: Phase) => {
       let phaseTotal = 0;
       if (phase.tasks) {
-        phase.tasks.forEach(task => {
+        phase.tasks.forEach((task: Task) => {
           let taskTotal = 0;
           if (task.articles) {
-            task.articles.forEach(article => {
+            task.articles.forEach((article: Article) => {
               const articleTotal = (article.quantity || 0) * (article.unitPrice || 0);
               taskTotal += articleTotal;
             });
@@ -175,10 +185,75 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
     }
   }, [editQuote]);
 
+  // Validation des champs
+  const validateForm = (): boolean => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!title.trim()) {
+      newErrors.title = 'Le titre du devis est obligatoire';
+    }
+    if (!clientName.trim()) {
+      newErrors.clientName = 'Le nom du client est obligatoire';
+    }
+    if (!clientEmail.trim()) {
+      newErrors.clientEmail = 'L\'email du client est obligatoire';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) {
+      newErrors.clientEmail = 'Format d\'email invalide';
+    }
+    if (phases.length === 0) {
+      newErrors.phases = 'Au moins une phase est requise';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Recalculer les totaux quand les phases changent
   useEffect(() => {
     calculateTotals();
   }, [calculateTotals]);
+
+  // Sauvegarde automatique (toutes les 30 secondes)
+  useEffect(() => {
+    if (!editQuote || !isInitialized || phases.length === 0) return;
+
+    const autoSaveInterval = setInterval(async () => {
+      if (validateForm() && !isSaving) {
+        setIsAutoSaving(true);
+        try {
+          const validUntil = new Date();
+          validUntil.setDate(validUntil.getDate() + validityDays);
+          
+          const quoteData = {
+            title,
+            clientName,
+            companyName: companyName || '',
+            clientEmail: clientEmail || '',
+            clientPhone: clientPhone || '',
+            projectType,
+            phases,
+            subtotal,
+            taxRate,
+            taxAmount,
+            totalAmount,
+            validUntil: validUntil.toISOString(),
+            status: editQuote.status,
+            validityDays,
+            notes,
+            paymentTerms
+          };
+
+          await QuotesService.updateQuote(editQuote.id, quoteData);
+        } catch (error) {
+          console.error('Erreur sauvegarde automatique:', error);
+        } finally {
+          setIsAutoSaving(false);
+        }
+      }
+    }, 30000); // 30 secondes
+
+    return () => clearInterval(autoSaveInterval);
+  }, [editQuote, isInitialized, phases, title, clientName, clientEmail, companyName, clientPhone, projectType, subtotal, taxRate, taxAmount, totalAmount, validityDays, notes, paymentTerms, validateForm, isSaving]);
 
   // Garde de rendu globale pour éviter tout flash avant initialisation
   if (!isInitialized) {
@@ -238,11 +313,11 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   };
 
   const updateTask = (phaseId: string, taskId: string, updates: Partial<Task>) => {
-    setPhases(phases.map(phase => 
+    setPhases(phases.map((phase: Phase) => 
       phase.id === phaseId 
         ? {
             ...phase,
-            tasks: phase.tasks.map(task => 
+            tasks: phase.tasks.map((task: Task) => 
               task.id === taskId ? { ...task, ...updates } : task
             )
           }
@@ -251,9 +326,9 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   };
 
   const deleteTask = (phaseId: string, taskId: string) => {
-    setPhases(phases.map(phase => 
+    setPhases(phases.map((phase: Phase) => 
       phase.id === phaseId 
-        ? { ...phase, tasks: phase.tasks.filter(task => task.id !== taskId) }
+        ? { ...phase, tasks: phase.tasks.filter((task: Task) => task.id !== taskId) }
         : phase
     ));
   };
@@ -269,11 +344,11 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
       totalPrice: 0
     };
     
-    setPhases(phases.map(phase => 
+    setPhases(phases.map((phase: Phase) => 
       phase.id === phaseId 
         ? {
             ...phase,
-            tasks: phase.tasks.map(task => 
+            tasks: phase.tasks.map((task: Task) => 
               task.id === taskId 
                 ? { ...task, articles: [...task.articles, newArticle] }
                 : task
@@ -284,15 +359,15 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   };
 
   const updateArticle = (phaseId: string, taskId: string, articleId: string, updates: Partial<Article>) => {
-    setPhases(phases.map(phase => 
+    setPhases(phases.map((phase: Phase) => 
       phase.id === phaseId 
         ? {
             ...phase,
-            tasks: phase.tasks.map(task => 
+            tasks: phase.tasks.map((task: Task) => 
               task.id === taskId 
                 ? {
                     ...task,
-                    articles: task.articles.map(article => 
+                    articles: task.articles.map((article: Article) => 
                       article.id === articleId 
                         ? { 
                             ...article, 
@@ -310,13 +385,13 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   };
 
   const deleteArticle = (phaseId: string, taskId: string, articleId: string) => {
-    setPhases(phases.map(phase => 
+    setPhases(phases.map((phase: Phase) => 
       phase.id === phaseId 
         ? {
             ...phase,
-            tasks: phase.tasks.map(task => 
+            tasks: phase.tasks.map((task: Task) => 
               task.id === taskId 
-                ? { ...task, articles: task.articles.filter(article => article.id !== articleId) }
+                ? { ...task, articles: task.articles.filter((article: Article) => article.id !== articleId) }
                 : task
             )
           }
@@ -324,27 +399,45 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
     ));
   };
 
+  // Fonction pour appliquer un template
+  const handleSelectTemplate = (template: any) => {
+    setTitle(template.name);
+    setProjectType(template.category);
+    setPhases(template.phases || []);
+    setShowTemplates(false);
+    toast.success('Template appliqué avec succès');
+  };
+
   // Fonction de sauvegarde
   const handleSave = async () => {
-    if (!user || !title || !clientName || !clientEmail) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+    if (!user) {
+      toast.error('Vous devez être connecté pour sauvegarder');
+      return;
+    }
+
+    if (!validateForm()) {
+      toast.error('Veuillez corriger les erreurs dans le formulaire');
       return;
     }
 
     setIsSaving(true);
     try {
+      const validUntil = new Date();
+      validUntil.setDate(validUntil.getDate() + validityDays);
+      
       const quoteData = {
         title,
         clientName,
-        companyName,
-        clientEmail,
-        clientPhone,
+        companyName: companyName || '',
+        clientEmail: clientEmail || '',
+        clientPhone: clientPhone || '',
         projectType,
         phases,
         subtotal,
         taxRate,
         taxAmount,
         totalAmount,
+        validUntil: validUntil.toISOString(),
         // Préserver le statut existant en édition, sinon défaut brouillon en création
         status: (editQuote?.status as Quote['status']) ?? 'draft',
         validityDays,
@@ -385,25 +478,37 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
           <>
             {/* En-tête */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <FileText className="w-6 h-6" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold">
+                        {editQuote ? 'Modifier le devis' : 'Nouveau devis'}
+                      </h2>
+                      <p className="text-blue-100">Créez un devis professionnel en quelques clics</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold">
-                      {editQuote ? 'Modifier le devis' : 'Nouveau devis'}
-                    </h2>
-                    <p className="text-blue-100">Créez un devis professionnel en quelques clics</p>
+                  <div className="flex items-center space-x-3">
+                    {!editQuote && (
+                      <button
+                        onClick={() => setShowTemplates(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors backdrop-blur-sm"
+                        title="Utiliser un template"
+                      >
+                        <Template className="w-5 h-5" />
+                        <span>Templates</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={onClose}
+                      className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
             </div>
 
         {/* Contenu principal */}
@@ -424,11 +529,26 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                   <input
                     type="text"
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="Ex: Développement site web e-commerce"
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      if (errors.title) {
+                        setErrors(prev => ({ ...prev, title: '' }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 bg-white/80 border rounded-xl focus:ring-2 focus:border-transparent transition-all ${
+                      errors.title 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-200 focus:ring-blue-500'
+                    }`}
+                    placeholder="Ex: Construction maison individuelle"
                     required
                   />
+                  {errors.title && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <span className="mr-1">⚠️</span>
+                      {errors.title}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -454,11 +574,26 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                   <input
                     type="text"
                     value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setClientName(e.target.value);
+                      if (errors.clientName) {
+                        setErrors(prev => ({ ...prev, clientName: '' }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 bg-white/80 border rounded-xl focus:ring-2 focus:border-transparent transition-all ${
+                      errors.clientName 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-200 focus:ring-blue-500'
+                    }`}
                     placeholder="Nom complet du client"
                     required
                   />
+                  {errors.clientName && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <span className="mr-1">⚠️</span>
+                      {errors.clientName}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -481,11 +616,26 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                   <input
                     type="email"
                     value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setClientEmail(e.target.value);
+                      if (errors.clientEmail) {
+                        setErrors(prev => ({ ...prev, clientEmail: '' }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 bg-white/80 border rounded-xl focus:ring-2 focus:border-transparent transition-all ${
+                      errors.clientEmail 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-200 focus:ring-blue-500'
+                    }`}
                     placeholder="email@exemple.com"
                     required
                   />
+                  {errors.clientEmail && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <span className="mr-1">⚠️</span>
+                      {errors.clientEmail}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -551,11 +701,11 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                               placeholder="Nom de la phase"
                             />
                             {(() => {
-                              const phaseTotal = phase.tasks?.reduce((sum, task) => 
-                                sum + (task.articles?.reduce((taskSum, article) => 
+                              const phaseTotal = phase.tasks?.reduce((sum: number, task: Task) => 
+                                sum + (task.articles?.reduce((taskSum: number, article: Article) => 
                                   taskSum + ((article.quantity || 0) * (article.unitPrice || 0)), 0) || 0), 0) || 0;
                               return phaseTotal > 0 ? (
-                                <div className="text-sm font-medium text-blue-600">
+                                <div className="text-lg font-semibold text-blue-600">
                                   {formatCurrency(phaseTotal)}
                                 </div>
                               ) : null;
@@ -596,7 +746,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                       {/* Tâches de la phase */}
                       {phase.expanded && (
                         <div className="p-4 space-y-3">
-                          {phase.tasks.map((task) => (
+                          {phase.tasks.map((task: Task) => (
                             <div key={task.id} className="bg-white/70 rounded-lg border border-gray-200/50 overflow-hidden">
                               {/* En-tête de tâche */}
                               <div className="p-3 bg-gray-50/50 border-b border-gray-200/30">
@@ -836,14 +986,30 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
         {/* Pied de page */}
         <div className="bg-gray-50/80 backdrop-blur-sm p-6 border-t border-gray-200/50">
           <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              * Champs obligatoires
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                * Champs obligatoires
+              </div>
+              {isAutoSaving && (
+                <div className="flex items-center text-sm text-blue-600">
+                  <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Sauvegarde automatique...
+                </div>
+              )}
+              {errors.phases && (
+                <div className="text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {errors.phases}
+                </div>
+              )}
             </div>
             <div className="flex space-x-3">
               <button
                 onClick={handleExportPdf}
                 className="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors flex items-center space-x-2"
-                title="Exporter en PDF"
               >
                 <FileText className="w-5 h-5" />
                 <span>Exporter PDF</span>
@@ -856,7 +1022,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
               </button>
               <button
                 onClick={handleSave}
-                disabled={!title || !clientName || !clientEmail || isSaving}
+                disabled={isSaving}
                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center space-x-2"
               >
                 <Save className="w-5 h-5" />
@@ -873,6 +1039,14 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
           </div>
         )}
       </div>
+      
+      {/* Modal Templates */}
+      {showTemplates && (
+        <QuoteTemplates
+          onClose={() => setShowTemplates(false)}
+          onSelectTemplate={handleSelectTemplate}
+        />
+      )}
     </div>
   );
 };

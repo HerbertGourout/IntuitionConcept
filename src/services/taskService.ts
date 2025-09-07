@@ -101,7 +101,7 @@ export class TaskService {
         orderBy('createdAt', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const tasks = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         dueDate: doc.data().dueDate?.toDate() || undefined,
@@ -116,6 +116,7 @@ export class TaskService {
             : (comment.createdAt ?? new Date())
         })) || []
       })) as Task[];
+      return tasks;
     } catch (error) {
       console.error('Erreur lors de la récupération des tâches par statut:', error);
       throw error;
@@ -133,7 +134,7 @@ export class TaskService {
         orderBy('createdAt', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const tasks = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         dueDate: doc.data().dueDate?.toDate() || undefined,
@@ -148,6 +149,7 @@ export class TaskService {
             : (comment.createdAt ?? new Date())
         })) || []
       })) as Task[];
+      return tasks;
     } catch (error) {
       console.error('Erreur lors de la récupération des tâches par projet:', error);
       throw error;
@@ -165,7 +167,7 @@ export class TaskService {
         orderBy('createdAt', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const tasks = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         dueDate: doc.data().dueDate?.toDate() || undefined,
@@ -180,6 +182,7 @@ export class TaskService {
             : (comment.createdAt ?? new Date())
         })) || []
       })) as Task[];
+      return tasks;
     } catch (error) {
       console.error('Erreur lors de la récupération des tâches par phase:', error);
       throw error;

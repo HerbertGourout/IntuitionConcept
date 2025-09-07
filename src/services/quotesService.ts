@@ -37,8 +37,9 @@ export interface Quote {
     totalAmount: number;
     discountRate?: number;
     discountAmount?: number;
-    status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
+    status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired' | 'cancelled';
     validityDays: number;
+    validUntil: string;
     paymentTerms?: string;
     notes?: string;
     createdAt?: string;

@@ -96,3 +96,40 @@ Projet open-source sous licence MIT.
 **Développé avec ❤️ pour le secteur BTP.**
 
 ---
+
+## ✅ Tests (Vitest + RTL)
+
+### Lancer les tests
+
+```bash
+npm test           # exécution complète (mode non watch)
+npm run test:watch # mode interactif
+npm run test:ci    # CI avec reporter verbose + coverage
+npm run test:ci:stable # CI stable (isolation forks) pour réduire la mémoire
+```
+
+### Configuration clé
+
+- Fichier: `vitest.config.ts`
+  - Environnement: `jsdom`
+  - Setup global: `src/setupTests.ts`
+  - Pool: `forks` avec un seul worker (évite les OOM sur machines modestes)
+
+- Fichier: `src/setupTests.ts`
+  - Mocks Firebase v9 centralisés via `src/__tests__/utils/firebaseMocks.ts`
+  - Mock global du générateur PDF: `services/pdf/quotePdf` → renvoie un `Blob` léger
+  - `matchMedia` mocké pour jsdom
+  - `console.log`/`console.error` silencés pour des sorties propres
+
+### Bonnes pratiques appliquées
+
+- Firebase v9 (modular): on mocke les fonctions standalone (`signInWithEmailAndPassword`, etc.) et non des méthodes d’instance
+- Auth listener `onAuthStateChanged` renvoie toujours une fonction d’unsubscribe
+- Sélecteurs RTL robustes: `getByRole('button', { name: /Envoyer l'Email/i })` au lieu de `getByText`
+- Temps figés/déterministes dans les tests sensibles (via data d’entrée ou mocks)
+
+### Dépannage rapide
+
+- OOM (Out Of Memory) pendant les tests: utiliser `npm run test:ci:stable` (pool forks, 1 worker)
+- Tests d’email avec PDF: couverts par le mock global PDF dans `setupTests.ts`
+- Tests Firestore: utilisent les mocks centralisés (`Timestamp`, `collection`, `query`, etc.)

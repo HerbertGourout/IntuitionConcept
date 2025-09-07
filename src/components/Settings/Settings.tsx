@@ -3,9 +3,10 @@ import {
   Settings as SettingsIcon, Bell, Shield, Database, Save, Upload,
   User, Globe, Clock, DollarSign, Palette, Monitor, Moon, Sun,
   Mail, Smartphone, AlertTriangle, Key, HardDrive,
-  Cloud, Download, RefreshCw
+  Cloud, Download, RefreshCw, CheckCircle, XCircle
 } from 'lucide-react';
 import { useBranding } from '../../contexts/BrandingContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface AppSettings {
   general: {
@@ -43,6 +44,12 @@ const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(false);
   const branding = useBranding();
+  const { firebaseUser, resendEmailVerification, refreshClaims, user, mfaGenerateTotpSecret, mfaEnrollTotp, mfaGetEnrolledFactors, mfaUnenroll } = useAuth();
+  const [revokeUid, setRevokeUid] = useState('');
+  const [totpUri, setTotpUri] = useState<string>('');
+  const [totpSecret, setTotpSecret] = useState<string>('');
+  const [totpCode, setTotpCode] = useState<string>('');
+  const [mfaFactors, setMfaFactors] = useState<Array<{ uid: string; displayName?: string; factorId: string }>>([]);
   const [brandForm, setBrandForm] = useState({
     companyName: '',
     companyAddress: '',
@@ -58,6 +65,16 @@ const Settings: React.FC = () => {
       });
     }
   }, [branding.profile]);
+
+  // Charger la liste des facteurs MFA lorsque l'onglet sécurité est actif
+  useEffect(() => {
+    if (activeTab === 'security') {
+      try {
+        const factors = mfaGetEnrolledFactors();
+        setMfaFactors(factors);
+      } catch {}
+    }
+  }, [activeTab, firebaseUser]);
   const [settings, setSettings] = useState<AppSettings>({
     general: {
       companyName: 'Construction BTP Congo',
@@ -435,6 +452,215 @@ const Settings: React.FC = () => {
                   Paramètres de sécurité
                 </h3>
                 <div className="space-y-6">
+                  {/* Email verification status */}
+                  <div className="p-4 bg-white/50 rounded-lg border border-white/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {firebaseUser?.emailVerified ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-orange-500" />
+                        )}
+                        <div>
+                          <p className="font-medium text-gray-800">Adresse e-mail</p>
+                          <p className="text-sm text-gray-600">{firebaseUser?.email || '—'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${firebaseUser?.emailVerified ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {firebaseUser?.emailVerified ? 'Vérifié' : 'Non vérifié'}
+                        </span>
+                      </div>
+                    </div>
+                    {!firebaseUser?.emailVerified && (
+                      <div className="flex flex-wrap gap-3 mt-4">
+                        <button
+                          onClick={async () => { await resendEmailVerification(); alert("Email de vérification renvoyé."); }}
+                          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <Mail className="h-4 w-4" />
+                          <span>Renvoyer l'email</span>
+                        </button>
+                        <button
+                          onClick={async () => { await refreshClaims(); }}
+                          className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          <span>J'ai déjà vérifié</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* MFA TOTP */}
+                  <div className="p-4 bg-white/50 rounded-lg border border-white/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <Key className="h-5 w-5 text-purple-600" />
+                        <div>
+                          <p className="font-medium text-gray-800">Authentification à deux facteurs (TOTP)</p>
+                          <p className="text-sm text-gray-600">Utilisez une application d'authentification (Google Authenticator, 1Password, etc.)</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Étape 1: Générer QR */}
+                    {!totpUri && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const { uri, secretKey } = await mfaGenerateTotpSecret();
+                            setTotpUri(uri);
+                            setTotpSecret(secretKey);
+                          } catch (e) {
+                            alert("Impossible de générer le secret TOTP. Assurez-vous d'être connecté.");
+                          }
+                        }}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        Activer TOTP
+                      </button>
+                    )}
+
+                    {/* Étape 2: Afficher QR et saisir code */}
+                    {totpUri && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <div className="flex flex-col items-center">
+                          <img
+                            alt="QR TOTP"
+                            className="w-40 h-40 border rounded-lg bg-white"
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(totpUri)}`}
+                          />
+                          <p className="text-xs text-gray-500 mt-2">Secret: {totpSecret}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Code à 6 chiffres</label>
+                          <input
+                            type="text"
+                            value={totpCode}
+                            onChange={(e) => setTotpCode(e.target.value)}
+                            placeholder="123456"
+                            className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
+                          />
+                          <div className="flex gap-3 mt-3">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await mfaEnrollTotp(totpCode, 'TOTP');
+                                  setTotpUri('');
+                                  setTotpSecret('');
+                                  setTotpCode('');
+                                  const factors = mfaGetEnrolledFactors();
+                                  setMfaFactors(factors);
+                                  alert('TOTP activé avec succès.');
+                                } catch (e) {
+                                  alert('Échec de l\'activation TOTP. Vérifiez le code.');
+                                }
+                              }}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            >
+                              Valider
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setTotpUri(''); setTotpSecret(''); setTotpCode(''); }}
+                              className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Facteurs enrôlés */}
+                    {mfaFactors.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Facteurs enrôlés</p>
+                        <div className="space-y-2">
+                          {mfaFactors.map(f => (
+                            <div key={f.uid} className="flex items-center justify-between p-3 bg-white/60 rounded-lg border">
+                              <div>
+                                <p className="text-sm font-medium text-gray-800">{f.displayName || 'TOTP'}</p>
+                                <p className="text-xs text-gray-500">{f.factorId} • {f.uid}</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!confirm('Supprimer ce facteur MFA ?')) return;
+                                  try {
+                                    await mfaUnenroll(f.uid);
+                                    const factors = mfaGetEnrolledFactors();
+                                    setMfaFactors(factors);
+                                  } catch (e) {
+                                    alert('Échec de la suppression du facteur.');
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                              >
+                                Supprimer
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Admin: Logout everywhere helper */}
+                  {user?.role === 'admin' && (
+                    <div className="p-4 bg-white/50 rounded-lg border border-white/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <HardDrive className="h-5 w-5 text-red-600" />
+                          <div>
+                            <p className="font-medium text-gray-800">Déconnexion sur tous les appareils (admin)</p>
+                            <p className="text-sm text-gray-600">Révoquer les refresh tokens d'un utilisateur (nécessite clé Admin SDK côté serveur)</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">UID cible</label>
+                          <input
+                            type="text"
+                            value={revokeUid}
+                            onChange={(e) => setRevokeUid(e.target.value)}
+                            placeholder="Saisir l'UID Firebase"
+                            className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-lg focus:outline-none focus:ring-4 focus:ring-red-500/20 focus:border-red-500 transition-all duration-200"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Votre UID: <span className="font-mono">{firebaseUser?.uid || '—'}</span></p>
+                        </div>
+                        <div className="flex items-end gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const uid = revokeUid.trim();
+                              if (!uid) return alert("Veuillez saisir un UID");
+                              const cmd = `node scripts/revokeUserTokens.js ${uid}`;
+                              navigator.clipboard?.writeText(cmd);
+                              alert("Commande copiée dans le presse-papiers:\n\n" + cmd);
+                            }}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                          >
+                            Copier la commande
+                          </button>
+                          <a
+                            href="https://firebase.google.com/docs/auth/admin/manage-sessions?hl=fr"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            Documentation
+                          </a>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-3">Note: cette action se lance côté serveur. Assurez-vous que <code>scripts/serviceAccountKey.json</code> est configuré puis exécutez la commande dans votre terminal.</p>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Key className="h-5 w-5 text-gray-600" />

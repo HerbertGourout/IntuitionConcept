@@ -108,6 +108,7 @@ export class BudgetIntegrationService {
           amount: actualAmount,
           status: 'actual', // Dépense réelle
           description: `${plannedData.description ?? ''} - Livré le ${deliveryNote.actualDeliveryDate}`,
+          date: deliveryNote.actualDeliveryDate || deliveryNote.deliveryDate,
           deliveryNoteId: deliveryNote.id,
           updatedAt: Timestamp.now()
         });
