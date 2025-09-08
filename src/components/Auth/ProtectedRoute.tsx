@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth, UserRole } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { UserRole } from '../../config/permissions';
 import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 
 interface ProtectedRouteProps {

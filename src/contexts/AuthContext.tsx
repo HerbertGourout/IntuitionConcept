@@ -17,8 +17,10 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { UserRole, ROLE_PERMISSIONS } from '../config/permissions';
+import { auditLogger } from '../services/auditLogger';
+import { sessionManager } from '../services/sessionManager';
 
-export type UserRole = 'admin' | 'manager' | 'supervisor' | 'worker' | 'client';
 
 export interface UserProfile {
   uid: string;
@@ -61,14 +63,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Permissions par rôle
-const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  admin: ['*'], // Toutes les permissions
-  manager: ['projects.create', 'projects.edit', 'projects.delete', 'quotes.create', 'quotes.edit', 'quotes.send', 'team.view', 'finances.view', 'reports.view'],
-  supervisor: ['projects.view', 'projects.edit', 'quotes.create', 'quotes.edit', 'team.view', 'tasks.create', 'tasks.edit'],
-  worker: ['projects.view', 'tasks.view', 'tasks.edit', 'documents.view'],
-  client: ['quotes.view', 'projects.view']
-};
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -142,9 +136,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      // Logger la connexion réussie
+      if (user) {
+        await auditLogger.logLogin(firebaseUser.uid, user.role, true);
+        
+        // Démarrer la surveillance de session
+        sessionManager.startSessionMonitoring(
+          (timeLeft) => console.warn(`Session expire dans ${Math.floor(timeLeft / 60000)} minutes`),
+          () => {
+            console.warn('Session expirée, déconnexion automatique');
+            logout();
+          }
+        );
+      }
     } catch (error) {
       console.error('Erreur de connexion:', error);
+      
+      // Logger la tentative de connexion échouée
+      await auditLogger.logLogin(email, 'worker', false, error instanceof Error ? error.message : 'Erreur inconnue');
+      
       throw error;
     }
   };

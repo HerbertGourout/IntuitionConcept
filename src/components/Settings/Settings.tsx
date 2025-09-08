@@ -184,6 +184,7 @@ const Settings: React.FC = () => {
               { id: 'general', label: 'Général', icon: SettingsIcon },
               { id: 'notifications', label: 'Notifications', icon: Bell },
               { id: 'security', label: 'Sécurité', icon: Shield },
+              { id: 'admin', label: 'Administration', icon: Shield },
               { id: 'branding', label: 'Branding', icon: Palette },
               { id: 'backup', label: 'Sauvegarde', icon: Database }
             ].map(tab => (
@@ -711,6 +712,71 @@ const Settings: React.FC = () => {
                         <option value="strong">Forte</option>
                       </select>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'admin' && (
+            <div className="space-y-6">
+              <div className="glass-card p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <Shield className="h-5 w-5 mr-2 text-red-600" />
+                  Tableau de Bord Sécurité
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Accédez aux outils d'administration et de surveillance de la sécurité.
+                </p>
+                
+                <div className="bg-gradient-to-r from-red-50 to-orange-50 p-6 rounded-lg border border-red-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-red-800 mb-2">Surveillance de Sécurité</h4>
+                      <p className="text-red-700 text-sm mb-4">
+                        Consultez les logs d'audit, les alertes de sécurité et surveillez l'activité des utilisateurs.
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <span className="px-2 py-1 bg-red-100 text-red-700 rounded">Logs d'audit</span>
+                        <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">Alertes sécurité</span>
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">Activité utilisateurs</span>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => window.open('/security-dashboard', '_blank')}
+                      className="flex items-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      <Shield className="h-4 w-4" />
+                      <span>Ouvrir le Dashboard</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <div className="bg-white/50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <AlertTriangle className="h-5 w-5 text-orange-600" />
+                      <h4 className="font-medium text-gray-800">Permissions Système</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Gérez les rôles et permissions des utilisateurs.
+                    </p>
+                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                      Configurer →
+                    </button>
+                  </div>
+
+                  <div className="bg-white/50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <Database className="h-5 w-5 text-blue-600" />
+                      <h4 className="font-medium text-gray-800">Règles Firestore</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Configurez les règles de sécurité de la base de données.
+                    </p>
+                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                      Déployer →
+                    </button>
                   </div>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence } from "firebase/auth";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAVObwoBnIAGtXbt8-3td2gwtrK4gKp7_0",
@@ -18,6 +19,7 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+export const functions = getFunctions(app);
 
 // Configure Auth persistence from env: 'local' | 'session' | 'none'
 try {
@@ -43,6 +45,7 @@ if (usingEmulators) {
     connectAuthEmulator(auth, 'http://127.0.0.1:9099');
     connectFirestoreEmulator(db, '127.0.0.1', 8080);
     connectStorageEmulator(storage, '127.0.0.1', 9199);
+    connectFunctionsEmulator(functions, '127.0.0.1', 5001);
     console.info('[Firebase] Connected to local emulators (auth:9099, firestore:8080, storage:9199)');
   } catch (e) {
     // Avoid hard-crashing init if emulator not running

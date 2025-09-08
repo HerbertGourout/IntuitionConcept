@@ -1,0 +1,238 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions pour les rôles et permissions
+    function getUserRole() {
+      return request.auth.token.role;
+    }
+    
+    function hasRole(roles) {
+      return getUserRole() in roles;
+    }
+    
+    function isAdmin() {
+      return hasRole(['admin']);
+    }
+    
+    function isManagerOrAbove() {
+      return hasRole(['admin', 'manager']);
+    }
+    
+    function isSupervisorOrAbove() {
+      return hasRole(['admin', 'manager', 'supervisor']);
+    }
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // === RÈGLES D'AUDIT ET SÉCURITÉ ===
+    
+    // Collection des logs d'audit - Lecture limitée, écriture pour tous les utilisateurs authentifiés
+    match /audit_logs/{logId} {
+      // Seuls les admins et managers peuvent lire tous les logs
+      // Les utilisateurs peuvent lire uniquement leurs propres logs
+      allow read: if isAuthenticated() && (
+        isManagerOrAbove() || 
+        isOwner(resource.data.userId)
+      );
+      
+      // Tous les utilisateurs authentifiés peuvent créer des logs (pour l'audit automatique)
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.timestamp == request.time;
+      
+      // Les logs d'audit sont immutables - pas de mise à jour ni suppression
+      allow update, delete: if false;
+    }
+    
+    // Collection des alertes de sécurité - Accès admin uniquement
+    match /security_alerts/{alertId} {
+      allow read, write: if isAdmin();
+      allow create: if isAuthenticated(); // Système peut créer des alertes
+      allow update: if isAdmin(); // Seuls les admins peuvent marquer comme résolues
+      allow delete: if false; // Pas de suppression des alertes
+    }
+
+    // === RÈGLES UTILISATEURS ===
+    
+    // Collection des profils utilisateurs
+    match /users/{userId} {
+      // Les utilisateurs peuvent lire leur propre profil
+      // Les managers+ peuvent lire tous les profils
+      allow read: if isAuthenticated() && (
+        isOwner(userId) || 
+        isManagerOrAbove()
+      );
+      
+      // Les utilisateurs peuvent mettre à jour leur propre profil (sauf le rôle)
+      // Les admins peuvent tout modifier
+      allow update: if isAuthenticated() && (
+        (isOwner(userId) && 
+         !('role' in request.resource.data.diff(resource.data).affectedKeys())) ||
+        isAdmin()
+      );
+      
+      // Seuls les admins peuvent créer des utilisateurs
+      allow create: if isAdmin();
+      
+      // Seuls les admins peuvent supprimer des utilisateurs
+      allow delete: if isAdmin();
+    }
+
+    // === RÈGLES MÉTIER ===
+    
+    // Collection des projets
+    match /projects/{projectId} {
+      // Lecture : tous les utilisateurs authentifiés
+      allow read: if isAuthenticated();
+      
+      // Création : superviseurs et plus
+      allow create: if isSupervisorOrAbove();
+      
+      // Modification : managers et plus, ou propriétaire du projet
+      allow update: if isAuthenticated() && (
+        isManagerOrAbove() || 
+        isOwner(resource.data.createdBy)
+      );
+      
+      // Suppression : admins uniquement
+      allow delete: if isAdmin();
+    }
+    
+    // Collection des devis
+    match /quotes/{quoteId} {
+      // Lecture : tous les utilisateurs authentifiés
+      allow read: if isAuthenticated();
+      
+      // Création : workers et plus
+      allow create: if isAuthenticated();
+      
+      // Modification : propriétaire ou superviseurs+
+      allow update: if isAuthenticated() && (
+        isOwner(resource.data.createdBy) || 
+        isSupervisorOrAbove()
+      );
+      
+      // Suppression : managers et plus
+      allow delete: if isManagerOrAbove();
+    }
+    
+    // Collection des tâches
+    match /tasks/{taskId} {
+      // Lecture : tous les utilisateurs authentifiés
+      allow read: if isAuthenticated();
+      
+      // Création : workers et plus
+      allow create: if isAuthenticated();
+      
+      // Modification : assigné à la tâche ou superviseurs+
+      allow update: if isAuthenticated() && (
+        request.auth.uid in resource.data.assignedTo ||
+        isOwner(resource.data.createdBy) ||
+        isSupervisorOrAbove()
+      );
+      
+      // Suppression : superviseurs et plus
+      allow delete: if isSupervisorOrAbove();
+    }
+    
+    // Collection des finances
+    match /finances/{financeId} {
+      // Lecture : managers et plus
+      allow read: if isManagerOrAbove();
+      
+      // Écriture : managers et plus
+      allow write: if isManagerOrAbove();
+    }
+    
+    // Collection des équipements
+    match /equipment/{equipmentId} {
+      // Lecture : tous les utilisateurs authentifiés
+      allow read: if isAuthenticated();
+      
+      // Écriture : superviseurs et plus
+      allow write: if isSupervisorOrAbove();
+    }
+    
+    // Collection des documents
+    match /documents/{documentId} {
+      // Lecture : tous les utilisateurs authentifiés
+      allow read: if isAuthenticated();
+      
+      // Création : tous les utilisateurs authentifiés
+      allow create: if isAuthenticated();
+      
+      // Modification/Suppression : propriétaire ou managers+
+      allow update, delete: if isAuthenticated() && (
+        isOwner(resource.data.uploadedBy) || 
+        isManagerOrAbove()
+      );
+    }
+    
+    // Collection des notifications
+    match /notifications/{notificationId} {
+      // Lecture : destinataire ou managers+
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) || 
+        isManagerOrAbove()
+      );
+      
+      // Création : système ou managers+
+      allow create: if isAuthenticated();
+      
+      // Modification : destinataire (pour marquer comme lu)
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      
+      // Suppression : managers et plus
+      allow delete: if isManagerOrAbove();
+    }
+
+    // === RÈGLES PAR DÉFAUT ===
+    
+    // Toute autre collection nécessite des permissions admin
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
+
+// === RÈGLES POUR FIREBASE STORAGE ===
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Documents et fichiers projet
+    match /projects/{projectId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (request.auth.token.role in ['admin', 'manager', 'supervisor']);
+    }
+    
+    // Avatars utilisateurs
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (request.auth.uid == userId || request.auth.token.role == 'admin');
+    }
+    
+    // Documents temporaires
+    match /temp/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Exports et rapports (admins uniquement)
+    match /exports/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.role == 'admin';
+    }
+    
+    // Règle par défaut - accès refusé
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -13,6 +13,7 @@ import { BrandingProvider } from './contexts/BrandingContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import AuthWrapper from './components/Auth/AuthWrapper';
+import SessionMonitor from './components/Auth/SessionMonitor';
 
 import SecureLayout from './components/Layout/SecureLayout';
 import { Dashboard, Quotes, Projects, Equipment, Tasks, Finances, Planning, Documents, ProjectBudget, Reports, Team, PurchaseOrders, PaymentDashboard, Locations, NotificationCenter, Settings, QuoteCreator } from './components/LazyLoad/LazyComponents';
@@ -309,6 +310,12 @@ const AppContent: React.FC = () => {
           
           {/* Toast Notifications */}
           <ToastContainer toasts={toasts} onClose={removeToast} />
+
+          {/* Session Monitor */}
+          <SessionMonitor 
+            warningThreshold={5 * 60 * 1000} // 5 minutes avant expiration
+            autoRefresh={true}
+          />
 
           {/* Emulator Badge */}
           {usingEmulators && (

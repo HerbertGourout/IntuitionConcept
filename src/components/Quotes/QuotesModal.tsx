@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { Quote } from '../../services/quotesService';
+import { useSecureAction } from '../../hooks/useSecureAction';
 
 interface QuotesModalProps {
     isOpen: boolean;
@@ -24,6 +25,45 @@ const QuotesModal: React.FC<QuotesModalProps> = ({
     onRefresh,
     formatCurrency
 }) => {
+
+    // Actions sécurisées pour les devis
+    const { execute: secureLoadQuote, canExecute: canEdit } = useSecureAction(
+        async (quote: Quote) => {
+            onLoadQuote(quote);
+        },
+        'edit_quote',
+        {
+            requiredPermissions: ['quotes.edit'],
+            resource: 'quote',
+            logAction: true
+        }
+    );
+
+    const { execute: secureDuplicateQuote, canExecute: canDuplicate } = useSecureAction(
+        async (quote: Quote) => {
+            onDuplicateQuote(quote);
+        },
+        'duplicate_quote',
+        {
+            requiredPermissions: ['quotes.create'],
+            resource: 'quote',
+            logAction: true
+        }
+    );
+
+    const { execute: secureDeleteQuote, canExecute: canDelete } = useSecureAction(
+        async (id: string, title: string) => {
+            onDeleteQuote(id, title);
+        },
+        'delete_quote',
+        {
+            requiredPermissions: ['quotes.delete'],
+            requireRecentAuth: true,
+            maxAuthAge: 15 * 60 * 1000, // 15 minutes
+            resource: 'quote',
+            logAction: true
+        }
+    );
     // Refs for focus management and backdrop
     const dialogRef = useRef<HTMLDivElement | null>(null);
     const panelRef = useRef<HTMLDivElement | null>(null);
@@ -187,16 +227,22 @@ const QuotesModal: React.FC<QuotesModalProps> = ({
                                             <strong>Phases:</strong> {savedQuote.phases.length}
                                         </div>
                                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                                            <strong>Créé:</strong> {new Date(savedQuote.createdAt).toLocaleDateString('fr-FR')}
+                                            <strong>Créé:</strong> {savedQuote.createdAt ? new Date(savedQuote.createdAt).toLocaleDateString('fr-FR') : 'Non défini'}
                                         </div>
                                     </div>
 
                                     {/* Actions */}
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={() => onLoadQuote(savedQuote)}
+                                            onClick={() => secureLoadQuote(savedQuote)}
+                                            disabled={!canEdit}
                                             aria-label={`Éditer le devis ${savedQuote.title || savedQuote.id}`}
-                                            className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            title={!canEdit ? "Permission 'quotes.edit' requise" : "Éditer le devis"}
+                                            className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 text-white text-xs rounded transition-colors focus:outline-none focus:ring-2 ${
+                                                canEdit 
+                                                    ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500' 
+                                                    : 'bg-gray-400 cursor-not-allowed'
+                                            }`}
                                         >
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -204,9 +250,15 @@ const QuotesModal: React.FC<QuotesModalProps> = ({
                                             Éditer
                                         </button>
                                         <button
-                                            onClick={() => onDuplicateQuote(savedQuote)}
+                                            onClick={() => secureDuplicateQuote(savedQuote)}
+                                            disabled={!canDuplicate}
                                             aria-label={`Dupliquer le devis ${savedQuote.title || savedQuote.id}`}
-                                            className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            title={!canDuplicate ? "Permission 'quotes.create' requise" : "Dupliquer le devis"}
+                                            className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 text-white text-xs rounded transition-colors focus:outline-none focus:ring-2 ${
+                                                canDuplicate 
+                                                    ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' 
+                                                    : 'bg-gray-400 cursor-not-allowed'
+                                            }`}
                                         >
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -214,9 +266,15 @@ const QuotesModal: React.FC<QuotesModalProps> = ({
                                             Dupliquer
                                         </button>
                                         <button
-                                            onClick={() => onDeleteQuote(savedQuote.id, savedQuote.title)}
+                                            onClick={() => secureDeleteQuote(savedQuote.id, savedQuote.title)}
+                                            disabled={!canDelete}
                                             aria-label={`Supprimer le devis ${savedQuote.title || savedQuote.id}`}
-                                            className="flex items-center justify-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                                            title={!canDelete ? "Permission 'quotes.delete' et authentification récente requises" : "Supprimer le devis"}
+                                            className={`flex items-center justify-center px-3 py-2 text-white text-xs rounded transition-colors focus:outline-none focus:ring-2 ${
+                                                canDelete 
+                                                    ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' 
+                                                    : 'bg-gray-400 cursor-not-allowed'
+                                            }`}
                                         >
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
