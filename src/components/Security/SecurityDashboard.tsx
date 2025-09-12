@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import { Card, Table, Tag, Button, Space, Modal, Statistic, Row, Col, Alert, Timeline, Badge } from 'antd';
 import { Shield, AlertTriangle, Users, Activity, Eye, RefreshCw, Download } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,7 +7,7 @@ import { auditLogger, AuditEvent, SecurityAlert } from '../../services/auditLogg
 import { useSecureAction } from '../../hooks/useSecureAction';
 
 const SecurityDashboard: React.FC = () => {
-  const { user, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
   const [auditLogs, setAuditLogs] = useState<AuditEvent[]>([]);
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +108,7 @@ const SecurityDashboard: React.FC = () => {
       title: 'Timestamp',
       dataIndex: 'timestamp',
       key: 'timestamp',
-      render: (timestamp: any) => new Date(timestamp.toDate()).toLocaleString('fr-FR'),
+      render: (timestamp: Timestamp) => new Date(timestamp.toDate()).toLocaleString('fr-FR'),
       sorter: (a: AuditEvent, b: AuditEvent) => 
         new Date(a.timestamp.toDate()).getTime() - new Date(b.timestamp.toDate()).getTime(),
     },
@@ -180,7 +181,7 @@ const SecurityDashboard: React.FC = () => {
       title: 'Timestamp',
       dataIndex: 'timestamp',
       key: 'timestamp',
-      render: (timestamp: any) => new Date(timestamp.toDate()).toLocaleString('fr-FR'),
+      render: (timestamp: Timestamp) => new Date(timestamp.toDate()).toLocaleString('fr-FR'),
     },
     {
       title: 'Statut',

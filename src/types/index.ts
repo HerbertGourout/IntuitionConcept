@@ -48,11 +48,20 @@ export interface Equipment {
   };
   projectId?: string;
   assignedTo?: string;
-  images?: string[];
-  documents?: string[];
-  tasks?: string[]; // IDs des tâches assignées à cet équipement
-  createdAt?: Date;
-  updatedAt?: Date;
+}
+
+export interface Transaction {
+  id: string;
+  type: 'income' | 'expense' | 'transfer';
+  status: 'pending' | 'completed' | 'cancelled' | 'failed';
+  amount: number;
+  currency: string;
+  description: string;
+  category: string;
+  date: string;
+  projectId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Task {

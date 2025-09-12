@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Spin } from 'antd';
+import { Alert } from 'antd';
 import { Shield, Clock, AlertTriangle } from 'lucide-react';
 import { useRealTimePermissions } from '../../hooks/useRealTimePermissions';
 import { Permission } from '../../config/permissions';
@@ -18,7 +18,6 @@ const RealTimePermissionGuard: React.FC<RealTimePermissionGuardProps> = ({
   showSessionWarning = true
 }) => {
   const {
-    permissions,
     isSessionValid,
     sessionTimeLeft,
     checkPermission

@@ -456,49 +456,79 @@ export class PurchaseOrderService {
   static subscribeToPurchaseOrders(callback: (orders: PurchaseOrder[]) => void): () => void {
     const q = query(collection(db, PURCHASE_ORDERS_COLLECTION), orderBy('createdAt', 'desc'));
     
-    return onSnapshot(q, (querySnapshot) => {
-      const orders = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
-            ? data.createdAt.toDate().toISOString() 
-            : data.createdAt || new Date().toISOString(),
-          updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' 
-            ? data.updatedAt.toDate().toISOString() 
-            : data.updatedAt || new Date().toISOString()
-        };
-      }) as PurchaseOrder[];
-      
-      callback(orders);
-    }, (error) => {
-      console.error('Erreur lors de l\'écoute des bons d\'achat:', error);
-    });
+    return onSnapshot(q, 
+      (querySnapshot) => {
+        try {
+          const orders = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
+                ? data.createdAt.toDate().toISOString() 
+                : data.createdAt || new Date().toISOString(),
+              updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' 
+                ? data.updatedAt.toDate().toISOString() 
+                : data.updatedAt || new Date().toISOString()
+            };
+          }) as PurchaseOrder[];
+          
+          callback(orders);
+        } catch (processingError) {
+          console.error('Erreur lors du traitement des données des bons d\'achat:', processingError);
+          callback([]); // Fallback avec tableau vide
+        }
+      }, 
+      (error) => {
+        console.error('Erreur Firestore lors de l\'écoute des bons d\'achat:', error);
+        // Retry logic ou fallback selon le type d'erreur
+        if (error.code === 'permission-denied') {
+          console.warn('Permissions insuffisantes pour écouter les bons d\'achat');
+        } else if (error.code === 'unavailable') {
+          console.warn('Service Firestore temporairement indisponible');
+        }
+        callback([]); // Fallback avec tableau vide
+      }
+    );
   }
 
   // Écouter les changements des bons de livraison
   static subscribeToDeliveryNotes(callback: (notes: DeliveryNote[]) => void): () => void {
     const q = query(collection(db, DELIVERY_NOTES_COLLECTION), orderBy('createdAt', 'desc'));
     
-    return onSnapshot(q, (querySnapshot) => {
-      const notes = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
-            ? data.createdAt.toDate().toISOString() 
-            : data.createdAt || new Date().toISOString(),
-          updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' 
-            ? data.updatedAt.toDate().toISOString() 
-            : data.updatedAt || new Date().toISOString()
-        };
-      }) as DeliveryNote[];
-      
-      callback(notes);
-    }, (error) => {
-      console.error('Erreur lors de l\'écoute des bons de livraison:', error);
-    });
+    return onSnapshot(q, 
+      (querySnapshot) => {
+        try {
+          const notes = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
+                ? data.createdAt.toDate().toISOString() 
+                : data.createdAt || new Date().toISOString(),
+              updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' 
+                ? data.updatedAt.toDate().toISOString() 
+                : data.updatedAt || new Date().toISOString()
+            };
+          }) as DeliveryNote[];
+          
+          callback(notes);
+        } catch (processingError) {
+          console.error('Erreur lors du traitement des données des bons de livraison:', processingError);
+          callback([]); // Fallback avec tableau vide
+        }
+      }, 
+      (error) => {
+        console.error('Erreur Firestore lors de l\'écoute des bons de livraison:', error);
+        // Retry logic ou fallback selon le type d'erreur
+        if (error.code === 'permission-denied') {
+          console.warn('Permissions insuffisantes pour écouter les bons de livraison');
+        } else if (error.code === 'unavailable') {
+          console.warn('Service Firestore temporairement indisponible');
+        }
+        callback([]); // Fallback avec tableau vide
+      }
+    );
   }
 }

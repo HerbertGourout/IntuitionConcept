@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
+import { FirebaseError } from 'firebase/app';
 
 interface LoginFormProps {
     onToggleMode: () => void;
@@ -31,6 +32,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Formateur d'erreurs pour éviter l'usage de `any`
+    const formatAuthError = (err: unknown): { message: string; code?: string } => {
+        if (err instanceof FirebaseError) {
+            return { message: err.message, code: err.code };
+        }
+        if (err instanceof Error) {
+            return { message: err.message };
+        }
+        if (typeof err === 'string') {
+            return { message: err };
+        }
+        try {
+            return { message: JSON.stringify(err) };
+        } catch {
+            return { message: 'Erreur inconnue' };
+        }
+    };
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -84,14 +103,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
                 await login(formData.email, formData.password);
                 toast.success('Connexion réussie !');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Erreur d\'authentification:', error);
-            
-            // Gestion des erreurs Firebase
-            let errorMessage = 'Une erreur est survenue';
-            
-            if (error.code) {
-                switch (error.code) {
+
+            const { message: fallbackMessage, code } = formatAuthError(error);
+            let errorMessage = fallbackMessage || 'Une erreur est survenue';
+
+            if (code) {
+                switch (code) {
                     case 'auth/user-not-found':
                         errorMessage = 'Aucun compte trouvé avec cet email';
                         break;
@@ -111,7 +130,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
                         errorMessage = 'Trop de tentatives. Réessayez plus tard';
                         break;
                     default:
-                        errorMessage = error.message || 'Erreur d\'authentification';
+                        errorMessage = fallbackMessage || 'Erreur d\'authentification';
                 }
             }
             
@@ -130,8 +149,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
         try {
             await resetPassword(formData.email);
             toast.success('Email de réinitialisation envoyé !');
-        } catch (error: any) {
-            toast.error('Erreur lors de l\'envoi de l\'email');
+        } catch (error: unknown) {
+            const { message } = formatAuthError(error);
+            toast.error(message || 'Erreur lors de l\'envoi de l\'email');
         }
     };
 
@@ -357,8 +377,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, isRegisterMode }) =
                             try {
                                 await loginWithGoogle();
                                 toast.success('Connexion Google réussie !');
-                            } catch (e: any) {
-                                toast.error("Échec de la connexion Google");
+                            } catch (e: unknown) {
+                                const { message } = formatAuthError(e);
+                                toast.error(message || "Échec de la connexion Google");
                             }
                         }}
                         className="mt-4 w-full bg-white text-gray-800 border-2 border-gray-200 py-3 px-4 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-3 font-medium"

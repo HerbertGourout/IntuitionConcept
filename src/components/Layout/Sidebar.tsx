@@ -17,7 +17,9 @@ import {
   Target,
   ShoppingCart,
   CreditCard,
-  Bell
+  Bell,
+  Layout,
+  TrendingUp
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -118,6 +120,17 @@ const Sidebar: React.FC<SidebarProps> = ({
       status: currentProjectId ? 'active' : 'disabled'
     },
     { 
+      id: 'drag-drop-planning', 
+      label: 'Planning Interactif', 
+      icon: Layout, 
+      disabled: false,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-600/10',
+      hoverColor: 'hover:bg-blue-600/20',
+      description: 'Planning par glisser-déposer',
+      status: 'active'
+    },
+    { 
       id: 'finances', 
       label: 'Finances', 
       icon: PieChart, 
@@ -156,6 +169,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       bgColor: 'bg-pink-500/10',
       hoverColor: 'hover:bg-pink-500/20',
       description: 'Rapports et analyses'
+    },
+    { 
+      id: 'competitive-analysis', 
+      label: 'Analyse Concurrentielle', 
+      icon: TrendingUp, 
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-600/10',
+      hoverColor: 'hover:bg-indigo-600/20',
+      description: 'Analyse des marchés africain et européen'
     },
     { 
       id: 'team', 
@@ -220,7 +242,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className={`bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-300 flex-shrink-0 shadow-2xl ${
       collapsed ? 'w-16' : 'w-72'
-    }`}>
+    } md:relative fixed md:translate-x-0 ${collapsed ? '-translate-x-full md:translate-x-0' : 'translate-x-0'} z-50 h-full md:h-auto`}>
       {/* Header avec logo et toggle */}
       <div className="p-4 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/50">
         {!collapsed && (

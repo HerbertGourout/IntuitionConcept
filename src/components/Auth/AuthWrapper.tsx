@@ -10,7 +10,7 @@ interface AuthWrapperProps {
 const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     const { firebaseUser, isLoading, resendEmailVerification, refreshClaims } = useAuth();
     const [isRegisterMode, setIsRegisterMode] = useState(false);
-    const requireEmailVerified = (import.meta as any)?.env?.VITE_REQUIRE_EMAIL_VERIFIED === 'true';
+    const requireEmailVerified = import.meta.env.VITE_REQUIRE_EMAIL_VERIFIED === 'true';
 
     const toggleMode = () => {
         setIsRegisterMode(!isRegisterMode);

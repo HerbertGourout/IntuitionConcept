@@ -17,7 +17,7 @@ export const ModuleProtection: React.FC<ModuleProtectionProps> = ({
   children
 }) => {
   const { user, firebaseUser, isLoading, resendEmailVerification, refreshClaims } = useAuth();
-  const requireEmailVerified = (import.meta as any)?.env?.VITE_REQUIRE_EMAIL_VERIFIED === 'true';
+  const requireEmailVerified = import.meta.env.VITE_REQUIRE_EMAIL_VERIFIED === 'true';
 
   // Afficher un loader pendant le chargement
   if (isLoading) {

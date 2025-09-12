@@ -2,6 +2,25 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Shield, User, Mail, Lock, UserPlus, LogOut, RefreshCw } from 'lucide-react';
+import { FirebaseError } from 'firebase/app';
+
+// Helper pour formater proprement les erreurs sans utiliser 'any'
+const formatError = (err: unknown): string => {
+  if (err instanceof FirebaseError) {
+    return `${err.code}: ${err.message}`;
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  if (typeof err === 'string') {
+    return err;
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return 'Erreur inconnue';
+  }
+};
 
 const AuthTestPage: React.FC = () => {
   const { user, firebaseUser, isLoading, login, logout, register, resetPassword, hasPermission, hasRole } = useAuth();
@@ -14,8 +33,8 @@ const AuthTestPage: React.FC = () => {
     try {
       await login(email, password);
       toast.success('Connexion réussie !');
-    } catch (error: any) {
-      toast.error(`Erreur de connexion: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(`Erreur de connexion: ${formatError(error)}`);
     }
   };
 
@@ -23,8 +42,8 @@ const AuthTestPage: React.FC = () => {
     try {
       await register(email, password, displayName, 'manager');
       toast.success('Inscription réussie ! Vérifiez votre email.');
-    } catch (error: any) {
-      toast.error(`Erreur d'inscription: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(`Erreur d'inscription: ${formatError(error)}`);
     }
   };
 
@@ -32,8 +51,8 @@ const AuthTestPage: React.FC = () => {
     try {
       await logout();
       toast.success('Déconnexion réussie !');
-    } catch (error: any) {
-      toast.error(`Erreur de déconnexion: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(`Erreur de déconnexion: ${formatError(error)}`);
     }
   };
 
@@ -45,8 +64,8 @@ const AuthTestPage: React.FC = () => {
     try {
       await resetPassword(resetEmail);
       toast.success('Email de réinitialisation envoyé !');
-    } catch (error: any) {
-      toast.error(`Erreur: ${error.message}`);
+    } catch (error: unknown) {
+      toast.error(`Erreur: ${formatError(error)}`);
     }
   };
 

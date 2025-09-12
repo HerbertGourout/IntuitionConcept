@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useBranding } from '../../contexts/BrandingContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { UserSettingsService, UserSettings } from '../../services/userSettingsService';
 
 interface AppSettings {
   general: {
@@ -49,6 +50,7 @@ const Settings: React.FC = () => {
   const [totpUri, setTotpUri] = useState<string>('');
   const [totpSecret, setTotpSecret] = useState<string>('');
   const [totpCode, setTotpCode] = useState<string>('');
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [mfaFactors, setMfaFactors] = useState<Array<{ uid: string; displayName?: string; factorId: string }>>([]);
   const [brandForm, setBrandForm] = useState({
     companyName: '',
@@ -72,9 +74,11 @@ const Settings: React.FC = () => {
       try {
         const factors = mfaGetEnrolledFactors();
         setMfaFactors(factors);
-      } catch {}
+      } catch (error) {
+        console.error('Error loading MFA factors:', error);
+      }
     }
-  }, [activeTab, firebaseUser]);
+  }, [activeTab, firebaseUser, mfaGetEnrolledFactors]);
   const [settings, setSettings] = useState<AppSettings>({
     general: {
       companyName: 'Construction BTP Congo',
@@ -106,12 +110,45 @@ const Settings: React.FC = () => {
     }
   });
 
+  // Load user settings on component mount
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      if (firebaseUser?.uid) {
+        try {
+          const settings = await UserSettingsService.getUserSettings(firebaseUser.uid);
+          setUserSettings(settings);
+        } catch (error) {
+          console.error('Error loading user settings:', error);
+        }
+      }
+    };
+    loadUserSettings();
+  }, [firebaseUser]);
+
   const handleSave = async () => {
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (firebaseUser?.uid && userSettings) {
+        await UserSettingsService.updateUserSettings(firebaseUser.uid, {
+          theme: settings.general.theme as 'light' | 'dark' | 'system',
+          language: settings.general.language as 'fr' | 'en',
+          notifications: {
+            email: settings.notifications.emailNotifications,
+            push: settings.notifications.pushNotifications,
+            taskReminders: settings.notifications.taskReminders,
+            budgetAlerts: settings.notifications.budgetAlerts
+          },
+          preferences: {
+            defaultView: 'dashboard',
+            autoSave: true,
+            compactMode: false,
+            defaultCurrency: settings.general.currency
+          }
+        });
+      }
       alert('Paramètres sauvegardés avec succès !');
-    } catch {
+    } catch (error) {
+      console.error('Error saving settings:', error);
       alert('Erreur lors de la sauvegarde');
     } finally {
       setLoading(false);

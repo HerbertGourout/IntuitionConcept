@@ -12,7 +12,10 @@ const LoadingSpinner: React.FC<{ message?: string }> = ({ message = "Chargement.
 );
 
 // Lazy loading des composants principaux
-export const LazyDashboard = React.lazy(() => import('../Dashboard/ModernProjectDashboard'));
+// Use the customizable Dashboard with personalization & Firestore persistence
+export const LazyDashboard = React.lazy(() =>
+  import('../Dashboard/Dashboard').then(mod => ({ default: mod.default }))
+);
 export const LazyProjects = React.lazy(() => import('../Projects/Projects'));
 export const LazyEquipment = React.lazy(() => import('../Equipment/Equipment'));
 export const LazyTasks = React.lazy(() => import('../Tasks/Tasks'));

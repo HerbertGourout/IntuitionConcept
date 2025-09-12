@@ -18,8 +18,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useBranding } from '../../contexts/BrandingContext';
 import { QuotesService, Quote } from '../../services/quotesService';
 import { generateQuotePdf } from '../../services/pdf/quotePdf';
-import { emailService, EmailData } from '../../services/emailService';
-import { toast } from 'react-hot-toast';
+import { EmailData } from '../../services/emailService';
 import QuoteStatusManager from './QuoteStatusManager';
 import QuoteEmailSender from './QuoteEmailSender';
 
@@ -50,8 +49,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
     const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
     const [showEmailSender, setShowEmailSender] = useState(false);
     const [quoteToEmail, setQuoteToEmail] = useState<Quote | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    // Email sending is handled via QuoteEmailSender; no local loading/modal state needed here
 
     const handleDeleteClick = (quote: Quote) => {
         setQuoteToDelete(quote);
@@ -73,32 +71,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         }
     };
 
-    const handleSendEmail = async (emailData: any) => {
-        try {
-            setIsLoading(true);
-            
-            // Utilisation du service d'email réel
-            const result = await emailService.sendQuoteEmail(selectedQuote!, emailData);
-            
-            if (result.success) {
-                toast.success('Email envoyé avec succès !');
-                setIsEmailModalOpen(false);
-                setSelectedQuote(null);
-                
-                // Mettre à jour le statut du devis
-                if (selectedQuote) {
-                    await updateQuoteStatus(selectedQuote.id, 'sent', 'Devis envoyé par email');
-                }
-            } else {
-                throw new Error(result.error || 'Erreur lors de l\'envoi');
-            }
-        } catch (error) {
-            console.error('Erreur envoi email:', error);
-            toast.error(`Erreur lors de l'envoi de l'email: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    // handleSendEmail is managed inside QuoteEmailSender; no duplicate handler needed here
 
     const duplicateQuote = async (quote: Quote) => {
         try {
@@ -143,7 +116,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         setShowEmailSender(true);
     };
 
-    const handleEmailSend = async (emailData: any) => {
+    const handleEmailSend = async (emailData: EmailData) => {
         // Simulation d'envoi d'email - à remplacer par un vrai service
         console.log('Envoi email:', emailData);
         
@@ -292,7 +265,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
             </motion.div>
 
             {/* Liste des devis */}
-            <div className="max-w-7xl mx-auto">
+            <div className="w-full px-0 sm:px-2">
                 {filteredQuotes.length === 0 ? (
                     <motion.div
                         className={`p-12 rounded-xl shadow-lg text-center ${
@@ -323,7 +296,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                         )}
                     </motion.div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                         {filteredQuotes.map((quote, index) => (
                             <motion.div
                                 key={`${quote.id}-${index}`}
@@ -384,10 +357,10 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex items-center gap-2 pt-4 border-t border-gray-200 dark:border-gray-600">
+                                <div className="flex flex-wrap justify-center items-center gap-2 gap-y-3 pt-4 border-t border-gray-200 dark:border-gray-600">
                                     <button
                                         onClick={() => onEditQuote(quote.id)}
-                                        className="flex items-center gap-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-xs"
                                     >
                                         <Edit className="w-3 h-3" />
                                         Modifier
@@ -395,7 +368,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                     
                                     <button
                                         onClick={() => handleStatusClick(quote)}
-                                        className="flex items-center gap-1 px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors text-xs"
                                         title="Gérer le statut"
                                     >
                                         <Settings className="w-3 h-3" />
@@ -404,7 +377,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                     
                                     <button
                                         onClick={() => handleEmailClick(quote)}
-                                        className="flex items-center gap-1 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors text-xs"
                                         title="Envoyer par email"
                                     >
                                         <Send className="w-3 h-3" />
@@ -413,7 +386,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                     
                                     <button
                                         onClick={() => duplicateQuote(quote)}
-                                        className="flex items-center gap-1 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-xs"
                                     >
                                         <FileText className="w-3 h-3" />
                                         Dupliquer
@@ -430,18 +403,16 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                             };
                                             generateQuotePdf(quote, branding);
                                         }}
-                                        className="flex items-center gap-1 px-3 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors text-sm"
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors text-xs"
                                         title="Télécharger PDF"
                                     >
                                         <Download className="w-3 h-3" />
                                         PDF
                                     </button>
 
-                                    <div className="flex-1" />
-
                                     <button
                                         onClick={() => handleDeleteClick(quote)}
-                                        className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                        className="inline-flex items-center p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
                                     >
                                         <Trash2 className="w-3 h-3" />
                                     </button>

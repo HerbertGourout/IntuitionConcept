@@ -1,9 +1,18 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
 
+interface Activity {
+  id: string;
+  title: string;
+  project: string;
+  time: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+}
+
 const RecentActivity: React.FC = () => {
   // Pas de données de démonstration - utiliser les vraies données du contexte
-  const activities: any[] = [];
+  const activities: Activity[] = [];
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

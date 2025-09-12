@@ -6,6 +6,90 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Optimisations Mobile PWA */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input, textarea, select {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Amélioration des interactions tactiles */
+button, .ant-btn {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Optimisation pour les écrans mobiles */
+@media (max-width: 768px) {
+  .ant-layout-content {
+    padding: 12px !important;
+  }
+  
+  .ant-card {
+    margin-bottom: 12px;
+  }
+  
+  .ant-table-wrapper {
+    font-size: 12px;
+  }
+  
+  .ant-statistic-title {
+    font-size: 12px;
+  }
+  
+  .ant-statistic-content {
+    font-size: 16px !important;
+  }
+  
+  /* Navigation mobile */
+  .ant-layout-sider {
+    position: fixed !important;
+    height: 100vh;
+    z-index: 1000;
+  }
+  
+  .ant-layout-sider-collapsed {
+    width: 0 !important;
+  }
+}
+
+/* Mode sombre pour économie batterie */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #1890ff;
+    --background-color: #141414;
+    --surface-color: #1f1f1f;
+  }
+}
+
+/* Optimisation pour les gestes tactiles */
+.swipe-container {
+  touch-action: pan-x;
+}
+
+/* Amélioration de la lisibilité en extérieur */
+@media (max-width: 768px) and (orientation: portrait) {
+  body {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  
+  .high-contrast {
+    filter: contrast(1.2) brightness(1.1);
+  }
+}
+
 :root {
   --font-sans: 'Inter', sans-serif;
 

@@ -32,6 +32,8 @@ const Layout: React.FC<LayoutProps> = ({
     'equipment': 'Équipements',
     'tasks': 'Tâches',
     'planning': 'Planning',
+    'drag-drop-planning': 'Planning Interactif',
+    'competitive-analysis': 'Analyse Concurrentielle',
     'finances': 'Finances',
     'documents': 'Documents',
     'quotes': 'Devis',
@@ -54,13 +56,27 @@ const Layout: React.FC<LayoutProps> = ({
         currentSection={activeSection}
       />
 
+      {/* Overlay mobile pour fermer la sidebar */}
+      {!sidebarCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
       {/* Rangée principale: Sidebar + Contenu (décalée sous le header fixe de 80px) */}
       <div className="flex flex-1 mt-20">
         <Sidebar
           collapsed={sidebarCollapsed}
           onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           activeSection={activeSection}
-          onNavigate={onNavigate}
+          onNavigate={(section) => {
+            onNavigate(section);
+            // Fermer automatiquement la sidebar sur mobile après navigation
+            if (window.innerWidth < 768) {
+              setSidebarCollapsed(true);
+            }
+          }}
           onCreateProject={onCreateProject}
           currentProjectId={currentProjectId}
           projects={projects}

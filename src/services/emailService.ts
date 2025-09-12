@@ -88,7 +88,7 @@ class EmailService {
     }
 
     // Envoyer un email avec Mailgun
-    private async sendWithMailgun(emailData: EmailData, attachments?: EmailAttachment[]): Promise<void> {
+    private async sendWithMailgun(emailData: EmailData, attachments?: EmailAttachment[]): Promise<Record<string, unknown>> {
         if (!this.config) throw new Error('Service email non configuré');
 
         const formData = new FormData();
@@ -101,7 +101,7 @@ class EmailService {
 
         // Ajouter les pièces jointes
         if (attachments && attachments.length > 0) {
-            attachments.forEach((attachment, index) => {
+            attachments.forEach((attachment) => {
                 const blob = new Blob([attachment.content], { type: attachment.type });
                 formData.append('attachment', blob, attachment.filename);
             });
@@ -123,8 +123,39 @@ class EmailService {
         }
     }
 
+    // Envoyer un email avec SMTP
+    private async sendWithSMTP(emailData: EmailData, attachments?: EmailAttachment[]): Promise<Record<string, unknown>> {
+        if (!this.config) throw new Error('Service email non configuré');
+
+        const payload = {
+            from: `${this.config.fromName} <${this.config.fromEmail}>`,
+            to: [emailData.to],
+            ...(emailData.cc && { cc: [emailData.cc] }),
+            subject: emailData.subject,
+            text: emailData.message,
+            html: emailData.message.replace(/\n/g, '<br>'),
+            ...(attachments && attachments.length > 0 && { attachments })
+        };
+
+        const transporter = nodemailer.createTransport({
+            host: this.config.host,
+            port: this.config.port,
+            secure: this.config.secure,
+            auth: {
+                user: this.config.username,
+                pass: this.config.password
+            }
+        });
+
+        const response = await transporter.sendMail(payload);
+
+        if (!response) {
+            throw new Error(`Erreur SMTP: ${response}`);
+        }
+    }
+
     // Envoyer un email avec Resend
-    private async sendWithResend(emailData: EmailData, attachments?: EmailAttachment[]): Promise<void> {
+    private async sendWithResend(emailData: EmailData, attachments?: EmailAttachment[]): Promise<Record<string, unknown>> {
         if (!this.config) throw new Error('Service email non configuré');
 
         const payload = {

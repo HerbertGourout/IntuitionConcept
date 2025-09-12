@@ -13,7 +13,7 @@ export interface Notification {
   isArchived: boolean;
   actionUrl?: string;
   actionLabel?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   readAt?: string;
   expiresAt?: string;

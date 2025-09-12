@@ -2,21 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import type { Project } from './contexts/projectTypes';
 import { useProjects } from './hooks/useProjects';
+import { AICopilotWidget } from './components/Dashboard/AICopilotWidget';
+import { AnomalyDetectionWidget } from './components/Dashboard/AnomalyDetectionWidget';
 
 // Nouveaux contextes modernes
-import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { WidgetProvider } from './contexts/WidgetContext';
 import { GeolocationProvider } from './contexts/GeolocationContext';
 import { OfflineProvider } from './contexts/OfflineContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { NotificationProvider } from './contexts/NotificationContext';
-import { ProjectProvider } from './contexts/ProjectContext';
 import AuthWrapper from './components/Auth/AuthWrapper';
 import SessionMonitor from './components/Auth/SessionMonitor';
 
 import SecureLayout from './components/Layout/SecureLayout';
 import { Dashboard, Quotes, Projects, Equipment, Tasks, Finances, Planning, Documents, ProjectBudget, Reports, Team, PurchaseOrders, PaymentDashboard, Locations, NotificationCenter, Settings, QuoteCreator } from './components/LazyLoad/LazyComponents';
+import DragDropPlanningBoard from './components/DragDrop/DragDropPlanningBoard';
+import CompetitiveAnalysis from './components/Analysis/CompetitiveAnalysis';
+import SupportCenter from './components/Support/SupportCenter';
+import SupportAgentDashboard from './components/Support/SupportAgentDashboard';
+import TransactionDashboard from './components/Transactions/TransactionDashboard';
+import IntelligentOCRScanner from './components/OCR/IntelligentOCRScanner';
 import AuthTestPage from './components/Auth/AuthTestPage';
 import EmailTestPage from './components/Email/EmailTestPage';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
@@ -83,6 +89,21 @@ const AppContent: React.FC = () => {
     addProject,
     loadingProjects
   } = useProjects();
+
+  // Contexte pour le copilote IA basé sur le projet actuel
+  const copilotContext = React.useMemo(() => ({
+    currentProject: currentProject || null,
+    projects: projects,
+    quotes: [], // TODO: Intégrer les vrais devis depuis le contexte
+    transactions: [], // TODO: Intégrer les vraies transactions
+    currentUser: {
+      name: 'Utilisateur', // TODO: Récupérer depuis l'authentification
+      role: 'manager',
+      permissions: ['read', 'write', 'admin']
+    },
+    activeSection: activeSection,
+    userRole: 'manager' // À adapter selon l'authentification
+  }), [currentProject, projects, activeSection]);
 
   // Plus de timer local: on se base uniquement sur loadingProjects du contexte
 
@@ -226,6 +247,10 @@ const AppContent: React.FC = () => {
         return <Finances />;
       case 'planning':
         return <Planning />;
+      case 'drag-drop-planning':
+        return <DragDropPlanningBoard />;
+      case 'competitive-analysis':
+        return <CompetitiveAnalysis />;
       case 'documents':
         return <Documents />;
       case 'project-budget':
@@ -254,6 +279,14 @@ const AppContent: React.FC = () => {
         return <NotificationCenter />;
       case 'settings':
         return <Settings />;
+      case 'support':
+        return <SupportCenter />;
+      case 'support-agent':
+        return <SupportAgentDashboard />;
+      case 'transactions':
+        return <TransactionDashboard />;
+      case 'ocr-scanner':
+        return <IntelligentOCRScanner />;
       case 'auth-test':
         return <AuthTestPage />;
       case 'email-test':
@@ -317,6 +350,25 @@ const AppContent: React.FC = () => {
             autoRefresh={true}
           />
 
+          {/* AI Copilot Widget - Assistant flottant global */}
+          <AICopilotWidget 
+            context={copilotContext}
+            onActionRequested={(action) => {
+              console.log('Action demandée par le copilote:', action);
+              // Gérer les actions du copilote (navigation, création, etc.)
+              if (action.type === 'navigate') {
+                setActiveSection(action.params?.section || 'dashboard');
+              } else if (action.type === 'create_project') {
+                setIsCreateProjectOpen(true);
+              }
+            }}
+          />
+
+          {/* Widget d'alertes d'anomalies - Position fixe en haut à droite */}
+          <div className="fixed top-20 right-4 z-40">
+            <AnomalyDetectionWidget />
+          </div>
+
           {/* Emulator Badge */}
           {usingEmulators && (
             <div className="fixed bottom-4 right-4 z-50 px-3 py-2 rounded-lg text-xs font-medium bg-orange-500/90 text-white shadow-lg border border-orange-300/50">
@@ -329,26 +381,22 @@ const AppContent: React.FC = () => {
   );
 }
 
-// Composant racine de l'application avec tous les nouveaux contextes modernes
+// Composant racine de l'application avec les contextes (Auth & Project sont fournis par AppRouter)
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <OfflineProvider>
-          <GeolocationProvider>
-            <WidgetProvider>
-              <BrandingProvider>
-                <NotificationProvider>
-                  <ProjectProvider>
-                    <AppContent />
-                  </ProjectProvider>
-                </NotificationProvider>
-              </BrandingProvider>
-            </WidgetProvider>
-          </GeolocationProvider>
-        </OfflineProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <OfflineProvider>
+        <GeolocationProvider>
+          <WidgetProvider>
+            <BrandingProvider>
+              <NotificationProvider>
+                <AppContent />
+              </NotificationProvider>
+            </BrandingProvider>
+          </WidgetProvider>
+        </GeolocationProvider>
+      </OfflineProvider>
+    </ThemeProvider>
   );
 };
 

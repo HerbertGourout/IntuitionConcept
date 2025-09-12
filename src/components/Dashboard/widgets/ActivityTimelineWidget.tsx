@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Clock, CheckCircle, AlertCircle, User, Calendar } from 'lucide-react';
 import { useProjects } from '../../../hooks/useProjects';
+import { db } from '../../../firebase';
+import { collection, onSnapshot, query, where, limit } from 'firebase/firestore';
 
 interface ActivityItem {
   id: string;
@@ -12,11 +14,16 @@ interface ActivityItem {
   priority?: 'low' | 'medium' | 'high';
 }
 
-const ActivityTimelineWidget: React.FC = () => {
+interface ActivityTimelineWidgetProps {
+  className?: string;
+}
+
+const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({ className = '' }) => {
   const { currentProject } = useProjects();
+  const [rtActivities, setRtActivities] = useState<ActivityItem[] | null>(null);
 
   // Fonction utilitaire pour calculer le temps écoulé
-  const getTimeAgo = (date: Date, now: Date): string => {
+  const getTimeAgo = useCallback((date: Date, now: Date): string => {
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
@@ -28,10 +35,13 @@ const ActivityTimelineWidget: React.FC = () => {
     } else {
       return 'maintenant';
     }
-  };
+  }, []);
 
   // Générer des activités dynamiques basées sur les vraies données du projet
   const activities: ActivityItem[] = useMemo(() => {
+    if (rtActivities && rtActivities.length > 0) {
+      return rtActivities.slice(0, 5);
+    }
     if (!currentProject) {
       return [];
     }
@@ -127,7 +137,82 @@ const ActivityTimelineWidget: React.FC = () => {
         return (priorityOrder[b.priority || 'medium'] || 2) - (priorityOrder[a.priority || 'medium'] || 2);
       })
       .slice(0, 5);
-  }, [currentProject, getTimeAgo]);
+  }, [currentProject, getTimeAgo, rtActivities]);
+
+  // Écoute en temps réel des activités Firestore si disponible
+  useEffect(() => {
+    if (!currentProject?.id) {
+      setRtActivities(null);
+      return;
+    }
+    let unsub: undefined | (() => void);
+    try {
+      const activitiesRef = collection(db, 'activities');
+      // Pour éviter l'exigence d'un index composite (where + orderBy),
+      // on évite orderBy côté serveur et on trie côté client.
+      // On limite à 100 éléments pour rester performant.
+      const q = query(
+        activitiesRef,
+        where('projectId', '==', currentProject.id),
+        limit(100)
+      );
+      unsub = onSnapshot(q, 
+        (snap) => {
+          try {
+            const now = new Date();
+            const items = snap.docs.map((d) => {
+              const data = d.data() as Record<string, unknown>;
+              const rawTs = data.timestamp as { seconds?: number } | string | undefined;
+              const tsDate = rawTs
+                ? typeof rawTs === 'string'
+                  ? new Date(rawTs)
+                  : new Date((rawTs.seconds ?? 0) * 1000)
+                : now;
+              return {
+                id: d.id,
+                tsDate,
+                type: (data.type as ActivityItem['type']) || 'task_started',
+                title: (data.title as string) || 'Activité',
+                description: (data.description as string) || ((data.phaseName as string) ? `Phase: ${data.phaseName as string}` : ''),
+                user: (data.user as string) || (data.userName as string) || undefined,
+                priority: (data.priority as ActivityItem['priority']) || 'medium',
+              };
+            });
+            const sorted = items
+              .sort((a, b) => b.tsDate.getTime() - a.tsDate.getTime())
+              .slice(0, 20)
+              .map((it) => ({
+                id: it.id,
+                type: it.type,
+                title: it.title,
+                description: it.description,
+                time: getTimeAgo(it.tsDate, now),
+                user: it.user,
+                priority: it.priority,
+              }));
+            setRtActivities(sorted);
+          } catch (processingError) {
+            console.error('Erreur lors du traitement des activités:', processingError);
+            setRtActivities(null); // Fallback vers les données statiques
+          }
+        },
+        (error) => {
+          console.error('Erreur Firestore lors de l\'écoute des activités:', error);
+          if (error.code === 'permission-denied') {
+            console.warn('Permissions insuffisantes pour écouter les activités');
+          } else if (error.code === 'unavailable') {
+            console.warn('Service Firestore temporairement indisponible');
+          }
+          setRtActivities(null); // Fallback vers les données statiques
+        }
+      );
+    } catch (initError) {
+      // Collection absente ou règles: ignorer et rester en fallback
+      console.warn('Impossible d\'initialiser l\'écoute des activités:', initError);
+      setRtActivities(null);
+    }
+    return () => { if (unsub) unsub(); };
+  }, [currentProject?.id, getTimeAgo]);
 
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
@@ -156,12 +241,15 @@ const ActivityTimelineWidget: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Activités Récentes</h3>
-        <Clock className="w-5 h-5 text-gray-400" />
+    <div className={`space-y-4 ${className}`}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Activités récentes
+        </h3>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {activities.length} activités
+        </span>
       </div>
-      
       <div className="space-y-4 max-h-80 overflow-y-auto">
         {activities.map((activity, index) => (
           <div

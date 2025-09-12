@@ -355,27 +355,32 @@ export class TaskService {
   static subscribeToTasks(callback: (tasks: Task[]) => void): () => void {
     const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
     
-    return onSnapshot(q, (querySnapshot) => {
-      const tasks = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        dueDate: doc.data().dueDate?.toDate() || undefined,
-        startDate: doc.data().startDate?.toDate() || undefined,
-        completedDate: doc.data().completedDate?.toDate() || undefined,
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        comments: (doc.data().comments as FirestoreCommentRaw[] | undefined)?.map((comment) => ({
-          ...comment,
-          createdAt: comment.createdAt instanceof Timestamp
-            ? comment.createdAt.toDate()
-            : (comment.createdAt ?? new Date())
-        })) || []
-      })) as Task[];
-      
-      callback(tasks);
-    }, (error) => {
-      console.error('Erreur lors de l\'écoute des tâches:', error);
-    });
+    return onSnapshot(q, 
+      (querySnapshot) => {
+        try {
+          const tasks = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+            updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt
+          })) as Task[];
+          
+          callback(tasks);
+        } catch (processingError) {
+          console.error('Erreur lors du traitement des données des tâches:', processingError);
+          callback([]); // Fallback avec tableau vide
+        }
+      },
+      (error) => {
+        console.error('Erreur Firestore lors de l\'écoute des tâches:', error);
+        if (error.code === 'permission-denied') {
+          console.warn('Permissions insuffisantes pour écouter les tâches');
+        } else if (error.code === 'unavailable') {
+          console.warn('Service Firestore temporairement indisponible');
+        }
+        callback([]); // Fallback avec tableau vide
+      }
+    );
   }
 
   /**

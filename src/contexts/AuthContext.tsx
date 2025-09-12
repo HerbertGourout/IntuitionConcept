@@ -15,6 +15,7 @@ import {
   multiFactor,
   TotpMultiFactorGenerator
 } from 'firebase/auth';
+import type { MultiFactorInfo } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { UserRole, ROLE_PERMISSIONS } from '../config/permissions';
@@ -68,7 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [pendingTotpSecret, setPendingTotpSecret] = useState<any>(null);
+  type PendingTotpSecret = Awaited<ReturnType<typeof TotpMultiFactorGenerator.generateSecret>>;
+  const [pendingTotpSecret, setPendingTotpSecret] = useState<PendingTotpSecret | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -80,12 +82,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         let roleFromClaims: UserRole | null = null;
         try {
           const tokenResult = await getIdTokenResult(firebaseUser, true);
-          const claimRole = (tokenResult.claims as any)?.role as UserRole | undefined;
+          type CustomClaims = { role?: UserRole; [key: string]: unknown };
+          const claims = tokenResult.claims as CustomClaims;
+          const claimRole = claims.role;
           if (claimRole) roleFromClaims = claimRole;
         } catch (e) {
           console.warn('Impossible de charger les custom claims:', e);
         }
-        const defaultRole = ((import.meta as any)?.env?.VITE_DEFAULT_USER_ROLE || 'worker') as UserRole;
+        const defaultRoleEnv = (import.meta as ImportMeta)?.env?.VITE_DEFAULT_USER_ROLE;
+        const defaultRole = (defaultRoleEnv ? (defaultRoleEnv as UserRole) : 'worker');
 
         // Récupérer le profil utilisateur depuis Firestore
         try {
@@ -257,7 +262,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const mfaGenerateTotpSecret = async (): Promise<{ uri: string; secretKey: string }> => {
     if (!auth.currentUser) throw new Error('Utilisateur non connecté');
     const session = await multiFactor(auth.currentUser).getSession();
-    const secret: any = await TotpMultiFactorGenerator.generateSecret(session);
+    const secret = await TotpMultiFactorGenerator.generateSecret(session);
     setPendingTotpSecret(secret);
     const issuer = 'BTP Manager';
     const accountName = auth.currentUser.email || auth.currentUser.uid;
@@ -279,8 +284,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // MFA: Récupérer la liste des facteurs enrôlés
   const mfaGetEnrolledFactors = (): Array<{ uid: string; displayName?: string; factorId: string }> => {
     if (!firebaseUser) return [];
-    const factors: any[] = multiFactor(firebaseUser).enrolledFactors || [];
-    return factors.map((f: any) => ({ uid: f.uid as string, displayName: f.displayName as string | undefined, factorId: f.factorId as string }));
+    const factors = (multiFactor(firebaseUser).enrolledFactors || []) as MultiFactorInfo[];
+    return factors.map((f: MultiFactorInfo) => ({ uid: f.uid as string, displayName: f.displayName as string | undefined, factorId: f.factorId as string }));
   };
 
   // MFA: Désenrôler un facteur par UID

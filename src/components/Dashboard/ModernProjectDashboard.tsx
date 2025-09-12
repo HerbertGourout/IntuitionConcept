@@ -18,6 +18,7 @@ import TeamProductivityWidget from './widgets/TeamProductivityWidget';
 import DeliverySupplyWidget from './widgets/DeliverySupplyWidget';
 import DocumentsComplianceWidget from './widgets/DocumentsComplianceWidget';
 import AnalyticsWidget from './widgets/AnalyticsWidget';
+import OCRWidget from '../OCR/OCRWidget';
 
 interface DashboardProps {
   onNavigate?: (page: string) => void;
@@ -246,6 +247,7 @@ const ModernProjectDashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
           <DeliverySupplyWidget />
           <DocumentsComplianceWidget />
+          <OCRWidget onDataExtracted={(data) => console.log('OCR data extracted:', data)} />
         </div>
 
         <div className="mb-6">

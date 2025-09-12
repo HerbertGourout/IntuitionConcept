@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
-import { X, Plus, Save, FileText, ChevronDown, ChevronUp, Template } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { Sparkles, X, Plus, ChevronDown, ChevronUp, Save, LayoutTemplate, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useBranding } from '../../contexts/BrandingContext';
-import { generateQuotePdf } from '../../services/pdf/quotePdf';
-import QuotesService, { Quote } from '../../services/quotesService';
-import { Task, Article, Phase } from '../../types/StructuredQuote';
+import type { Quote } from '../../services/quotesService';
+import { Phase, Task, Article } from '../../types/StructuredQuote';
+import toast from 'react-hot-toast';
+import { quoteGenerator, QuoteGenerationRequest } from '../../services/ai/quoteGenerator';
+import { AIQuoteGenerator } from './AIQuoteGenerator';
 import QuoteTemplates from './QuoteTemplates';
+import { useBranding } from '../../contexts/BrandingContext';
+import QuotesService from '../../services/quotesService';
+import { generateQuotePdf } from '../../services/pdf/quotePdf';
 
 interface QuoteCreatorSimpleProps {
   onClose: () => void;
@@ -47,6 +50,8 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
 
   // Fonctions utilitaires
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -186,7 +191,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   }, [editQuote]);
 
   // Validation des champs
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const newErrors: {[key: string]: string} = {};
 
     if (!title.trim()) {
@@ -206,14 +211,14 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [title, clientName, clientEmail, phases]);
 
   // Recalculer les totaux quand les phases changent
   useEffect(() => {
     calculateTotals();
   }, [calculateTotals]);
 
-  // Sauvegarde automatique (toutes les 30 secondes)
+  // Sauvegarde automatique (toutes les 2 minutes pour éviter les blocages)
   useEffect(() => {
     if (!editQuote || !isInitialized || phases.length === 0) return;
 
@@ -250,7 +255,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
           setIsAutoSaving(false);
         }
       }
-    }, 30000); // 30 secondes
+    }, 120000); // 2 minutes
 
     return () => clearInterval(autoSaveInterval);
   }, [editQuote, isInitialized, phases, title, clientName, clientEmail, companyName, clientPhone, projectType, subtotal, taxRate, taxAmount, totalAmount, validityDays, notes, paymentTerms, validateForm, isSaving]);
@@ -400,12 +405,75 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   };
 
   // Fonction pour appliquer un template
-  const handleSelectTemplate = (template: any) => {
+  const handleSelectTemplate = (template: {
+    name: string;
+    category: string;
+    phases?: Phase[];
+  }) => {
     setTitle(template.name);
     setProjectType(template.category);
     setPhases(template.phases || []);
     setShowTemplates(false);
     toast.success('Template appliqué avec succès');
+  };
+
+  // Fonction pour générer un devis avec l'IA
+  const handleGenerateWithAI = async (request: QuoteGenerationRequest) => {
+    setIsGeneratingWithAI(true);
+    try {
+      const generatedQuote = await quoteGenerator.generateQuote(request);
+      
+      // Convertir les phases générées au format Phase[]
+      const convertedPhases: Phase[] = generatedQuote.phases.map((phase) => {
+        const tasks: Task[] = phase.items.map((item) => ({
+          id: generateId(),
+          name: item.description,
+          description: item.description,
+          totalPrice: item.totalPrice,
+          expanded: true,
+          articles: [{
+            id: generateId(),
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+          }],
+        }));
+
+        const phaseTotal = tasks.reduce<number>((sum, t) => sum + (t.totalPrice || 0), 0);
+
+        return {
+          id: generateId(),
+          name: phase.name,
+          description: phase.description,
+          totalPrice: phaseTotal,
+          expanded: true,
+          tasks,
+        };
+      });
+
+      // Appliquer les données générées
+      setTitle(generatedQuote.title);
+      setProjectType(request.projectType);
+      setPhases(convertedPhases);
+      setShowAIGenerator(false);
+      
+      toast.success(`Devis généré avec ${generatedQuote.confidence}% de confiance`);
+      
+      // Afficher les recommandations
+      if (generatedQuote.recommendations.length > 0) {
+        setTimeout(() => {
+          toast(`💡 ${generatedQuote.recommendations[0]}`);
+        }, 2000);
+      }
+      
+    } catch (error) {
+      console.error('Erreur génération IA:', error);
+      toast.error('Erreur lors de la génération du devis IA');
+    } finally {
+      setIsGeneratingWithAI(false);
+    }
   };
 
   // Fonction de sauvegarde
@@ -492,14 +560,25 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                   </div>
                   <div className="flex items-center space-x-3">
                     {!editQuote && (
-                      <button
-                        onClick={() => setShowTemplates(true)}
-                        className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors backdrop-blur-sm"
-                        title="Utiliser un template"
-                      >
-                        <Template className="w-5 h-5" />
-                        <span>Templates</span>
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setShowTemplates(true)}
+                          className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors backdrop-blur-sm"
+                          title="Utiliser un template"
+                        >
+                          <LayoutTemplate className="w-5 h-5" />
+                          <span>Templates</span>
+                        </button>
+                        <button
+                          onClick={() => setShowAIGenerator(true)}
+                          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-xl transition-all transform hover:scale-105 shadow-lg"
+                          title="Générer avec l'IA"
+                          disabled={isGeneratingWithAI}
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          <span>{isGeneratingWithAI ? 'Génération...' : 'Générer IA'}</span>
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={onClose}
@@ -710,6 +789,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                                 </div>
                               ) : null;
                             })()}
+
                           </div>
                           <div className="flex items-center space-x-3 ml-4">
                             <button
@@ -717,30 +797,18 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                               className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium flex items-center space-x-1"
                               title="Ajouter une tâche"
                             >
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-4 h-4" />
                               <span>Tâche</span>
                             </button>
                             <button
                               onClick={() => deletePhase(phase.id)}
-                              className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-500"
+                              className="p-1 hover:bg-red-100 rounded transition-colors text-red-500"
                               title="Supprimer la phase"
                             >
                               <X className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
-                        
-                        {phase.expanded && (
-                          <div className="mt-3">
-                            <textarea
-                              value={phase.description}
-                              onChange={(e) => updatePhase(phase.id, { description: e.target.value })}
-                              className="w-full px-3 py-2 bg-white/70 border border-blue-200/50 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Description de la phase..."
-                              rows={2}
-                            />
-                          </div>
-                        )}
                       </div>
 
                       {/* Tâches de la phase */}
@@ -770,8 +838,11 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                                       placeholder="Nom de la tâche"
                                     />
                                     {(() => {
-                                      const taskTotal = task.articles?.reduce((sum, article) => 
-                                        sum + ((article.quantity || 0) * (article.unitPrice || 0)), 0) || 0;
+                                      const taskTotal = (task.articles ?? []).reduce<number>(
+                                        (sum: number, article: Article) =>
+                                          sum + ((article.quantity || 0) * (article.unitPrice || 0)),
+                                        0
+                                      );
                                       return taskTotal > 0 ? (
                                         <div className="text-sm text-gray-600">
                                           {formatCurrency(taskTotal)}
@@ -779,6 +850,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                                       ) : null;
                                     })()}
                                   </div>
+
                                   <div className="flex items-center space-x-3 ml-4">
                                     <button
                                       onClick={() => addArticle(phase.id, task.id)}
@@ -797,7 +869,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                                     </button>
                                   </div>
                                 </div>
-                                
+
                                 {task.expanded && task.description !== undefined && (
                                   <div className="mt-2">
                                     <textarea
@@ -855,7 +927,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                                               onChange={(e) => {
                                                 const val = e.target.value;
                                                 if (val === '__custom') {
-                                                  const input = window.prompt("Entrez une unité personnalisée (ex: sac, l, pcs)", article.unit || '');
+                                                  const input = window.prompt('Entrez une unité personnalisée (ex: sac, l, pcs)', article.unit || '');
                                                   const custom = (input || '').trim();
                                                   updateArticle(phase.id, task.id, article.id, { unit: custom || 'u' });
                                                 } else {
@@ -900,13 +972,14 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                               )}
                             </div>
                           ))}
-                          
-                          {phase.tasks.length === 0 && (
-                            <div className="text-center py-6 text-gray-400">
-                              <p className="text-sm">Aucune tâche dans cette phase</p>
-                              <p className="text-xs">Cliquez sur + pour ajouter une tâche</p>
-                            </div>
-                          )}
+                        </div>
+                      )}
+
+                      {/* Message si aucune tâche */}
+                      {phase.tasks.length === 0 && (
+                        <div className="text-center py-6 text-gray-400">
+                          <p className="text-sm">Aucune tâche dans cette phase</p>
+                          <p className="text-xs">Cliquez sur + pour ajouter une tâche</p>
                         </div>
                       )}
                     </div>
@@ -1006,26 +1079,26 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                 </div>
               )}
             </div>
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
               <button
                 onClick={handleExportPdf}
-                className="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                className="px-4 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2 text-sm"
               >
-                <FileText className="w-5 h-5" />
-                <span>Exporter PDF</span>
+                <FileText className="w-4 h-4" />
+                <span>PDF</span>
               </button>
               <button
                 onClick={onClose}
-                className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
+                className="px-4 py-3 text-gray-600 hover:text-gray-800 transition-colors text-sm"
               >
                 Annuler
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center space-x-2"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
               >
-                <Save className="w-5 h-5" />
+                <Save className="w-4 h-4" />
                 <span>{isSaving ? 'Enregistrement...' : 'Enregistrer'}</span>
               </button>
             </div>
@@ -1045,6 +1118,16 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
         <QuoteTemplates
           onClose={() => setShowTemplates(false)}
           onSelectTemplate={handleSelectTemplate}
+        />
+      )}
+
+      {/* Modal Générateur IA */}
+      {showAIGenerator && (
+        <AIQuoteGenerator
+          isOpen={showAIGenerator}
+          onClose={() => setShowAIGenerator(false)}
+          onGenerate={handleGenerateWithAI}
+          isGenerating={isGeneratingWithAI}
         />
       )}
     </div>

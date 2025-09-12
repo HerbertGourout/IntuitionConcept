@@ -11,7 +11,8 @@ import {
   onSnapshot, 
   getDocs,
   Timestamp,
-  writeBatch
+  writeBatch,
+  QueryConstraint
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Notification, NotificationPreferences, NotificationStats } from '../types/notification';
@@ -53,7 +54,7 @@ export class NotificationService {
     try {
       // Build constraints dynamically to avoid composite index requirements.
       // If multiple filters are applied, we avoid server orderBy and sort client-side.
-      const constraints: any[] = [where('userId', '==', userId)];
+      const constraints: QueryConstraint[] = [where('userId', '==', userId)];
 
       if (!options.includeRead) {
         constraints.push(where('isRead', '==', false));
@@ -85,33 +86,45 @@ export class NotificationService {
 
       const q = query(collection(db, this.COLLECTION_NAME), ...constraints);
 
-      return onSnapshot(q, (snapshot) => {
-        let notifications: Notification[] = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate().toISOString(),
-          readAt: doc.data().readAt?.toDate().toISOString(),
-          expiresAt: doc.data().expiresAt?.toDate().toISOString()
-        } as Notification));
+      return onSnapshot(q, 
+        (snapshot) => {
+          try {
+            let notifications: Notification[] = snapshot.docs.map(docSnapshot => ({
+              id: docSnapshot.id,
+              ...docSnapshot.data(),
+              createdAt: docSnapshot.data().createdAt?.toDate?.()?.toISOString() || docSnapshot.data().createdAt,
+              updatedAt: docSnapshot.data().updatedAt?.toDate?.()?.toISOString() || docSnapshot.data().updatedAt
+            } as unknown)) as Notification[];
 
-        if (!hasMinimalFilters) {
-          // Sort client-side by createdAt desc to emulate orderBy without requiring composite index
-          notifications = notifications
-            .sort((a, b) => {
-              const ta = a.createdAt ? Date.parse(a.createdAt) : 0;
-              const tb = b.createdAt ? Date.parse(b.createdAt) : 0;
-              return tb - ta;
-            })
-            .slice(0, options.limitCount || notifications.length);
-        }
+            // Client-side sorting if we couldn't use server-side orderBy
+            if (!hasMinimalFilters) {
+              notifications = notifications
+                .sort((a, b) => {
+                  const ta = new Date(a.createdAt).getTime();
+                  const tb = new Date(b.createdAt).getTime();
+                  return tb - ta;
+                })
+                .slice(0, options.limitCount || notifications.length);
+            }
 
-        callback(notifications);
-      }, (err) => {
-        // Helpful guidance if developer hits a composite index requirement
-        if ((err as any)?.code === 'failed-precondition') {
-          console.warn('[Notifications] Cette requête nécessite un index Firestore composite. Ouvrez le lien fourni dans l\'erreur pour le créer.');
+            callback(notifications);
+          } catch (processingError) {
+            console.error('Erreur lors du traitement des données des notifications:', processingError);
+            callback([]); // Fallback avec tableau vide
+          }
+        },
+        (error) => {
+          console.error('Erreur Firestore lors de l\'écoute des notifications:', error);
+          if (error.code === 'permission-denied') {
+            console.warn('Permissions insuffisantes pour écouter les notifications');
+          } else if (error.code === 'unavailable') {
+            console.warn('Service Firestore temporairement indisponible');
+          } else if (error.code === 'failed-precondition') {
+            console.warn('[Notifications] Cette requête nécessite un index Firestore composite. Ouvrez le lien fourni dans l\'erreur pour le créer.');
+          }
+          callback([]); // Fallback avec tableau vide
         }
-      });
+      );
     } catch (error) {
       console.error('Error subscribing to notifications:', error);
       throw error;

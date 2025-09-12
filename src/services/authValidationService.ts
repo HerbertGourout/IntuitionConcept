@@ -6,7 +6,7 @@ export interface ValidationRequest {
   action: string;
   resource?: string;
   resourceId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ValidationResponse {
@@ -27,7 +27,7 @@ export interface AuditLogEntry {
   timestamp: string;
   ip?: string;
   userAgent?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 class AuthValidationService {

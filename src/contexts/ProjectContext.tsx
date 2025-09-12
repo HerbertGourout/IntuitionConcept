@@ -1,12 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { addSubTaskRecursive, removeSubTaskRecursive, reorderSubTasksRecursive } from '../utils/taskUtils';
-import { aggregatePhaseSpent, aggregateProjectSpent, cleanHistory } from './projectContextUtils';
+import { aggregateProjectSpent, cleanHistory } from './projectContextUtils';
 import { ProjectService } from '../services/projectService';
 import type { Project, ProjectPhase, ProjectTask, ProjectContextType } from './projectTypes';
 import type { FinancialRecord } from '../types';
 import { sumTaskBudgets } from './projectUtils';
-import { onSnapshot, collection, addDoc, updateDoc, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Type simplifié pour les données Firebase brutes
@@ -128,47 +128,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   // Plus de persistance locale - tout est géré par Firebase
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'projects'), (snapshot) => {
-      const fetchedProjects = snapshot.docs.map(doc => {
-        const data: Partial<Project> = doc.data() as Partial<Project>;
-        return {
-          id: doc.id,
-          name: typeof data.name === 'string' ? data.name : 'Nouveau Projet',
-          location: typeof data.location === 'string' ? data.location : '',
-          description: typeof data.description === 'string' ? data.description : '',
-          startDate: typeof data.startDate === 'string' ? data.startDate : new Date().toISOString().split('T')[0],
-          endDate: typeof data.endDate === 'string' ? data.endDate : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          status: typeof data.status === 'string' && ['planning','in_progress','on_hold','completed','cancelled'].includes(data.status) ? data.status as Project['status'] : 'planning',
-          budget: typeof data.budget === 'number' ? data.budget : 0,
-          createdAt: typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString(),
-          updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString(),
-          spent: typeof data.spent === 'number' ? data.spent : 0,
-          phases: Array.isArray(data.phases) ? data.phases : [],
-          progress: typeof data.progress === 'number' ? data.progress : 0,
-          priority: typeof data.priority === 'string' ? data.priority : 'medium',
-          team: Array.isArray(data.team) ? data.team : [],
-          manager: typeof data.manager === 'string' ? data.manager : '',
-          client: typeof data.client === 'string' ? data.client : '',
-          equipment: Array.isArray(data.equipment) ? data.equipment : [],
-        };
-      });
-      // Agrégation automatique des dépenses :
-      const withSpent = fetchedProjects.map(project => {
-        const phases = (project.phases || []).map(phase => {
-          const spent = aggregatePhaseSpent(phase.tasks || []);
-          return { ...phase, spent };
-        });
-        const spent = aggregateProjectSpent(phases);
-        return { ...project, phases, spent };
-      });
-      setProjects(withSpent);
-      setLoadingProjects(false);
-      // Plus de sauvegarde localStorage - Firebase gère tout
-    });
-    return () => unsubscribe();
-  }, []);
+  // (Removed duplicate direct onSnapshot listener to 'projects' to avoid overlapping subscriptions)
 
   const addProject = async (project: Omit<Project, 'id' | 'phases'> | Omit<Project, 'id'> | Project) => {
     try {

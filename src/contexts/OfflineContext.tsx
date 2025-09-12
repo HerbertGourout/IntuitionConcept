@@ -302,7 +302,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
       if (pendingActions.length > 0) {
         syncPendingActions();
       }
-    }, 30000); // Toutes les 30 secondes
+    }, 30000); // Toutes les 30 secondes pour éviter les blocages
 
     return () => clearInterval(interval);
   }, [isOnline, pendingActions.length, syncPendingActions]);

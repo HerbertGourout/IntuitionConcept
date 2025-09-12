@@ -171,18 +171,34 @@ export class QuotesService {
             collection(db, QUOTES_COLLECTION),
             orderBy('createdAt', 'desc')
         );
-        return onSnapshot(q, (snapshot: QuerySnapshot) => {
-            const quotes: Quote[] = snapshot.docs.map((d) => {
-                const data = d.data() as DocumentData;
-                return {
-                    ...data,
-                    id: d.id, // id en dernier
-                    createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-                    updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
-                } as Quote;
-            });
-            callback(quotes);
-        });
+        return onSnapshot(q, 
+            (snapshot: QuerySnapshot) => {
+                try {
+                    const quotes: Quote[] = snapshot.docs.map((d) => {
+                        const data = d.data() as DocumentData;
+                        return {
+                            ...data,
+                            id: d.id, // id en dernier
+                            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+                            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+                        } as Quote;
+                    });
+                    callback(quotes);
+                } catch (processingError) {
+                    console.error('Erreur lors du traitement des données des devis:', processingError);
+                    callback([]); // Fallback avec tableau vide
+                }
+            },
+            (error) => {
+                console.error('Erreur Firestore lors de l\'écoute des devis:', error);
+                if (error.code === 'permission-denied') {
+                    console.warn('Permissions insuffisantes pour écouter les devis');
+                } else if (error.code === 'unavailable') {
+                    console.warn('Service Firestore temporairement indisponible');
+                }
+                callback([]); // Fallback avec tableau vide
+            }
+        );
     }
 
     /**
@@ -192,9 +208,25 @@ export class QuotesService {
         const q = query(
             collection(db, QUOTES_COLLECTION)
         );
-        return onSnapshot(q, (snapshot: QuerySnapshot) => {
-            callback(snapshot.size);
-        });
+        return onSnapshot(q, 
+            (snapshot: QuerySnapshot) => {
+                try {
+                    callback(snapshot.size);
+                } catch (processingError) {
+                    console.error('Erreur lors du traitement du compteur de devis:', processingError);
+                    callback(0); // Fallback avec 0
+                }
+            },
+            (error) => {
+                console.error('Erreur Firestore lors de l\'écoute du compteur de devis:', error);
+                if (error.code === 'permission-denied') {
+                    console.warn('Permissions insuffisantes pour compter les devis');
+                } else if (error.code === 'unavailable') {
+                    console.warn('Service Firestore temporairement indisponible');
+                }
+                callback(0); // Fallback avec 0
+            }
+        );
     }
 
     /**

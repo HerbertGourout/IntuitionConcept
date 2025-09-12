@@ -201,7 +201,7 @@ export const BudgetOverview: React.FC = () => {
                     </h3>
                     
                     <div className="space-y-4">
-                        {phases.map((phase, index) => {
+                        {phases.map((phase) => {
                             const tasks = phase.tasks || [];
                             const estimated = typeof phase.estimatedBudget === 'number' ? phase.estimatedBudget : 0;
                             const spent = tasks.reduce((s, t) => s + (t.spent || 0), 0);

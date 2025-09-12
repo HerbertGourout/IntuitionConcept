@@ -12,55 +12,12 @@ import {
   Send,
   Copy
 } from 'lucide-react';
-import { useProjectContext } from '../../contexts/ProjectContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import { AnimatedCounter } from '../UI/VisualEffects';
 import QuoteCreatorSimple from './QuoteCreatorSimple';
-
-// Types pour les devis
-export interface Quote {
-  id: string;
-  title: string;
-  clientName: string;
-  clientEmail?: string;
-  clientPhone?: string;
-  companyName?: string;
-  projectId?: string;
-  projectType?: string;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
-  totalAmount: number;
-  subtotal: number;
-  taxRate: number;
-  taxAmount: number;
-  validUntil: string;
-  validityDays?: number;
-  createdAt: string;
-  updatedAt: string;
-  phases: QuotePhase[];
-  notes?: string;
-  terms?: string;
-  paymentTerms?: string;
-}
-
-export interface QuotePhase {
-  id: string;
-  name: string;
-  description: string;
-  items: QuoteItem[];
-  totalAmount: number;
-}
-
-export interface QuoteItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  unit: string;
-}
+import { Quote } from '../../services/quotesService';
 
 const Quotes: React.FC = () => {
-  const { projects } = useProjectContext();
   const { formatAmount } = useCurrency();
   
   // États locaux
@@ -71,12 +28,14 @@ const Quotes: React.FC = () => {
       clientName: 'M. Jean Dupont',
       clientEmail: 'jean.dupont@email.com',
       clientPhone: '+237 6XX XX XX XX',
-      projectId: projects[0]?.id,
+      companyName: 'Dupont Construction SARL',
+      projectType: 'construction',
       status: 'sent',
       totalAmount: 45000000,
       subtotal: 38135593,
       taxRate: 18,
       taxAmount: 6864407,
+      validityDays: 30,
       validUntil: '2025-10-15',
       createdAt: '2025-09-01',
       updatedAt: '2025-09-05',
@@ -85,40 +44,63 @@ const Quotes: React.FC = () => {
           id: 'p1',
           name: 'Gros œuvre',
           description: 'Fondations, murs porteurs, dalle',
-          totalAmount: 25000000,
-          items: [
+          totalPrice: 25000000,
+          expanded: true,
+          tasks: [
             {
-              id: 'i1',
-              description: 'Fondations en béton armé',
-              quantity: 120,
-              unitPrice: 85000,
+              id: 't1',
+              name: 'Fondations',
+              description: 'Travaux de fondations',
               totalPrice: 10200000,
-              unit: 'm²'
+              expanded: true,
+              articles: [
+                {
+                  id: 'a1',
+                  description: 'Fondations en béton armé',
+                  quantity: 120,
+                  unit: 'm²',
+                  unitPrice: 85000,
+                  totalPrice: 10200000
+                }
+              ]
             },
             {
-              id: 'i2',
-              description: 'Murs en parpaings',
-              quantity: 200,
-              unitPrice: 45000,
+              id: 't2',
+              name: 'Murs',
+              description: 'Construction des murs',
               totalPrice: 9000000,
-              unit: 'm²'
+              expanded: true,
+              articles: [
+                {
+                  id: 'a2',
+                  description: 'Murs en parpaings',
+                  quantity: 200,
+                  unit: 'm²',
+                  unitPrice: 45000,
+                  totalPrice: 9000000
+                }
+              ]
             }
           ]
         }
       ],
       notes: 'Devis valable 45 jours',
-      terms: 'Paiement en 3 tranches : 40% à la commande, 40% à mi-parcours, 20% à la livraison'
+      paymentTerms: 'Paiement en 3 tranches : 40% à la commande, 40% à mi-parcours, 20% à la livraison'
     },
     {
       id: '2',
       title: 'Devis Rénovation Appartement',
       clientName: 'Mme Marie Martin',
       clientEmail: 'marie.martin@email.com',
+      clientPhone: '+237 6XX XX XX XX',
+      companyName: 'Martin Rénovation',
+      projectType: 'renovation',
       status: 'draft',
       totalAmount: 12500000,
       subtotal: 10593220,
       taxRate: 18,
       taxAmount: 1906780,
+      validityDays: 30,
       validUntil: '2025-11-01',
       createdAt: '2025-09-03',
       updatedAt: '2025-09-06',
@@ -226,7 +208,7 @@ const Quotes: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8 p-2 sm:p-4">
       {/* Header */}
       <div className="glass-card p-6">
         <div className="flex items-center justify-between">
@@ -381,7 +363,7 @@ const Quotes: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filteredQuotes.map(quote => (
               <div key={quote.id} className="glass-card p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                 {/* Header de la carte */}
@@ -414,13 +396,13 @@ const Quotes: React.FC = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Valide jusqu'au:</span>
                     <span className="font-medium">
-                      {new Date(quote.validUntil).toLocaleDateString('fr-FR')}
+                      {quote.validUntil ? new Date(quote.validUntil).toLocaleDateString('fr-FR') : 'Non définie'}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Créé le:</span>
                     <span className="font-medium">
-                      {new Date(quote.createdAt).toLocaleDateString('fr-FR')}
+                      {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('fr-FR') : 'Non définie'}
                     </span>
                   </div>
                 </div>

@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BarChart3, TrendingUp } from 'lucide-react';
 import { useProjects } from '../../../hooks/useProjects';
+import { db } from '../../../firebase';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
 interface ChartData {
   label: string;
@@ -8,13 +10,28 @@ interface ChartData {
   color: string;
 }
 
-const RealTimeChartWidget: React.FC = () => {
+interface RealTimeChartWidgetProps {
+  className?: string;
+}
+
+type TaskLike = { status?: string; dueDate?: string | Date | { seconds?: number } };
+
+const RealTimeChartWidget: React.FC<RealTimeChartWidgetProps> = ({ className = '' }) => {
   const { currentProject } = useProjects();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [rtTasks, setRtTasks] = useState<TaskLike[] | null>(null);
+
+  const normalizeDate = useCallback((d: string | Date | { seconds?: number } | undefined): Date | undefined => {
+    if (!d) return undefined;
+    if (d instanceof Date) return d;
+    if (typeof d === 'string') return new Date(d);
+    if (typeof d === 'object' && typeof d.seconds === 'number') return new Date(d.seconds * 1000);
+    return undefined;
+  }, []);
 
   // Calculer les données de productivité basées sur le projet réel
   const data = useMemo<ChartData[]>(() => {
-    if (!currentProject) {
+    if (!currentProject && !rtTasks) {
       return [
         { label: 'Lun', value: 0, color: 'bg-gray-400' },
         { label: 'Mar', value: 0, color: 'bg-gray-400' },
@@ -27,13 +44,16 @@ const RealTimeChartWidget: React.FC = () => {
     }
 
     // Calculer la productivité par jour basée sur les tâches
-    const allTasks = (currentProject.phases || []).flatMap(phase => phase.tasks || []);
+    const allTasks = rtTasks
+      ? rtTasks as TaskLike[]
+      : (currentProject?.phases || []).flatMap(phase => phase.tasks || []);
     const totalTasks = allTasks.length;
     const completedTasks = allTasks.filter(task => task.status === 'done').length;
     const inProgressTasks = allTasks.filter(task => task.status === 'in_progress').length;
-    const delayedTasks = allTasks.filter(task => 
-      task.status !== 'done' && task.dueDate && new Date(task.dueDate) < new Date()
-    ).length;
+    const delayedTasks = allTasks.filter(task => {
+      const dd = normalizeDate(task.dueDate);
+      return task.status !== 'done' && dd && dd < new Date();
+    }).length;
 
     // Calculer l'efficacité globale
     const globalEfficiency = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -80,7 +100,7 @@ const RealTimeChartWidget: React.FC = () => {
         color: 'bg-indigo-500' 
       }
     ];
-  }, [currentProject]);
+  }, [currentProject, rtTasks, normalizeDate]);
 
   // Animation de mise à jour périodique
   useEffect(() => {
@@ -92,11 +112,54 @@ const RealTimeChartWidget: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Écoute temps réel des tâches si collection dédiée
+  useEffect(() => {
+    if (!currentProject?.id) {
+      setRtTasks(null);
+      return;
+    }
+    let unsub: undefined | (() => void);
+    try {
+      const tasksRef = collection(db, 'tasks');
+      const q = query(tasksRef, where('projectId', '==', currentProject.id));
+      unsub = onSnapshot(q, 
+        (snap) => {
+          try {
+            const list: TaskLike[] = snap.docs.map(d => {
+              const data = d.data() as Record<string, unknown>;
+              return {
+                status: (data.status as string) || undefined,
+                dueDate: (data.dueDate as string | Date | { seconds?: number } | undefined),
+              };
+            });
+            setRtTasks(list);
+          } catch (processingError) {
+            console.error('Erreur lors du traitement des tâches temps réel:', processingError);
+            setRtTasks(null); // Fallback vers les données du projet
+          }
+        },
+        (error) => {
+          console.error('Erreur Firestore lors de l\'écoute des tâches:', error);
+          if (error.code === 'permission-denied') {
+            console.warn('Permissions insuffisantes pour écouter les tâches');
+          } else if (error.code === 'unavailable') {
+            console.warn('Service Firestore temporairement indisponible');
+          }
+          setRtTasks(null); // Fallback vers les données du projet
+        }
+      );
+    } catch (initError) {
+      console.warn('Impossible d\'initialiser l\'écoute des tâches:', initError);
+      setRtTasks(null);
+    }
+    return () => { if (unsub) unsub(); };
+  }, [currentProject?.id]);
+
   const maxValue = Math.max(...data.map(d => d.value));
   const avgValue = data.reduce((sum, d) => sum + d.value, 0) / data.length;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+    <div className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 ${className}`}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Productivité Hebdomadaire</h3>
@@ -111,7 +174,7 @@ const RealTimeChartWidget: React.FC = () => {
       {/* Chart */}
       <div className="space-y-4">
         <div className="flex items-end justify-between h-40 space-x-2">
-          {data.map((item, index) => (
+          {data.map((item) => (
             <div key={item.label} className="flex flex-col items-center flex-1">
               <div className="w-full flex flex-col justify-end h-32 mb-2">
                 <div

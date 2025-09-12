@@ -1,69 +1,12 @@
 import React, { useState } from 'react';
 import GlobalLayout from '../components/Layout/GlobalLayout';
 import { Check, Smartphone, CreditCard, Star, ShieldCheck, ChevronRight } from 'lucide-react';
-import CountrySelector from '../components/payments/CountrySelector';
+import CompactCountrySelector from '../components/Pricing/CompactCountrySelector';
 import { useNavigate } from 'react-router-dom';
+import { PLANS, PRICING, CURRENCY_SYMBOLS, PlanId, Currency } from '../config/pricing';
 
-const PLANS = [
-  {
-    id: 'basic',
-    name: 'Basique',
-    features: [
-      '5 projets actifs',
-      '10 utilisateurs',
-      'Support email',
-      'Rapports standards',
-      'Stockage 1GB'
-    ],
-    color: 'blue',
-    popular: false
-  },
-  {
-    id: 'pro',
-    name: 'Professionnel',
-    features: [
-      '50 projets actifs',
-      '100 utilisateurs',
-      'Support prioritaire',
-      'Rapports avancés',
-      'Stockage 10GB',
-      'API intégration',
-      'Diagrammes de Gantt'
-    ],
-    color: 'green',
-    popular: true
-  },
-  {
-    id: 'enterprise',
-    name: 'Entreprise',
-    features: [
-      'Projets illimités',
-      'Utilisateurs illimités',
-      'Support 24/7',
-      'Rapports personnalisés',
-      'Stockage illimité',
-      'API complète',
-      'Gestionnaire dédié',
-      'Formation équipe'
-    ],
-    color: 'purple',
-    popular: false
-  }
-];
 
-const PRICING: Record<Currency, Record<PlanId, number>> = {
-  XOF: { basic: 5000, pro: 15000, enterprise: 50000 },
-  XAF: { basic: 5000, pro: 15000, enterprise: 50000 },
-  MAD: { basic: 100, pro: 350, enterprise: 1200 },
-  DZD: { basic: 1400, pro: 4200, enterprise: 15000 },
-  TND: { basic: 20, pro: 60, enterprise: 200 }
-};
-
-// Types pour la sélection de pays et devises
-type Currency = 'XOF' | 'XAF' | 'MAD' | 'DZD' | 'TND';
-type PlanId = 'basic' | 'pro' | 'enterprise';
-
-// Interface compatible avec CountrySelector
+// Interface compatible avec CompactCountrySelector
 interface Country {
   code: string;
   name: string;
@@ -72,16 +15,8 @@ interface Country {
   flag: string;
   region: 'west' | 'central' | 'maghreb';
   mobileMoneyProviders: string[];
-  phonePrefix: string;
 }
 
-const CURRENCY_SYMBOLS: Record<Currency, string> = {
-  XOF: 'FCFA',
-  XAF: 'FCFA',
-  MAD: 'DH',
-  DZD: 'DA',
-  TND: 'DT'
-};
 
 export const Pricing: React.FC = () => {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
@@ -122,7 +57,7 @@ export const Pricing: React.FC = () => {
       heroSubtitle="Choisissez le plan parfait pour votre équipe. Paiements Mobile Money inclus pour l'Afrique francophone."
       heroBackground="bg-gradient-to-br from-green-900 via-blue-900 to-purple-900"
     >
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4">
         {/* En-tête */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Tarifs & Abonnements</h1>
@@ -131,9 +66,9 @@ export const Pricing: React.FC = () => {
           </p>
         </div>
 
-        {/* Sélecteur de pays */}
-        <div className="mb-12">
-          <CountrySelector
+        {/* Sélecteur de pays compact */}
+        <div className="mb-8 flex justify-center">
+          <CompactCountrySelector
             onCountrySelect={(country: Country) => setSelectedCountry(country)}
             selectedCountry={selectedCountry || undefined}
           />
@@ -179,6 +114,7 @@ export const Pricing: React.FC = () => {
               )}
               <div className={`p-8 ${plan.popular ? 'pt-16' : ''}`}>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                <p className="text-gray-600 mb-4">{plan.description}</p>
                 <div className="mb-6">
                   <div className="flex items-baseline">
                     <span className="text-4xl font-bold text-gray-900">
@@ -195,11 +131,24 @@ export const Pricing: React.FC = () => {
                     </p>
                   )}
                 </div>
+                
+                {/* Limites du plan */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <div>📊 {typeof plan.limits.projects === 'number' ? `${plan.limits.projects} projets` : 'Projets illimités'}</div>
+                    <div>👥 {typeof plan.limits.users === 'number' ? `${plan.limits.users} utilisateurs` : 'Utilisateurs illimités'}</div>
+                    <div>💾 {plan.limits.storage} de stockage</div>
+                  </div>
+                </div>
+
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start">
                       <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
+                      <div>
+                        <span className="text-gray-900 font-medium">{feature.name}</span>
+                        <p className="text-sm text-gray-600">{feature.description}</p>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -211,7 +160,7 @@ export const Pricing: React.FC = () => {
                       : 'bg-gray-900 hover:bg-gray-800 text-white'
                   }`}
                 >
-                  S’abonner <ChevronRight className="inline w-5 h-5 ml-2" />
+                  S'abonner <ChevronRight className="inline w-5 h-5 ml-2" />
                 </button>
               </div>
             </div>

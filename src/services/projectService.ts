@@ -326,25 +326,35 @@ export class ProjectService {
   static subscribeToProjects(callback: (projects: Project[]) => void): () => void {
     const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
     
-    return onSnapshot(q, (querySnapshot) => {
-      const projects = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
-            ? data.createdAt.toDate() 
-            : new Date(data.createdAt || Date.now()),
-          updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' 
-            ? data.updatedAt.toDate() 
-            : new Date(data.updatedAt || Date.now())
-        };
-      }) as Project[];
-      
-      callback(projects);
-    }, (error) => {
-      console.error('Erreur lors de l\'écoute des projets:', error);
-    });
+    return onSnapshot(q, 
+      (querySnapshot) => {
+        try {
+          const projects = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+              updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+            };
+          }) as Project[];
+          
+          callback(projects);
+        } catch (processingError) {
+          console.error('Erreur lors du traitement des données des projets:', processingError);
+          callback([]); // Fallback avec tableau vide
+        }
+      },
+      (error) => {
+        console.error('Erreur Firestore lors de l\'écoute des projets:', error);
+        if (error.code === 'permission-denied') {
+          console.warn('Permissions insuffisantes pour écouter les projets');
+        } else if (error.code === 'unavailable') {
+          console.warn('Service Firestore temporairement indisponible');
+        }
+        callback([]); // Fallback avec tableau vide
+      }
+    );
   }
 
   /**

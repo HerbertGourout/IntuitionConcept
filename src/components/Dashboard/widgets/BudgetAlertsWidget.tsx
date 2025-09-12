@@ -30,73 +30,109 @@ interface BudgetAlert {
 
 interface BudgetAlertsWidgetProps {
   className?: string;
+  projectId?: string;
+  projectName?: string;
+  budget?: number;
+  totalActualExpenses?: number;
+  totalPlannedExpenses?: number;
 }
 
-const BudgetAlertsWidget: React.FC<BudgetAlertsWidgetProps> = ({ className = '' }) => {
+const BudgetAlertsWidget: React.FC<BudgetAlertsWidgetProps> = ({ className = '', projectId, projectName, budget = 0, totalActualExpenses = 0, totalPlannedExpenses = 0 }) => {
   const { resolvedTheme } = useTheme();
   const [alerts, setAlerts] = useState<BudgetAlert[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread' | 'critical'>('unread');
 
-  // Simulation d'alertes budgétaires intelligentes
+  // Génération d'alertes à partir des métriques financières reçues
   useEffect(() => {
-    const mockAlerts: BudgetAlert[] = [
-      {
-        id: 'alert-1',
-        type: 'danger',
-        title: 'Dépassement budgétaire critique',
-        message: 'Le projet Immeuble Almadies a dépassé 95% de son budget alloué',
-        amount: 427500,
-        percentage: 95,
-        projectId: 'proj-1',
-        projectName: 'Immeuble Almadies',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
-        isRead: false,
-        priority: 'critical',
-      },
-      {
-        id: 'alert-2',
-        type: 'warning',
-        title: 'Seuil d\'alerte atteint',
-        message: 'Centre Commercial approche 80% du budget prévu',
-        amount: 712000,
-        percentage: 80,
-        projectId: 'proj-2',
-        projectName: 'Centre Commercial',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2h ago
-        isRead: false,
-        priority: 'high',
-      },
-      {
-        id: 'alert-3',
-        type: 'info',
-        title: 'Prévision budgétaire',
-        message: 'Villa Ngor devrait respecter le budget avec une marge de 15%',
-        amount: 238000,
-        percentage: 85,
-        projectId: 'proj-3',
-        projectName: 'Villa Ngor',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4h ago
-        isRead: true,
-        priority: 'low',
-      },
-      {
-        id: 'alert-4',
-        type: 'success',
-        title: 'Économie réalisée',
-        message: 'Résidence Plateau termine avec 12% d\'économie sur le budget',
-        amount: -38400,
-        percentage: 88,
-        projectId: 'proj-4',
-        projectName: 'Résidence Plateau',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6h ago
-        isRead: true,
-        priority: 'medium',
-      },
-    ];
+    const list: BudgetAlert[] = [];
+    const name = projectName || 'Projet en cours';
+    const id = projectId || 'current-project';
 
-    setAlerts(mockAlerts);
-  }, []);
+    if (budget > 0) {
+      const usedPct = Math.round((totalActualExpenses / budget) * 100);
+      if (usedPct >= 95) {
+        list.push({
+          id: `${id}-critical-usage`,
+          type: 'danger',
+          title: 'Dépassement budgétaire critique',
+          message: `${name} a dépassé 95% de son budget alloué`,
+          amount: totalActualExpenses,
+          percentage: usedPct,
+          projectId: id,
+          projectName: name,
+          timestamp: new Date(),
+          isRead: false,
+          priority: 'critical',
+        });
+      } else if (usedPct >= 80) {
+        list.push({
+          id: `${id}-warning-usage`,
+          type: 'warning',
+          title: 'Seuil d\'alerte atteint',
+          message: `${name} a dépassé ${usedPct}% du budget`,
+          amount: totalActualExpenses,
+          percentage: usedPct,
+          projectId: id,
+          projectName: name,
+          timestamp: new Date(),
+          isRead: false,
+          priority: 'high',
+        });
+      } else {
+        list.push({
+          id: `${id}-info-usage`,
+          type: 'info',
+          title: 'Prévision budgétaire',
+          message: `${name} est à ${usedPct}% du budget`,
+          amount: totalActualExpenses,
+          percentage: usedPct,
+          projectId: id,
+          projectName: name,
+          timestamp: new Date(),
+          isRead: true,
+          priority: 'low',
+        });
+      }
+    }
+
+    // Écart Planned vs Actual
+    if (totalPlannedExpenses > 0) {
+      const variance = totalActualExpenses - totalPlannedExpenses;
+      const variancePct = Math.round((Math.abs(variance) / totalPlannedExpenses) * 100);
+      if (variance > 0 && variancePct >= 10) {
+        list.push({
+          id: `${id}-overrun`,
+          type: 'danger',
+          title: 'Dépenses réelles supérieures au plan',
+          message: `${name}: +${variancePct}% vs planifié`,
+          amount: variance,
+          percentage: variancePct,
+          projectId: id,
+          projectName: name,
+          timestamp: new Date(),
+          isRead: false,
+          priority: 'high',
+        });
+      } else if (variance < 0 && variancePct >= 10) {
+        list.push({
+          id: `${id}-savings`,
+          type: 'success',
+          title: 'Économie réalisée',
+          message: `${name}: -${variancePct}% vs planifié`,
+          amount: variance,
+          percentage: variancePct,
+          projectId: id,
+          projectName: name,
+          timestamp: new Date(),
+          isRead: true,
+          priority: 'medium',
+        });
+      }
+    }
+
+    setAlerts(list);
+  }, [projectId, projectName, budget, totalActualExpenses, totalPlannedExpenses]);
 
   const getAlertIcon = (type: BudgetAlert['type']) => {
     switch (type) {

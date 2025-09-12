@@ -24,7 +24,9 @@ describe('useSecureAction', () => {
     uid: 'test-user-id',
     role: 'manager' as const,
     email: 'test@example.com',
-    permissions: ['quotes.edit', 'quotes.create']
+    permissions: ['quotes.edit', 'quotes.create'],
+    createdAt: new Date().toISOString(),
+    isActive: true
   };
 
   const mockAction = jest.fn().mockResolvedValue('success');
@@ -37,8 +39,23 @@ describe('useSecureAction', () => {
       hasPermission: jest.fn((permission: string) => 
         mockUser.permissions.includes(permission)
       ),
-      // Autres propriétés du contexte auth...
-    } as any);
+      firebaseUser: null,
+      isLoading: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+      register: jest.fn(),
+      updateUserProfile: jest.fn(),
+      resetPassword: jest.fn(),
+      verifyEmail: jest.fn(),
+      loginWithGoogle: jest.fn(),
+      mfaGenerateTotpSecret: jest.fn(),
+      mfaEnrollTotp: jest.fn(),
+      mfaGetEnrolledFactors: jest.fn(),
+      mfaUnenroll: jest.fn(),
+      hasRole: jest.fn(() => false),
+      resendEmailVerification: jest.fn(),
+      refreshClaims: jest.fn()
+    } as unknown as ReturnType<typeof useAuth>);
 
     mockSessionManager.requiresRecentAuth.mockResolvedValue(false);
     mockAuditLogger.logResourceAccess.mockResolvedValue();
@@ -210,8 +227,24 @@ describe('useSecureAction', () => {
     it('devrait refuser l\'accès sans utilisateur connecté', async () => {
       mockUseAuth.mockReturnValue({
         user: null,
-        hasPermission: jest.fn(() => false)
-      } as any);
+        hasPermission: jest.fn(() => false),
+        firebaseUser: null,
+        isLoading: false,
+        login: jest.fn(),
+        logout: jest.fn(),
+        register: jest.fn(),
+        updateUserProfile: jest.fn(),
+        resetPassword: jest.fn(),
+        verifyEmail: jest.fn(),
+        loginWithGoogle: jest.fn(),
+        mfaGenerateTotpSecret: jest.fn(),
+        mfaEnrollTotp: jest.fn(),
+        mfaGetEnrolledFactors: jest.fn(),
+        mfaUnenroll: jest.fn(),
+        hasRole: jest.fn(() => false),
+        resendEmailVerification: jest.fn(),
+        refreshClaims: jest.fn()
+      } as unknown as ReturnType<typeof useAuth>);
 
       const { result } = renderHook(() =>
         useSecureAction(

@@ -112,16 +112,30 @@ export class UserSettingsService {
   static subscribeToUserSettings(userId: string, callback: (settings: UserSettings | null) => void): () => void {
     const docRef = doc(db, COLLECTION_NAME, userId);
     
-    return onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const settings = { id: docSnap.id, ...docSnap.data() } as UserSettings;
-        callback(settings);
-      } else {
-        callback(null);
+    return onSnapshot(docRef, 
+      (docSnap) => {
+        try {
+          if (docSnap.exists()) {
+            const settings = { id: docSnap.id, ...docSnap.data() } as UserSettings;
+            callback(settings);
+          } else {
+            callback(null);
+          }
+        } catch (processingError) {
+          console.error('Erreur lors du traitement des paramètres utilisateur:', processingError);
+          callback(null); // Fallback avec null
+        }
+      },
+      (error) => {
+        console.error('Erreur Firestore lors de l\'écoute des paramètres utilisateur:', error);
+        if (error.code === 'permission-denied') {
+          console.warn('Permissions insuffisantes pour écouter les paramètres utilisateur');
+        } else if (error.code === 'unavailable') {
+          console.warn('Service Firestore temporairement indisponible');
+        }
+        callback(null); // Fallback avec null
       }
-    }, (error) => {
-      console.error('Erreur lors de l\'écoute des paramètres:', error);
-    });
+    );
   }
 
   // Gestion du profil utilisateur
