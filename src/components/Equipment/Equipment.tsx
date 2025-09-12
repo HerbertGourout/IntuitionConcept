@@ -6,6 +6,8 @@ import MaintenancePlanningModal from './MaintenancePlanningModal';
 import EquipmentForm from './EquipmentForm';
 import { EquipmentService } from '../../services/equipmentService';
 import type { Equipment } from '../../types/index';
+import PageContainer from '../Layout/PageContainer';
+import SectionHeader from '../UI/SectionHeader';
 
 // Fonction utilitaire pour nettoyer les données avant Firestore
 function cleanEquipmentData(equipment: Equipment): Equipment {
@@ -134,36 +136,32 @@ const Equipment: React.FC = () => {
   const equipmentTypes = Array.from(new Set(equipment.map(item => item.type)));
 
   return (
-    <div className="space-y-6">
+    <PageContainer className="space-y-6">
         {/* Header avec design glassmorphism */}
         <div className="glass-card p-6 rounded-xl">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl">
-                <Settings className="w-8 h-8 text-orange-600" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Gestion des Équipements</h1>
-                <p className="text-gray-600 mt-1">Suivi et maintenance du parc d'équipements</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowMaintenanceModal(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-xl hover:from-blue-700 hover:to-cyan-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
-              >
-                <Calendar className="w-4 h-4" />
-                Planning Maintenance
-              </button>
-              <button
-                onClick={() => setShowAddEquipment(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-xl hover:from-orange-700 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-orange-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
-              >
-                <Plus className="w-4 h-4" />
-                Ajouter
-              </button>
-            </div>
-          </div>
+          <SectionHeader
+            icon={<Settings className="w-8 h-8" />}
+            title="Gestion des Équipements"
+            subtitle="Suivi et maintenance du parc d'équipements"
+            actions={(
+              <>
+                <button
+                  onClick={() => setShowMaintenanceModal(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-xl hover:from-blue-700 hover:to-cyan-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Planning Maintenance
+                </button>
+                <button
+                  onClick={() => setShowAddEquipment(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-xl hover:from-orange-700 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-orange-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
+                >
+                  <Plus className="w-4 h-4" />
+                  Ajouter
+                </button>
+              </>
+            )}
+          />
 
           {/* Statistiques rapides */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -389,7 +387,7 @@ const Equipment: React.FC = () => {
             </button>
           </div>
         )}
-    </div>
+    </PageContainer>
   );
 };
 

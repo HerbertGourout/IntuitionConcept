@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { BarChart3, ChevronLeft, ChevronRight, Target } from 'lucide-react';
 import { ProjectTask } from '../../contexts/projectTypes';
 import { TeamMember } from '../../types/team';
+import SectionHeader from '../UI/SectionHeader';
 
 // Interface robuste avec validation
 interface RobustGanttChartProps {
@@ -264,53 +265,48 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
   
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-      {/* Header avec contrôles */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BarChart3 className="w-6 h-6" />
-            <h3 className="text-lg font-semibold">Gantt Avancé Robuste</h3>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button
-              onClick={goPrev}
-              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-              title="Période précédente"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            
-            <button
-              onClick={goToday}
-              className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
-            >
-              Aujourd'hui
-            </button>
-            
-            <button
-              onClick={goNext}
-              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-              title="Période suivante"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            
-            <button
-              onClick={fitToTasks}
-              className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-            >
-              <Target className="w-4 h-4" />
-              Ajuster aux tâches
-            </button>
-            
-            {/* Switch debug visuel */}
-            <label className="flex items-center gap-1 ml-3 cursor-pointer select-none">
-              <input type="checkbox" checked={debug} onChange={e => setDebug(e.target.checked)} />
-              <span className="text-xs">Debug visuel</span>
-            </label>
-          </div>
-        </div>
+      {/* Header harmonisé */}
+      <div className="glass-card p-4">
+        <SectionHeader
+          icon={<BarChart3 className="w-6 h-6 text-blue-600" />}
+          title="Gantt Avancé Robuste"
+          actions={(
+            <div className="flex items-center gap-2">
+              <button
+                onClick={goPrev}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="Période précédente"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={goToday}
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+              >
+                Aujourd'hui
+              </button>
+              <button
+                onClick={goNext}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="Période suivante"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={fitToTasks}
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+              >
+                <Target className="w-4 h-4" />
+                Ajuster aux tâches
+              </button>
+              {/* Switch debug visuel */}
+              <label className="flex items-center gap-1 ml-3 cursor-pointer select-none text-xs text-gray-600">
+                <input type="checkbox" checked={debug} onChange={e => setDebug(e.target.checked)} />
+                <span>Debug visuel</span>
+              </label>
+            </div>
+          )}
+        />
       </div>
       
       {/* Informations de debug */}
@@ -338,7 +334,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
         <div className="relative w-full">
           <div className="relative w-full">
             {/* Timeline (dates) - sticky header */}
-            <div className="flex border-b border-gray-200 bg-gray-50 relative w-full sticky top-0 z-30">
+            <div className="flex border-b border-gray-200 bg-gray-50 w-full sticky top-0 z-30">
               {timelineDates.map((date, idx) => (
                 <div
                   key={idx}

@@ -17,6 +17,7 @@ import MobileMoneyPayment from './MobileMoneyPayment';
 import CountrySelector from './CountrySelector';
 import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import SectionHeader from '../UI/SectionHeader';
 
 interface Country {
   code: string;
@@ -176,27 +177,26 @@ export const PaymentDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* En-tête */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Gestion des Paiements</h1>
-            <p className="text-blue-100">
-              Gérez vos paiements Mobile Money et suivez vos transactions
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold">
-              {formatCurrency(stats.totalAmount, selectedCountry?.currency || 'XOF')}
+      {/* En-tête harmonisé */}
+      <div className="glass-card p-6 rounded-xl">
+        <SectionHeader
+          icon={<CreditCard className="w-7 h-7 text-blue-600" />}
+          title="Gestion des Paiements"
+          subtitle="Gérez vos paiements Mobile Money et suivez vos transactions"
+          actions={(
+            <div className="text-right">
+              <div className="text-2xl md:text-3xl font-bold text-gray-900">
+                {formatCurrency(stats.totalAmount, selectedCountry?.currency || 'XOF')}
+              </div>
+              <div className="text-sm text-gray-600">Total des revenus</div>
             </div>
-            <div className="text-blue-100">Total des revenus</div>
-          </div>
-        </div>
+          )}
+        />
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
+        <div className="glass-card p-6 rounded-xl">
           <div className="flex items-center">
             <div className="bg-green-100 p-3 rounded-full">
               <CheckCircle className="w-6 h-6 text-green-600" />
@@ -208,7 +208,7 @@ export const PaymentDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="glass-card p-6 rounded-xl">
           <div className="flex items-center">
             <div className="bg-yellow-100 p-3 rounded-full">
               <Clock className="w-6 h-6 text-yellow-600" />
@@ -220,7 +220,7 @@ export const PaymentDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="glass-card p-6 rounded-xl">
           <div className="flex items-center">
             <div className="bg-red-100 p-3 rounded-full">
               <XCircle className="w-6 h-6 text-red-600" />
@@ -232,7 +232,7 @@ export const PaymentDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="glass-card p-6 rounded-xl">
           <div className="flex items-center">
             <div className="bg-blue-100 p-3 rounded-full">
               <DollarSign className="w-6 h-6 text-blue-600" />
@@ -248,7 +248,7 @@ export const PaymentDashboard: React.FC = () => {
       </div>
 
       {/* Navigation par onglets */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="glass-card rounded-xl">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[

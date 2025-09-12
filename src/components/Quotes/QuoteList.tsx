@@ -21,6 +21,8 @@ import { generateQuotePdf } from '../../services/pdf/quotePdf';
 import { EmailData } from '../../services/emailService';
 import QuoteStatusManager from './QuoteStatusManager';
 import QuoteEmailSender from './QuoteEmailSender';
+import PageContainer from '../Layout/PageContainer';
+import Badge, { statusToBadge } from '../UI/Badge';
 
 interface QuoteListProps {
     onCreateNew: () => void;
@@ -145,18 +147,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         }
     };
 
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'draft': return 'Brouillon';
-            case 'sent': return 'Envoyé';
-            case 'accepted': return 'Accepté';
-            case 'rejected': return 'Refusé';
-            case 'viewed': return 'Consulté';
-            case 'expired': return 'Expiré';
-            case 'cancelled': return 'Annulé';
-            default: return status;
-        }
-    };
+    // Labels rendus via Badge.statusToBadge
 
     const filteredQuotes = quotes
         .filter(quote => {
@@ -179,7 +170,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         });
 
     return (
-        <div className="space-y-6">
+        <PageContainer className="space-y-6">
             {/* En-tête */}
             <motion.div
                 className="glass-card p-6 rounded-xl border border-white/20 bg-gradient-to-br from-white/90 to-blue-50/90 backdrop-blur-xl shadow-2xl"
@@ -325,9 +316,10 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                         title="Gérer le statut"
                                     >
                                         {getStatusIcon(quote.status)}
-                                        <span className="text-xs font-medium">
-                                            {getStatusLabel(quote.status)}
-                                        </span>
+                                        {(() => {
+                                          const { tone, label } = statusToBadge('quote', quote.status);
+                                          return <Badge tone={tone} size="sm" className="ml-1">{label}</Badge>;
+                                        })()}
                                     </button>
                                 </div>
 
@@ -372,7 +364,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                                         title="Gérer le statut"
                                     >
                                         <Settings className="w-3 h-3" />
-                                        Statut
+                                        <span>Statut</span>
                                     </button>
                                     
                                     <button
@@ -492,7 +484,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
                     }}
                 />
             )}
-        </div>
+        </PageContainer>
     );
 };
 

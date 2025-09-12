@@ -28,6 +28,8 @@ import {
 from 'lucide-react';
 import DocumentViewer from './DocumentViewer';
 import { DocumentService, Document as ServiceDocument } from '../../services/documentService';
+import PageContainer from '../Layout/PageContainer';
+import SectionHeader from '../UI/SectionHeader';
 
 // Composant DocumentCard moderne
 interface ModernDocumentCardProps {
@@ -96,8 +98,8 @@ const ModernDocumentCard: React.FC<ModernDocumentCardProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('fr-FR', {
+  const formatDate = (date: string | Date) => {
+    return new Date(date as string | number | Date).toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -348,38 +350,36 @@ const Documents: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6 flex items-center justify-center">
-        <div className="glass-card p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des documents...</p>
+      <PageContainer>
+        <div className="flex items-center justify-center">
+          <div className="glass-card p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement des documents...</p>
+          </div>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
+    <PageContainer>
       {/* Header */}
       <div className="glass-card p-8 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white">
-              <FileText className="w-8 h-8" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
-              <p className="text-gray-600 mt-1">Gérez vos documents de projet ({documents.length} documents)</p>
-            </div>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
-          >
-            <Upload className="w-5 h-5" />
-            <span>Télécharger</span>
-          </motion.button>
-        </div>
+        <SectionHeader
+          icon={<FileText className="w-8 h-8" />}
+          title="Documents"
+          subtitle={`Gérez vos documents de projet (${documents.length} documents)`}
+          actions={(
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+            >
+              <Upload className="w-5 h-5" />
+              <span>Télécharger</span>
+            </motion.button>
+          )}
+        />
       </div>
 
       {/* Barre de recherche et filtres */}
@@ -654,7 +654,7 @@ const Documents: React.FC = () => {
           }}
         />
       )}
-    </div>
+    </PageContainer>
   );
 };
 

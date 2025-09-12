@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { X, Download, Share2, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
 import Modal from '../UI/Modal';
-import { Document } from '../../types';
+import { Document as ServiceDocument } from '../../services/documentService';
 
 interface DocumentViewerProps {
-  document: Document;
+  document: ServiceDocument;
   isOpen: boolean;
   onClose: () => void;
   onShare: () => void;

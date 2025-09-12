@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, User, MapPin, TrendingUp } from 'lucide-react';
 import ProjectActionsMenu from './ProjectActionsMenu';
 import { useFormatCurrency } from '../../utils/currency';
+import ProgressBar from '../UI/ProgressBar';
 
 // Interface pour les propriétés du composant
 interface ProjectCardProps {
@@ -75,11 +76,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
     }
   };
 
-
-// ...
-// (hook utilisé dans le composant ProjectCard)
-
-
   const budget = project.budget || 0;
   const spent = project.spent || 0;
   const budgetUsage = budget > 0 ? (spent / budget) * 100 : 0;
@@ -116,12 +112,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
           <span className="text-sm font-medium text-gray-700">Progression</span>
           <span className="text-sm text-gray-600">{Math.round(project.progress || 0)}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className="h-2 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 transition-all duration-300"
-            style={{ width: `${project.progress || 0}%` }}
-          ></div>
-        </div>
+        <ProgressBar value={project.progress || 0} tone="orange" />
       </div>
 
       {/* Info Grid */}
@@ -153,14 +144,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
           <span className="text-sm font-medium text-gray-700">Budget utilisé</span>
           <span className="text-sm text-gray-600">{budgetUsage.toFixed(1)}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-1.5">
-          <div 
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              budgetUsage > 80 ? 'bg-red-500' : budgetUsage > 60 ? 'bg-orange-500' : 'bg-green-500'
-            }`}
-            style={{ width: `${Math.min(budgetUsage, 100)}%` }}
-          ></div>
-        </div>
+        {(() => {
+          const tone: 'red' | 'orange' | 'green' = budgetUsage > 80 ? 'red' : budgetUsage > 60 ? 'orange' : 'green';
+          return <ProgressBar value={Math.min(budgetUsage, 100)} tone={tone} />;
+        })()}
       </div>
     </div>
   );

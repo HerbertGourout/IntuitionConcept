@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, Award } from 'lucide-react';
 import { useProjects } from '../../../hooks/useProjects';
+import ProgressBar from '../../UI/ProgressBar';
 
 interface AnalyticsData {
   taskVelocity: {
@@ -251,15 +252,11 @@ const AnalyticsWidget: React.FC = () => {
                     {kpi.value}{kpi.unit}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      kpi.value >= kpi.target ? 'bg-green-500' : 
-                      kpi.value >= kpi.target * 0.8 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${Math.min((kpi.value / kpi.target) * 100, 100)}%` }}
-                  ></div>
-                </div>
+                {(() => {
+                  const percent = Math.min((kpi.value / Math.max(kpi.target, 1)) * 100, 100);
+                  const tone: 'green' | 'orange' | 'red' = kpi.value >= kpi.target ? 'green' : (kpi.value >= kpi.target * 0.8 ? 'orange' : 'red');
+                  return <ProgressBar value={percent} tone={tone} />;
+                })()}
               </div>
             </div>
           ))}
@@ -282,14 +279,9 @@ const AnalyticsWidget: React.FC = () => {
             {analyticsData.delayAnalysis.mainCauses.slice(0, 3).map((cause, index) => (
               <div key={index} className="flex items-center justify-between py-1">
                 <span className="text-sm text-gray-600 dark:text-gray-400">{cause.cause}</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-orange-500 h-2 rounded-full"
-                      style={{ width: `${cause.percentage}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 w-8">
+                <div className="flex items-center space-x-2 w-40">
+                  <ProgressBar value={cause.percentage} tone="orange" />
+                  <span className="text-xs text-gray-500 dark:text-gray-400 w-8 text-right">
                     {cause.percentage}%
                   </span>
                 </div>

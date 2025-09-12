@@ -94,14 +94,16 @@ export const Subscription: React.FC = () => {
   }, []);
 
   // Succès du paiement
-  const handlePaymentSuccess = useCallback(async (response: any) => {
+  const handlePaymentSuccess = useCallback(async (response: Record<string, unknown>) => {
     if (!selectedPlan || !user) return;
 
     setIsProcessing(true);
     
     try {
       // Mettre à jour le statut du paiement
-      if (response.transaction_id) {
+      const txId = (response as { transaction_id?: string }).transaction_id;
+      const txRef = (response as { tx_ref?: string }).tx_ref;
+      if (txId) {
         // Créer l'enregistrement de paiement
         const paymentData = PaymentService.createPaymentRecord(
           user.uid,
@@ -109,11 +111,11 @@ export const Subscription: React.FC = () => {
           selectedPlan.currency,
           user.phoneNumber || '',
           `Abonnement ${selectedPlan.name} - ${billingCycle === 'monthly' ? 'Mensuel' : 'Annuel'}`,
-          response.tx_ref
+          txRef || ''
         );
 
         const paymentId = await createPayment(paymentData);
-        await updatePaymentStatus(paymentId, 'successful', response.transaction_id);
+        await updatePaymentStatus(paymentId, 'successful', txId);
       }
 
       // Rediriger vers le dashboard
@@ -131,13 +133,6 @@ export const Subscription: React.FC = () => {
     }
   }, [selectedPlan, user, billingCycle, createPayment, updatePaymentStatus, navigate]);
 
-  // Erreur de paiement
-  const handlePaymentError = useCallback((error: any) => {
-    console.error('Erreur de paiement:', error);
-    setIsProcessing(false);
-    // Vous pouvez afficher un message d'erreur ici
-  }, []);
-
   // Fermeture du paiement
   const handlePaymentClose = useCallback(() => {
     setShowPayment(false);
@@ -148,7 +143,7 @@ export const Subscription: React.FC = () => {
     const amount = billingCycle === 'monthly' ? selectedPlan.price.monthly : selectedPlan.price.yearly;
     
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="min-h-screen bg-gray-50 py-20 px-4">
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-8">
             <button
@@ -173,7 +168,6 @@ export const Subscription: React.FC = () => {
             customerName={user.displayName || user.email || ''}
             description={`Abonnement ${selectedPlan.name} - ${billingCycle === 'monthly' ? 'Mensuel' : 'Annuel'}`}
             onSuccess={handlePaymentSuccess}
-            onError={handlePaymentError}
             onClose={handlePaymentClose}
             isProduction={false} // Changez à true en production
           />
@@ -183,7 +177,7 @@ export const Subscription: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-20 px-4">
       <div className="max-w-7xl mx-auto">
         {/* En-tête */}
         <div className="text-center mb-12">

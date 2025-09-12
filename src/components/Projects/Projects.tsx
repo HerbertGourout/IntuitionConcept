@@ -6,6 +6,8 @@ import CreateProjectModal from './CreateProjectModal';
 
 import { useToast } from '../../hooks/useToast';
 import type { Project } from '../../contexts/projectTypes';
+import PageContainer from '../Layout/PageContainer';
+import SectionHeader from '../UI/SectionHeader';
 
 
 const Projects: React.FC = () => {
@@ -64,29 +66,26 @@ const Projects: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <PageContainer className="space-y-6">
         {/* Header avec design glassmorphism */}
         <div className="glass-card p-6 rounded-xl">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl">
-                  <Building2 className="w-8 h-8 text-blue-600" />
-                </div>
-                Projets
-                <TrendingUp className="w-6 h-6 text-green-500" />
-              </h1>
-              <p className="text-gray-600 mt-2 ml-14">Gérez et supervisez tous vos projets BTP</p>
-            </div>
-            <button
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Sparkles className="w-5 h-5" />
-              <Plus className="w-4 h-4" />
-              Nouveau Projet
-            </button>
-          </div>
+          <SectionHeader
+            icon={<Building2 className="w-8 h-8 text-blue-600" />}
+            title={(
+              <span className="flex items-center gap-2">Projets <TrendingUp className="w-6 h-6 text-green-500" /></span>
+            )}
+            subtitle="Gérez et supervisez tous vos projets BTP"
+            actions={(
+              <button
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                <Sparkles className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
+                Nouveau Projet
+              </button>
+            )}
+          />
         </div>
 
         {/* Filtres avec design glassmorphism */}
@@ -216,7 +215,7 @@ const Projects: React.FC = () => {
           onCreate={handleCreateProject}
           isOpen={isCreateModalOpen}
         />
-    </div>
+    </PageContainer>
   );
 };
 

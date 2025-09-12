@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Tooltip } from 'antd';
 import { 
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Project, ProjectPhase, ProjectTask } from '../../contexts/projectTypes';
 import ModernCard from '../UI/ModernCard';
+import ProgressBar from '../UI/ProgressBar';
 
 interface ProjectProgressCardProps {
   project: Project;
@@ -70,46 +71,7 @@ const ProjectStatusIcon = ({
   return null;
 };
 
-// Composant pour la barre de progression
-const ProgressBar = ({ 
-  progress, 
-  isLate, 
-  isCloseToDeadline 
-}: { 
-  progress: number; 
-  isLate: boolean; 
-  isCloseToDeadline: boolean 
-}) => {
-  const [progressValue, setProgressValue] = useState(0);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setProgressValue(progress);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [progress]);
-
-  const getProgressColor = () => {
-    if (isLate) return 'bg-red-500';
-    if (isCloseToDeadline && progress < 80) return 'bg-yellow-500';
-    return 'bg-gradient-to-r from-blue-500 to-teal-400';
-  };
-
-  return (
-    <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-      <motion.div
-        className={`h-full rounded-full ${getProgressColor()} shadow-md`}
-        initial={{ width: 0 }}
-        animate={{ width: `${progressValue}%` }}
-        transition={{ duration: 1, ease: "easeOut" }}
-        aria-valuenow={progress}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        role="progressbar"
-      />
-    </div>
-  );
-};
+// Remplacement par ProgressBar partagé (animation simple gérée en amont si nécessaire)
 
 const ProjectProgressCard: React.FC<ProjectProgressCardProps> = ({ 
   project, 
@@ -277,11 +239,16 @@ const ProjectProgressCard: React.FC<ProjectProgressCardProps> = ({
               {progress}%
             </span>
           </div>
-          <ProgressBar 
-            progress={progress} 
-            isLate={isLate} 
-            isCloseToDeadline={isCloseToDeadline} 
-          />
+          {(() => {
+            const tone: 'red' | 'orange' | 'blue' = isLate
+              ? 'red'
+              : (isCloseToDeadline && progress < 80)
+              ? 'orange'
+              : 'blue';
+            return (
+              <ProgressBar value={progress} tone={tone} />
+            );
+          })()}
         </motion.div>
 
         {/* Contenu dépliable */}

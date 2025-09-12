@@ -8,6 +8,10 @@ import { transactionService } from '../../services/transactionService';
 import TaskModal from './TaskModal';
 import FinancialDashboard from '../Financial/FinancialDashboard';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import Badge, { statusToBadge } from '../UI/Badge';
+import ProgressBar from '../UI/ProgressBar';
+import PageContainer from '../Layout/PageContainer';
+import SectionHeader from '../UI/SectionHeader';
 
 const Tasks: React.FC = () => {
   const projectContext = useProjectContext();
@@ -330,30 +334,12 @@ const Tasks: React.FC = () => {
     setExpandedTasks(newExpanded);
   };
 
-  const getStatusColor = (status: ProjectTask['status']): string => {
-    switch (status) {
-      case 'done': return 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200';
-      case 'in_progress': return 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 border border-blue-200';
-      case 'todo': return 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200';
-      default: return 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200';
-    }
-  };
-
   const getStatusIcon = (status: ProjectTask['status']) => {
     switch (status) {
       case 'done': return <CheckCircle className="w-4 h-4" />;
       case 'in_progress': return <Clock className="w-4 h-4" />;
       case 'todo': return <AlertTriangle className="w-4 h-4" />;
       default: return <AlertTriangle className="w-4 h-4" />;
-    }
-  };
-
-  const getStatusLabel = (status: ProjectTask['status']): string => {
-    switch (status) {
-      case 'done': return 'Terminée';
-      case 'in_progress': return 'En cours';
-      case 'todo': return 'Non commencée';
-      default: return 'Inconnue';
     }
   };
 
@@ -374,10 +360,17 @@ const Tasks: React.FC = () => {
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(task.status)}`}>
-                    {getStatusIcon(task.status)}
-                    {getStatusLabel(task.status)}
-                  </span>
+                  {(() => {
+                    const { tone, label } = statusToBadge('task', task.status as unknown as string);
+                    return (
+                      <Badge tone={tone} size="md">
+                        <span className="inline-flex items-center gap-2">
+                          {getStatusIcon(task.status)}
+                          {label}
+                        </span>
+                      </Badge>
+                    );
+                  })()}
                   {task.assignedTo && Array.isArray(task.assignedTo) && task.assignedTo.length > 0 && (
   <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
     <Users className="w-3 h-3" />
@@ -433,26 +426,23 @@ const Tasks: React.FC = () => {
                 
                 {/* Barre de progression budgétaire */}
                 <div className="mt-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs text-gray-500">Utilisation du budget</span>
-                    <span className="text-xs font-medium text-gray-700">
-                      {(task.budget || 0) > 0 ? Math.round(((taskExpenses[task.id]?.totalSpent || 0) / (task.budget || 1)) * 100) : 0}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        (taskExpenses[task.id]?.totalSpent || 0) > (task.budget || 0)
-                          ? 'bg-gradient-to-r from-red-500 to-red-600'
-                          : (taskExpenses[task.id]?.totalSpent || 0) > (task.budget || 0) * 0.8
-                          ? 'bg-gradient-to-r from-orange-500 to-orange-600'
-                          : 'bg-gradient-to-r from-green-500 to-green-600'
-                      }`}
-                      style={{ 
-                        width: `${Math.min(100, (task.budget || 0) > 0 ? ((taskExpenses[task.id]?.totalSpent || 0) / (task.budget || 1)) * 100 : 0)}%` 
-                      }}
-                    ></div>
-                  </div>
+                  {(() => {
+                    const percent = Math.min(100, (task.budget || 0) > 0 ? ((taskExpenses[task.id]?.totalSpent || 0) / (task.budget || 1)) * 100 : 0);
+                    const tone: 'red' | 'orange' | 'green' = (taskExpenses[task.id]?.totalSpent || 0) > (task.budget || 0)
+                      ? 'red'
+                      : percent > 80
+                      ? 'orange'
+                      : 'green';
+                    return (
+                      <>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-gray-500">Utilisation du budget</span>
+                          <span className="text-xs font-medium text-gray-700">{Math.round(percent)}%</span>
+                        </div>
+                        <ProgressBar value={percent} tone={tone} />
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -517,44 +507,36 @@ const Tasks: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <PageContainer className="space-y-6">
       {/* En-tête */}
       <div className="glass-card rounded-xl p-6 border border-white/20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
-              <Target className="w-6 h-6" />
+        <SectionHeader
+          icon={<Target className="w-6 h-6" />}
+          title={`Tâches - ${selectedPhase?.name || 'Aucune phase sélectionnée'}`}
+          subtitle="Organisez et suivez l'avancement de vos tâches"
+          actions={(
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowFinancialDashboard(!showFinancialDashboard)}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl ${
+                  showFinancialDashboard 
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700' 
+                    : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
+                } hover:scale-105`}
+              >
+                <DollarSign className="w-4 h-4" />
+                {showFinancialDashboard ? 'Masquer Budget' : 'Voir Budget'}
+              </button>
+              <button
+                onClick={handleCreateTask}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Nouvelle Tâche
+              </button>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                Tâches - {selectedPhase?.name || 'Aucune phase sélectionnée'}
-              </h2>
-              <p className="text-gray-600 text-sm">
-                Organisez et suivez l'avancement de vos tâches
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowFinancialDashboard(!showFinancialDashboard)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl ${
-                showFinancialDashboard 
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700' 
-                  : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
-              } hover:scale-105`}
-            >
-              <DollarSign className="w-4 h-4" />
-              {showFinancialDashboard ? 'Masquer Budget' : 'Voir Budget'}
-            </button>
-            <button
-              onClick={handleCreateTask}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Nouvelle Tâche
-            </button>
-          </div>
-        </div>
+          )}
+        />
       </div>
 
       {/* Dashboard Financier */}
@@ -707,7 +689,7 @@ const Tasks: React.FC = () => {
           })) || [])}
         />
       )}
-    </div>
+    </PageContainer>
   );
 };
 

@@ -5,6 +5,9 @@ import { useCurrency } from '../../hooks/useCurrency';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import PageContainer from '../Layout/PageContainer';
+import SectionHeader from '../UI/SectionHeader';
+import ProgressBar from '../UI/ProgressBar';
 
 // Import des widgets essentiels
 import ProjectsOverviewWidget from './widgets/ProjectsOverviewWidget';
@@ -325,43 +328,32 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-6">
+    <PageContainer>
       {/* Header Hero Section */}
       <div className="mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div className="flex-1">
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">Projet Actif</span>
+          <SectionHeader
+            icon={<FolderOpen className="w-8 h-8 text-blue-600" />}
+            title={currentProjectData.name}
+            subtitle={currentProjectData.description || ''}
+            actions={(
+              <div className="flex items-center space-x-4">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Dernière mise à jour</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCustomizer(s => !s)}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium hover:opacity-90 transition"
+                  aria-expanded={showCustomizer}
+                >
+                  {showCustomizer ? 'Fermer' : 'Personnaliser'}
+                </button>
               </div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                {currentProjectData.name}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300 text-lg">
-                {currentProjectData.description}
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Dernière mise à jour</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {new Date().toLocaleDateString('fr-FR', { 
-                    day: 'numeric', 
-                    month: 'long', 
-                    year: 'numeric' 
-                  })}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowCustomizer(s => !s)}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium hover:opacity-90 transition"
-                aria-expanded={showCustomizer}
-              >
-                {showCustomizer ? 'Fermer' : 'Personnaliser'}
-              </button>
-            </div>
-          </div>
+            )}
+          />
         </div>
       </div>
 
@@ -613,58 +605,37 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Progress Bars */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="glass-card p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Avancement Global</h3>
             <Target className="w-5 h-5 text-orange-500" />
           </div>
-          <div className="relative">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-              <div 
-                className="bg-orange-500 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${currentProjectData.progress}%` }}
-              ></div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-              {currentProjectData.completedTasks} / {(currentProjectData.phases || []).flatMap(p => p.tasks || []).length} tâches
-            </p>
-          </div>
+          <ProgressBar value={currentProjectData.progress} tone="orange" />
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+            {currentProjectData.completedTasks} / {(currentProjectData.phases || []).flatMap(p => p.tasks || []).length} tâches
+          </p>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="glass-card p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Budget Consommé</h3>
             <Euro className="w-5 h-5 text-green-500" />
           </div>
-          <div className="relative">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-              <div 
-                className={`h-3 rounded-full transition-all duration-500 ${stats.budgetPercentage > 80 ? 'bg-red-500' : 'bg-green-500'}`}
-                style={{ width: `${Math.min(stats.budgetPercentage, 100)}%` }}
-              ></div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-              {formatAmount(stats.budgetSpent)} / {formatAmount(stats.budget)}
-            </p>
-          </div>
+          <ProgressBar value={Math.min(stats.budgetPercentage, 100)} tone={stats.budgetPercentage > 80 ? 'red' : 'green'} />
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+            {formatAmount(stats.budgetSpent)} / {formatAmount(stats.budget)}
+          </p>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="glass-card p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Efficacité Équipe</h3>
             <Zap className="w-5 h-5 text-purple-500" />
           </div>
-          <div className="relative">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-              <div 
-                className="bg-purple-500 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${stats.teamEfficiency}%` }}
-              ></div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-              {stats.teamMembers} membres actifs
-            </p>
-          </div>
+          <ProgressBar value={stats.teamEfficiency} tone="purple" />
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+            {stats.teamMembers} membres actifs
+          </p>
         </div>
       </div>
 
@@ -904,7 +875,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           })}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

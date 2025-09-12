@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Bell, X, Check, AlertTriangle, CheckCircle, Clock, Info } from 'lucide-react';
+import SectionHeader from '../UI/SectionHeader';
 
 interface Notification {
   id: string;
@@ -82,35 +83,35 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         
         {/* Notification Panel */}
         <div className="relative bg-white rounded-xl shadow-xl w-full max-w-xl transform transition-all">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <div className="flex items-center gap-2">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-              {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                  {unreadCount}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
+          {/* Header harmonisé */}
+          <SectionHeader
+            icon={<Bell className="w-5 h-5 text-blue-600" />}
+            title="Notifications"
+            actions={(
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                    {unreadCount}
+                  </span>
+                )}
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Tout marquer lu
+                  </button>
+                )}
                 <button
-                  onClick={markAllAsRead}
-                  className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  onClick={onClose}
+                  className="p-1 hover:bg-gray-100 rounded"
+                  title="Fermer"
                 >
-                  Tout marquer lu
+                  <X className="w-4 h-4 text-gray-500" />
                 </button>
-              )}
-              <button
-                onClick={onClose}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
-          </div>
-
+              </div>
+            )}
+          />
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
             {notifications.length > 0 ? (

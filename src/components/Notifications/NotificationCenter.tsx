@@ -15,13 +15,16 @@ import {
   Settings,
   TestTube
 } from 'lucide-react';
-import { Input, Select, Button, Card, Empty, Spin, Badge, Switch, Tabs } from 'antd';
+import { Input, Select, Button, Card, Empty, Spin, Badge as AntBadge, Switch, Tabs } from 'antd';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { Notification } from '../../types/notification';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import NotificationDemo from './NotificationDemo';
 import NotificationPreferences from './NotificationPreferences';
+import SectionHeader from '../UI/SectionHeader';
+import PageContainer from '../Layout/PageContainer';
+import Badge, { BadgeTone } from '../UI/Badge';
 
 const { Option } = Select;
 
@@ -66,33 +69,18 @@ const NotificationCenter: React.FC = () => {
   };
 
   const getPriorityBadge = (priority: string) => {
-    const colors = {
-      urgent: 'bg-red-100 text-red-800 border-red-200',
-      high: 'bg-orange-100 text-orange-800 border-orange-200',
-      medium: 'bg-blue-100 text-blue-800 border-blue-200',
-      low: 'bg-gray-100 text-gray-800 border-gray-200'
+    const map: Record<string, { tone: BadgeTone; label: string }> = {
+      urgent: { tone: 'red', label: 'Urgent' },
+      high: { tone: 'orange', label: 'Élevée' },
+      medium: { tone: 'blue', label: 'Moyenne' },
+      low: { tone: 'gray', label: 'Faible' }
     };
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${colors[priority as keyof typeof colors]}`}>
-        {priority === 'urgent' ? 'Urgent' : 
-         priority === 'high' ? 'Élevée' : 
-         priority === 'medium' ? 'Moyenne' : 'Faible'}
-      </span>
-    );
+    const conf = map[priority] || { tone: 'gray' as BadgeTone, label: priority };
+    return <Badge tone={conf.tone} size="sm">{conf.label}</Badge>;
   };
 
   const getCategoryBadge = (category: string) => {
-    const colors = {
-      project: 'bg-blue-100 text-blue-800',
-      payment: 'bg-green-100 text-green-800',
-      equipment: 'bg-yellow-100 text-yellow-800',
-      team: 'bg-purple-100 text-purple-800',
-      location: 'bg-indigo-100 text-indigo-800',
-      system: 'bg-gray-100 text-gray-800'
-    };
-
-    const labels = {
+    const labels: Record<string, string> = {
       project: 'Projet',
       payment: 'Paiement',
       equipment: 'Équipement',
@@ -100,12 +88,17 @@ const NotificationCenter: React.FC = () => {
       location: 'Localisation',
       system: 'Système'
     };
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[category as keyof typeof colors]}`}>
-        {labels[category as keyof typeof labels]}
-      </span>
-    );
+    const tones: Record<string, BadgeTone> = {
+      project: 'blue',
+      payment: 'green',
+      equipment: 'yellow',
+      team: 'purple',
+      location: 'blue',
+      system: 'gray'
+    };
+    const tone = tones[category] || 'gray';
+    const label = labels[category] || category;
+    return <Badge tone={tone} size="sm">{label}</Badge>;
   };
 
   const handleSelectNotification = (notificationId: string) => {
@@ -169,7 +162,7 @@ const NotificationCenter: React.FC = () => {
             {getCategoryBadge(notification.category)}
             {getPriorityBadge(notification.priority)}
             {!notification.isRead && (
-              <Badge status="processing" text="Non lu" />
+              <AntBadge status="processing" text="Non lu" />
             )}
           </div>
 
@@ -249,20 +242,14 @@ const NotificationCenter: React.FC = () => {
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Bell className="w-6 h-6 text-blue-600" />
-              Centre de Notifications
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Gérez vos notifications et préférences
-            </p>
-          </div>
-        </div>
+    <PageContainer className="space-y-6">
+      {/* Header harmonisé */}
+      <div className="glass-card p-6 rounded-xl mb-6">
+        <SectionHeader
+          icon={<Bell className="w-6 h-6 text-blue-600" />}
+          title="Centre de Notifications"
+          subtitle="Gérez vos notifications et préférences"
+        />
       </div>
 
       {/* Tabs */}
@@ -276,7 +263,7 @@ const NotificationCenter: React.FC = () => {
                 <Bell className="w-4 h-4" />
                 Notifications
                 {unreadCount > 0 && (
-                  <Badge count={unreadCount} size="small" />
+                  <AntBadge count={unreadCount} size="small" />
                 )}
               </span>
             ),
@@ -286,25 +273,25 @@ const NotificationCenter: React.FC = () => {
                 {/* Stats */}
                 {stats && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <Card size="small" className="text-center">
+                    <div className="glass-card p-4 rounded-xl text-center">
                       <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
                       <div className="text-sm text-gray-600">Total</div>
-                    </Card>
-                    <Card size="small" className="text-center">
+                    </div>
+                    <div className="glass-card p-4 rounded-xl text-center">
                       <div className="text-2xl font-bold text-green-600">{stats.total - stats.unread}</div>
                       <div className="text-sm text-gray-600">Lues</div>
-                    </Card>
-                    <Card size="small" className="text-center">
+                    </div>
+                    <div className="glass-card p-4 rounded-xl text-center">
                       <div className="text-2xl font-bold text-orange-600">{stats.unread}</div>
                       <div className="text-sm text-gray-600">Non lues</div>
-                    </Card>
-                    <Card size="small" className="text-center">
+                    </div>
+                    <div className="glass-card p-4 rounded-xl text-center">
                       <div className="text-2xl font-bold text-red-600">{stats.byPriority.urgent || 0}</div>
                       <div className="text-sm text-gray-600">Urgentes</div>
-                    </Card>
+                    </div>
                   </div>
                 )}
-                <Card className="mb-6">
+                <div className="glass-card p-4 rounded-xl mb-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-medium flex items-center gap-2">
@@ -360,7 +347,7 @@ const NotificationCenter: React.FC = () => {
                       </Select>
                     </div>
                   </div>
-                </Card>
+                </div>
 
                 {/* Bulk Actions */}
                 {selectedNotifications.length > 0 && (
@@ -482,7 +469,7 @@ const NotificationCenter: React.FC = () => {
           }
         ]}
       />
-    </div>
+    </PageContainer>
   );
 };
 

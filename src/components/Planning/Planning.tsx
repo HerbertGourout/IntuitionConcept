@@ -17,6 +17,10 @@ import { TeamService } from '../../services/teamService';
 import RobustGanttChart from './RobustGanttChart';
 import PhaseModal from './PhaseModal';
 import { GlassCard, AnimatedCounter } from '../UI/VisualEffects';
+import PageContainer from '../Layout/PageContainer';
+import SectionHeader from '../UI/SectionHeader';
+import ProgressBar from '../UI/ProgressBar';
+import Badge from '../UI/Badge';
 
 export const Planning: React.FC = () => {
   const projectContext = useProjectContext();
@@ -139,47 +143,7 @@ export const Planning: React.FC = () => {
     return Math.random().toString(36).substr(2, 9);
   };
 
-  // Calculer le statut d'une phase selon ses tâches
-  const calculatePhaseStatus = (phase: ProjectPhase): 'planned' | 'in_progress' | 'completed' | 'on_hold' => {
-    const tasks = phase.tasks || [];
-    
-    if (tasks.length === 0) {
-      return 'planned'; // Phase sans tâches = planifiée
-    }
-    
-    const taskCounts = {
-      todo: tasks.filter(t => t.status === 'todo').length,
-      planned: tasks.filter(t => t.status === 'planned').length,
-      in_progress: tasks.filter(t => t.status === 'in_progress').length,
-      done: tasks.filter(t => t.status === 'done').length,
-      on_hold: tasks.filter(t => t.status === 'on_hold').length,
-      cancelled: tasks.filter(t => t.status === 'cancelled').length,
-      blocked: tasks.filter(t => t.status === 'blocked').length
-    };
-    
-    // Si toutes les tâches sont terminées
-    if (taskCounts.done === tasks.length) {
-      return 'completed';
-    }
-    
-    // Si toutes les tâches sont en attente ou bloquées
-    if (taskCounts.on_hold + taskCounts.blocked === tasks.length) {
-      return 'on_hold';
-    }
-    
-    // Si au moins une tâche est en cours
-    if (taskCounts.in_progress > 0) {
-      return 'in_progress';
-    }
-    
-    // Si toutes les tâches sont à faire ou planifiées
-    if (taskCounts.todo + taskCounts.planned + taskCounts.cancelled === tasks.length) {
-      return 'planned';
-    }
-    
-    // Par défaut, en cours si mélange de statuts
-    return 'in_progress';
-  };
+  // (note) phase status aggregation helper removed because unused
 
   // Gestion de la sauvegarde d'une phase
   const handlePhaseSave = (phaseData: {
@@ -238,33 +202,27 @@ export const Planning: React.FC = () => {
   }
 
   return (
-    <div className="py-6 space-y-6">
+    <PageContainer className="py-6 space-y-6">
       {/* Header */}
       <GlassCard className="bg-gradient-to-r from-blue-50 via-white to-purple-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white">
-              <Calendar className="w-8 h-8" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Planning
-              </h1>
-              <p className="text-gray-600 mt-1">Gestion des tâches et phases du projet</p>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              setPhaseModalMode('create');
-              setEditingPhase(null);
-              setIsPhaseModalOpen(true);
-            }}
-            className="btn-glass bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:scale-105 transition-all duration-200 px-6 py-3 flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Nouvelle Phase
-          </button>
-        </div>
+        <SectionHeader
+          icon={<Calendar className="w-8 h-8 text-blue-600" />}
+          title="Planning"
+          subtitle="Gestion des tâches et phases du projet"
+          actions={(
+            <button
+              onClick={() => {
+                setPhaseModalMode('create');
+                setEditingPhase(null);
+                setIsPhaseModalOpen(true);
+              }}
+              className="btn-glass bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:scale-105 transition-all duration-200 px-6 py-3 flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Nouvelle Phase
+            </button>
+          )}
+        />
       </GlassCard>
 
       {/* Statistiques */}
@@ -280,8 +238,8 @@ export const Planning: React.FC = () => {
                 <AnimatedCounter value={tasks.length} duration={1} />
               </h3>
             </div>
-            <div className="w-1/2 h-1 bg-blue-500/20 rounded-full">
-              <div className="h-full bg-blue-500 rounded-full" style={{ width: '100%' }}></div>
+            <div className="w-1/2">
+              <ProgressBar value={100} tone="blue" />
             </div>
           </div>
         </GlassCard>
@@ -297,11 +255,8 @@ export const Planning: React.FC = () => {
                 <AnimatedCounter value={tasks.filter((t) => t.status === 'done').length} duration={1} />
               </h3>
             </div>
-            <div className="w-1/2 h-1 bg-green-500/20 rounded-full">
-              <div
-                className="h-full bg-green-500 rounded-full transition-all duration-800"
-                style={{ width: `${tasks.length > 0 ? (tasks.filter((t) => t.status === 'done').length / tasks.length) * 100 : 0}%` }}
-              ></div>
+            <div className="w-1/2">
+              <ProgressBar value={tasks.length > 0 ? (tasks.filter((t) => t.status === 'done').length / tasks.length) * 100 : 0} tone="green" />
             </div>
           </div>
         </GlassCard>
@@ -317,11 +272,8 @@ export const Planning: React.FC = () => {
                 <AnimatedCounter value={tasks.filter((t) => t.status === 'in_progress').length} duration={1} />
               </h3>
             </div>
-            <div className="w-1/2 h-1 bg-blue-500/20 rounded-full">
-              <div
-                className="h-full bg-blue-500 rounded-full transition-all duration-800"
-                style={{ width: `${tasks.length > 0 ? (tasks.filter((t) => t.status === 'in_progress').length / tasks.length) * 100 : 0}%` }}
-              ></div>
+            <div className="w-1/2">
+              <ProgressBar value={tasks.length > 0 ? (tasks.filter((t) => t.status === 'in_progress').length / tasks.length) * 100 : 0} tone="blue" />
             </div>
           </div>
         </GlassCard>
@@ -337,11 +289,8 @@ export const Planning: React.FC = () => {
                 <AnimatedCounter value={tasks.filter((t) => t.status === 'todo').length} duration={1} />
               </h3>
             </div>
-            <div className="w-1/2 h-1 bg-orange-500/20 rounded-full">
-              <div
-                className="h-full bg-orange-500 rounded-full transition-all duration-800"
-                style={{ width: `${tasks.length > 0 ? (tasks.filter((t) => t.status === 'todo').length / tasks.length) * 100 : 0}%` }}
-              ></div>
+            <div className="w-1/2">
+              <ProgressBar value={tasks.length > 0 ? (tasks.filter((t) => t.status === 'todo').length / tasks.length) * 100 : 0} tone="orange" />
             </div>
           </div>
         </GlassCard>
@@ -390,9 +339,11 @@ export const Planning: React.FC = () => {
                         return durationDays <= 0;
                       }).length;
                       return invalidCount > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
-                          <AlertTriangle className="w-3 h-3" /> {invalidCount} tâche{invalidCount > 1 ? 's' : ''} invalide{invalidCount > 1 ? 's' : ''}
-                        </span>
+                        <Badge tone="red" size="sm">
+                          <span className="inline-flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" /> {invalidCount} tâche{invalidCount > 1 ? 's' : ''} invalide{invalidCount > 1 ? 's' : ''}
+                          </span>
+                        </Badge>
                       ) : null;
                     })()}
                   </div>
@@ -454,17 +405,15 @@ export const Planning: React.FC = () => {
                   </div>
 
                   {/* Barre de progression budgétaire */}
-                  <div className="w-full h-2 bg-orange-100 rounded-full mt-2 relative overflow-hidden">
+                  <div className="mt-2">
                     {(() => {
                       const spent = (phase.tasks || []).reduce((sum, t) => (typeof t.spent === 'number' ? sum + t.spent : sum), 0);
-                      const ratio = phase.estimatedBudget ? Math.min(spent / phase.estimatedBudget, 1.2) : 0;
-                      let color = 'bg-gradient-to-r from-orange-400 to-orange-600';
-                      if (ratio > 1) color = 'bg-gradient-to-r from-red-500 to-orange-500';
-                      else if (ratio > 0.9) color = 'bg-gradient-to-r from-orange-400 to-yellow-300';
-
-                      return <div className={`h-full ${color} rounded-full transition-all duration-700`} style={{ width: `${Math.min(ratio * 100, 120)}%` }}></div>;
+                      const percent = phase.estimatedBudget && phase.estimatedBudget > 0 ? Math.min((spent / phase.estimatedBudget) * 100, 120) : 0;
+                      const tone: 'orange' | 'red' = percent > 100 ? 'red' : 'orange';
+                      return (
+                        <ProgressBar value={percent} tone={tone} />
+                      );
                     })()}
-                    <div className="absolute left-[100%] top-0 h-full w-0.5 bg-red-400 opacity-70"></div>
                   </div>
                 </div>
               )}
@@ -576,7 +525,7 @@ export const Planning: React.FC = () => {
         initialPhase={editingPhase}
         mode={phaseModalMode}
       />
-    </div>
+    </PageContainer>
   );
 };
 

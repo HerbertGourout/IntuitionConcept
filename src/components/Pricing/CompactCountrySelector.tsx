@@ -1,5 +1,5 @@
 import React from 'react';
-import { Select, Card, Badge } from 'antd';
+import { Select, Badge } from 'antd';
 import { Globe, CreditCard, Smartphone } from 'lucide-react';
 
 interface Country {
@@ -78,8 +78,8 @@ const CompactCountrySelector: React.FC<CompactCountrySelectorProps> = ({
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="mb-4">
+    <div className="w-full max-w-3xl mx-auto space-y-6">
+      <div>
         <div className="flex items-center gap-2 mb-2">
           <Globe className="w-5 h-5 text-blue-600" />
           <span className="font-medium text-gray-700">Sélectionnez votre marché</span>
@@ -122,7 +122,7 @@ const CompactCountrySelector: React.FC<CompactCountrySelectorProps> = ({
 
       {/* Informations du marché sélectionné */}
       {selectedCountry && (
-        <Card className="border-2 border-blue-200 bg-blue-50">
+        <div className="glass-card p-4 md:p-6 rounded-xl">
           <div className="flex items-center gap-4">
             <span className="text-3xl">{selectedCountry.flag}</span>
             <div className="flex-1">
@@ -145,7 +145,7 @@ const CompactCountrySelector: React.FC<CompactCountrySelectorProps> = ({
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );

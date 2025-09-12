@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Briefcase, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
+import ProgressBar from '../../UI/ProgressBar';
 
 interface ProjectsOverviewWidgetProps {
   className?: string;
@@ -133,15 +134,8 @@ const ProjectsOverviewWidget: React.FC<ProjectsOverviewWidgetProps> = ({ classNa
             {Math.round((projectStats.completedBudget / projectStats.totalBudget) * 100)}%
           </span>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mb-3">
-          <motion.div
-            className="bg-blue-500 h-2 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ 
-              width: `${(projectStats.completedBudget / projectStats.totalBudget) * 100}%` 
-            }}
-            transition={{ duration: 1, delay: 0.5 }}
-          />
+        <div className="mb-3">
+          <ProgressBar value={(projectStats.completedBudget / projectStats.totalBudget) * 100} tone="blue" />
         </div>
         <div className="flex justify-between text-sm">
           <span>
@@ -184,21 +178,12 @@ const ProjectsOverviewWidget: React.FC<ProjectsOverviewWidgetProps> = ({ classNa
               
               <div className="flex items-center justify-between">
                 <div className="flex-1 mr-3">
-                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
-                    <motion.div
-                      className={`h-1.5 rounded-full ${
-                        project.status === 'completed' ? 'bg-green-500' :
-                        project.status === 'delayed' ? 'bg-red-500' : 'bg-blue-500'
-                      }`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${project.progress}%` }}
-                      transition={{ duration: 1, delay: 0.2 + index * 0.1 }}
-                    />
-                  </div>
+                  {(() => {
+                    const tone: 'green' | 'red' | 'blue' = project.status === 'completed' ? 'green' : project.status === 'delayed' ? 'red' : 'blue';
+                    return <ProgressBar value={project.progress} tone={tone} />;
+                  })()}
                 </div>
-                <span className="text-xs font-medium">
-                  {project.progress}%
-                </span>
+                <span className="text-xs font-medium">{project.progress}%</span>
               </div>
             </motion.div>
           ))}

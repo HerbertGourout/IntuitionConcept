@@ -12,6 +12,7 @@ import {
 import dayjs from 'dayjs';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import type { ProjectTask } from '../../contexts/projectTypes';
+import SectionHeader from '../UI/SectionHeader';
 
 const { Option } = Select;
 
@@ -621,14 +622,13 @@ const DragDropPlanningBoard: React.FC = () => {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="p-2 md:p-4">
-        {/* Header mobile avec titre */}
-        <div className="mb-4 md:hidden">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">
-            Planning Interactif
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Glissez-déposez les tâches entre les colonnes
-          </p>
+        {/* Header harmonisé */}
+        <div className="glass-card p-4 md:p-6 rounded-xl mb-4">
+          <SectionHeader
+            icon={<ClockCircleOutlined className="text-blue-600" />}
+            title="Planning Interactif"
+            subtitle="Glissez-déposez les tâches entre les colonnes"
+          />
         </div>
 
         {/* Barre de contrôles et filtres */}

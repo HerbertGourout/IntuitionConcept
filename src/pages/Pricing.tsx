@@ -4,6 +4,8 @@ import { Check, Smartphone, CreditCard, Star, ShieldCheck, ChevronRight } from '
 import CompactCountrySelector from '../components/Pricing/CompactCountrySelector';
 import { useNavigate } from 'react-router-dom';
 import { PLANS, PRICING, CURRENCY_SYMBOLS, PlanId, Currency } from '../config/pricing';
+ 
+ 
 
 
 // Interface compatible avec CompactCountrySelector
@@ -22,6 +24,7 @@ export const Pricing: React.FC = () => {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const navigate = useNavigate();
+  
 
   // Détermine la devise et les prix selon le pays sélectionné
   const currency: Currency = (selectedCountry?.currency as Currency) || 'XOF';
@@ -42,10 +45,12 @@ export const Pricing: React.FC = () => {
   };
 
   const handleSubscribe = (planId: string) => {
+    // Rediriger vers la page de checkout dédiée
     navigate('/subscription', {
       state: {
         planId,
-        country: selectedCountry
+        country: selectedCountry,
+        billing: billingCycle
       }
     });
   };
@@ -59,7 +64,7 @@ export const Pricing: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto px-4">
         {/* En-tête */}
-        <div className="text-center mb-10">
+        <div className="text-center mt-10 md:mt-16 lg:mt-24 mb-10">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Tarifs & Abonnements</h1>
           <p className="text-lg text-gray-600 mb-6">
             Des plans adaptés à toutes les équipes en Afrique francophone
@@ -166,6 +171,8 @@ export const Pricing: React.FC = () => {
             </div>
           ))}
         </div>
+
+        {/* Checkout redirigé vers /subscription */}
 
         {/* Méthodes de paiement */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-10">

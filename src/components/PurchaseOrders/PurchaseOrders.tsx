@@ -22,6 +22,8 @@ import PurchaseOrderModal from './PurchaseOrderModal';
 import SupplierModal from './SupplierModal';
 import DeliveryNoteModal from './DeliveryNoteModal';
 import { AnimatedCounter } from '../UI/VisualEffects';
+import PageContainer from '../Layout/PageContainer';
+import ProgressBar from '../UI/ProgressBar';
 
 const PurchaseOrders: React.FC = () => {
   const { 
@@ -178,7 +180,7 @@ const PurchaseOrders: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <PageContainer className="space-y-8">
       {/* Header */}
       <div className="glass-card p-6">
         <div className="flex items-center justify-between">
@@ -237,13 +239,8 @@ const PurchaseOrders: React.FC = () => {
               <BarChart3 className="h-6 w-6 text-white" />
             </div>
           </div>
-          <div className="mt-4 flex items-center">
-            <div className="flex-1 bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-800"
-                style={{ width: `${stats.total > 0 ? 100 : 0}%` }}
-              ></div>
-            </div>
+          <div className="mt-4">
+            <ProgressBar value={stats.total > 0 ? 100 : 0} tone="blue" />
           </div>
         </div>
 
@@ -259,13 +256,8 @@ const PurchaseOrders: React.FC = () => {
               <Clock className="h-6 w-6 text-white" />
             </div>
           </div>
-          <div className="mt-4 flex items-center">
-            <div className="flex-1 bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-800"
-                style={{ width: `${stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}%` }}
-              ></div>
-            </div>
+          <div className="mt-4">
+            <ProgressBar value={stats.total > 0 ? (stats.pending / stats.total) * 100 : 0} tone="orange" />
           </div>
         </div>
 
@@ -281,13 +273,8 @@ const PurchaseOrders: React.FC = () => {
               <CheckCircle className="h-6 w-6 text-white" />
             </div>
           </div>
-          <div className="mt-4 flex items-center">
-            <div className="flex-1 bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-800"
-                style={{ width: `${stats.total > 0 ? (stats.approved / stats.total) * 100 : 0}%` }}
-              ></div>
-            </div>
+          <div className="mt-4">
+            <ProgressBar value={stats.total > 0 ? (stats.approved / stats.total) * 100 : 0} tone="green" />
           </div>
         </div>
 
@@ -599,7 +586,7 @@ const PurchaseOrders: React.FC = () => {
           purchaseOrder={selectedPurchaseOrder}
         />
       )}
-    </div>
+    </PageContainer>
   );
 };
 

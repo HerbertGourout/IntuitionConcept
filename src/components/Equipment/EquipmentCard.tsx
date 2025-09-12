@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, User, Calendar, Euro, Wrench } from 'lucide-react';
 import { Equipment } from '../../types';
 import { useCurrency } from '../../hooks/useCurrency';
+import Badge, { statusToBadge } from '../UI/Badge';
 
 interface EquipmentCardProps {
   equipment: Equipment;
@@ -10,35 +11,7 @@ interface EquipmentCardProps {
 
 const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onClick }) => {
   const { formatAmount } = useCurrency();
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'in-use':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'maintenance':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'out-of-service':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'available':
-        return 'Disponible';
-      case 'in-use':
-        return 'En service';
-      case 'maintenance':
-        return 'Maintenance';
-      case 'out-of-service':
-        return 'Hors service';
-      default:
-        return status;
-    }
-  };
+  
 
   const getEquipmentIcon = (type: string) => {
     switch (type) {
@@ -89,9 +62,10 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onClick }) => 
             <p className="text-gray-600 text-sm">{equipment.model}</p>
           </div>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(equipment.status)}`}>
-          {getStatusLabel(equipment.status)}
-        </span>
+        {(() => {
+          const { tone, label } = statusToBadge('equipment', equipment.status);
+          return <Badge tone={tone} size="sm">{label}</Badge>;
+        })()}
       </div>
 
       {/* Info Grid */}

@@ -14,6 +14,9 @@ import {
 } from 'lucide-react';
 import { useCurrency } from '../../hooks/useCurrency';
 import { AnimatedCounter } from '../UI/VisualEffects';
+import PageContainer from '../Layout/PageContainer';
+import SectionHeader from '../UI/SectionHeader';
+import Badge, { BadgeTone } from '../UI/Badge';
 import QuoteCreatorSimple from './QuoteCreatorSimple';
 import { Quote } from '../../services/quotesService';
 
@@ -175,26 +178,16 @@ const Quotes: React.FC = () => {
     ));
   };
 
-  const getStatusColor = (status: Quote['status']) => {
-    switch (status) {
-      case 'draft': return 'bg-gray-100 text-gray-800';
-      case 'sent': return 'bg-blue-100 text-blue-800';
-      case 'accepted': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'expired': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status: Quote['status']) => {
-    switch (status) {
-      case 'draft': return 'Brouillon';
-      case 'sent': return 'Envoyé';
-      case 'accepted': return 'Accepté';
-      case 'rejected': return 'Rejeté';
-      case 'expired': return 'Expiré';
-      default: return 'Inconnu';
-    }
+  const getStatusBadge = (status: Quote['status']) => {
+    const map: Record<Quote['status'], { tone: BadgeTone; label: string }> = {
+      draft: { tone: 'gray', label: 'Brouillon' },
+      sent: { tone: 'blue', label: 'Envoyé' },
+      accepted: { tone: 'green', label: 'Accepté' },
+      rejected: { tone: 'red', label: 'Rejeté' },
+      expired: { tone: 'orange', label: 'Expiré' }
+    } as const;
+    const conf = map[status] || { tone: 'gray' as BadgeTone, label: String(status) };
+    return <Badge tone={conf.tone}>{conf.label}</Badge>;
   };
 
   if (showQuoteCreator) {
@@ -208,31 +201,23 @@ const Quotes: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 p-2 sm:p-4">
+    <PageContainer className="space-y-8">
       {/* Header */}
       <div className="glass-card p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl text-white">
-              <FileText className="h-8 w-8" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Devis
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Gestion des devis et propositions commerciales
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleCreateQuote}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 shadow-lg"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Nouveau Devis</span>
-          </button>
-        </div>
+        <SectionHeader
+          icon={<FileText className="h-8 w-8" />}
+          title="Devis"
+          subtitle="Gestion des devis et propositions commerciales"
+          actions={(
+            <button
+              onClick={handleCreateQuote}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 shadow-lg"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Nouveau Devis</span>
+            </button>
+          )}
+        />
       </div>
 
       {/* Statistiques */}
@@ -376,9 +361,7 @@ const Quotes: React.FC = () => {
                       {quote.clientName}
                     </p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(quote.status)}`}>
-                    {getStatusText(quote.status)}
-                  </span>
+                  {getStatusBadge(quote.status)}
                 </div>
 
                 {/* Informations principales */}
