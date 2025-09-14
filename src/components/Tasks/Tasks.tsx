@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, Filter, Grid3X3, DollarSign, TrendingUp } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask } from '../../contexts/projectTypes';
@@ -14,6 +15,7 @@ import PageContainer from '../Layout/PageContainer';
 import SectionHeader from '../UI/SectionHeader';
 
 const Tasks: React.FC = () => {
+  const navigate = useNavigate();
   const projectContext = useProjectContext();
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -21,7 +23,6 @@ const Tasks: React.FC = () => {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showFinancialDashboard, setShowFinancialDashboard] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [taskExpenses, setTaskExpenses] = useState<Record<string, { totalSpent: number; transactionCount: number }>>({});
 
@@ -520,27 +521,25 @@ return (
         )}
         subtitle="Gérez et suivez toutes vos tâches de projet"
         actions={(
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowFinancialDashboard(!showFinancialDashboard)}
-              className={`btn-secondary btn-morph ${
-                showFinancialDashboard
-                  ? 'bg-gradient-success text-white shadow-glow'
-                  : ''
-              }`}
+              onClick={() => navigate('/app/finances')}
+              title={'Aller aux Finances'}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full border transition-all duration-200 shadow-sm bg-white/90 text-gray-700 border-gray-200 hover:bg-white`}
             >
-              <DollarSign className="w-4 h-4" />
-              {showFinancialDashboard ? 'Masquer' : 'Finances'}
+              <DollarSign className="w-5 h-5" />
+              <span className="hidden sm:inline">Finances</span>
             </button>
             <button
-              className="btn-primary btn-glow animate-float"
+              title="Créer une nouvelle tâche"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 shadow-lg ring-1 ring-blue-500/30"
               onClick={() => {
                 setCurrentTask(null);
                 setIsModalVisible(true);
               }}
             >
-              <Plus className="w-4 h-4" />
-              Nouvelle Tâche
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Nouvelle Tâche</span>
             </button>
           </div>
         )}

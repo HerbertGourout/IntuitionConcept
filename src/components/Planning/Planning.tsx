@@ -186,7 +186,7 @@ export const Planning: React.FC = () => {
   }
 
   return (
-    <PageContainer className="py-6 space-y-6">
+    <PageContainer className="py-8 space-y-8">
       {/* Header */}
       <GlassCard className="bg-gradient-to-r from-blue-50 via-white to-purple-50">
         <SectionHeader
@@ -210,7 +210,7 @@ export const Planning: React.FC = () => {
       </GlassCard>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 xl:gap-10">
         <GlassCard className="hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
@@ -281,7 +281,7 @@ export const Planning: React.FC = () => {
       </div>
 
       {/* Liste des phases */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+      <div className="grid grid-cols-1 sm:[grid-template-columns:repeat(auto-fit,minmax(360px,1fr))] xl:[grid-template-columns:repeat(auto-fit,minmax(400px,1fr))] gap-8 xl:gap-10 mt-10">
         {projectContext.currentProject.phases?.length === 0 ? (
           <GlassCard className="text-center py-10 flex flex-col items-center justify-center">
             <Target className="w-10 h-10 text-orange-400 mb-2" />
