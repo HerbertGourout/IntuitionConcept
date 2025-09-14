@@ -28,6 +28,9 @@ export const Pricing: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [validationError, setValidationError] = useState<string>('');
+  const [showFeatureDetails, setShowFeatureDetails] = useState<boolean>(true);
+  const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({});
+  const [showPwaHelp, setShowPwaHelp] = useState<boolean>(false);
 
   // Détermine la devise et les prix selon le pays sélectionné
   const currency: Currency = (selectedCountry?.currency as Currency) || 'XOF';
@@ -92,11 +95,11 @@ export const Pricing: React.FC = () => {
       heroSubtitle="Choisissez le plan parfait pour votre équipe. Paiements Mobile Money inclus pour l'Afrique francophone."
       heroBackground="bg-gradient-to-br from-green-900 via-blue-900 to-purple-900"
     >
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="mx-auto px-4 md:px-10 lg:px-14 max-w-[1920px]">
         {/* En-tête */}
-        <div className="text-center mt-10 md:mt-16 lg:mt-24 mb-10">
+        <div className="text-center mt-14 md:mt-24 lg:mt-32 mb-14">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Tarifs & Abonnements</h1>
-          <p className="text-lg text-gray-600 mb-6">
+          <p className="text-lg text-gray-600 mb-10">
             Des plans adaptés à toutes les équipes en Afrique francophone
           </p>
         </div>
@@ -122,37 +125,96 @@ export const Pricing: React.FC = () => {
           </p>
         )}
 
-        {/* Sélecteur de cycle de facturation */}
-        <div className="flex justify-center gap-4 mb-10">
-          <button
-            className={`px-6 py-2 rounded-full font-medium transition-all ${
-              billingCycle === 'monthly'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            onClick={() => setBillingCycle('monthly')}
-          >
-            Mensuel
-          </button>
-          <button
-            className={`px-6 py-2 rounded-full font-medium transition-all ${
-              billingCycle === 'yearly'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            onClick={() => setBillingCycle('yearly')}
-          >
-            Annuel <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">-17%</span>
-          </button>
+        {/* Sélecteur de cycle de facturation + Affichage détails (sticky) */}
+        <div className="sticky top-4 z-10 flex flex-col items-center gap-4 mb-12 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 rounded-xl px-4 py-3 shadow-sm">
+          <div className="flex justify-center gap-5">
+            <button
+              className={`px-6 py-2 rounded-full font-medium transition-all ${
+                billingCycle === 'monthly'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={() => setBillingCycle('monthly')}
+            >
+              Mensuel
+            </button>
+            <button
+              className={`px-6 py-2 rounded-full font-medium transition-all ${
+                billingCycle === 'yearly'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              onClick={() => setBillingCycle('yearly')}
+            >
+              Annuel <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">-17%</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-gray-700">
+            <label htmlFor="feature-details" className="cursor-pointer">Afficher les détails des fonctionnalités</label>
+            <button
+              id="feature-details"
+              onClick={() => setShowFeatureDetails(v => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showFeatureDetails ? 'bg-blue-600' : 'bg-gray-300'}`}
+              aria-pressed={showFeatureDetails}
+            >
+              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${showFeatureDetails ? 'translate-x-5' : 'translate-x-1'}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Bandeau PWA (installable) */}
+        <div className="mb-8 mx-auto max-w-3xl">
+          <div className="flex items-start gap-3 p-4 rounded-xl border border-blue-200 bg-blue-50">
+            <Smartphone className="w-6 h-6 text-blue-600 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-blue-900">
+                Accédez à la plateforme comme une application mobile (PWA installable) et utilisez-la hors-ligne.
+              </p>
+              <button
+                onClick={() => setShowPwaHelp(v => !v)}
+                className="mt-2 text-sm text-blue-700 hover:text-blue-800 font-medium"
+                aria-expanded={showPwaHelp}
+              >
+                {showPwaHelp ? 'Masquer les étapes' : 'Comment installer sur mobile ?'}
+              </button>
+              {showPwaHelp && (
+                <div className="mt-3 grid md:grid-cols-3 gap-4 text-sm text-blue-900">
+                  <div className="bg-white rounded-lg p-3 border border-blue-100">
+                    <h5 className="font-semibold mb-1">Android (Chrome)</h5>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Ouvrez l’URL de la plateforme</li>
+                      <li>Menu ⋮ → « Ajouter à l’écran d’accueil »</li>
+                      <li>Confirmez l’installation</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-blue-100">
+                    <h5 className="font-semibold mb-1">iOS (Safari)</h5>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Ouvrez l’URL de la plateforme</li>
+                      <li>Partager ⎋ → « Sur l’écran d’accueil »</li>
+                      <li>Confirmez l’ajout</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-blue-100">
+                    <h5 className="font-semibold mb-1">Desktop (Chrome/Edge)</h5>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Cliquez l’icône « Installer l’app » dans la barre d’URL</li>
+                      <li>Ouvrez en fenêtre dédiée</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Grille des plans */}
-        <div className="grid md:grid-cols-3 gap-8 mb-14">
+        <div className="grid grid-cols-1 sm:[grid-template-columns:repeat(auto-fit,minmax(340px,1fr))] lg:[grid-template-columns:repeat(auto-fit,minmax(380px,1fr))] 2xl:[grid-template-columns:repeat(auto-fit,minmax(420px,1fr))] gap-12 xl:gap-14 2xl:gap-16 mb-20">
           {PLANS.map((plan) => (
             <div
               key={plan.id}
               className={`relative bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${
-                plan.popular ? 'ring-2 ring-green-500 scale-105' : ''
+                plan.popular ? 'ring-2 ring-green-500' : ''
               }`}
             >
               {plan.popular && (
@@ -160,10 +222,10 @@ export const Pricing: React.FC = () => {
                   <Star className="inline w-4 h-4 mr-1" /> Le plus populaire
                 </div>
               )}
-              <div className={`p-8 ${plan.popular ? 'pt-16' : ''}`}>
+              <div className={`p-12 ${plan.popular ? 'pt-24' : ''}`}>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                <p className="text-gray-600 mb-4">{plan.description}</p>
-                <div className="mb-6">
+                <p className="text-gray-600 mb-5">{plan.description}</p>
+                <div className="mb-7">
                   <div className="flex items-baseline">
                     <span className="text-4xl font-bold text-gray-900">
                       {getPrice(plan.id as PlanId).toLocaleString()}
@@ -180,8 +242,11 @@ export const Pricing: React.FC = () => {
                   )}
                 </div>
                 
+                {/* Divider subtil */}
+                <div className="border-t border-gray-200 my-7" />
+                
                 {/* Limites du plan */}
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="mb-6 p-5 bg-gray-50 rounded-lg">
                   <div className="text-sm text-gray-600 space-y-1">
                     <div>📊 {typeof plan.limits.projects === 'number' ? `${plan.limits.projects} projets` : 'Projets illimités'}</div>
                     <div>👥 {typeof plan.limits.users === 'number' ? `${plan.limits.users} utilisateurs` : 'Utilisateurs illimités'}</div>
@@ -189,21 +254,46 @@ export const Pricing: React.FC = () => {
                   </div>
                 </div>
 
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <span className="text-gray-900 font-medium">{feature.name}</span>
-                        <p className="text-sm text-gray-600">{feature.description}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {/* Divider subtil */}
+                <div className="border-t border-gray-200 my-7" />
+
+                {/* Liste des fonctionnalités avec option d'affichage */}
+                {(() => {
+                  const expanded = !!expandedPlans[plan.id];
+                  const maxVisible = 8;
+                  const items = expanded ? plan.features : plan.features.slice(0, maxVisible);
+                  return (
+                    <>
+                      <ul className="space-y-5 mb-8">
+                        {items.map((feature, idx) => (
+                          <li key={idx} className="flex items-start">
+                          <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <span className="text-gray-900 font-medium">{feature.name}</span>
+                            {showFeatureDetails && (
+                              <p className="text-sm text-gray-600">{feature.description}</p>
+                            )}
+                          </div>
+                        </li>
+                        ))}
+                      </ul>
+                      {plan.features.length > maxVisible && (
+                        <div className="mb-10">
+                          <button
+                            onClick={() => setExpandedPlans(prev => ({ ...prev, [plan.id]: !expanded }))}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            {expanded ? 'Afficher moins' : `Afficher plus (${plan.features.length - maxVisible})`}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 <button
                   onClick={() => handleSubscribe(plan.id)}
                   disabled={!selectedCountry}
-                  className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
+                  className={`w-full py-3.5 px-7 rounded-lg font-semibold transition-all duration-200 ${
                     plan.popular
                       ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl'
                       : 'bg-gray-900 hover:bg-gray-800 text-white'
@@ -224,7 +314,7 @@ export const Pricing: React.FC = () => {
         {/* Checkout redirigé vers /subscription */}
 
         {/* Méthodes de paiement */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-10">
+        <div className="bg-white rounded-2xl shadow-lg p-10 mb-14">
           <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Méthodes de paiement acceptées</h3>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="flex items-center p-4 border-2 border-orange-200 rounded-lg bg-orange-50">
@@ -245,7 +335,7 @@ export const Pricing: React.FC = () => {
         </div>
 
         {/* Sécurité & FAQ */}
-        <div className="bg-gray-100 rounded-2xl p-8 mb-10">
+        <div className="bg-gray-100 rounded-2xl p-10 mb-14">
           <div className="flex items-center mb-4">
             <ShieldCheck className="w-6 h-6 text-green-600 mr-2" />
             <h4 className="text-lg font-semibold text-gray-900">Sécurité & Confiance</h4>
@@ -269,9 +359,9 @@ export const Pricing: React.FC = () => {
         </div>
 
         {/* Pourquoi choisir notre solution */}
-        <div className="text-center py-10">
+        <div className="text-center py-12">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">Pourquoi choisir notre plateforme ?</h3>
-          <ul className="inline-block text-left text-lg text-gray-700 space-y-2">
+          <ul className="inline-block text-left text-lg text-gray-700 space-y-3">
             <li>🇫🇷 Interface 100% française et adaptée à l’Afrique</li>
             <li>💸 Tarification locale abordable</li>
             <li>📱 Paiement Mobile Money ultra-simple</li>
