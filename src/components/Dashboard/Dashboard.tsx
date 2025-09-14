@@ -32,6 +32,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const defaultPrefs: {
     showProjectsOverview: boolean;
     showTeamProductivity: boolean;
@@ -57,11 +58,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     showActivityTimeline: true,
     showRealTimeChart: true,
     showCircularProgress: true,
-    density: 'normal',
+    density: 'compact',
     firstRowOrder: ['projectsOverview', 'teamProductivity', 'budgetAlerts'],
-    sizeProjectsOverview: 'large',
+    sizeProjectsOverview: 'medium',
     sizeTeamProductivity: 'small',
-    sizeBudgetAlerts: 'medium',
+    sizeBudgetAlerts: 'small',
     secondRowOrder: ['activityTimeline', 'realTimeChart'],
     sizeActivityTimeline: 'medium',
     sizeRealTimeChart: 'medium',
@@ -568,7 +569,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+        <div className="rounded-xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #4C6A92, #2F4858)' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm font-medium">Tâches Actives</p>
@@ -578,7 +579,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+        <div className="rounded-xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #7AA273, #4F7A57)' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm font-medium">Budget Utilisé</p>
@@ -588,7 +589,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+        <div className="rounded-xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #D6A354, #B07B3A)' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-orange-100 text-sm font-medium">Progression</p>
@@ -598,7 +599,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+        <div className="rounded-xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #6E5A7E, #4C3A5C)' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100 text-sm font-medium">Équipe Active</p>
@@ -647,12 +648,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Widgets Grid Section */}
       <div className="mt-8">
-        <div className="mb-6">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Vue d'ensemble avancée</h3>
-          <p className="text-gray-600 dark:text-gray-400">Widgets intelligents pour un suivi complet de votre projet</p>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Vue d'ensemble avancée</h3>
+            <p className="text-gray-600 dark:text-gray-400">Widgets intelligents pour un suivi complet de votre projet</p>
+          </div>
+          <button
+            onClick={() => setShowAdvanced(s => !s)}
+            className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+            aria-expanded={showAdvanced}
+            aria-controls="advanced-widgets"
+          >
+            {showAdvanced ? 'Afficher moins' : 'Afficher plus'}
+          </button>
         </div>
         
-        <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
+        {showAdvanced && (
+        <>
+        <div id="advanced-widgets" className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
           {prefs.firstRowOrder.map((key) => {
             if (key === 'projectsOverview' && prefs.showProjectsOverview) {
               return (
@@ -728,7 +741,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             return null;
           })}
         </div>
-        
         {/* Deuxième ligne de widgets (ordre & DnD) */}
         <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
           {prefs.secondRowOrder.map((key) => {
@@ -777,7 +789,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             return null;
           })}
         </div>
-        
         {/* Troisième ligne (ordre & DnD) */}
         <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
           {prefs.thirdRowOrder.map((key) => {
@@ -801,7 +812,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     percentage={currentProjectData.progress}
                     title="Avancement Projet"
                     value={`${currentProjectData.progress}%`}
-                    color="#f97316"
+                    color="#C2693A"
                     subtitle={`${currentProjectData.completedTasks}/${(currentProjectData.phases || []).flatMap(p => p.tasks || []).length} tâches`}
                   />
                 </div>
@@ -907,6 +918,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <OfflineStatusWidget />
           </div>
         </div>
+        </>
+        )}
       </div>
     </PageContainer>
   );

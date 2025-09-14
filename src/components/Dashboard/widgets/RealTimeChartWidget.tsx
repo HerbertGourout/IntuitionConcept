@@ -7,7 +7,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 interface ChartData {
   label: string;
   value: number;
-  color: string;
+  color: string; // hex color
 }
 
 interface RealTimeChartWidgetProps {
@@ -33,13 +33,13 @@ const RealTimeChartWidget: React.FC<RealTimeChartWidgetProps> = ({ className = '
   const data = useMemo<ChartData[]>(() => {
     if (!currentProject && !rtTasks) {
       return [
-        { label: 'Lun', value: 0, color: 'bg-gray-400' },
-        { label: 'Mar', value: 0, color: 'bg-gray-400' },
-        { label: 'Mer', value: 0, color: 'bg-gray-400' },
-        { label: 'Jeu', value: 0, color: 'bg-gray-400' },
-        { label: 'Ven', value: 0, color: 'bg-gray-400' },
-        { label: 'Sam', value: 0, color: 'bg-gray-400' },
-        { label: 'Dim', value: 0, color: 'bg-gray-400' }
+        { label: 'Lun', value: 0, color: '#9AA5B1' },
+        { label: 'Mar', value: 0, color: '#94A890' },
+        { label: 'Mer', value: 0, color: '#C6B07D' },
+        { label: 'Jeu', value: 0, color: '#8B7B97' },
+        { label: 'Ven', value: 0, color: '#B07B5A' },
+        { label: 'Sam', value: 0, color: '#855868' },
+        { label: 'Dim', value: 0, color: '#546A77' }
       ];
     }
 
@@ -63,42 +63,15 @@ const RealTimeChartWidget: React.FC<RealTimeChartWidgetProps> = ({ className = '
     // Générer des données réalistes basées sur l'état du projet
     const baseEfficiency = Math.max(20, progressEfficiency - delayPenalty);
     
+    // Unique earthy palette for construction branding
     return [
-      { 
-        label: 'Lun', 
-        value: Math.min(100, baseEfficiency + (completedTasks > 0 ? 10 : -5)), 
-        color: 'bg-blue-500' 
-      },
-      { 
-        label: 'Mar', 
-        value: Math.min(100, baseEfficiency + (inProgressTasks > 0 ? 15 : 0)), 
-        color: 'bg-green-500' 
-      },
-      { 
-        label: 'Mer', 
-        value: Math.min(100, baseEfficiency + (delayedTasks === 0 ? 5 : -10)), 
-        color: 'bg-yellow-500' 
-      },
-      { 
-        label: 'Jeu', 
-        value: Math.min(100, globalEfficiency + 5), 
-        color: 'bg-purple-500' 
-      },
-      { 
-        label: 'Ven', 
-        value: Math.min(100, baseEfficiency), 
-        color: 'bg-orange-500' 
-      },
-      { 
-        label: 'Sam', 
-        value: Math.min(100, Math.max(30, baseEfficiency - 10)), 
-        color: 'bg-red-500' 
-      },
-      { 
-        label: 'Dim', 
-        value: Math.min(100, Math.max(25, baseEfficiency - 15)), 
-        color: 'bg-indigo-500' 
-      }
+      { label: 'Lun', value: Math.min(100, baseEfficiency + (completedTasks > 0 ? 10 : -5)), color: '#4C6A92' }, // steel blue
+      { label: 'Mar', value: Math.min(100, baseEfficiency + (inProgressTasks > 0 ? 15 : 0)), color: '#7AA273' }, // moss
+      { label: 'Mer', value: Math.min(100, baseEfficiency + (delayedTasks === 0 ? 5 : -10)), color: '#D6A354' }, // sand
+      { label: 'Jeu', value: Math.min(100, globalEfficiency + 5), color: '#6E5A7E' }, // plum
+      { label: 'Ven', value: Math.min(100, baseEfficiency), color: '#C2693A' }, // terracotta
+      { label: 'Sam', value: Math.min(100, Math.max(30, baseEfficiency - 10)), color: '#8C4A5F' }, // rosewood
+      { label: 'Dim', value: Math.min(100, Math.max(25, baseEfficiency - 15)), color: '#2F4858' }  // charcoal blue
     ];
   }, [currentProject, rtTasks, normalizeDate]);
 
@@ -178,8 +151,8 @@ const RealTimeChartWidget: React.FC<RealTimeChartWidgetProps> = ({ className = '
             <div key={item.label} className="flex flex-col items-center flex-1">
               <div className="w-full flex flex-col justify-end h-32 mb-2">
                 <div
-                  className={`${item.color} rounded-t-md transition-all duration-1000 ease-out relative group cursor-pointer hover:opacity-80`}
-                  style={{ height: `${(item.value / maxValue) * 100}%` }}
+                  className={`rounded-t-md transition-all duration-1000 ease-out relative group cursor-pointer hover:opacity-80`}
+                  style={{ height: `${(item.value / maxValue) * 100}%`, backgroundColor: item.color }}
                 >
                   {/* Tooltip */}
                   <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -207,7 +180,7 @@ const RealTimeChartWidget: React.FC<RealTimeChartWidgetProps> = ({ className = '
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center space-x-1">
-              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#C2693A' }}></div>
               <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {Math.round(maxValue)}%
               </span>

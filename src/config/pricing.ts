@@ -86,6 +86,27 @@ export const PLAN_FEATURES: PlanFeature[] = [
     requiredPermissions: ['ai.suggestions', 'quotes.create'],
     category: 'core'
   },
+  {
+    id: 'offline_mode',
+    name: 'Mode Hors-Ligne',
+    description: 'Utilisation de la plateforme sans connexion (synchronisation différée)',
+    requiredPermissions: ['offline.use'],
+    category: 'core'
+  },
+  {
+    id: 'notifications_center',
+    name: 'Centre de notifications',
+    description: 'Notifications système et alertes opérationnelles',
+    requiredPermissions: ['notifications.view'],
+    category: 'core'
+  },
+  {
+    id: 'mobile_pwa_access',
+    name: 'Accès mobile (PWA installable)',
+    description: 'Installation sur mobile depuis le navigateur, mode hors-ligne et raccourci écran d’accueil',
+    requiredPermissions: ['mobile.access'],
+    category: 'core'
+  },
   
   // === PLAN PRO - TOUT ARTISAN + FONCTIONNALITÉS AVANCÉES ===
   {
@@ -145,6 +166,13 @@ export const PLAN_FEATURES: PlanFeature[] = [
     category: 'advanced'
   },
   {
+    id: 'planning_kanban',
+    name: 'Kanban chantier (Drag & Drop)',
+    description: 'Organisation visuelle des tâches par colonnes',
+    requiredPermissions: ['planning.view', 'planning.kanban'],
+    category: 'advanced'
+  },
+  {
     id: 'equipment_management',
     name: 'Gestion parc matériel',
     description: 'Suivi équipements et maintenance prédictive',
@@ -159,10 +187,59 @@ export const PLAN_FEATURES: PlanFeature[] = [
     category: 'advanced'
   },
   {
+    id: 'payments_mobile_money',
+    name: 'Paiements & Mobile Money',
+    description: 'Encaissement via Mobile Money et cartes',
+    requiredPermissions: ['payments.view', 'payments.collect'],
+    category: 'advanced'
+  },
+  {
+    id: 'invoicing_and_receivables',
+    name: 'Facturation & Encaissement',
+    description: 'Factures depuis devis, envoi et suivi des paiements',
+    requiredPermissions: ['invoices.create', 'invoices.send', 'payments.collect'],
+    category: 'advanced'
+  },
+  {
     id: 'email_integration',
     name: 'Envoi email automatique',
     description: 'Envoi devis et documents par email',
     requiredPermissions: ['quotes.send', 'documents.send'],
+    category: 'advanced'
+  },
+  {
+    id: 'btp_price_library',
+    name: 'Bibliothèque de prix BTP',
+    description: 'Base d’ouvrages/métrés et prix par corps de métier',
+    requiredPermissions: ['prices.view', 'prices.add'],
+    category: 'advanced'
+  },
+  {
+    id: 'support_center',
+    name: 'Centre de support (tickets & live chat)',
+    description: 'Gestion des tickets et assistance en temps réel',
+    requiredPermissions: ['support.view', 'support.create'],
+    category: 'advanced'
+  },
+  {
+    id: 'documents_advanced',
+    name: 'Documents avancés',
+    description: 'Tags, versions et intégration signature',
+    requiredPermissions: ['documents.manage'],
+    category: 'advanced'
+  },
+  {
+    id: 'dashboard_advanced',
+    name: 'Dashboard & Rapports avancés',
+    description: 'Widgets personnalisables et rapports détaillés',
+    requiredPermissions: ['reports.view', 'reports.dashboard'],
+    category: 'advanced'
+  },
+  {
+    id: 'team_time_tracking',
+    name: 'Pointage & Temps équipe',
+    description: 'Pointage terrain et suivi heures',
+    requiredPermissions: ['team.time.view', 'team.time.record'],
     category: 'advanced'
   },
   
@@ -249,6 +326,14 @@ export const PLAN_FEATURES: PlanFeature[] = [
     name: 'Sécurité & Audit',
     description: 'Traçabilité complète et conformité réglementaire',
     requiredPermissions: ['admin.audit', 'security.view'],
+    category: 'premium'
+  }
+  ,
+  {
+    id: 'workflows_automation',
+    name: 'Automations & Workflows',
+    description: 'Automatisations (n8n), webhooks et intégrations de processus',
+    requiredPermissions: ['automation.run', 'webhooks.manage'],
     category: 'premium'
   }
 ];

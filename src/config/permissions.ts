@@ -17,10 +17,22 @@ export type Permission =
   | 'documents.view' | 'documents.upload' | 'documents.delete' | 'documents.send'
   // Planning
   | 'planning.view' | 'planning.edit'
+  | 'planning.kanban'
   // Rapports
   | 'reports.view' | 'reports.export'
+  | 'reports.dashboard'
   // Achats
   | 'purchases.view' | 'purchases.create' | 'purchases.edit'
+  // Paiements & facturation
+  | 'payments.view' | 'payments.collect'
+  | 'invoices.create' | 'invoices.send'
+  // Mode hors-ligne
+  | 'offline.use'
+  // Bibliothèque de prix BTP
+  | 'prices.view' | 'prices.add'
+  // Support & notifications
+  | 'support.view' | 'support.create'
+  | 'notifications.view'
   // Intelligence Artificielle
   | 'ai.anomaly' | 'ai.copilot' | 'ai.vocal' | 'ai.quotes'
   | 'ai.suggestions' | 'ai.planner' | 'ai.anomaly.advanced'
@@ -31,12 +43,20 @@ export type Permission =
   | 'location.view' | 'location.track'
   // Signatures électroniques
   | 'signature.create' | 'signature.validate'
+  // Documents avancés
+  | 'documents.manage'
   // API et intégrations
   | 'api.access'
   // Sécurité et audit
   | 'admin.audit' | 'security.view'
+  // Automations & Webhooks
+  | 'automation.run' | 'webhooks.manage'
   // Administration
-  | 'admin.users' | 'admin.settings' | 'admin.system';
+  | 'admin.users' | 'admin.settings' | 'admin.system'
+  // Mobile app
+  | 'mobile.access'
+  // Time tracking
+  | 'team.time.view' | 'team.time.record';
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
@@ -49,16 +69,28 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'equipment.view', 'equipment.manage', 'equipment.rent',
     'documents.view', 'documents.upload', 'documents.delete', 'documents.send',
     'planning.view', 'planning.edit',
+    'planning.kanban',
     'reports.view', 'reports.export',
+    'reports.dashboard',
     'purchases.view', 'purchases.create', 'purchases.edit',
+    'payments.view','payments.collect',
+    'invoices.create','invoices.send',
+    'offline.use',
+    'prices.view','prices.add',
+    'support.view','support.create',
+    'notifications.view',
     'ai.anomaly', 'ai.copilot', 'ai.vocal', 'ai.quotes',
     'ai.suggestions', 'ai.planner', 'ai.anomaly.advanced',
     'ai.quotes.advanced', 'ai.analytics', 'ai.reporting', 'ai.ocr.advanced', 'ai.plan.read',
     'reports.advanced',
     'location.view', 'location.track',
     'signature.create', 'signature.validate',
+    'documents.manage',
     'api.access', 'admin.audit', 'security.view',
-    'admin.users', 'admin.settings', 'admin.system'
+    'admin.users', 'admin.settings', 'admin.system',
+    'automation.run','webhooks.manage',
+    'mobile.access',
+    'team.time.view','team.time.record'
   ],
   manager: [
     // Gestion complète des projets et équipe

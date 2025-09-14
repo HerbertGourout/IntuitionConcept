@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
 import { 
-  Home, 
   BarChart3, 
   Users, 
   FileText, 
-  Settings, 
   Calendar, 
   Hammer, 
-  Package, 
   Euro, 
   PieChart, 
-  TrendingUp, 
   ShoppingCart, 
   CreditCard, 
   MapPin, 
@@ -163,15 +159,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       bgColor: 'bg-pink-500/10',
       hoverColor: 'hover:bg-pink-500/20',
       description: 'Rapports et analyses'
-    },
-    { 
-      id: 'competitive-analysis', 
-      label: 'Analyse Concurrentielle', 
-      icon: TrendingUp, 
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-600/10',
-      hoverColor: 'hover:bg-indigo-600/20',
-      description: 'Analyse des marchés africain et européen'
     },
     { 
       id: 'team', 

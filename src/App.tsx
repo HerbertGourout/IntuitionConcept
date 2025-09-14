@@ -16,7 +16,6 @@ import SecureLayout from './components/Layout/SecureLayout';
 import SessionMonitor from './components/Auth/SessionMonitor';
 
 import { Dashboard, Quotes, Projects, Equipment, Tasks, Finances, Planning, Documents, ProjectBudget, Reports, Team, PurchaseOrders, PaymentDashboard, Locations, NotificationCenter, Settings, QuoteCreator } from './components/LazyLoad/LazyComponents';
-import CompetitiveAnalysis from './components/Analysis/CompetitiveAnalysis';
 import SupportCenter from './components/Support/SupportCenter';
 import SupportAgentDashboard from './components/Support/SupportAgentDashboard';
 import TransactionDashboard from './components/Transactions/TransactionDashboard';
@@ -227,8 +226,6 @@ const AppContent: React.FC = () => {
         return <Finances />;
       case 'planning':
         return <Planning />;
-      case 'competitive-analysis':
-        return <CompetitiveAnalysis />;
       case 'documents':
         return <Documents />;
       case 'project-budget':
