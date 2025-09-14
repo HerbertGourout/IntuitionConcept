@@ -1,5 +1,5 @@
 import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 
 export interface Anomaly {
   id?: string;
@@ -24,7 +24,7 @@ export interface Anomaly {
   status: 'active' | 'acknowledged' | 'resolved' | 'ignored';
   resolvedAt?: Date;
   resolvedBy?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface AnomalyRule {
@@ -143,13 +143,14 @@ class AnomalyDetectionService {
         isAnomaly = value < rule.threshold;
         expectedValue = rule.threshold;
         break;
-      case 'deviation_from_average':
+      case 'deviation_from_average': {
         const average = await this.getHistoricalAverage(rule.metric, metrics.projectId);
         const deviation = Math.abs(value - average);
         const deviationPercentage = (deviation / average) * 100;
         isAnomaly = deviationPercentage > rule.threshold;
         expectedValue = average;
         break;
+      }
     }
 
     if (!isAnomaly) return null;
@@ -185,10 +186,11 @@ class AnomalyDetectionService {
         return metrics.daysPlanned > 0 ? 
           ((metrics.daysElapsed - metrics.daysPlanned) / metrics.daysPlanned) * 100 : 0;
       
-      case 'daily_cost_deviation_percentage':
+      case 'daily_cost_deviation_percentage': {
         const expectedDailyCost = metrics.budgetAllocated / metrics.daysPlanned;
         return expectedDailyCost > 0 ? 
           ((metrics.averageCostPerDay - expectedDailyCost) / expectedDailyCost) * 100 : 0;
+      }
       
       case 'quality_score':
         return metrics.qualityScore;
@@ -339,7 +341,9 @@ class AnomalyDetectionService {
   }
 
   // Obtenir la moyenne historique d'une métrique
-  private async getHistoricalAverage(metric: string, projectId: string): Promise<number> {
+  private async getHistoricalAverage(metric: string, _projectId: string): Promise<number> {
+    // prevent unused parameter lint warning
+    void _projectId;
     // Simulation - en production, calculer depuis l'historique
     const averages: Record<string, number> = {
       'budget_deviation_percentage': 5, // 5% de dépassement moyen
@@ -399,17 +403,17 @@ class AnomalyDetectionService {
   // Obtenir toutes les anomalies d'un projet
   async getProjectAnomalies(projectId: string, status?: Anomaly['status']): Promise<Anomaly[]> {
     try {
-      let q = query(
+      const baseQuery = query(
         collection(db, 'anomalies'),
         where('projectId', '==', projectId),
         orderBy('detectedAt', 'desc')
       );
 
-      if (status) {
-        q = query(q, where('status', '==', status)) as any;
-      }
+      const finalQuery = status
+        ? query(baseQuery, where('status', '==', status))
+        : baseQuery;
 
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(finalQuery);
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()

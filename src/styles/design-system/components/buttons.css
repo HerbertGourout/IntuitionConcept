@@ -1,0 +1,295 @@
+/* 🔘 OPTION 3: GRADIENT REVOLUTION - Boutons */
+
+/* === BOUTONS DE BASE === */
+.btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-button);
+  font-family: var(--font-secondary);
+  font-weight: var(--font-medium);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+  position: relative;
+  overflow: hidden;
+  min-height: var(--height-lg);
+  user-select: none;
+}
+
+.btn-base:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 4px rgba(139, 92, 246, 0.2);
+}
+
+.btn-base:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* === BOUTON PRIMAIRE === */
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-secondary);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* === BOUTON SECONDAIRE === */
+.btn-secondary {
+  background: var(--gradient-secondary);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-secondary);
+}
+
+.btn-secondary:hover {
+  background: var(--gradient-secondary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+}
+
+/* === BOUTON ACCENT === */
+.btn-accent {
+  background: var(--gradient-accent);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-accent);
+}
+
+.btn-accent:hover {
+  background: var(--gradient-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+}
+
+/* === BOUTON OUTLINE === */
+.btn-outline {
+  background: transparent;
+  color: var(--color-primary);
+  border: 2px solid transparent;
+  background-image: var(--gradient-primary);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.btn-outline:hover {
+  background: var(--gradient-primary);
+  color: var(--text-inverse);
+  transform: translateY(-2px);
+}
+
+/* === BOUTON GHOST === */
+.btn-ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.btn-ghost:hover {
+  background: var(--gradient-primary-light);
+  color: var(--text-inverse);
+  border-color: transparent;
+  transform: translateY(-2px);
+}
+
+/* === BOUTON GLASS === */
+.btn-glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+}
+
+.btn-glass:hover {
+  background: var(--gradient-primary-light);
+  color: var(--text-inverse);
+  transform: translateY(-2px);
+}
+
+/* === TAILLES === */
+.btn-xs {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  min-height: var(--height-xs);
+}
+
+.btn-sm {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  min-height: var(--height-sm);
+}
+
+.btn-lg {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--text-lg);
+  min-height: var(--height-xl);
+}
+
+.btn-xl {
+  padding: var(--space-5) var(--space-10);
+  font-size: var(--text-xl);
+  min-height: var(--height-2xl);
+}
+
+/* === FORMES === */
+.btn-rounded {
+  border-radius: var(--radius-full);
+}
+
+.btn-square {
+  border-radius: var(--radius-base);
+  aspect-ratio: 1;
+  padding: var(--space-3);
+}
+
+.btn-circle {
+  border-radius: var(--radius-full);
+  aspect-ratio: 1;
+  padding: var(--space-3);
+}
+
+/* === ÉTATS SPÉCIAUX === */
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.btn-success {
+  background: var(--gradient-success);
+  color: var(--text-inverse);
+}
+
+.btn-warning {
+  background: var(--gradient-warning);
+  color: var(--text-inverse);
+}
+
+.btn-error {
+  background: var(--gradient-error);
+  color: var(--text-inverse);
+}
+
+/* === EFFETS SPÉCIAUX === */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width var(--duration-slow) var(--ease-out), height var(--duration-slow) var(--ease-out);
+}
+
+.btn-ripple:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-glow {
+  animation: glow 3s ease-in-out infinite;
+}
+
+.btn-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.btn-morph {
+  animation: morph 8s ease-in-out infinite;
+}
+
+/* === GROUPES DE BOUTONS === */
+.btn-group {
+  display: inline-flex;
+  border-radius: var(--radius-button);
+  overflow: hidden;
+  box-shadow: var(--shadow-neutral);
+}
+
+.btn-group .btn-base {
+  border-radius: 0;
+  border-right: 1px solid var(--border-neutral);
+}
+
+.btn-group .btn-base:first-child {
+  border-top-left-radius: var(--radius-button);
+  border-bottom-left-radius: var(--radius-button);
+}
+
+.btn-group .btn-base:last-child {
+  border-top-right-radius: var(--radius-button);
+  border-bottom-right-radius: var(--radius-button);
+  border-right: none;
+}
+
+/* === BOUTONS AVEC ICÔNES === */
+.btn-icon-left {
+  flex-direction: row;
+}
+
+.btn-icon-right {
+  flex-direction: row-reverse;
+}
+
+.btn-icon-only {
+  padding: var(--space-3);
+  aspect-ratio: 1;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .btn-base {
+    min-height: 44px; /* Touch target minimum */
+    padding: var(--space-3) var(--space-5);
+  }
+  
+  .btn-lg {
+    padding: var(--space-4) var(--space-6);
+  }
+  
+  .btn-xl {
+    padding: var(--space-5) var(--space-8);
+  }
+}
+
+/* === ANIMATIONS KEYFRAMES === */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

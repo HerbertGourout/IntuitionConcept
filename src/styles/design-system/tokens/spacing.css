@@ -1,0 +1,145 @@
+/* 📏 OPTION 3: GRADIENT REVOLUTION - Espacement */
+
+:root {
+  /* === ÉCHELLE D'ESPACEMENT === */
+  --space-0: 0;
+  --space-px: 1px;
+  --space-0-5: 0.125rem;  /* 2px */
+  --space-1: 0.25rem;     /* 4px */
+  --space-1-5: 0.375rem;  /* 6px */
+  --space-2: 0.5rem;      /* 8px */
+  --space-2-5: 0.625rem;  /* 10px */
+  --space-3: 0.75rem;     /* 12px */
+  --space-3-5: 0.875rem;  /* 14px */
+  --space-4: 1rem;        /* 16px */
+  --space-5: 1.25rem;     /* 20px */
+  --space-6: 1.5rem;      /* 24px */
+  --space-7: 1.75rem;     /* 28px */
+  --space-8: 2rem;        /* 32px */
+  --space-9: 2.25rem;     /* 36px */
+  --space-10: 2.5rem;     /* 40px */
+  --space-11: 2.75rem;    /* 44px */
+  --space-12: 3rem;       /* 48px */
+  --space-14: 3.5rem;     /* 56px */
+  --space-16: 4rem;       /* 64px */
+  --space-20: 5rem;       /* 80px */
+  --space-24: 6rem;       /* 96px */
+  --space-28: 7rem;       /* 112px */
+  --space-32: 8rem;       /* 128px */
+  --space-36: 9rem;       /* 144px */
+  --space-40: 10rem;      /* 160px */
+  --space-44: 11rem;      /* 176px */
+  --space-48: 12rem;      /* 192px */
+  --space-52: 13rem;      /* 208px */
+  --space-56: 14rem;      /* 224px */
+  --space-60: 15rem;      /* 240px */
+  --space-64: 16rem;      /* 256px */
+  --space-72: 18rem;      /* 288px */
+  --space-80: 20rem;      /* 320px */
+  --space-96: 24rem;      /* 384px */
+
+  /* === ESPACEMENTS SÉMANTIQUES === */
+  --space-xs: var(--space-1);    /* 4px */
+  --space-sm: var(--space-2);    /* 8px */
+  --space-md: var(--space-4);    /* 16px */
+  --space-lg: var(--space-6);    /* 24px */
+  --space-xl: var(--space-8);    /* 32px */
+  --space-2xl: var(--space-12);  /* 48px */
+  --space-3xl: var(--space-16);  /* 64px */
+  --space-4xl: var(--space-24);  /* 96px */
+  --space-5xl: var(--space-32);  /* 128px */
+
+  /* === RAYONS DE BORDURE === */
+  --radius-none: 0;
+  --radius-sm: 0.125rem;    /* 2px */
+  --radius-base: 0.25rem;   /* 4px */
+  --radius-md: 0.375rem;    /* 6px */
+  --radius-lg: 0.5rem;      /* 8px */
+  --radius-xl: 0.75rem;     /* 12px */
+  --radius-2xl: 1rem;       /* 16px */
+  --radius-3xl: 1.5rem;     /* 24px */
+  --radius-4xl: 2rem;       /* 32px */
+  --radius-full: 9999px;
+
+  /* === RAYONS SÉMANTIQUES === */
+  --radius-button: var(--radius-xl);     /* 12px */
+  --radius-card: var(--radius-2xl);      /* 16px */
+  --radius-modal: var(--radius-3xl);     /* 24px */
+  --radius-input: var(--radius-lg);      /* 8px */
+
+  /* === LARGEURS === */
+  --width-xs: 20rem;    /* 320px */
+  --width-sm: 24rem;    /* 384px */
+  --width-md: 28rem;    /* 448px */
+  --width-lg: 32rem;    /* 512px */
+  --width-xl: 36rem;    /* 576px */
+  --width-2xl: 42rem;   /* 672px */
+  --width-3xl: 48rem;   /* 768px */
+  --width-4xl: 56rem;   /* 896px */
+  --width-5xl: 64rem;   /* 1024px */
+  --width-6xl: 72rem;   /* 1152px */
+  --width-7xl: 80rem;   /* 1280px */
+
+  /* === HAUTEURS === */
+  --height-xs: 1.5rem;   /* 24px */
+  --height-sm: 2rem;     /* 32px */
+  --height-md: 2.5rem;   /* 40px */
+  --height-lg: 3rem;     /* 48px */
+  --height-xl: 3.5rem;   /* 56px */
+  --height-2xl: 4rem;    /* 64px */
+
+  /* === Z-INDEX === */
+  --z-0: 0;
+  --z-10: 10;
+  --z-20: 20;
+  --z-30: 30;
+  --z-40: 40;
+  --z-50: 50;
+  --z-auto: auto;
+  
+  /* Z-Index sémantiques */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* === CLASSES UTILITAIRES === */
+
+/* Espacement interne */
+.p-gradient { padding: var(--space-md); }
+.px-gradient { padding-left: var(--space-md); padding-right: var(--space-md); }
+.py-gradient { padding-top: var(--space-md); padding-bottom: var(--space-md); }
+
+/* Espacement externe */
+.m-gradient { margin: var(--space-md); }
+.mx-gradient { margin-left: var(--space-md); margin-right: var(--space-md); }
+.my-gradient { margin-top: var(--space-md); margin-bottom: var(--space-md); }
+
+/* Conteneurs */
+.container-xs { max-width: var(--width-xs); margin: 0 auto; }
+.container-sm { max-width: var(--width-sm); margin: 0 auto; }
+.container-md { max-width: var(--width-md); margin: 0 auto; }
+.container-lg { max-width: var(--width-lg); margin: 0 auto; }
+.container-xl { max-width: var(--width-xl); margin: 0 auto; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  :root {
+    --space-md: var(--space-3);  /* Réduction sur mobile */
+    --space-lg: var(--space-4);
+    --space-xl: var(--space-6);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --space-md: var(--space-2);  /* Réduction plus importante sur très petit écran */
+    --space-lg: var(--space-3);
+    --space-xl: var(--space-4);
+  }
+}

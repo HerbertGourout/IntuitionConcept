@@ -21,10 +21,11 @@ import PageContainer from '../Layout/PageContainer';
 import SectionHeader from '../UI/SectionHeader';
 import ProgressBar from '../UI/ProgressBar';
 import Badge from '../UI/Badge';
+import DragDropPlanningBoard from '../DragDrop/DragDropPlanningBoard';
 
 export const Planning: React.FC = () => {
   const projectContext = useProjectContext();
-  type ViewType = 'gantt' | 'calendar' | 'list';
+  type ViewType = 'gantt' | 'kanban';
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
@@ -68,44 +69,27 @@ export const Planning: React.FC = () => {
   useEffect(() => {
     if (!projectContext.currentProject) return;
     
-    console.log('🔍 DEBUG Planning - Projet actuel:', projectContext.currentProject);
-    console.log('🔍 DEBUG Planning - Phases du projet:', projectContext.currentProject.phases);
-    console.log('🔍 DEBUG Planning - Phase sélectionnée:', selectedPhaseId);
+    // Debug logs removed for production
     
     const allTasks: ProjectTask[] = [];
 
-    (projectContext.currentProject.phases || []).forEach((phase: ProjectPhase, phaseIndex) => {
+    (projectContext.currentProject.phases || []).forEach((phase: ProjectPhase) => {
       // Filtrer par phase si une phase est sélectionnée
       if (selectedPhaseId && phase.id !== selectedPhaseId) {
         return; // Ignorer cette phase
       }
       
-      console.log(`📁 Phase ${phaseIndex + 1}:`, {
-        name: phase.name,
-        startDate: phase.startDate,
-        endDate: phase.endDate,
-        tasks: phase.tasks,
-        rawPhase: phase
-      });
+      // Debug logs removed for production
       
       if (phase.tasks) {
-        phase.tasks.forEach((task: ProjectTask, taskIndex) => {
-          console.log(`  📋 Tâche ${taskIndex + 1} de la phase "${phase.name}":`, {
-            name: task.name,
-            startDate: task.startDate,
-            dueDate: task.dueDate,
-            endDate: task.endDate,
-            status: task.status,
-            rawTask: task
-          });
+        phase.tasks.forEach((task: ProjectTask) => {
+          // Debug logs removed for production
           allTasks.push(task);
         });
-      } else {
-        console.log(`  ⚠️ Phase "${phase.name}" n'a pas de tâches`);
       }
     });
 
-    console.log('📊 Total tâches extraites (après filtrage):', allTasks.length);
+    // Debug logs removed for production
     setTasks(allTasks);
   }, [projectContext.currentProject, selectedPhaseId]);
 
@@ -452,7 +436,7 @@ export const Planning: React.FC = () => {
         </div>
       </GlassCard>
 
-      {/* Gantt Chart */}
+      {/* Planning unifié avec vues multiples */}
       <GlassCard className="!p-0 !m-0 overflow-hidden">
         <div className="flex items-center justify-between mb-6 px-6">
           <div className="flex items-center gap-3">
@@ -460,7 +444,7 @@ export const Planning: React.FC = () => {
               <BarChart3 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Diagramme de Gantt</h3>
+              <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Planning</h3>
               <p className="text-gray-600">Planification visuelle des tâches du projet</p>
             </div>
           </div>
@@ -477,7 +461,7 @@ export const Planning: React.FC = () => {
               <span className="font-medium">Nouvelle Phase</span>
             </button>
             <div className="flex items-center gap-2">
-              {(['gantt', 'calendar', 'list'] as const).map((view) => (
+              {(['gantt', 'kanban'] as const).map((view) => (
                 <button
                   key={view}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -485,7 +469,7 @@ export const Planning: React.FC = () => {
                   }`}
                   onClick={() => setViewType(view)}
                 >
-                  {view === 'gantt' ? 'Gantt' : view === 'calendar' ? 'Calendrier' : 'Liste'}
+                  {view === 'gantt' ? 'Gantt' : 'Kanban'}
                 </button>
               ))}
             </div>
@@ -501,16 +485,9 @@ export const Planning: React.FC = () => {
               daysToShow={daysToShow}
             />
           )}
-          {viewType === 'calendar' && (
-            <div className="text-center py-12">
-              <Calendar className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <p className="text-gray-500">Vue calendrier - En cours de développement</p>
-            </div>
-          )}
-          {viewType === 'list' && (
-            <div className="text-center py-12">
-              <Target className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <p className="text-gray-500">Vue liste - En cours de développement</p>
+          {viewType === 'kanban' && (
+            <div className="p-4">
+              <DragDropPlanningBoard />
             </div>
           )}
         </div>

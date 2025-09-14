@@ -43,6 +43,7 @@ export interface Project {
   history?: ProjectHistoryEntry[];
   equipment?: Equipment[]; // <-- Utilise maintenant l'interface Equipment globale
   type?: string; // Type de projet (ex: 'Construction', 'Rénovation', etc.)
+  financialRecords?: FinancialRecord[]; // Ajout des enregistrements financiers
 }
 
 export interface ProjectPhase {

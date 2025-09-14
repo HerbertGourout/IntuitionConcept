@@ -247,21 +247,43 @@ class ProjectPlanGenerator {
               tradeSkill: "Maçon",
               deliverables: ["Fondations coulées", "Chaînages"],
               duration: "2 semaines",
-              risks: ["Infiltrations d'eau", "Qualité du béton"]
+              risks: ["Infiltrations d'eau", "Qualité du béton"],
+              materials: [
+                {name: "Ciment CPJ 42.5", quantity: "200", unit: "sacs"},
+                {name: "Fer à béton ø12mm", quantity: "1.5", unit: "tonnes"},
+                {name: "Gravier 5/15", quantity: "20", unit: "m³"}
+              ],
+              tools: ["Bétonnière 350L", "Vibreur béton", "Niveau laser"],
+              workforce: "2 maçons + 1 coffreur + 2 manœuvres",
+              activities: ["Traçage fondations", "Mise en place ferraillage", "Coulage béton C25/30", "Vibration"]
             },
             {
               name: "Élévation des murs",
               tradeSkill: "Maçon",
               deliverables: ["Murs porteurs", "Cloisons"],
               duration: "3-4 semaines",
-              risks: ["Approvisionnement parpaings", "Respect des plans"]
+              risks: ["Approvisionnement parpaings", "Respect des plans"],
+              materials: [
+                {name: "Parpaings 20cm", quantity: "5000", unit: "unités"},
+                {name: "Mortier", quantity: "3", unit: "tonnes"}
+              ],
+              tools: ["Fil à plomb", "Niveau à bulle", "Scie à matériaux"],
+              workforce: "2 maçons + 2 manœuvres",
+              activities: ["Montage des murs", "Réalisation des linteaux", "Contrôle aplomb"]
             },
             {
               name: "Charpente et couverture",
               tradeSkill: "Charpentier/Couvreur",
               deliverables: ["Charpente posée", "Couverture étanche"],
               duration: "2 semaines",
-              risks: ["Saison des pluies", "Qualité des matériaux"]
+              risks: ["Saison des pluies", "Qualité des matériaux"],
+              materials: [
+                {name: "Pannes bois", quantity: "60", unit: "ml"},
+                {name: "Tôles bac acier", quantity: "180", unit: "m²"}
+              ],
+              tools: ["Scie circulaire", "Visseuse à chocs", "Harnais de sécurité"],
+              workforce: "2 charpentiers + 1 couvreur + 1 manœuvre",
+              activities: ["Assemblage charpente", "Pose couverture", "Étanchéité faîtage"]
             }
           ]
         },
@@ -275,28 +297,54 @@ class ProjectPlanGenerator {
               tradeSkill: "Électricien",
               deliverables: ["Câblage complet", "Tableau électrique", "Points lumineux"],
               duration: "2-3 semaines",
-              risks: ["Coupures de courant", "Normes électriques"]
+              risks: ["Coupures de courant", "Normes électriques"],
+              materials: [
+                {name: "Câble TH 2.5mm²", quantity: "500", unit: "mètres"},
+                {name: "Gaines ICTA", quantity: "200", unit: "mètres"}
+              ],
+              tools: ["Perforateur", "Tire-fils", "Multimètre"],
+              workforce: "2 électriciens + 1 aide",
+              activities: ["Traçage saignées", "Pose gaines", "Tirage câbles", "Raccordements"]
             },
             {
               name: "Plomberie et sanitaires",
               tradeSkill: "Plombier",
               deliverables: ["Réseaux eau/évacuation", "Sanitaires posés"],
               duration: "2-3 semaines",
-              risks: ["Pression d'eau insuffisante", "Qualité des canalisations"]
+              risks: ["Pression d'eau insuffisante", "Qualité des canalisations"],
+              materials: [
+                {name: "Tube PVC ø32mm", quantity: "120", unit: "mètres"},
+                {name: "Té/Manchons PVC", quantity: "50", unit: "unités"}
+              ],
+              tools: ["Pince à sertir", "Scie cloche", "Clé à molette"],
+              workforce: "2 plombiers",
+              activities: ["Réseaux EF/EC", "Évacuation EU/EV", "Pose sanitaires"]
             },
             {
               name: "Menuiseries",
               tradeSkill: "Menuisier",
               deliverables: ["Portes et fenêtres", "Placards intégrés"],
               duration: "2 semaines",
-              risks: ["Délais de fabrication", "Transport"]
+              risks: ["Délais de fabrication", "Transport"],
+              materials: [
+                {name: "Menuiseries alu/bois", quantity: "15", unit: "unités"}
+              ],
+              tools: ["Scie sauteuse", "Perceuse-visseuse", "Équerre"],
+              workforce: "2 menuisiers",
+              activities: ["Pose châssis", "Réglages", "Finitions"]
             },
             {
               name: "Climatisation",
               tradeSkill: "Frigoriste",
               deliverables: ["Unités installées", "Réseaux frigorifiques"],
               duration: "1-2 semaines",
-              risks: ["Disponibilité équipements", "Techniciens qualifiés"]
+              risks: ["Disponibilité équipements", "Techniciens qualifiés"],
+              materials: [
+                {name: "Unités split 12k BTU", quantity: "3", unit: "unités"}
+              ],
+              tools: ["Pompe à vide", "Manifold", "Ébavureur"],
+              workforce: "1 frigoriste + 1 aide",
+              activities: ["Pose unités", "Mise en pression", "Mise en service"]
             }
           ]
         },
@@ -310,21 +358,40 @@ class ProjectPlanGenerator {
               tradeSkill: "Carreleur/Peintre",
               deliverables: ["Carrelage posé", "Peintures finies"],
               duration: "3-4 semaines",
-              risks: ["Qualité carrelage", "Conditions de séchage"]
+              risks: ["Qualité carrelage", "Conditions de séchage"],
+              materials: [
+                {name: "Carrelage grès cérame", quantity: "120", unit: "m²"},
+                {name: "Peinture acrylique", quantity: "60", unit: "litres"}
+              ],
+              tools: ["Coupe-carrelage", "Truelle", "Rouleaux"],
+              workforce: "1 carreleur + 1 peintre + 1 aide",
+              activities: ["Préparation supports", "Pose carrelage", "Application peinture"]
             },
             {
               name: "Cuisine équipée",
               tradeSkill: "Cuisiniste",
               deliverables: ["Cuisine installée", "Électroménager"],
               duration: "1 semaine",
-              risks: ["Mesures incorrectes", "Livraison équipements"]
+              risks: ["Mesures incorrectes", "Livraison équipements"],
+              materials: [
+                {name: "Caissons cuisine", quantity: "1", unit: "lot"}
+              ],
+              tools: ["Visseuse", "Scie sauteuse", "Niveau"],
+              workforce: "2 monteurs",
+              activities: ["Montage meubles", "Pose plan de travail", "Branchements"]
             },
             {
               name: "Nettoyage et finitions",
               tradeSkill: "Équipe de finition",
               deliverables: ["Nettoyage complet", "Retouches"],
               duration: "1 semaine",
-              risks: ["Détails oubliés"]
+              risks: ["Détails oubliés"],
+              materials: [
+                {name: "Produits de nettoyage", quantity: "1", unit: "lot"}
+              ],
+              tools: ["Aspirateur", "Éponge", "Spatule"],
+              workforce: "2 agents de finition",
+              activities: ["Nettoyage chantier", "Corrections retouches"]
             }
           ]
         },
@@ -338,14 +405,26 @@ class ProjectPlanGenerator {
               tradeSkill: "Foreur",
               deliverables: ["Forage fonctionnel", "Château d'eau installé"],
               duration: "1 semaine",
-              risks: ["Nappe phréatique introuvable", "Qualité de l'eau"]
+              risks: ["Nappe phréatique introuvable", "Qualité de l'eau"],
+              materials: [
+                {name: "Tubes PVC forage", quantity: "40", unit: "mètres"}
+              ],
+              tools: ["Foreuse", "Pompe d'essai", "Générateur"],
+              workforce: "1 foreur + 1 aide",
+              activities: ["Forage", "Essais de pompage", "Installation"]
             },
             {
               name: "Aménagement cour et clôture",
               tradeSkill: "Maçon/Jardinier",
               deliverables: ["Cour aménagée", "Clôture posée"],
               duration: "1-2 semaines",
-              risks: ["Drainage insuffisant"]
+              risks: ["Drainage insuffisant"],
+              materials: [
+                {name: "Gravier décoratif", quantity: "30", unit: "m³"}
+              ],
+              tools: ["Brouette", "Pelle", "Truelle"],
+              workforce: "1 maçon + 1 jardinier",
+              activities: ["Nivellement", "Pose clôture", "Plantations"]
             }
           ]
         }

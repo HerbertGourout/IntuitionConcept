@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, BarChart3, Filter, Grid3X3, DollarSign, TrendingUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, Filter, Grid3X3, DollarSign, TrendingUp } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask } from '../../contexts/projectTypes';
 import TeamService from '../../services/teamService';
 import { TeamMember } from '../../types/team';
 import { transactionService } from '../../services/transactionService';
 import TaskModal from './TaskModal';
-import FinancialDashboard from '../Financial/FinancialDashboard';
+// import FinancialDashboard from '../Financial/FinancialDashboard';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import Badge, { statusToBadge } from '../UI/Badge';
 import ProgressBar from '../UI/ProgressBar';
@@ -372,11 +372,11 @@ const Tasks: React.FC = () => {
                     );
                   })()}
                   {task.assignedTo && Array.isArray(task.assignedTo) && task.assignedTo.length > 0 && (
-  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
-    <Users className="w-3 h-3" />
-    {getTeamMemberNames(task.assignedTo, teamMembers)}
-  </span>
-)}
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
+                      <Users className="w-3 h-3" />
+                      {getTeamMemberNames(task.assignedTo, teamMembers)}
+                    </span>
+                  )}
                   {task.dueDate && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-full text-xs font-medium border border-purple-200">
                       <Calendar className="w-3 h-3" />
@@ -385,13 +385,13 @@ const Tasks: React.FC = () => {
                   )}
                 </div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                {task.name && typeof task.name === 'string' ? task.name : 'Tâche sans nom'}
-              </h4>
+                  {task.name && typeof task.name === 'string' ? task.name : 'Tâche sans nom'}
+                </h4>
                 {task.description && (
                   <p className="text-gray-600 mb-3">{task.description}</p>
                 )}
               
-              {/* Informations financières */}
+                {/* Informations financières */}
               <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-3 border border-gray-200">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="w-4 h-4 text-green-600" />
@@ -445,7 +445,7 @@ const Tasks: React.FC = () => {
                   })()}
                 </div>
               </div>
-            </div>
+              </div>
               <div className="flex items-center gap-2 ml-4">
                 {hasSubtasks && (
                   <button
@@ -506,135 +506,76 @@ const Tasks: React.FC = () => {
     );
   }
 
-  return (
-    <PageContainer className="space-y-6">
-      {/* En-tête */}
-      <div className="glass-card rounded-xl p-6 border border-white/20">
-        <SectionHeader
-          icon={<Target className="w-6 h-6" />}
-          title={`Tâches - ${selectedPhase?.name || 'Aucune phase sélectionnée'}`}
-          subtitle="Organisez et suivez l'avancement de vos tâches"
-          actions={(
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowFinancialDashboard(!showFinancialDashboard)}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl ${
-                  showFinancialDashboard 
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700' 
-                    : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
-                } hover:scale-105`}
-              >
-                <DollarSign className="w-4 h-4" />
-                {showFinancialDashboard ? 'Masquer Budget' : 'Voir Budget'}
-              </button>
-              <button
-                onClick={handleCreateTask}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Nouvelle Tâche
-              </button>
-            </div>
-          )}
-        />
-      </div>
-
-      {/* Dashboard Financier */}
-      {showFinancialDashboard && (
-        <div className="glass-card rounded-xl p-6 border border-white/20">
-          <div className="flex items-center gap-4 mb-6">
-            <TrendingUp className="w-6 h-6 text-green-600" />
-            <h3 className="text-xl font-semibold text-gray-900">
-              Analyse Financière - {selectedPhase?.name || 'Phase sélectionnée'}
-            </h3>
-          </div>
-          <FinancialDashboard 
-            projectId={project?.id || ''}
-            phaseId={selectedPhaseId || undefined}
-            level="phase"
-          />
-        </div>
-      )}
-
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="glass-card rounded-xl p-4 border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total</p>
-              <p className="text-2xl font-bold text-gray-900">{phaseTasks.length}</p>
-            </div>
-            <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Terminées</p>
-              <p className="text-2xl font-bold text-green-600">{phaseTasks.filter(t => t.status === 'done').length}</p>
-            </div>
-            <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 text-white">
-              <CheckCircle className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">En Cours</p>
-              <p className="text-2xl font-bold text-blue-600">{phaseTasks.filter(t => t.status === 'in_progress').length}</p>
-            </div>
-            <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
-              <Clock className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">À Faire</p>
-              <p className="text-2xl font-bold text-gray-600">{phaseTasks.filter(t => t.status === 'todo').length}</p>
-            </div>
-            <div className="p-2 rounded-lg bg-gradient-to-br from-gray-500 to-slate-500 text-white">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sélecteur de phase */}
-      <div className="glass-card rounded-xl p-6 border border-white/20">
-        <div className="flex items-center gap-4 mb-4">
-          <Filter className="w-5 h-5 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Filtrer par phase</h3>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {phases.map((phase) => (
+return (
+  <PageContainer className="space-y-6">
+    {/* Header avec design moderne */}
+    <div className="card-gradient p-6 rounded-xl animate-slideInUp">
+      <SectionHeader
+        icon={<Target className="w-8 h-8 text-glow" />}
+        title={(
+          <span className="heading-2 text-shimmer flex items-center gap-2">
+            Tâches
+            <TrendingUp className="w-6 h-6 text-success animate-pulse" />
+          </span>
+        )}
+        subtitle="Gérez et suivez toutes vos tâches de projet"
+        actions={(
+          <div className="flex gap-3">
             <button
-              key={phase.id}
-              onClick={() => setSelectedPhaseId(phase.id)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                selectedPhaseId === phase.id
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg'
-                  : 'bg-white/50 text-gray-700 hover:bg-white/80 border border-gray-200'
+              onClick={() => setShowFinancialDashboard(!showFinancialDashboard)}
+              className={`btn-secondary btn-morph ${
+                showFinancialDashboard
+                  ? 'bg-gradient-success text-white shadow-glow'
+                  : ''
               }`}
             >
-              {phase.name}
+              <DollarSign className="w-4 h-4" />
+              {showFinancialDashboard ? 'Masquer' : 'Finances'}
             </button>
-          ))}
-        </div>
-      </div>
+            <button
+              className="btn-primary btn-glow animate-float"
+              onClick={() => {
+                setCurrentTask(null);
+                setIsModalVisible(true);
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              Nouvelle Tâche
+            </button>
+          </div>
+        )}
+      />
+    </div>
 
-      {/* Liste des tâches */}
-      <div className="glass-card rounded-xl p-6 border border-white/20">
-        <div className="flex items-center gap-4 mb-6">
-          <Grid3X3 className="w-5 h-5 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">
-            Tâches de la phase ({phaseTasks.length})
-          </h3>
-        </div>
+    {/* Sélecteur de phase avec design moderne */}
+    <div className="card-glass p-6 rounded-xl animate-slideInUp" style={{animationDelay: '0.1s'}}>
+      <div className="flex items-center gap-2 mb-4">
+        <Filter className="w-5 h-5 text-glow" />
+        <h3 className="heading-4 text-shimmer">Filtrer par phase</h3>
+      </div>
+      
+      <select
+        value={selectedPhaseId || ''}
+        onChange={(e) => setSelectedPhaseId(e.target.value || null)}
+        className="form-select form-input-gradient w-full px-4 py-3"
+      >
+        <option value="">Toutes les phases</option>
+        {phases.map(phase => (
+          <option key={phase.id} value={phase.id}>
+            {phase.name} ({phase.tasks?.length || 0} tâches)
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Liste des tâches */}
+    <div className="glass-card rounded-xl p-6 border border-white/20">
+      <div className="flex items-center gap-4 mb-6">
+        <Grid3X3 className="w-5 h-5 text-gray-600" />
+        <h3 className="text-lg font-semibold text-gray-900">
+          Tâches de la phase ({phaseTasks.length})
+        </h3>
+      </div>
 
         {phaseTasks.length === 0 ? (
           <div className="text-center py-12">
@@ -671,8 +612,8 @@ const Tasks: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de tâche */}
-      {isModalVisible && (
+    {/* Modal de tâche */}
+    {isModalVisible && (
         <TaskModal
           isOpen={isModalVisible}
           onClose={() => {

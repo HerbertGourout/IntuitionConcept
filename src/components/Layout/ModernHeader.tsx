@@ -145,8 +145,8 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
       initial="initial"
       animate="animate"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        solid 
-          ? 'bg-white/80 backdrop-blur-xl border-b border-gray-200/50 shadow-lg' 
+        solid
+          ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50'
           : 'bg-transparent'
       }`}
     >
@@ -158,30 +158,17 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
             whileHover="hover"
             className="flex items-center space-x-3"
           >
-            <Link to="/" className="flex items-center space-x-3">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center"
-              >
-                <Zap className="w-6 h-6 text-white" />
-              </motion.div>
-              <div>
-                <motion.h1 
-                  className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  IntuitionConcept
-                </motion.h1>
-                <motion.p 
-                  className="text-xs text-gray-500 -mt-1"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  SaaS pour l'Afrique
-                </motion.p>
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-secondary rounded-xl flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all duration-300 group-hover:scale-105 animate-glow">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
               </div>
+              <span className={`text-xl font-bold ${
+                solid ? 'text-gray-800' : 'text-white drop-shadow-lg'
+              }`}>
+                IntuitionConcept
+              </span>
             </Link>
           </motion.div>
 
@@ -205,8 +192,8 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                     <button className={`flex items-center space-x-1 font-medium transition-colors relative ${
                       isItemActive(item)
                         ? 'text-blue-600'
-                        : solid 
-                          ? 'text-gray-800 hover:text-blue-600' 
+                        : solid
+                          ? 'text-gray-700 hover:text-blue-600'
                           : 'text-white hover:text-blue-200 drop-shadow-lg'
                     }`}>
                       <span className="relative">
@@ -230,8 +217,8 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                       className={`font-medium transition-colors relative ${
                         isItemActive(item)
                           ? 'text-blue-600'
-                          : solid 
-                            ? 'text-gray-800 hover:text-blue-600' 
+                          : solid
+                            ? 'text-gray-700 hover:text-blue-600'
                             : 'text-white hover:text-blue-200 drop-shadow-lg'
                       }`}
                       onClick={(e) => {
@@ -346,7 +333,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
 
             {/* Accès rapide minimal (option A): Launchpad uniquement */}
             {firebaseUser && !inApp && (
-              <div className={`flex items-center gap-4 ${solid ? 'text-gray-800' : 'text-white drop-shadow-lg'}`}>
+              <div className={`flex items-center gap-4 ${solid ? 'text-gray-700' : 'text-white drop-shadow-lg'}`}>
                 <Link to="/app/launchpad" className="hover:text-blue-600 transition-colors font-semibold">Launchpad</Link>
               </div>
             )}
@@ -358,7 +345,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                   <button
                     onClick={() => setIsUserMenuOpen((v) => !v)}
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold select-none border transition-colors ${
-                      solid ? 'bg-white text-gray-700 border-gray-200' : 'bg-white/90 text-gray-800 border-white/50'
+                      solid ? 'bg-gray-100 text-gray-700 border-gray-300' : 'bg-white/90 text-gray-800 border-white/50'
                     }`}
                     title="Compte"
                   >
@@ -407,7 +394,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                     to="/login"
                     className={`font-medium transition-colors ${
                       solid 
-                        ? 'text-gray-800 hover:text-blue-600' 
+                        ? 'text-gray-700 hover:text-blue-600' 
                         : 'text-white hover:text-blue-200 drop-shadow-lg'
                     }`}
                   >
@@ -450,7 +437,9 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 text-gray-700 hover:text-blue-600 transition-colors"
+              className={`p-2 transition-colors ${
+                solid ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-blue-200'
+              }`}
             >
               <AnimatePresence mode="wait">
                 {isMenuOpen ? (

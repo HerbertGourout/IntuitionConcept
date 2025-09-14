@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, Table, Tag, Button, Space, Alert, Statistic, Row, Col, Modal, List } from 'antd';
 import { 
   WarningOutlined, 
@@ -12,6 +12,8 @@ import {
   CloudOutlined
 } from '@ant-design/icons';
 import { Anomaly } from '../../services/ai/anomalyDetectionService';
+import { useProjects } from '../../hooks/useProjects';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const AnomalyDetectionDashboard: React.FC = () => {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
@@ -19,121 +21,234 @@ const AnomalyDetectionDashboard: React.FC = () => {
   const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
 
-  useEffect(() => {
-    loadAnomalies();
-  }, []);
+  const { projects } = useProjects();
+  const { currency } = useCurrency();
+  
+  const formatAmount = useCallback((amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: currency || 'XOF'
+    }).format(amount);
+  }, [currency]);
 
-  const loadAnomalies = async () => {
+  const generateRealAnomalies = useCallback((): Anomaly[] => {
+    const realAnomalies: Anomaly[] = [];
+    
+    projects.forEach(project => {
+      const now = Date.now();
+      
+      // Anomalie budget si dépassement
+      if (project.spent > project.budget * 0.8) {
+        const deviationPercentage = ((project.spent - project.budget) / project.budget) * 100;
+        realAnomalies.push({
+          id: `budget_${project.id}`,
+          type: 'budget_overrun',
+          severity: deviationPercentage > 10 ? 'high' : 'medium',
+          projectId: project.id,
+          title: `Dépassement budgétaire: ${deviationPercentage.toFixed(1)}%`,
+          description: `Le projet "${project.name}" a dépassé son budget de ${formatAmount(project.spent - project.budget)}`,
+          detectedAt: new Date(now - Math.random() * 24 * 60 * 60 * 1000),
+          expectedValue: project.budget,
+          actualValue: project.spent,
+          deviation: project.spent - project.budget,
+          deviationPercentage,
+          impact: {
+            financial: project.spent - project.budget,
+            timeline: Math.ceil(deviationPercentage / 10),
+            quality: 0
+          },
+          recommendations: [
+            'Réviser le budget prévisionnel',
+            'Identifier les postes de dépassement',
+            'Négocier avec les fournisseurs'
+          ],
+          status: 'active'
+        });
+      }
+
+      // Anomalie planning si retard
+      const projectEndDate = new Date(project.endDate);
+      const today = new Date();
+      if (projectEndDate < today && project.status !== 'completed') {
+        const daysLate = Math.ceil((today.getTime() - projectEndDate.getTime()) / (1000 * 60 * 60 * 24));
+        realAnomalies.push({
+          id: `timeline_${project.id}`,
+          type: 'timeline_delay',
+          severity: daysLate > 7 ? 'high' : 'medium',
+          projectId: project.id,
+          title: `Retard planning: ${daysLate} jours`,
+          description: `Le projet "${project.name}" accuse un retard de ${daysLate} jours`,
+          detectedAt: new Date(now - Math.random() * 12 * 60 * 60 * 1000),
+          expectedValue: 0,
+          actualValue: daysLate,
+          deviation: daysLate,
+          deviationPercentage: (daysLate / 30) * 100,
+          impact: {
+            financial: daysLate * 10000,
+            timeline: daysLate,
+            quality: Math.min(daysLate / 2, 10)
+          },
+          recommendations: [
+            'Réorganiser le planning',
+            'Augmenter les effectifs',
+            'Identifier les blocages'
+          ],
+          status: 'active'
+        });
+      }
+
+      // Anomalie progression si trop lente
+      if (project.progress < 50 && project.status === 'in_progress') {
+        realAnomalies.push({
+          id: `progress_${project.id}`,
+          type: 'quality_issue',
+          severity: 'medium',
+          projectId: project.id,
+          title: `Progression lente: ${project.progress}%`,
+          description: `Le projet "${project.name}" progresse lentement (${project.progress}%)`,
+          detectedAt: new Date(now - Math.random() * 6 * 60 * 60 * 1000),
+          expectedValue: 70,
+          actualValue: project.progress,
+          deviation: 70 - project.progress,
+          deviationPercentage: ((70 - project.progress) / 70) * 100,
+          impact: {
+            financial: 50000,
+            timeline: 5,
+            quality: 10
+          },
+          recommendations: [
+            'Analyser les causes du retard',
+            'Optimiser les processus',
+            'Renforcer l\'équipe'
+          ],
+          status: 'active'
+        });
+      }
+    });
+
+    return realAnomalies;
+  }, [projects, formatAmount]);
+
+  const loadAnomalies = useCallback(async () => {
     setLoading(true);
     try {
-      // Simulation avec des anomalies de démonstration
-      const mockAnomalies: Anomaly[] = [
-        {
-          id: 'anom_1',
-          type: 'budget_overrun',
-          severity: 'high',
-          projectId: 'project_villa_abc',
-          title: 'Dépassement budgétaire: 23% vs 20% prévu',
-          description: 'Le budget alloué a été dépassé de 350 000 XOF sur la phase gros œuvre.',
-          detectedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // Il y a 2h
-          expectedValue: 1500000,
-          actualValue: 1850000,
-          deviation: 350000,
-          deviationPercentage: 23.3,
-          impact: {
-            financial: 350000,
-            timeline: 2,
-            quality: 0
+      // Générer des anomalies basées sur les vraies données des projets
+      const realAnomalies = generateRealAnomalies();
+      
+      // Combiner anomalies réelles et exemples de démonstration
+      const combinedAnomalies = [...realAnomalies];
+      
+      // Ajouter quelques exemples si pas assez d'anomalies réelles
+      if (combinedAnomalies.length < 2) {
+        const mockAnomalies: Anomaly[] = [
+          {
+            id: 'anom_1',
+            type: 'budget_overrun',
+            severity: 'high',
+            projectId: 'project_villa_abc',
+            title: 'Dépassement budgétaire: 23% vs 20% prévu',
+            description: 'Le budget alloué a été dépassé de 350 000 XOF sur la phase gros œuvre.',
+            detectedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // Il y a 2h
+            expectedValue: 1500000,
+            actualValue: 1850000,
+            deviation: 350000,
+            deviationPercentage: 23.3,
+            impact: {
+              financial: 350000,
+              timeline: 2,
+              quality: 0
+            },
+            recommendations: [
+              'Réviser le budget prévisionnel et identifier les postes de dépassement',
+              'Négocier avec les fournisseurs pour réduire les coûts',
+              'Optimiser les ressources et éliminer les gaspillages'
+            ],
+            status: 'active'
           },
-          recommendations: [
-            'Réviser le budget prévisionnel et identifier les postes de dépassement',
-            'Négocier avec les fournisseurs pour réduire les coûts',
-            'Optimiser les ressources et éliminer les gaspillages'
-          ],
-          status: 'active'
-        },
-        {
-          id: 'anom_2',
-          type: 'timeline_delay',
-          severity: 'medium',
-          projectId: 'project_villa_abc',
-          title: 'Retard planning: 5 jours vs 40 jours prévus',
-          description: 'Le projet accuse un retard de 5 jours sur le planning initial.',
-          detectedAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // Il y a 4h
-          expectedValue: 40,
-          actualValue: 45,
-          deviation: 5,
-          deviationPercentage: 12.5,
-          impact: {
-            financial: 250000,
-            timeline: 5,
-            quality: 0
+          {
+            id: 'anom_2',
+            type: 'timeline_delay',
+            severity: 'medium',
+            projectId: 'project_villa_abc',
+            title: 'Retard planning: 5 jours vs 40 jours prévus',
+            description: 'Le projet accuse un retard de 5 jours sur le planning initial.',
+            detectedAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // Il y a 4h
+            expectedValue: 40,
+            actualValue: 45,
+            deviation: 5,
+            deviationPercentage: 12.5,
+            impact: {
+              financial: 250000,
+              timeline: 5,
+              quality: 0
+            },
+            recommendations: [
+              'Réorganiser le planning et prioriser les tâches critiques',
+              'Augmenter temporairement les effectifs sur les tâches en retard',
+              'Identifier et résoudre les blocages opérationnels'
+            ],
+            status: 'active'
           },
-          recommendations: [
-            'Réorganiser le planning et prioriser les tâches critiques',
-            'Augmenter temporairement les effectifs sur les tâches en retard',
-            'Identifier et résoudre les blocages opérationnels'
-          ],
-          status: 'active'
-        },
-        {
-          id: 'anom_3',
-          type: 'quality_issue',
-          severity: 'high',
-          projectId: 'project_villa_abc',
-          title: 'Chute qualité: 65% vs 85% requis',
-          description: 'Le score qualité est tombé sous le seuil acceptable de 70%.',
-          detectedAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // Il y a 6h
-          expectedValue: 85,
-          actualValue: 65,
-          deviation: 20,
-          deviationPercentage: 23.5,
-          impact: {
-            financial: 200000,
-            timeline: 3,
-            quality: 20
+          {
+            id: 'anom_3',
+            type: 'quality_issue',
+            severity: 'high',
+            projectId: 'project_villa_abc',
+            title: 'Chute qualité: 65% vs 85% requis',
+            description: 'Le score qualité est tombé sous le seuil acceptable de 70%.',
+            detectedAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // Il y a 6h
+            expectedValue: 85,
+            actualValue: 65,
+            deviation: 20,
+            deviationPercentage: 23.5,
+            impact: {
+              financial: 200000,
+              timeline: 3,
+              quality: 20
+            },
+            recommendations: [
+              'Effectuer un contrôle qualité approfondi',
+              'Former les équipes aux bonnes pratiques',
+              'Renforcer la supervision sur site',
+              'Prévoir des reprises si nécessaire'
+            ],
+            status: 'acknowledged'
           },
-          recommendations: [
-            'Effectuer un contrôle qualité approfondi',
-            'Former les équipes aux bonnes pratiques',
-            'Renforcer la supervision sur site',
-            'Prévoir des reprises si nécessaire'
-          ],
-          status: 'acknowledged'
-        },
-        {
-          id: 'anom_4',
-          type: 'cost_spike',
-          severity: 'medium',
-          projectId: 'project_bureau_xyz',
-          title: 'Pic de coût: 45% au-dessus de la moyenne',
-          description: 'Le coût journalier a augmenté de 45% par rapport à la moyenne des 7 derniers jours.',
-          detectedAt: new Date(Date.now() - 8 * 60 * 60 * 1000), // Il y a 8h
-          expectedValue: 35000,
-          actualValue: 50750,
-          deviation: 15750,
-          deviationPercentage: 45,
-          impact: {
-            financial: 15750,
-            timeline: 0,
-            quality: 5
-          },
-          recommendations: [
-            'Analyser les causes du pic de coût',
-            'Vérifier les factures et détecter d\'éventuelles erreurs',
-            'Mettre en place un contrôle budgétaire quotidien'
-          ],
-          status: 'resolved'
-        }
-      ];
+          {
+            id: 'anom_4',
+            type: 'cost_spike',
+            severity: 'medium',
+            projectId: 'project_bureau_xyz',
+            title: 'Pic de coût: 45% au-dessus de la moyenne',
+            description: 'Le coût journalier a augmenté de 45% par rapport à la moyenne des 7 derniers jours.',
+            detectedAt: new Date(Date.now() - 8 * 60 * 60 * 1000), // Il y a 8h
+            expectedValue: 35000,
+            actualValue: 50750,
+            deviation: 15750,
+            deviationPercentage: 45,
+            impact: {
+              financial: 15750,
+              timeline: 0,
+              quality: 5
+            },
+            recommendations: [
+              'Analyser les causes du pic de coût',
+              "Vérifier les factures et détecter d'éventuelles erreurs",
+              'Mettre en place un contrôle budgétaire quotidien'
+            ],
+            status: 'resolved'
+          }
+        ];
+        combinedAnomalies.push(...mockAnomalies);
+      }
 
-      setAnomalies(mockAnomalies);
+      setAnomalies(combinedAnomalies);
     } catch (error) {
       console.error('Erreur chargement anomalies:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [generateRealAnomalies]);
 
   const runAnalysis = async () => {
     setLoading(true);

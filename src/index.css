@@ -1,4 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import './styles/design-system/tokens/colors.css';
+@import './styles/design-system/tokens/typography.css';
+@import './styles/design-system/tokens/spacing.css';
+@import './styles/design-system/tokens/animations.css';
+@import './styles/design-system/components/buttons.css';
+@import './styles/design-system/components/cards.css';
+@import './styles/design-system/components/forms.css';
 @import './styles/effects.css';
 @import './styles/glassmorphism.css';
 

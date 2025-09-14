@@ -113,18 +113,58 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const editExpense = async (_id: string, _updates: Partial<FinancialRecord>) => {
-    // Pour l'instant, on garde la logique existante
-    // TODO: Implémenter la mise à jour des enregistrements financiers dans ProjectService
-    console.warn('editExpense: Migration vers ProjectService en cours');
+  const editExpense = async (id: string, updates: Partial<FinancialRecord>) => {
+    try {
+      if (!currentProjectId) {
+        throw new Error('Aucun projet sélectionné');
+      }
+      
+      await ProjectService.updateFinancialRecord(currentProjectId, id, updates);
+      
+      // Mettre à jour l'état local
+      setProjects(prevProjects => 
+        prevProjects.map(project => {
+          if (project.id === currentProjectId) {
+            return {
+              ...project,
+              financialRecords: (project.financialRecords || []).map((record: FinancialRecord) => 
+                record.id === id ? { ...record, ...updates } : record
+              )
+            };
+          }
+          return project;
+        })
+      );
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la dépense:', error);
+      throw error;
+    }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const deleteExpense = async (_id: string) => {
-    // Pour l'instant, on garde la logique existante
-    // TODO: Implémenter la suppression des enregistrements financiers dans ProjectService
-    console.warn('deleteExpense: Migration vers ProjectService en cours');
+  const deleteExpense = async (id: string) => {
+    try {
+      if (!currentProjectId) {
+        throw new Error('Aucun projet sélectionné');
+      }
+      
+      await ProjectService.deleteFinancialRecord(currentProjectId, id);
+      
+      // Mettre à jour l'état local
+      setProjects(prevProjects => 
+        prevProjects.map(project => {
+          if (project.id === currentProjectId) {
+            return {
+              ...project,
+              financialRecords: (project.financialRecords || []).filter((record: FinancialRecord) => record.id !== id)
+            };
+          }
+          return project;
+        })
+      );
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la dépense:', error);
+      throw error;
+    }
   };
 
   // Plus de persistance locale - tout est géré par Firebase

@@ -38,7 +38,7 @@ export const BudgetOverview: React.FC = () => {
     const isOverBudget = totalSpent > totalEstimated;
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="space-y-6">
             {/* Header compact - Style Planning */}
             <div className="glass-card bg-gradient-to-r from-green-50 via-white to-blue-50">
                 <div className="flex items-center justify-between">
@@ -192,7 +192,7 @@ export const BudgetOverview: React.FC = () => {
                 )}
             </div>
 
-            {/* Analyse par phases */}
+            {/* Analyse par phases avec pagination */}
             {phases.length > 0 && (
                 <div className="glass-card p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -200,7 +200,7 @@ export const BudgetOverview: React.FC = () => {
                         Analyse par phases ({phases.length} phases)
                     </h3>
                     
-                    <div className="space-y-4">
+                    <div className="max-h-96 overflow-y-auto space-y-4 pr-2">
                         {phases.map((phase) => {
                             const tasks = phase.tasks || [];
                             const estimated = typeof phase.estimatedBudget === 'number' ? phase.estimatedBudget : 0;

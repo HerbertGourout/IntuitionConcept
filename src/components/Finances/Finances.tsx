@@ -29,6 +29,14 @@ import { BudgetIntegrationService } from '../../services/budgetIntegrationServic
 import { v4 as uuidv4 } from 'uuid';
 import ProgressBar from '../UI/ProgressBar';
 
+// Import des formulaires Budget/Finances
+import ExpenseForm from '../Budget/ExpenseForm';
+import ExpenseList from '../Budget/ExpenseList';
+import { ActualExpenseForm } from '../Costs/ActualExpenseForm';
+import { EstimatedCostForm } from '../Costs/EstimatedCostForm';
+import BudgetOverview from '../Costs/BudgetOverview';
+import AdvancedFinancialWidget from '../Dashboard/widgets/AdvancedFinancialWidget';
+
 interface FinancialSummary {
   totalBudget: number;
   totalSpent: number;
@@ -111,7 +119,7 @@ const FinancesAdvanced: React.FC = () => {
   ]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'analytics' | 'budget' | 'forecast'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'analytics' | 'budget' | 'forecast' | 'expenses' | 'costs' | 'advanced'>('overview');
   
   const currentProject = projectContext.currentProject;
   const { formatAmount } = useCurrency();
@@ -412,19 +420,22 @@ const FinancesAdvanced: React.FC = () => {
 
       {/* Navigation Tabs */}
       <div className="glass-card p-1 rounded-xl">
-        <div className="flex space-x-1">
+        <div className="flex space-x-1 flex-wrap">
           {[
             { id: 'overview', label: 'Vue d\'ensemble', icon: Target },
             { id: 'transactions', label: 'Transactions', icon: FileText },
             { id: 'analytics', label: 'Analyses', icon: BarChart3 },
             { id: 'budget', label: 'Budget', icon: Calculator },
-            { id: 'forecast', label: 'Prévisions', icon: TrendingUp }
+            { id: 'forecast', label: 'Prévisions', icon: TrendingUp },
+            { id: 'expenses', label: 'Dépenses', icon: Plus },
+            { id: 'costs', label: 'Coûts', icon: Wrench },
+            { id: 'advanced', label: 'Avancé', icon: Activity }
           ].map((tab) => {
             const IconComponent = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'overview' | 'transactions' | 'analytics' | 'budget' | 'forecast')}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   activeTab === tab.id
                     ? 'bg-white shadow-md text-blue-600 border border-blue-200'
@@ -470,15 +481,15 @@ const FinancesAdvanced: React.FC = () => {
             {integratedMetrics && (
               <div className="glass-card p-6 rounded-xl">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-600" />
+                  <TrendingUp className="w-8 h-8 text-white opacity-80" />
                   Bons d'Achat & Intégration Budget
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <div className="text-2xl font-bold text-blue-600">{integratedMetrics.totalPurchaseOrders}</div>
                     <div className="text-sm text-blue-700">Bons d'achat total</div>
                   </div>
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="card-base card-gradient hover:card-interactive animate-slide-in-up p-6">
                     <div className="text-2xl font-bold text-green-600">{formatAmount(integratedMetrics.totalPurchaseOrderAmount)}</div>
                     <div className="text-sm text-green-700">Montant total</div>
                   </div>
@@ -580,23 +591,28 @@ const FinancesAdvanced: React.FC = () => {
               </div>
 
               <div className="glass-card p-6 rounded-xl">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Indicateurs Clés</h3>
+                <h3 className="heading-5 text-white">Budget Total</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Variance Budget</span>
-                    <span className={`font-medium ${
-                      financialSummary.varianceFromBudget > 0 ? 'text-red-600' : 'text-green-600'
-                    }`}>
-                      {financialSummary.varianceFromBudget > 0 ? '+' : ''}{formatAmount(financialSummary.varianceFromBudget)}
-                    </span>
+                    <div className="flex items-center">
+                      <Wrench size={16} className="text-blue-600 mr-2" />
+                      <span className="text-sm text-gray-600">Équipements</span>
+                    </div>
+                    <span className="font-medium">{formatAmount(financialSummary.equipmentCosts)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Prévision Finale</span>
-                    <span className="font-medium">{formatAmount(financialSummary.forecastedCompletion)}</span>
+                    <div className="flex items-center">
+                      <Users size={16} className="text-green-600 mr-2" />
+                      <span className="text-sm text-gray-600">Main d'œuvre</span>
+                    </div>
+                    <span className="font-medium">{formatAmount(financialSummary.laborCosts)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Paiements en Attente</span>
-                    <span className="font-medium text-orange-600">{formatAmount(financialSummary.pendingPayments)}</span>
+                    <div className="flex items-center">
+                      <Building size={16} className="text-purple-600 mr-2" />
+                      <span className="text-sm text-gray-600">Matériaux</span>
+                    </div>
+                    <span className="font-medium">{formatAmount(financialSummary.materialCosts)}</span>
                   </div>
                 </div>
               </div>
@@ -828,8 +844,8 @@ const FinancesAdvanced: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Contrôle Budgétaire</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-white/50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{formatAmount(financialSummary.totalBudget)}</div>
-                  <div className="text-sm text-gray-600">Budget Alloué</div>
+                  <p className="text-3xl font-bold text-white mb-2 text-glow">{formatAmount(financialSummary.totalBudget)}</p>
+                  <p className="text-sm text-white opacity-70">Alloué au projet</p>
                 </div>
                 <div className="text-center p-4 bg-white/50 rounded-lg">
                   <div className="text-2xl font-bold text-red-600">{formatAmount(financialSummary.totalSpent)}</div>
@@ -969,6 +985,57 @@ const FinancesAdvanced: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Onglet Dépenses */}
+        {activeTab === 'expenses' && (
+          <div className="space-y-6">
+            <div className="glass-card p-6 rounded-xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Gestion des Dépenses</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-md font-medium text-gray-800 mb-3">Ajouter une Dépense</h4>
+                  <ExpenseForm onSubmit={() => {}} projectId={currentProject.id} />
+                </div>
+                <div>
+                  <h4 className="text-md font-medium text-gray-800 mb-3">Liste des Dépenses</h4>
+                  <ExpenseList expenses={[]} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Onglet Coûts */}
+        {activeTab === 'costs' && (
+          <div className="space-y-6">
+            <div className="glass-card p-6 rounded-xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Gestion des Coûts</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-md font-medium text-gray-800 mb-3">Coûts Réels</h4>
+                  <ActualExpenseForm onSave={() => {}} costItem={{}} />
+                </div>
+                <div>
+                  <h4 className="text-md font-medium text-gray-800 mb-3">Coûts Estimés</h4>
+                  <EstimatedCostForm onSave={() => {}} projectId={currentProject.id} />
+                </div>
+              </div>
+              <div className="mt-6">
+                <BudgetOverview />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Onglet Avancé */}
+        {activeTab === 'advanced' && (
+          <div className="space-y-6">
+            <div className="glass-card p-6 rounded-xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Analytics Financières Avancées</h3>
+              <AdvancedFinancialWidget />
             </div>
           </div>
         )}

@@ -1,35 +1,41 @@
 import React, { useState } from 'react';
 import { 
-  Truck, 
-  Euro, 
-  FileText, 
+  Home, 
   BarChart3, 
-  Users,
-  Calendar,
-  MapPin,
+  Users, 
+  FileText, 
+  Settings, 
+  Calendar, 
+  Hammer, 
+  Package, 
+  Euro, 
+  PieChart, 
+  TrendingUp, 
+  ShoppingCart, 
+  CreditCard, 
+  MapPin, 
+  Bell, 
+  Wrench, 
   ChevronLeft,
-  PieChart,
   HardHat,
-  Hammer,
   Building,
-  Wrench,
-  Clock,
+  Truck,
   Target,
-  ShoppingCart,
-  CreditCard,
-  Bell,
-  Layout,
-  TrendingUp
+  Clock
 } from 'lucide-react';
+
+interface Project {
+  id: string;
+  name: string;
+}
 
 interface SidebarProps {
   activeSection: string;
-  onNavigate: (section: string, id?: string) => void;
+  onNavigate: (section: string) => void;
   collapsed: boolean;
   onCollapse: (collapsed: boolean) => void;
-  onCreateProject: () => void;
   currentProjectId: string | null;
-  projects: Array<{ id: string; name: string }>;
+  projects: Project[];
   onProjectSelect: (projectId: string | null) => void;
 }
 
@@ -38,7 +44,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   onNavigate, 
   collapsed, 
   onCollapse,
-  onCreateProject,
   currentProjectId,
   projects,
   onProjectSelect
@@ -118,17 +123,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       hoverColor: 'hover:bg-indigo-500/20',
       description: 'Planification projet',
       status: currentProjectId ? 'active' : 'disabled'
-    },
-    { 
-      id: 'drag-drop-planning', 
-      label: 'Planning Interactif', 
-      icon: Layout, 
-      disabled: false,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-600/10',
-      hoverColor: 'hover:bg-blue-600/20',
-      description: 'Planning par glisser-déposer',
-      status: 'active'
     },
     { 
       id: 'finances', 
@@ -312,13 +306,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
           
-          <button
-            onClick={onCreateProject}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg flex items-center justify-center space-x-2"
-          >
-            <Building className="w-4 h-4" />
-            <span>Nouveau Projet</span>
-          </button>
         </div>
       )}
       

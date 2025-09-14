@@ -8,7 +8,7 @@ interface Country {
   currency: string;
   currencySymbol: string;
   flag: string;
-  region: 'west' | 'central' | 'maghreb';
+  region: 'west' | 'central' | 'east' | 'south' | 'maghreb';
   mobileMoneyProviders: string[];
 }
 
@@ -22,22 +22,51 @@ const SUPPORTED_COUNTRIES: Country[] = [
   { code: 'TG', name: 'Togo', currency: 'XOF', currencySymbol: 'FCFA', flag: '🇹🇬', region: 'west', mobileMoneyProviders: ['Moov Money', 'T-Money'] },
   { code: 'BJ', name: 'Bénin', currency: 'XOF', currencySymbol: 'FCFA', flag: '🇧🇯', region: 'west', mobileMoneyProviders: ['MTN Money', 'Moov Money'] },
   { code: 'GW', name: 'Guinée-Bissau', currency: 'XOF', currencySymbol: 'FCFA', flag: '🇬🇼', region: 'west', mobileMoneyProviders: ['Orange Money'] },
+  { code: 'GN', name: 'Guinée', currency: 'GNF', currencySymbol: 'GNF', flag: '🇬🇳', region: 'west', mobileMoneyProviders: ['Orange Money', 'MTN Money'] },
+  { code: 'LR', name: 'Libéria', currency: 'LRD', currencySymbol: 'L$', flag: '🇱🇷', region: 'west', mobileMoneyProviders: ['Orange Money', 'Lonestar Cell MTN'] },
+  { code: 'SL', name: 'Sierra Leone', currency: 'SLL', currencySymbol: 'Le', flag: '🇸🇱', region: 'west', mobileMoneyProviders: ['Orange Money', 'Airtel Money'] },
 
   // Afrique Centrale (BEAC - XAF)
   { code: 'CM', name: 'Cameroun', currency: 'XAF', currencySymbol: 'FCFA', flag: '🇨🇲', region: 'central', mobileMoneyProviders: ['Orange Money', 'MTN Money'] },
   { code: 'GA', name: 'Gabon', currency: 'XAF', currencySymbol: 'FCFA', flag: '🇬🇦', region: 'central', mobileMoneyProviders: ['Airtel Money', 'Moov Money'] },
   { code: 'TD', name: 'Tchad', currency: 'XAF', currencySymbol: 'FCFA', flag: '🇹🇩', region: 'central', mobileMoneyProviders: ['Airtel Money', 'Tigo Cash'] },
   { code: 'CF', name: 'République Centrafricaine', currency: 'XAF', currencySymbol: 'FCFA', flag: '🇨🇫', region: 'central', mobileMoneyProviders: ['Orange Money'] },
+  { code: 'CG', name: 'République du Congo', currency: 'XAF', currencySymbol: 'FCFA', flag: '🇨🇬', region: 'central', mobileMoneyProviders: ['Airtel Money', 'MTN Money'] },
+  { code: 'CD', name: 'République Démocratique du Congo', currency: 'CDF', currencySymbol: 'FC', flag: '🇨🇩', region: 'central', mobileMoneyProviders: ['Orange Money', 'Vodacom M-Pesa', 'Airtel Money'] },
+  { code: 'GQ', name: 'Guinée Équatoriale', currency: 'XAF', currencySymbol: 'FCFA', flag: '🇬🇶', region: 'central', mobileMoneyProviders: ['Orange Money'] },
+
+  // Afrique de l'Est
+  { code: 'KE', name: 'Kenya', currency: 'KES', currencySymbol: 'KSh', flag: '🇰🇪', region: 'east', mobileMoneyProviders: ['M-Pesa', 'Airtel Money', 'T-Kash'] },
+  { code: 'TZ', name: 'Tanzanie', currency: 'TZS', currencySymbol: 'TSh', flag: '🇹🇿', region: 'east', mobileMoneyProviders: ['M-Pesa', 'Airtel Money', 'Tigo Pesa'] },
+  { code: 'UG', name: 'Ouganda', currency: 'UGX', currencySymbol: 'USh', flag: '🇺🇬', region: 'east', mobileMoneyProviders: ['MTN Mobile Money', 'Airtel Money'] },
+  { code: 'RW', name: 'Rwanda', currency: 'RWF', currencySymbol: 'RF', flag: '🇷🇼', region: 'east', mobileMoneyProviders: ['MTN Mobile Money', 'Airtel Money'] },
+  { code: 'BI', name: 'Burundi', currency: 'BIF', currencySymbol: 'FBu', flag: '🇧🇮', region: 'east', mobileMoneyProviders: ['Ecocash', 'U-Money'] },
+  { code: 'ET', name: 'Éthiopie', currency: 'ETB', currencySymbol: 'Br', flag: '🇪🇹', region: 'east', mobileMoneyProviders: ['M-Birr', 'HelloCash'] },
+
+  // Afrique Australe
+  { code: 'ZA', name: 'Afrique du Sud', currency: 'ZAR', currencySymbol: 'R', flag: '🇿🇦', region: 'south', mobileMoneyProviders: ['FNB eWallet', 'Nedbank Send-iMali'] },
+  { code: 'ZW', name: 'Zimbabwe', currency: 'USD', currencySymbol: '$', flag: '🇿🇼', region: 'south', mobileMoneyProviders: ['EcoCash', 'OneMoney'] },
+  { code: 'ZM', name: 'Zambie', currency: 'ZMW', currencySymbol: 'ZK', flag: '🇿🇲', region: 'south', mobileMoneyProviders: ['MTN Mobile Money', 'Airtel Money'] },
+  { code: 'MW', name: 'Malawi', currency: 'MWK', currencySymbol: 'MK', flag: '🇲🇼', region: 'south', mobileMoneyProviders: ['TNM Mpamba', 'Airtel Money'] },
+  { code: 'MZ', name: 'Mozambique', currency: 'MZN', currencySymbol: 'MT', flag: '🇲🇿', region: 'south', mobileMoneyProviders: ['M-Pesa', 'Mkesh'] },
+  { code: 'BW', name: 'Botswana', currency: 'BWP', currencySymbol: 'P', flag: '🇧🇼', region: 'south', mobileMoneyProviders: ['Orange Money', 'Mascom MyZaka'] },
+  { code: 'NA', name: 'Namibie', currency: 'NAD', currencySymbol: 'N$', flag: '🇳🇦', region: 'south', mobileMoneyProviders: ['MTC Mobile Money'] },
+  { code: 'SZ', name: 'Eswatini', currency: 'SZL', currencySymbol: 'E', flag: '🇸🇿', region: 'south', mobileMoneyProviders: ['MTN Mobile Money'] },
+  { code: 'LS', name: 'Lesotho', currency: 'LSL', currencySymbol: 'M', flag: '🇱🇸', region: 'south', mobileMoneyProviders: ['Vodacom M-Pesa', 'EcoCash'] },
 
   // Maghreb
   { code: 'MA', name: 'Maroc', currency: 'MAD', currencySymbol: 'DH', flag: '🇲🇦', region: 'maghreb', mobileMoneyProviders: ['Orange Money', 'inwi money'] },
   { code: 'DZ', name: 'Algérie', currency: 'DZD', currencySymbol: 'DA', flag: '🇩🇿', region: 'maghreb', mobileMoneyProviders: ['Mobilis Money', 'Djezzy Cash'] },
-  { code: 'TN', name: 'Tunisie', currency: 'TND', currencySymbol: 'DT', flag: '🇹🇳', region: 'maghreb', mobileMoneyProviders: ['Orange Money', 'Ooredoo Money'] }
+  { code: 'TN', name: 'Tunisie', currency: 'TND', currencySymbol: 'DT', flag: '🇹🇳', region: 'maghreb', mobileMoneyProviders: ['Orange Money', 'Ooredoo Money'] },
+  { code: 'LY', name: 'Libye', currency: 'LYD', currencySymbol: 'LD', flag: '🇱🇾', region: 'maghreb', mobileMoneyProviders: ['Libyana Money', 'Al Madar Cash'] },
+  { code: 'EG', name: 'Égypte', currency: 'EGP', currencySymbol: 'E£', flag: '🇪🇬', region: 'maghreb', mobileMoneyProviders: ['Orange Cash', 'Vodafone Cash', 'Etisalat Cash'] }
 ];
 
 const REGION_LABELS = {
   west: 'Afrique de l\'Ouest (BCEAO)',
   central: 'Afrique Centrale (BEAC)',
+  east: 'Afrique de l\'Est',
+  south: 'Afrique Australe',
   maghreb: 'Maghreb'
 };
 
@@ -83,20 +112,31 @@ const CompactCountrySelector: React.FC<CompactCountrySelectorProps> = ({
         <div className="flex items-center gap-2 mb-2">
           <Globe className="w-5 h-5 text-blue-600" />
           <span className="font-medium text-gray-700">Sélectionnez votre marché</span>
+          <span className="text-red-500 font-medium">*</span>
           <Badge count={SUPPORTED_COUNTRIES.length} className="bg-blue-600" />
         </div>
+        {!selectedCountry && (
+          <div className="text-sm text-red-600 mb-2">
+            ⚠️ La sélection du pays est obligatoire pour afficher les tarifs et procéder au paiement
+          </div>
+        )}
         
         <Select
-          placeholder="Choisissez votre pays pour voir les tarifs locaux"
+          placeholder="⚠️ Sélection obligatoire - Choisissez votre pays"
           value={selectedCountry?.code}
           onChange={handleCountryChange}
           className="w-full"
           size="large"
           showSearch
+          allowClear={false}
+          status={!selectedCountry ? 'error' : undefined}
           filterOption={(input, option) => {
             if (!option?.country) return false;
-            return option.country.name.toLowerCase().includes(input.toLowerCase()) ||
-                   option.country.currency.toLowerCase().includes(input.toLowerCase());
+            const searchTerm = input.toLowerCase();
+            return option.country.name.toLowerCase().includes(searchTerm) ||
+                   option.country.currency.toLowerCase().includes(searchTerm) ||
+                   option.country.currencySymbol.toLowerCase().includes(searchTerm) ||
+                   option.country.code.toLowerCase().includes(searchTerm);
           }}
           options={countryOptions}
           optionRender={(option) => (

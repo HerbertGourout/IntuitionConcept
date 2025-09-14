@@ -156,12 +156,7 @@ class BarCalculator {
     const leftPercent = Math.max(0, (leftDays / daysToShow) * 100);
     const widthPercent = Math.min((durationDays / daysToShow) * 100, ((daysToShow - leftDays) / daysToShow) * 100);
     
-    console.log('🟦 PERCENTAGE DEBUG', {
-      name: task.name,
-      leftDays, durationDays, daysToShow,
-      leftPercent: leftPercent.toFixed(1) + '%',
-      widthPercent: widthPercent.toFixed(1) + '%'
-    });
+    // Debug logs removed for production
     
     return {
       leftPercent,
@@ -180,7 +175,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
   setVisibleStartDate,
   daysToShow
 }) => {
-  const [debug, setDebug] = React.useState(false);
+  // Debug mode removed for production
   const rowHeight = 44; // Hauteur de ligne compacte
 
   const processedTasks = useMemo(() => {
@@ -299,11 +294,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
                 <Target className="w-4 h-4" />
                 Ajuster aux tâches
               </button>
-              {/* Switch debug visuel */}
-              <label className="flex items-center gap-1 ml-3 cursor-pointer select-none text-xs text-gray-600">
-                <input type="checkbox" checked={debug} onChange={e => setDebug(e.target.checked)} />
-                <span>Debug visuel</span>
-              </label>
+              {/* Debug mode removed for production */}
             </div>
           )}
         />
@@ -322,11 +313,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
             <strong>Barres affichées:</strong> {taskBars.length}
           </div>
         </div>
-        {debug && (
-          <div className="mt-2 text-xs text-red-700">
-            <strong>MODE DEBUG VISUEL ACTIVÉ</strong> : surlignage, overlays, alertes. Vérifiez les valeurs left/width et la synchronisation timeline/barres.
-          </div>
-        )}
+        {/* Debug mode removed for production */}
       </div>
 
       {/* Timeline et barres */}
@@ -341,15 +328,9 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
                   className={`text-xs font-medium text-gray-600 text-center border-r border-gray-200 last:border-r-0 py-2 px-1 flex-1 ${date.toDateString() === new Date().toDateString()
                       ? 'bg-blue-100 text-blue-700 font-bold'
                       : 'text-gray-700 hover:bg-gray-50'
-                  } ${debug ? 'relative' : ''}`}
-                  style={{ borderTop: debug ? '2px solid red' : undefined }}
+                  }`}
                 >
                   {DateUtils.formatDate(date)}
-                  {debug && (
-                    <div className="absolute left-0 top-0 w-full text-[10px] text-red-600 bg-white/80 border-t border-red-400">
-                      #{idx} | {date.toISOString().slice(0, 10)}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -367,7 +348,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
                   <div key={task.id} className="relative">
                     {/* Barre de tâche */}
                     <div
-                      className={`absolute h-9 rounded-lg ${task.color} flex items-center text-white text-sm px-3 shadow-md border border-white/30 overflow-hidden ${debug ? 'ring-2 ring-red-400' : ''}`}
+                      className={`absolute h-9 rounded-lg ${task.color} flex items-center text-white text-sm px-3 shadow-md border border-white/30 overflow-hidden`}
                       style={{
                         left: `${bar!.leftPercent}%`,
                         width: `${bar!.widthPercent}%`,

@@ -68,16 +68,14 @@ const Layout: React.FC<LayoutProps> = ({
       <div className="flex flex-1 mt-20">
         <Sidebar
           collapsed={sidebarCollapsed}
-          onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          activeSection={activeSection}
-          onNavigate={(section) => {
-            onNavigate(section);
-            // Fermer automatiquement la sidebar sur mobile après navigation
-            if (window.innerWidth < 768) {
+          onCollapse={(collapsed) => {
+            setSidebarCollapsed(collapsed);
+            if (window.innerWidth < 1024 && !collapsed) {
               setSidebarCollapsed(true);
             }
           }}
-          onCreateProject={onCreateProject}
+          activeSection={activeSection}
+          onNavigate={onNavigate}
           currentProjectId={currentProjectId}
           projects={projects}
           onProjectSelect={onProjectSelect}
@@ -87,7 +85,6 @@ const Layout: React.FC<LayoutProps> = ({
           {/* Sous-entête sticky contextuel */}
           <AppSubheader
             title={sectionTitles[activeSection] || 'Section'}
-            onCreateProject={onCreateProject}
           />
           <main className="flex-1 overflow-y-auto p-4 md:p-6">
             {children}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Grid, List, Building2, Filter, Sparkles, TrendingUp } from 'lucide-react';
+import { Plus, Search, Grid, List, Building2, Filter, TrendingUp } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import { useProjects } from '../../hooks/useProjects';
 import CreateProjectModal from './CreateProjectModal';
@@ -67,20 +67,21 @@ const Projects: React.FC = () => {
 
   return (
     <PageContainer className="space-y-6">
-        {/* Header avec design glassmorphism */}
-        <div className="glass-card p-6 rounded-xl">
+        {/* Header avec design moderne */}
+        <div className="card-gradient p-6 rounded-xl animate-slideInUp">
           <SectionHeader
-            icon={<Building2 className="w-8 h-8 text-blue-600" />}
+            icon={<Building2 className="w-8 h-8 text-glow" />}
             title={(
-              <span className="flex items-center gap-2">Projets <TrendingUp className="w-6 h-6 text-green-500" /></span>
+              <span className="heading-2 text-shimmer flex items-center gap-2">
+                Projets <TrendingUp className="w-6 h-6 text-success animate-pulse" />
+              </span>
             )}
             subtitle="Gérez et supervisez tous vos projets BTP"
             actions={(
               <button
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:shadow-lg hover:scale-105"
                 onClick={() => setIsCreateModalOpen(true)}
               >
-                <Sparkles className="w-5 h-5" />
                 <Plus className="w-4 h-4" />
                 Nouveau Projet
               </button>
@@ -88,11 +89,11 @@ const Projects: React.FC = () => {
           />
         </div>
 
-        {/* Filtres avec design glassmorphism */}
-        <div className="glass-card p-6 rounded-xl">
+        {/* Filtres avec design moderne */}
+        <div className="card-glass p-6 rounded-xl animate-slideInUp" style={{animationDelay: '0.1s'}}>
           <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Filtres et recherche</h3>
+            <Filter className="w-5 h-5 text-glow" />
+            <h3 className="heading-4 text-shimmer">Filtres et recherche</h3>
           </div>
           
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
@@ -104,14 +105,14 @@ const Projects: React.FC = () => {
                   placeholder="Rechercher un projet..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 pr-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 hover:border-blue-300 transition-all duration-300 placeholder-gray-400 w-full sm:w-80"
+                  className="form-input form-input-gradient pl-12 pr-4 py-3 w-full sm:w-80"
                 />
               </div>
 
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 hover:border-blue-300 transition-all duration-300"
+                className="form-select form-input-gradient px-4 py-3"
               >
                 {statusOptions.map(option => (
                   <option key={option.value} value={option.value}>
@@ -126,8 +127,8 @@ const Projects: React.FC = () => {
                 onClick={() => setViewMode('grid')}
                 className={`p-3 rounded-xl transition-all duration-300 ${
                   viewMode === 'grid'
-                    ? 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-600 shadow-md'
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100/50'
+                    ? 'bg-gradient-primary text-white shadow-glow'
+                    : 'text-muted hover:text-primary hover:bg-glass'
                 }`}
               >
                 <Grid className="w-5 h-5" />
@@ -136,8 +137,8 @@ const Projects: React.FC = () => {
                 onClick={() => setViewMode('list')}
                 className={`p-3 rounded-xl transition-all duration-300 ${
                   viewMode === 'list'
-                    ? 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-600 shadow-md'
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100/50'
+                    ? 'bg-gradient-primary text-white shadow-glow'
+                    : 'text-muted hover:text-primary hover:bg-glass'
                 }`}
               >
                 <List className="w-5 h-5" />
@@ -146,22 +147,14 @@ const Projects: React.FC = () => {
           </div>
         </div>
 
-        {/* Projects Grid/List avec design glassmorphism */}
+        {/* Projects Grid/List avec design moderne */}
         {projects.length === 0 ? (
-          <div className="glass-card p-12 rounded-xl text-center">
-            <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-              <Building2 className="w-16 h-16 text-blue-500" />
+          <div className="card-glass p-12 rounded-xl text-center animate-slideInUp" style={{animationDelay: '0.2s'}}>
+            <div className="w-32 h-32 mx-auto mb-6 bg-gradient-secondary rounded-full flex items-center justify-center animate-glow">
+              <Building2 className="w-16 h-16 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Aucun projet enregistré</h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">Commencez par créer votre premier projet pour gérer efficacement vos chantiers BTP.</p>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
-            >
-              <Sparkles className="w-5 h-5" />
-              <Plus className="w-4 h-4" />
-              Créer mon premier projet
-            </button>
+            <h2 className="heading-2 text-shimmer mb-3">Aucun projet enregistré</h2>
+            <p className="text-secondary mb-6 max-w-md mx-auto">Commencez par créer votre premier projet pour gérer efficacement vos chantiers BTP.</p>
           </div>
         ) : (
           <div className={`${
@@ -180,21 +173,21 @@ const Projects: React.FC = () => {
         )}
 
         {loadingProjects && (
-          <div className="glass-card p-12 rounded-xl text-center">
-            <div className="inline-flex items-center gap-3 text-blue-600">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="text-lg font-medium">Chargement des projets...</span>
+          <div className="card-glass p-12 rounded-xl text-center animate-slideInUp">
+            <div className="inline-flex items-center gap-3 text-primary">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="text-lg font-medium text-shimmer">Chargement des projets...</span>
             </div>
           </div>
         )}
 
         {!loadingProjects && filteredProjects.length === 0 && projects.length > 0 && (
-          <div className="glass-card p-12 rounded-xl text-center">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-              <Search className="w-12 h-12 text-gray-400" />
+          <div className="card-glass p-12 rounded-xl text-center animate-slideInUp">
+            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-neutral rounded-full flex items-center justify-center animate-pulse">
+              <Search className="w-12 h-12 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Aucun projet trouvé</h3>
-            <p className="text-gray-600 max-w-xl mx-auto mb-6">
+            <h3 className="heading-3 text-shimmer mb-3">Aucun projet trouvé</h3>
+            <p className="text-secondary max-w-xl mx-auto mb-6">
               Aucun projet ne correspond à vos critères de recherche. Essayez de modifier vos filtres ou créez un nouveau projet.
             </p>
             <button
@@ -202,7 +195,7 @@ const Projects: React.FC = () => {
                 setSearchTerm('');
                 setFilterStatus('all');
               }}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white px-4 py-2 rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-300"
+              className="btn-outline btn-morph"
             >
               Réinitialiser les filtres
             </button>

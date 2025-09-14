@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Folder, FolderPlus, Edit2, Trash2, ChevronRight, ChevronDown } from 'lucide-react';
+import { Folder, Edit2, Trash2, Check, X, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import Modal from '../UI/Modal';
 
 interface FolderNode {
@@ -72,6 +72,8 @@ const FolderManager: React.FC<FolderManagerProps> = ({
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [parentForNewFolder, setParentForNewFolder] = useState<string>('root');
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState('');
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders(prev => {
@@ -124,6 +126,33 @@ const FolderManager: React.FC<FolderManagerProps> = ({
     }
   };
 
+  const handleRenameFolder = (folderId: string, newName: string) => {
+    if (newName.trim()) {
+      const renameFolderInTree = (nodes: FolderNode[]): FolderNode[] => {
+        return nodes.map(node => {
+          if (node.id === folderId) {
+            return { ...node, name: newName.trim() };
+          }
+          return { ...node, children: renameFolderInTree(node.children) };
+        });
+      };
+
+      setFolders(renameFolderInTree(folders));
+      setEditingFolderId(null);
+      setEditingFolderName('');
+    }
+  };
+
+  const startRenaming = (folderId: string, currentName: string) => {
+    setEditingFolderId(folderId);
+    setEditingFolderName(currentName);
+  };
+
+  const cancelRenaming = () => {
+    setEditingFolderId(null);
+    setEditingFolderName('');
+  };
+
   const renderFolderTree = (nodes: FolderNode[], level: number = 0) => {
     return nodes.map(folder => (
       <div key={folder.id} className="select-none">
@@ -158,7 +187,40 @@ const FolderManager: React.FC<FolderManagerProps> = ({
 
           <Folder className="w-4 h-4 text-blue-500" />
           
-          <span className="flex-1 text-sm font-medium">{folder.name}</span>
+          {editingFolderId === folder.id ? (
+            <div className="flex-1 flex items-center gap-2">
+              <input
+                type="text"
+                value={editingFolderName}
+                onChange={(e) => setEditingFolderName(e.target.value)}
+                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-orange-500"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleRenameFolder(folder.id, editingFolderName);
+                  } else if (e.key === 'Escape') {
+                    cancelRenaming();
+                  }
+                }}
+                autoFocus
+              />
+              <button
+                onClick={() => handleRenameFolder(folder.id, editingFolderName)}
+                className="p-1 hover:bg-green-100 text-green-600 rounded"
+                title="Confirmer"
+              >
+                <Check className="w-3 h-3" />
+              </button>
+              <button
+                onClick={cancelRenaming}
+                className="p-1 hover:bg-red-100 text-red-600 rounded"
+                title="Annuler"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <span className="flex-1 text-sm font-medium">{folder.name}</span>
+          )}
           
           <span className="text-xs text-gray-500">
             {folder.documentCount}
@@ -169,11 +231,10 @@ const FolderManager: React.FC<FolderManagerProps> = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  // TODO: Implémenter la fonctionnalité de renommage
-                  console.log('Renommer le dossier:', folder.id);
+                  startRenaming(folder.id, folder.name);
                 }}
                 className="p-1 hover:bg-gray-200 rounded"
-                title="Renommer (bientôt disponible)"
+                title="Renommer"
               >
                 <Edit2 className="w-3 h-3" />
               </button>
@@ -215,7 +276,7 @@ const FolderManager: React.FC<FolderManagerProps> = ({
             onClick={() => setIsCreatingFolder(true)}
             className="flex items-center gap-2 text-orange-600 hover:text-orange-700 text-sm font-medium"
           >
-            <FolderPlus className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
             Nouveau dossier
           </button>
         </div>

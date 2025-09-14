@@ -1,5 +1,4 @@
-import { aiConfig } from './aiConfig';
-import { openaiService } from './openaiService';
+// AI Copilot service for intelligent assistance
 
 export interface CopilotMessage {
   id: string;
@@ -15,6 +14,15 @@ export interface CopilotMessage {
 }
 
 export interface CopilotContext {
+  currentProject: {
+    id: string;
+    name: string;
+    status: string;
+    budget: number;
+    spent: number;
+    startDate: string;
+    endDate?: string;
+  } | null;
   projects: Array<{
     id: string;
     name: string;
@@ -44,7 +52,9 @@ export interface CopilotContext {
     name: string;
     role: string;
     permissions: string[];
-  };
+  } | null;
+  activeSection: string;
+  userRole: string;
 }
 
 export interface CopilotResponse {
@@ -53,7 +63,7 @@ export interface CopilotResponse {
     id: string;
     label: string;
     type: 'create_quote' | 'create_project' | 'export_data' | 'view_details' | 'navigate';
-    params?: Record<string, any>;
+    params?: Record<string, unknown>;
   }>;
   relatedData?: Array<{
     type: 'project' | 'quote' | 'transaction';
@@ -69,13 +79,10 @@ class AICopilot {
 
   async processMessage(message: string, context: CopilotContext): Promise<CopilotResponse> {
     try {
-      // Utiliser OpenAI si configuré, sinon utiliser les règles
-      if (aiConfig.copilot.enabled && aiConfig.openaiApiKey) {
-        return await this.processWithOpenAI(message, context);
-      }
+      const intent = await this.analyzeIntent(message);
       
-      // Fallback vers le système de règles
-      return await this.processWithRules(message, context);
+      // Générer la réponse basée sur l'intention et le contexte
+      return await this.generateResponse(message, intent, context);
     } catch (error) {
       console.error('Erreur lors du traitement du message:', error);
       return {
@@ -86,10 +93,17 @@ class AICopilot {
     }
   }
 
-  async processQuery(
-    query: string,
-    context: CopilotContext
-  ): Promise<CopilotResponse> {
+  async processQuery(query: string): Promise<CopilotResponse> {
+    // Get context from current project and user state
+    const context: CopilotContext = {
+      currentProject: null,
+      projects: [],
+      quotes: [],
+      transactions: [],
+      currentUser: null,
+      activeSection: 'dashboard',
+      userRole: 'user'
+    };
     // Ajouter le message utilisateur à l'historique
     const userMessage: CopilotMessage = {
       id: `msg_${Date.now()}_user`,
@@ -101,7 +115,7 @@ class AICopilot {
 
     try {
       // Analyser l'intention de la requête
-      const intent = this.analyzeIntent(query);
+      const intent = await this.analyzeIntent(query);
       
       // Générer la réponse basée sur l'intention et le contexte
       const response = await this.generateResponse(query, intent, context);
@@ -128,11 +142,11 @@ class AICopilot {
     }
   }
 
-  private analyzeIntent(query: string): {
+  private async analyzeIntent(query: string): Promise<{
     type: string;
-    entities: Record<string, any>;
+    entities: Record<string, unknown>;
     confidence: number;
-  } {
+  }> {
     const lowerQuery = query.toLowerCase();
     
     // Intentions de base avec patterns
@@ -189,7 +203,7 @@ class AICopilot {
           bestMatch = {
             type: intent.type,
             confidence,
-            entities: this.extractEntities(query, intent.type)
+            entities: this.extractEntities(query)
           };
         }
       }
@@ -202,9 +216,8 @@ class AICopilot {
     return bestMatch;
   }
 
-  private extractEntities(query: string, intentType: string): Record<string, any> {
-    const entities: Record<string, any> = {};
-    const lowerQuery = query.toLowerCase();
+  private extractEntities(query: string): Record<string, unknown> {
+    const entities: Record<string, unknown> = {};
 
     // Extraction d'entités basiques
     const numberMatch = query.match(/\d+/g);
@@ -215,7 +228,7 @@ class AICopilot {
     // Extraction de noms de projets potentiels
     const projectKeywords = ['projet', 'chantier', 'construction', 'rénovation'];
     projectKeywords.forEach(keyword => {
-      if (lowerQuery.includes(keyword)) {
+      if (query.toLowerCase().includes(keyword)) {
         entities.projectType = keyword;
       }
     });
@@ -225,7 +238,7 @@ class AICopilot {
 
   private async generateResponse(
     query: string,
-    intent: { type: string; entities: Record<string, any>; confidence: number },
+    intent: { type: string; entities: Record<string, unknown>; confidence: number },
     context: CopilotContext
   ): Promise<CopilotResponse> {
     
@@ -249,14 +262,14 @@ class AICopilot {
         return this.handleCreateRequest(query, context);
       
       case 'help_request':
-        return this.handleHelpRequest(query, context);
+        return this.handleHelpRequest();
       
       default:
         return this.handleGeneralQuery(query, context);
     }
   }
 
-  private handleProjectStatusQuery(query: string, context: CopilotContext): CopilotResponse {
+  private handleProjectStatusQuery(_query: string, context: CopilotContext): CopilotResponse {
     const activeProjects = context.projects.filter(p => p.status === 'active');
     const completedProjects = context.projects.filter(p => p.status === 'completed');
     
@@ -296,15 +309,14 @@ class AICopilot {
     };
   }
 
-  private handleFinancialQuery(query: string, context: CopilotContext): CopilotResponse {
-    const lowerQuery = query.toLowerCase();
+  private handleFinancialQuery(_query: string, context: CopilotContext): CopilotResponse {
     const totalBudget = context.projects.reduce((sum, p) => sum + p.budget, 0);
     const totalSpent = context.projects.reduce((sum, p) => sum + p.spent, 0);
     const totalQuoteValue = context.quotes.reduce((sum, q) => sum + q.totalAmount, 0);
     const remaining = totalBudget - totalSpent;
     
     // Analyser la question spécifique
-    if (lowerQuery.includes('reste') || lowerQuery.includes('restant') || lowerQuery.includes('finaliser')) {
+    if (_query.toLowerCase().includes('reste') || _query.toLowerCase().includes('restant') || _query.toLowerCase().includes('finaliser')) {
       if (context.projects.length === 0) {
         return {
           message: `📊 Vous n'avez actuellement aucun projet actif. Voulez-vous créer un nouveau projet ?`,
@@ -391,7 +403,7 @@ class AICopilot {
     };
   }
 
-  private handleQuoteQuery(query: string, context: CopilotContext): CopilotResponse {
+  private handleQuoteQuery(_query: string, context: CopilotContext): CopilotResponse {
     const pendingQuotes = context.quotes.filter(q => q.status === 'pending');
     const acceptedQuotes = context.quotes.filter(q => q.status === 'accepted');
     
@@ -435,7 +447,7 @@ class AICopilot {
     };
   }
 
-  private handleVendorQuery(query: string, context: CopilotContext): CopilotResponse {
+  private handleVendorQuery(_query: string, context: CopilotContext): CopilotResponse {
     const vendorSpending = context.transactions.reduce((acc, transaction) => {
       if (!acc[transaction.vendorName]) {
         acc[transaction.vendorName] = 0;
@@ -471,7 +483,7 @@ class AICopilot {
     };
   }
 
-  private handleTimelineQuery(query: string, context: CopilotContext): CopilotResponse {
+  private handleTimelineQuery(_query: string, context: CopilotContext): CopilotResponse {
     const upcomingDeadlines = context.projects
       .filter(p => p.endDate && new Date(p.endDate) > new Date())
       .sort((a, b) => new Date(a.endDate!).getTime() - new Date(b.endDate!).getTime());
@@ -502,8 +514,8 @@ class AICopilot {
     };
   }
 
-  private handleCreateRequest(query: string, context: CopilotContext): CopilotResponse {
-    const lowerQuery = query.toLowerCase();
+  private handleCreateRequest(_query: string, context: CopilotContext): CopilotResponse {
+    const lowerQuery = _query.toLowerCase();
     
     if (lowerQuery.includes('devis') || lowerQuery.includes('quote')) {
       // Analyser le contexte pour des suggestions intelligentes
@@ -586,7 +598,7 @@ class AICopilot {
     };
   }
 
-  private handleHelpRequest(query: string, context: CopilotContext): CopilotResponse {
+  private handleHelpRequest(): CopilotResponse {
     return {
       message: `🤖 **Je suis votre assistant IA BTP !**
 
@@ -635,7 +647,7 @@ Je peux vous aider avec:
     
     // Essayer de détecter des intentions cachées
     if (lowerQuery.includes('aide') || lowerQuery.includes('help')) {
-      return this.handleHelpRequest(query, context);
+      return this.handleHelpRequest();
     }
     
     if (lowerQuery.includes('projet') && !lowerQuery.includes('créer')) {

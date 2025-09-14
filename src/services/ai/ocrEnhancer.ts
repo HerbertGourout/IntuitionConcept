@@ -311,18 +311,90 @@ class OCREnhancer {
 
   private async enhanceWithOpenAI(originalText: string, currentData: EnhancedOCRData): Promise<Partial<EnhancedOCRData>> {
     try {
-      // Placeholder pour l'implémentation OpenAI
-      // Cette méthode devrait faire un appel à l'API OpenAI pour enrichir les données OCR
-      console.log('OpenAI enhancement called with:', { originalText: originalText.substring(0, 100), currentData });
-      
-      // Pour l'instant, retourner des données vides
-      // TODO: Implémenter l'appel réel à OpenAI API
-      return {
-        suggestions: ['Enrichissement OpenAI disponible mais non implémenté']
-      };
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        console.warn('Clé API OpenAI non configurée');
+        return {
+          suggestions: ['Configuration OpenAI requise']
+        };
+      }
+
+      const prompt = `
+Analyse ce texte OCR extrait d'une facture BTP et enrichis les données structurées:
+
+Texte original:
+${originalText}
+
+Données actuelles extraites:
+${JSON.stringify(currentData, null, 2)}
+
+Enrichis et corrige ces données en format JSON avec:
+- Correction des erreurs OCR
+- Extraction d'informations manquantes
+- Validation des montants et dates
+- Suggestions d'amélioration
+- Classification des articles par catégorie BTP
+
+Réponds uniquement en JSON valide.`;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'Tu es un expert en analyse de factures BTP. Réponds uniquement en JSON valide.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 1500,
+          temperature: 0.1
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur API OpenAI: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const enhancedContent = data.choices[0]?.message?.content;
+
+      if (!enhancedContent) {
+        throw new Error('Réponse OpenAI vide');
+      }
+
+      try {
+        const parsedEnhancement = JSON.parse(enhancedContent);
+        return {
+          ...parsedEnhancement,
+          suggestions: [
+            ...(parsedEnhancement.suggestions || []),
+            'Données enrichies par OpenAI GPT-4'
+          ]
+        };
+      } catch (parseError) {
+        console.error('Erreur parsing réponse OpenAI:', parseError);
+        return {
+          suggestions: [
+            'Enrichissement OpenAI effectué mais format invalide',
+            enhancedContent.substring(0, 200) + '...'
+          ]
+        };
+      }
+
     } catch (error) {
       console.error('Erreur lors de l\'enrichissement OpenAI:', error);
-      return {};
+      return {
+        suggestions: [`Erreur OpenAI: ${error instanceof Error ? error.message : 'Erreur inconnue'}`]
+      };
     }
   }
 

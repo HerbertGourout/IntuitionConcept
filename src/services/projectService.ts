@@ -516,4 +516,39 @@ export class ProjectService {
       throw error;
     }
   }
+
+  /**
+   * Mettre à jour un enregistrement financier
+   */
+  static async updateFinancialRecord(
+    projectId: string, 
+    recordId: string, 
+    updates: Partial<FinancialRecord>
+  ): Promise<void> {
+    try {
+      const recordRef = doc(db, 'projects', projectId, 'financialRecords', recordId);
+      await updateDoc(recordRef, {
+        ...updates,
+        updatedAt: Timestamp.now()
+      });
+      console.log(`✅ Enregistrement financier ${recordId} mis à jour`);
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour de l\'enregistrement financier:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Supprimer un enregistrement financier
+   */
+  static async deleteFinancialRecord(projectId: string, recordId: string): Promise<void> {
+    try {
+      const recordRef = doc(db, 'projects', projectId, 'financialRecords', recordId);
+      await deleteDoc(recordRef);
+      console.log(`✅ Enregistrement financier ${recordId} supprimé`);
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression de l\'enregistrement financier:', error);
+      throw error;
+    }
+  }
 }

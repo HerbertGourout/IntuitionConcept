@@ -27,9 +27,13 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({
   // Rediriger automatiquement vers l'app (Launchpad) si déjà connecté depuis certaines pages publiques
   useEffect(() => {
     if (!firebaseUser) return;
-    // Laisser la page de tarification ET la home publique accessibles même connecté
-    const publicPaths = new Set(['/subscription', '/login', '/register']);
+    // Laisser la page de tarification, subscription ET la home publique accessibles même connecté
+    const publicPaths = new Set(['/pricing', '/subscription', '/login', '/register']);
     if (publicPaths.has(location.pathname)) {
+      // Ne pas rediriger depuis /pricing et /subscription pour permettre les abonnements
+      if (location.pathname === '/pricing' || location.pathname === '/subscription') {
+        return;
+      }
       navigate('/app/launchpad', { replace: true });
     }
   }, [firebaseUser, location.pathname, navigate]);

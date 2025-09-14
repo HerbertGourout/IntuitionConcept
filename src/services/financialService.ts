@@ -257,10 +257,44 @@ class FinancialService {
 
       const projectedTotal = spentAmount + commitments;
 
-      // Pour l'instant, utiliser un budget estimé par défaut
-      // TODO: Récupérer le budget réel depuis le projet/phase/tâche
-      const estimatedBudget = 10000; // À remplacer par la vraie valeur
-      const allocatedBudget = estimatedBudget;
+      // Récupérer le budget réel depuis le projet/phase/tâche
+      let estimatedBudget = 0;
+      let allocatedBudget = 0;
+
+      if (taskId) {
+        // Budget au niveau tâche
+        const taskDoc = await getDoc(doc(db, 'tasks', taskId));
+        if (taskDoc.exists()) {
+          const taskData = taskDoc.data();
+          estimatedBudget = taskData.budget || taskData.estimatedCost || 0;
+          allocatedBudget = taskData.allocatedBudget || estimatedBudget;
+        }
+      } else if (phaseId) {
+        // Budget au niveau phase
+        const phaseDoc = await getDoc(doc(db, 'phases', phaseId));
+        if (phaseDoc.exists()) {
+          const phaseData = phaseDoc.data();
+          estimatedBudget = phaseData.budget || phaseData.estimatedCost || 0;
+          allocatedBudget = phaseData.allocatedBudget || estimatedBudget;
+        }
+      } else if (projectId) {
+        // Budget au niveau projet
+        const projectDoc = await getDoc(doc(db, 'projects', projectId));
+        if (projectDoc.exists()) {
+          const projectData = projectDoc.data();
+          estimatedBudget = projectData.budget || projectData.totalBudget || 0;
+          allocatedBudget = projectData.allocatedBudget || estimatedBudget;
+        }
+      }
+
+      // Fallback si aucun budget trouvé - calculer basé sur les dépenses historiques
+      if (estimatedBudget === 0) {
+        // Calculer un budget estimé basé sur les dépenses existantes + marge
+        const historicalSpending = spentAmount > 0 ? spentAmount : 0;
+        const averageProjectBudget = await this.calculateAverageProjectBudget();
+        estimatedBudget = Math.max(historicalSpending * 1.5, averageProjectBudget, 5000);
+        allocatedBudget = estimatedBudget;
+      }
       const remainingBudget = allocatedBudget - projectedTotal;
       const variance = projectedTotal - estimatedBudget;
       const variancePercentage = estimatedBudget > 0 ? (variance / estimatedBudget) * 100 : 0;
@@ -369,6 +403,35 @@ class FinancialService {
     } catch (error) {
       console.error('Erreur lors de la récupération du résumé budgétaire:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Calcule le budget moyen des projets pour estimation
+   */
+  private async calculateAverageProjectBudget(): Promise<number> {
+    try {
+      const projectsRef = collection(db, 'projects');
+      const snapshot = await getDocs(projectsRef);
+      
+      if (snapshot.empty) return 10000; // Fallback par défaut
+      
+      let totalBudget = 0;
+      let projectCount = 0;
+      
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const budget = data.budget || data.totalBudget || 0;
+        if (budget > 0) {
+          totalBudget += budget;
+          projectCount++;
+        }
+      });
+      
+      return projectCount > 0 ? totalBudget / projectCount : 10000;
+    } catch (error) {
+      console.error('Erreur lors du calcul du budget moyen:', error);
+      return 10000; // Fallback sécurisé
     }
   }
 

@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Check, Star, Smartphone, CreditCard, AlertCircle } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Check, Star, Smartphone, CreditCard, AlertCircle, ArrowLeft } from 'lucide-react';
 import { PaymentService } from '../services/PaymentService';
 import { usePayment } from '../contexts/PaymentContext';
 import { useAuth } from '../contexts/AuthContext';
 import MobileMoneyPayment from '../components/payments/MobileMoneyPayment';
+import GlobalLayout from '../components/Layout/GlobalLayout';
+import { PLANS, PRICING, PlanId, Currency } from '../config/pricing';
 
 interface SubscriptionPlan {
   id: string;
@@ -75,10 +77,43 @@ export const Subscription: React.FC = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [showPayment, setShowPayment] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [, setSelectedCountry] = useState<Record<string, unknown> | null>(null);
   
   const { user } = useAuth();
   const { createPayment, updatePaymentStatus } = usePayment();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Initialiser depuis les paramètres de navigation
+  useEffect(() => {
+    const state = location.state as { planId?: string; country?: Record<string, unknown>; billing?: 'monthly' | 'yearly' } | null;
+    if (state?.planId) {
+      // Trouver le plan correspondant dans PLANS
+      const plan = PLANS.find(p => p.id === state.planId);
+      if (plan) {
+        const currency: Currency = (state.country?.currency as Currency) || 'XOF';
+        const pricing = PRICING[currency]?.[state.planId as PlanId] || 0;
+        
+        const subscriptionPlan: SubscriptionPlan = {
+          id: plan.id,
+          name: plan.name,
+          price: {
+            monthly: pricing,
+            yearly: Math.round(pricing * 12 * 0.83)
+          },
+          currency: currency,
+          features: plan.features.map(f => typeof f === 'string' ? f : f.name || f.toString()),
+          popular: plan.popular,
+          color: plan.color
+        };
+        
+        setSelectedPlan(subscriptionPlan);
+        setSelectedCountry(state.country || null);
+        setBillingCycle(state.billing || 'monthly');
+        setShowPayment(true);
+      }
+    }
+  }, [location.state]);
 
   // Calcul des économies pour l'abonnement annuel
   const calculateSavings = (plan: SubscriptionPlan) => {
@@ -133,52 +168,90 @@ export const Subscription: React.FC = () => {
     }
   }, [selectedPlan, user, billingCycle, createPayment, updatePaymentStatus, navigate]);
 
-  // Fermeture du paiement
-  const handlePaymentClose = useCallback(() => {
+  // Fonction utilitaire (conservée pour compatibilité future)
+  const _handlePaymentClose = useCallback(() => {
     setShowPayment(false);
     setSelectedPlan(null);
   }, []);
+  void _handlePaymentClose; // Éviter le warning unused
 
   if (showPayment && selectedPlan && user) {
     const amount = billingCycle === 'monthly' ? selectedPlan.price.monthly : selectedPlan.price.yearly;
     
     return (
-      <div className="min-h-screen bg-gray-50 py-20 px-4">
-        <div className="max-w-lg mx-auto">
+      <GlobalLayout
+        showHero={true}
+        heroTitle="Finaliser votre abonnement"
+        heroSubtitle={`Plan ${selectedPlan.name} - ${billingCycle === 'monthly' ? 'Mensuel' : 'Annuel'}`}
+        heroBackground="bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900"
+      >
+        <div className="max-w-lg mx-auto px-4">
           <div className="text-center mb-8">
             <button
-              onClick={handlePaymentClose}
-              className="text-blue-600 hover:text-blue-800 mb-4 inline-flex items-center"
+              onClick={() => navigate('/pricing')}
+              className="text-blue-600 hover:text-blue-800 mb-4 inline-flex items-center font-medium"
             >
-              ← Retour aux plans
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Retour aux tarifs
             </button>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Finaliser votre abonnement
-            </h2>
-            <p className="text-gray-600 mt-2">
-              Plan {selectedPlan.name} - {billingCycle === 'monthly' ? 'Mensuel' : 'Annuel'}
-            </p>
           </div>
 
-          <MobileMoneyPayment
-            amount={amount}
-            currency={selectedPlan.currency}
-            customerEmail={user.email || ''}
-            customerPhone={user.phoneNumber || ''}
-            customerName={user.displayName || user.email || ''}
-            description={`Abonnement ${selectedPlan.name} - ${billingCycle === 'monthly' ? 'Mensuel' : 'Annuel'}`}
-            onSuccess={handlePaymentSuccess}
-            onClose={handlePaymentClose}
-            isProduction={false} // Changez à true en production
-          />
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <MobileMoneyPayment
+              amount={amount}
+              currency={selectedPlan.currency}
+              customerEmail={user.email || ''}
+              customerPhone={user.phoneNumber || ''}
+              customerName={user.displayName || user.email || ''}
+              description={`Abonnement ${selectedPlan.name} - ${billingCycle === 'monthly' ? 'Mensuel' : 'Annuel'}`}
+              onSuccess={handlePaymentSuccess}
+              onClose={() => navigate('/pricing')}
+              isProduction={false}
+            />
+          </div>
         </div>
-      </div>
+      </GlobalLayout>
+    );
+  }
+
+  // Si aucun plan sélectionné depuis Pricing, afficher message de redirection
+  if (!location.state) {
+    return (
+      <GlobalLayout
+        showHero={true}
+        heroTitle="Choisissez votre plan"
+        heroSubtitle="Sélectionnez d'abord un plan depuis notre page tarifs"
+        heroBackground="bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900"
+      >
+        <div className="max-w-2xl mx-auto px-4 text-center">
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <AlertCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Aucun plan sélectionné
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Pour procéder au paiement, veuillez d'abord choisir un plan depuis notre page tarifs.
+            </p>
+            <button
+              onClick={() => navigate('/pricing')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+            >
+              Voir les tarifs
+            </button>
+          </div>
+        </div>
+      </GlobalLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-20 px-4">
-      <div className="max-w-7xl mx-auto">
+    <GlobalLayout
+      showHero={true}
+      heroTitle="Plans d'abonnement"
+      heroSubtitle="Gérez vos projets efficacement avec nos outils professionnels"
+      heroBackground="bg-gradient-to-br from-green-900 via-blue-900 to-purple-900"
+    >
+      <div className="max-w-7xl mx-auto px-4">
         {/* En-tête */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -320,8 +393,8 @@ export const Subscription: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
+      </GlobalLayout>
+    );
 };
 
 export default Subscription;

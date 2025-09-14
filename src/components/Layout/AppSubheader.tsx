@@ -1,14 +1,13 @@
 import React from 'react';
-import { Plus, Settings, ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles, Settings } from 'lucide-react';
 
 interface AppSubheaderProps {
   title: string;
   subtitle?: string;
   onBack?: () => void;
-  onCreateProject?: () => void;
 }
 
-const AppSubheader: React.FC<AppSubheaderProps> = ({ title, subtitle, onBack, onCreateProject }) => {
+const AppSubheader: React.FC<AppSubheaderProps> = ({ title, subtitle, onBack }) => {
   return (
     <div className="sticky top-20 z-40">
       <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 supports-[backdrop-filter]:dark:bg-slate-900/50 border-b border-gray-200/60 dark:border-slate-700/60">
@@ -28,15 +27,6 @@ const AppSubheader: React.FC<AppSubheaderProps> = ({ title, subtitle, onBack, on
             )}
           </div>
           <div className="flex items-center gap-2">
-            {onCreateProject && (
-              <button
-                onClick={onCreateProject}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:shadow-md transition"
-              >
-                <Plus className="w-4 h-4" />
-                Nouveau projet
-              </button>
-            )}
             <a
               href="/app/settings"
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GlobalLayout from '../components/Layout/GlobalLayout';
 import { 
@@ -24,6 +24,7 @@ const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,8 +34,18 @@ const LoginPage: React.FC = () => {
     // Simulation de connexion (en mode dev, on redirige directement)
     setTimeout(() => {
       setIsLoading(false);
-      // En mode dev, on redirige vers l'app sans vérification
-      navigate('/app/dashboard');
+      
+      // Vérifier s'il y a une redirection post-login
+      const state = location.state as { redirectTo?: string; subscription?: Record<string, unknown> } | null;
+      if (state?.redirectTo && state?.subscription) {
+        // Rediriger vers la page de checkout avec les données d'abonnement
+        navigate(state.redirectTo, {
+          state: state.subscription
+        });
+      } else {
+        // Redirection par défaut vers le dashboard
+        navigate('/app/dashboard');
+      }
     }, 1000);
   };
 
@@ -214,8 +225,19 @@ const LoginPage: React.FC = () => {
                 try {
                   await loginWithGoogle();
                   toast.success('Connexion Google réussie !');
-                  navigate('/app/dashboard');
-                } catch (e: any) {
+                  
+                  // Vérifier s'il y a une redirection post-login
+                  const state = location.state as { redirectTo?: string; subscription?: Record<string, unknown> } | null;
+                  if (state?.redirectTo && state?.subscription) {
+                    // Rediriger vers la page de checkout avec les données d'abonnement
+                    navigate(state.redirectTo, {
+                      state: state.subscription
+                    });
+                  } else {
+                    // Redirection par défaut vers le dashboard
+                    navigate('/app/dashboard');
+                  }
+                } catch {
                   toast.error("Échec de la connexion Google");
                 }
               }}

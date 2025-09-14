@@ -131,12 +131,13 @@ class DetailedProjectPlanGenerator {
   }
 
   private getDetailedMockPlan(projectPrompt: string): DetailedProjectPlan {
+    // Extraire la localisation pour contextualiser le plan détaillé
     const location = this.extractLocation(projectPrompt);
     
     return {
       phases: [
         {
-          name: "1. Études structurelles",
+          name: `1. Études structurelles${location ? ` - ${location}` : ''}`,
           duration: "4-6 semaines",
           risks: ["Délais administratifs", "Sol inadapté"],
           subTasks: [

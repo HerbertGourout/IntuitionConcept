@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { message } from 'antd';
 import GlobalLayout from '../components/Layout/GlobalLayout';
 import { Check, Smartphone, CreditCard, Star, ShieldCheck, ChevronRight } from 'lucide-react';
 import CompactCountrySelector from '../components/Pricing/CompactCountrySelector';
 import { useNavigate } from 'react-router-dom';
 import { PLANS, PRICING, CURRENCY_SYMBOLS, PlanId, Currency } from '../config/pricing';
+import { useAuth } from '../contexts/AuthContext';
  
  
 
@@ -15,7 +17,7 @@ interface Country {
   currency: string;
   currencySymbol: string;
   flag: string;
-  region: 'west' | 'central' | 'maghreb';
+  region: 'west' | 'central' | 'east' | 'south' | 'maghreb';
   mobileMoneyProviders: string[];
 }
 
@@ -24,7 +26,8 @@ export const Pricing: React.FC = () => {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const navigate = useNavigate();
-  
+  const { user } = useAuth();
+  const [validationError, setValidationError] = useState<string>('');
 
   // Détermine la devise et les prix selon le pays sélectionné
   const currency: Currency = (selectedCountry?.currency as Currency) || 'XOF';
@@ -45,7 +48,34 @@ export const Pricing: React.FC = () => {
   };
 
   const handleSubscribe = (planId: string) => {
-    // Rediriger vers la page de checkout dédiée
+    // Vérifier que le pays est sélectionné
+    if (!selectedCountry) {
+      setValidationError('Veuillez sélectionner votre pays pour afficher les tarifs et continuer au paiement.');
+      message.error('Veuillez sélectionner votre pays avant de continuer.');
+      // Scroll vers le sélecteur pour aider l'utilisateur
+      const el = document.getElementById('country-selector');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    if (!user) {
+      // Forcer la connexion avant le paiement
+      navigate('/login', {
+        state: {
+          redirectTo: '/subscription',
+          subscription: {
+            planId,
+            country: selectedCountry,
+            billing: billingCycle
+          }
+        }
+      });
+      return;
+    }
+    
+    // Utilisateur connecté, rediriger vers le checkout
     navigate('/subscription', {
       state: {
         planId,
@@ -72,12 +102,25 @@ export const Pricing: React.FC = () => {
         </div>
 
         {/* Sélecteur de pays compact */}
-        <div className="mb-8 flex justify-center">
+        <div id="country-selector" className="mb-2 flex justify-center">
           <CompactCountrySelector
-            onCountrySelect={(country: Country) => setSelectedCountry(country)}
+            onCountrySelect={(country: Country) => {
+              setSelectedCountry(country);
+              setValidationError('');
+            }}
             selectedCountry={selectedCountry || undefined}
           />
         </div>
+        {validationError && !selectedCountry && (
+          <p className="text-red-600 text-sm text-center mb-6">
+            {validationError}
+          </p>
+        )}
+        {!selectedCountry && !validationError && (
+          <p className="text-gray-600 text-sm text-center mb-6">
+            Sélectionnez votre pays pour afficher les prix dans la bonne devise et activer l'abonnement.
+          </p>
+        )}
 
         {/* Sélecteur de cycle de facturation */}
         <div className="flex justify-center gap-4 mb-10">
@@ -159,14 +202,20 @@ export const Pricing: React.FC = () => {
                 </ul>
                 <button
                   onClick={() => handleSubscribe(plan.id)}
+                  disabled={!selectedCountry}
                   className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
                     plan.popular
                       ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl'
                       : 'bg-gray-900 hover:bg-gray-800 text-white'
-                  }`}
+                  } ${!selectedCountry ? 'opacity-60 cursor-not-allowed hover:bg-inherit' : ''}`}
                 >
                   S'abonner <ChevronRight className="inline w-5 h-5 ml-2" />
                 </button>
+                {!selectedCountry && (
+                  <p className="text-gray-500 text-xs text-center mt-2">
+                    Sélectionnez un pays pour continuer à l'étape de paiement.
+                  </p>
+                )}
               </div>
             </div>
           ))}

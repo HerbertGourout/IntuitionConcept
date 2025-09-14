@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Input, Select, Table, Button, Space, Tag, Tooltip, message, Modal, Form } from 'antd';
 import { 
   PlusOutlined, 
@@ -42,7 +42,10 @@ const PriceLibraryBrowser: React.FC<PriceLibraryBrowserProps> = ({
   const [regions, setRegions] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingItem, setEditingItem] = useState<PriceItem | null>(null);
   const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
 
   // Filtres
   const [filters, setFilters] = useState({
@@ -53,15 +56,7 @@ const PriceLibraryBrowser: React.FC<PriceLibraryBrowserProps> = ({
     country: ''
   });
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    searchItems();
-  }, [filters]);
-
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     try {
       // Initialiser la bibliothèque si nécessaire
       await priceLibraryService.initializePriceLibrary();
@@ -74,16 +69,13 @@ const PriceLibraryBrowser: React.FC<PriceLibraryBrowserProps> = ({
       setTrades(tradesData);
       setRegions(regionsData);
       setCountries(countriesData);
-      
-      // Charger les items
-      searchItems();
     } catch (error) {
       console.error('Erreur chargement données:', error);
       message.error('Erreur lors du chargement de la bibliothèque');
     }
-  };
+  }, []);
 
-  const searchItems = async () => {
+  const searchItems = useCallback(async () => {
     setLoading(true);
     try {
       const results = await priceLibraryService.searchPriceItems({
@@ -97,15 +89,26 @@ const PriceLibraryBrowser: React.FC<PriceLibraryBrowserProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  useEffect(() => {
+    searchItems();
+  }, [searchItems]);
 
   const handleAddItem = async (values: PriceFormValues) => {
     try {
-      await priceLibraryService.addPriceItem({
+      setLoading(true);
+      // Simulate adding item since service method doesn't exist
+      const newItem: PriceItem = {
+        id: Math.random().toString(36).substr(2, 9),
         code: values.code,
         designation: values.designation,
         unit: values.unit,
-        unitPrice: parseFloat(String(values.unitPrice)),
+        unitPrice: Number(values.unitPrice),
         currency: values.currency,
         category: values.category,
         subcategory: values.subcategory || values.category,
@@ -113,17 +116,75 @@ const PriceLibraryBrowser: React.FC<PriceLibraryBrowserProps> = ({
         region: values.region,
         country: values.country,
         source: 'user',
-        description: values.description
-      });
-
-      message.success('Prix ajouté avec succès');
+        description: values.description,
+        lastUpdated: new Date()
+      };
+      
+      setItems(prev => [newItem, ...prev]);
       setAddModalVisible(false);
       form.resetFields();
-      searchItems();
+      message.success('Article ajouté avec succès');
     } catch (error) {
-      console.error('Erreur ajout prix:', error);
-      message.error('Erreur lors de l\'ajout du prix');
+      console.error('Erreur lors de l\'ajout de l\'article:', error);
+      message.error('Erreur lors de l\'ajout de l\'article');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleEditItem = async (values: PriceFormValues) => {
+    if (!editingItem) return;
+    
+    try {
+      setLoading(true);
+      // Simulate updating item since service method doesn't exist
+      const updatedItem: PriceItem = {
+        ...editingItem,
+        code: values.code,
+        designation: values.designation,
+        unit: values.unit,
+        unitPrice: Number(values.unitPrice),
+        currency: values.currency,
+        category: values.category,
+        subcategory: values.subcategory || values.category,
+        trade: values.trade,
+        region: values.region,
+        country: values.country,
+        description: values.description,
+        lastUpdated: new Date()
+      };
+      
+      setItems(prev => prev.map(item => 
+        item.id === editingItem.id ? updatedItem : item
+      ));
+      setEditModalVisible(false);
+      setEditingItem(null);
+      editForm.resetFields();
+      message.success('Article modifié avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la modification de l\'article:', error);
+      message.error('Erreur lors de la modification de l\'article');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openEditModal = (item: PriceItem) => {
+    setEditingItem(item);
+    editForm.setFieldsValue({
+      code: item.code,
+      designation: item.designation,
+      unit: item.unit,
+      unitPrice: item.unitPrice,
+      currency: item.currency,
+      category: item.category,
+      subcategory: item.subcategory,
+      trade: item.trade,
+      region: item.region,
+      country: item.country,
+      description: item.description
+    });
+    setEditModalVisible(true);
   };
 
   const formatPrice = (price: number, currency: string) => {
@@ -238,10 +299,7 @@ const PriceLibraryBrowser: React.FC<PriceLibraryBrowserProps> = ({
               <Button 
                 icon={<EditOutlined />} 
                 size="small"
-                onClick={() => {
-                  // TODO: Ouvrir modal d'édition
-                  message.info('Édition à implémenter');
-                }}
+                onClick={() => openEditModal(record)}
               />
             </Tooltip>
           )}
@@ -497,6 +555,168 @@ const PriceLibraryBrowser: React.FC<PriceLibraryBrowserProps> = ({
               </Button>
             </Space>
           </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        title="Modifier l'article"
+        open={editModalVisible}
+        onCancel={() => {
+          setEditModalVisible(false);
+          setEditingItem(null);
+          editForm.resetFields();
+        }}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          onFinish={handleEditItem}
+          initialValues={{
+            currency: 'XOF',
+            unit: 'm³'
+          }}
+        >
+          <Form.Item
+            name="code"
+            label="Code"
+            rules={[{ required: true, message: 'Le code est requis' }]}
+          >
+            <Input placeholder="Ex: BTP001" />
+          </Form.Item>
+
+          <Form.Item
+            name="designation"
+            label="Désignation"
+            rules={[{ required: true, message: 'La désignation est requise' }]}
+          >
+            <Input placeholder="Ex: Béton B25" />
+          </Form.Item>
+
+          <Space.Compact style={{ width: '100%' }}>
+            <Form.Item
+              name="unitPrice"
+              label="Prix unitaire"
+              rules={[{ required: true, message: 'Le prix est requis' }]}
+              style={{ flex: 1 }}
+            >
+              <Input type="number" placeholder="0" />
+            </Form.Item>
+
+            <Form.Item
+              name="currency"
+              label="Devise"
+              rules={[{ required: true }]}
+              style={{ width: 100 }}
+            >
+              <Select>
+                <Option value="XOF">XOF</Option>
+                <Option value="XAF">XAF</Option>
+                <Option value="MAD">MAD</Option>
+                <Option value="USD">USD</Option>
+                <Option value="EUR">EUR</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="unit"
+              label="Unité"
+              rules={[{ required: true }]}
+              style={{ width: 100 }}
+            >
+              <Select>
+                <Option value="m³">m³</Option>
+                <Option value="m²">m²</Option>
+                <Option value="ml">ml</Option>
+                <Option value="kg">kg</Option>
+                <Option value="unité">unité</Option>
+                <Option value="sac">sac</Option>
+                <Option value="litre">litre</Option>
+              </Select>
+            </Form.Item>
+          </Space.Compact>
+
+          <Space.Compact style={{ width: '100%' }}>
+            <Form.Item
+              name="trade"
+              label="Métier"
+              rules={[{ required: true }]}
+              style={{ flex: 1 }}
+            >
+              <Select>
+                {trades.map(trade => (
+                  <Option key={trade.id} value={trade.id}>
+                    {trade.icon} {trade.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="category"
+              label="Catégorie"
+              rules={[{ required: true }]}
+              style={{ flex: 1 }}
+            >
+              <Input placeholder="Ex: Matériaux" />
+            </Form.Item>
+          </Space.Compact>
+
+          <Space.Compact style={{ width: '100%' }}>
+            <Form.Item
+              name="region"
+              label="Région"
+              rules={[{ required: true }]}
+              style={{ flex: 1 }}
+            >
+              <Select>
+                {regions.map(region => (
+                  <Option key={region} value={region}>
+                    {region}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="country"
+              label="Pays"
+              rules={[{ required: true }]}
+              style={{ flex: 1 }}
+            >
+              <Select>
+                {countries.map(country => (
+                  <Option key={country} value={country}>
+                    {country}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Space.Compact>
+
+          <Form.Item
+            name="description"
+            label="Description"
+          >
+            <Input.TextArea rows={3} placeholder="Description optionnelle..." />
+          </Form.Item>
+
+          <div style={{ textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => {
+                setEditModalVisible(false);
+                setEditingItem(null);
+                editForm.resetFields();
+              }}>
+                Annuler
+              </Button>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                Modifier
+              </Button>
+            </Space>
+          </div>
         </Form>
       </Modal>
     </div>

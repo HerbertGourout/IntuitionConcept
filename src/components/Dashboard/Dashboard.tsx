@@ -17,6 +17,12 @@ import ActivityTimelineWidget from './widgets/ActivityTimelineWidget';
 import RealTimeChartWidget from './widgets/RealTimeChartWidget';
 import CircularProgressWidget from './widgets/CircularProgressWidget';
 
+// Import des widgets avancés
+import EquipmentMaintenanceWidget from './widgets/EquipmentMaintenanceWidget';
+import EquipmentScannerWidget from './widgets/EquipmentScannerWidget';
+import WeatherWidget from './widgets/WeatherWidget';
+import OfflineStatusWidget from './widgets/OfflineStatusWidget';
+
 interface DashboardProps {
   onNavigate?: (section: string) => void;
 }
@@ -661,10 +667,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   onDrop={onDrop('projectsOverview')}
                   onDragEnter={() => setDragOverFirst('projectsOverview')}
                   onDragLeave={() => setDragOverFirst(null)}
-                  className={`${spanClassFor(prefs.sizeProjectsOverview)} bg-white dark:bg-gray-800 rounded-2xl shadow-xl ${prefs.density === 'compact' ? 'p-4' : 'p-6'} border border-gray-200 dark:border-gray-700 ${dragOverFirst === 'projectsOverview' ? 'ring-2 ring-blue-400' : ''}`}
+                  className={`${spanClassFor(prefs.sizeProjectsOverview)} card-base card-gradient-border hover:card-interactive animate-slide-in-up ${prefs.density === 'compact' ? 'p-4' : 'p-6'} ${dragOverFirst === 'projectsOverview' ? 'ring-2 ring-blue-400' : ''}`}
                   title="Glisser pour réorganiser"
                 >
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Vue d'ensemble Projets</h4>
+                  <h4 className="heading-4 heading-gradient mb-4">Vue d'ensemble Projets</h4>
                   <ProjectsOverviewWidget className="h-full" />
                 </div>
                 </div>
@@ -704,7 +710,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   onDrop={onDrop('budgetAlerts')}
                   onDragEnter={() => setDragOverFirst('budgetAlerts')}
                   onDragLeave={() => setDragOverFirst(null)}
-                  className={`${spanClassFor(prefs.sizeBudgetAlerts)} bg-white dark:bg-gray-800 rounded-2xl shadow-xl ${prefs.density === 'compact' ? 'p-4' : 'p-6'} border border-gray-200 dark:border-gray-700 ${dragOverFirst === 'budgetAlerts' ? 'ring-2 ring-blue-400' : ''}`}
+                  className={`${spanClassFor(prefs.sizeBudgetAlerts)} card-base card-gradient-secondary hover:card-interactive animate-slide-in-up animate-delay-200 ${prefs.density === 'compact' ? 'p-4' : 'p-6'} ${dragOverFirst === 'budgetAlerts' ? 'ring-2 ring-blue-400' : ''}`}
                   data-alerts
                   title="Glisser pour réorganiser"
                 >
@@ -773,7 +779,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
         
         {/* Troisième ligne (ordre & DnD) */}
-        <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
+        <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
           {prefs.thirdRowOrder.map((key) => {
             if (key === 'circularProgress' && prefs.showCircularProgress) {
               return (
@@ -790,7 +796,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   onDragLeave={() => setDragOverThird(null)}
                   className={`${spanClassFor(prefs.sizeCircularProgress)} bg-white dark:bg-gray-800 rounded-2xl shadow-xl ${prefs.density === 'compact' ? 'p-4' : 'p-6'} border border-gray-200 dark:border-gray-700 ${dragOverThird === 'circularProgress' ? 'ring-2 ring-blue-400' : ''}`}
                 >
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Progression Globale</h4>
+                  <h4 className="heading-4 heading-gradient mb-4">Productivité Équipe</h4>
                   <CircularProgressWidget 
                     percentage={currentProjectData.progress}
                     title="Avancement Projet"
@@ -817,11 +823,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   onDragLeave={() => setDragOverThird(null)}
                   className={`${spanClassFor(prefs.sizeQuickActions)} bg-white dark:bg-gray-800 rounded-2xl shadow-xl ${prefs.density === 'compact' ? 'p-4' : 'p-6'} border border-gray-200 dark:border-gray-700 ${dragOverThird === 'quickActions' ? 'ring-2 ring-blue-400' : ''}`}
                 >
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Actions Rapides</h4>
+                  <h4 className="heading-4 heading-gradient mb-4">Actions Rapides</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <button 
                       onClick={() => onNavigate?.('projects')}
-                      className="group p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg border border-orange-200 dark:border-orange-700 hover:shadow-md transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                      className="btn-base btn-gradient-accent btn-sm group hover-lift"
                     >
                       <FolderOpen className="w-6 h-6 text-orange-600 mb-2 group-hover:scale-110 transition-transform mx-auto" />
                       <p className="font-medium text-sm text-gray-900 dark:text-white">Nouveau Projet</p>
@@ -829,7 +835,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   
                   <button 
                     onClick={() => onNavigate?.('planning')}
-                    className="group p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg border border-blue-200 dark:border-blue-700 hover:shadow-md transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="btn-base btn-secondary btn-sm group hover-lift"
                   >
                     <Calendar className="w-6 h-6 text-blue-600 mb-2 group-hover:scale-110 transition-transform mx-auto" />
                     <p className="font-medium text-sm text-gray-900 dark:text-white">Planning</p>
@@ -873,6 +879,33 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             }
             return null;
           })}
+        </div>
+
+        {/* Widgets avancés - Quatrième ligne */}
+        <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
+          {/* Widget Maintenance Équipements */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700">
+            <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">Maintenance</h4>
+            <EquipmentMaintenanceWidget />
+          </div>
+
+          {/* Widget Scanner Équipements */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700">
+            <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">Scanner</h4>
+            <EquipmentScannerWidget />
+          </div>
+
+          {/* Widget Météo */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700">
+            <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">Météo</h4>
+            <WeatherWidget />
+          </div>
+
+          {/* Widget Statut Hors-ligne */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700">
+            <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">Connexion</h4>
+            <OfflineStatusWidget />
+          </div>
         </div>
       </div>
     </PageContainer>

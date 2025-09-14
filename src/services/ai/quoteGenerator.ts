@@ -333,6 +333,8 @@ class QuoteGenerator {
   }
 
   private generateAssumptions(request: QuoteGenerationRequest): string[] {
+    // Mark parameter as intentionally unused to satisfy eslint/no-unused-vars
+    void request;
     return [
       'Prix basés sur les tarifs actuels du marché sénégalais',
       'Accès normal au chantier supposé',
@@ -344,21 +346,59 @@ class QuoteGenerator {
   }
 
   private async generateWithOpenAI(request: QuoteGenerationRequest): Promise<GeneratedQuote> {
-    const aiQuote = await openaiService.generateQuote(request);
-    
+    // openaiService.generateQuote expects (projectData, requirements). Provide an empty requirements object
+    // and cast request to a broad object type compatible with the service signature.
+    const aiQuoteRaw = await openaiService.generateQuote(request as unknown as Record<string, unknown>, {});
+
+    // Runtime narrowing because openaiService returns Record<string, unknown>
+    const title = typeof (aiQuoteRaw as Record<string, unknown>).title === 'string'
+      ? (aiQuoteRaw as Record<string, unknown>).title as string
+      : `${request.projectType} - ${request.description}`;
+
+    const description = typeof (aiQuoteRaw as Record<string, unknown>).description === 'string'
+      ? (aiQuoteRaw as Record<string, unknown>).description as string
+      : `Devis généré automatiquement pour ${request.description}`;
+
+    const totalCost = typeof (aiQuoteRaw as Record<string, unknown>).totalCost === 'number'
+      ? (aiQuoteRaw as Record<string, unknown>).totalCost as number
+      : 0;
+
+    const totalDuration = typeof (aiQuoteRaw as Record<string, unknown>).totalDuration === 'number'
+      ? (aiQuoteRaw as Record<string, unknown>).totalDuration as number
+      : 1;
+
+    const recommendations = Array.isArray((aiQuoteRaw as Record<string, unknown>).recommendations)
+      ? (aiQuoteRaw as { recommendations: unknown }).recommendations as string[]
+      : this.generateRecommendations(request, []);
+
+    const assumptions = Array.isArray((aiQuoteRaw as Record<string, unknown>).assumptions)
+      ? (aiQuoteRaw as { assumptions: unknown }).assumptions as string[]
+      : this.generateAssumptions(request);
+
+    const confidenceVal = (aiQuoteRaw as Record<string, unknown>).confidence;
+    const confidence = typeof confidenceVal === 'number' ? confidenceVal : 85;
+
+    // Phases: try to trust the shape, else fallback to empty array
+    const phasesUnknown = (aiQuoteRaw as Record<string, unknown>).phases;
+    const phases = Array.isArray(phasesUnknown)
+      ? (phasesUnknown as unknown as GeneratedQuotePhase[])
+      : [];
+
     return {
-      title: aiQuote.title,
-      description: aiQuote.description,
-      phases: aiQuote.phases,
-      totalCost: aiQuote.totalCost,
-      totalDuration: aiQuote.totalDuration,
-      recommendations: aiQuote.recommendations,
-      assumptions: aiQuote.assumptions,
-      confidence: aiQuote.confidence || 85
+      title,
+      description,
+      phases,
+      totalCost,
+      totalDuration,
+      recommendations,
+      assumptions,
+      confidence
     };
   }
 
   private calculateConfidence(request: QuoteGenerationRequest, _template: QuoteTemplate): number {
+    // Mark parameter as intentionally unused to satisfy eslint/no-unused-vars
+    void _template;
     let confidence = 70; // Base
     
     // Plus de détails = plus de confiance

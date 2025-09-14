@@ -14,11 +14,27 @@ export type Permission =
   // Équipements
   | 'equipment.view' | 'equipment.manage' | 'equipment.rent'
   // Documents
-  | 'documents.view' | 'documents.upload' | 'documents.delete'
+  | 'documents.view' | 'documents.upload' | 'documents.delete' | 'documents.send'
   // Planning
   | 'planning.view' | 'planning.edit'
   // Rapports
   | 'reports.view' | 'reports.export'
+  // Achats
+  | 'purchases.view' | 'purchases.create' | 'purchases.edit'
+  // Intelligence Artificielle
+  | 'ai.anomaly' | 'ai.copilot' | 'ai.vocal' | 'ai.quotes'
+  | 'ai.suggestions' | 'ai.planner' | 'ai.anomaly.advanced'
+  | 'ai.quotes.advanced' | 'ai.analytics' | 'ai.reporting' | 'ai.ocr.advanced' | 'ai.plan.read'
+  // Rapports avancés
+  | 'reports.advanced'
+  // Géolocalisation
+  | 'location.view' | 'location.track'
+  // Signatures électroniques
+  | 'signature.create' | 'signature.validate'
+  // API et intégrations
+  | 'api.access'
+  // Sécurité et audit
+  | 'admin.audit' | 'security.view'
   // Administration
   | 'admin.users' | 'admin.settings' | 'admin.system';
 
@@ -31,9 +47,17 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'finances.view', 'finances.edit', 'finances.reports',
     'team.view', 'team.manage', 'team.payroll',
     'equipment.view', 'equipment.manage', 'equipment.rent',
-    'documents.view', 'documents.upload', 'documents.delete',
+    'documents.view', 'documents.upload', 'documents.delete', 'documents.send',
     'planning.view', 'planning.edit',
     'reports.view', 'reports.export',
+    'purchases.view', 'purchases.create', 'purchases.edit',
+    'ai.anomaly', 'ai.copilot', 'ai.vocal', 'ai.quotes',
+    'ai.suggestions', 'ai.planner', 'ai.anomaly.advanced',
+    'ai.quotes.advanced', 'ai.analytics', 'ai.reporting', 'ai.ocr.advanced', 'ai.plan.read',
+    'reports.advanced',
+    'location.view', 'location.track',
+    'signature.create', 'signature.validate',
+    'api.access', 'admin.audit', 'security.view',
     'admin.users', 'admin.settings', 'admin.system'
   ],
   manager: [

@@ -1,4 +1,4 @@
-import { ocrService, OCRResult, ExtractedData } from '../ocrService';
+import { ocrService, ExtractedData } from '../ocrService';
 
 export interface IntelligentOCRResult extends ExtractedData {
   documentType: 'invoice' | 'quote' | 'receipt' | 'contract' | 'delivery_note' | 'unknown';
@@ -37,7 +37,7 @@ export interface IntelligentOCRResult extends ExtractedData {
     category?: string;
     project?: string;
     phase?: string;
-    autoFillFields: Record<string, any>;
+    autoFillFields: Record<string, unknown>;
   };
   aiAnalysis: {
     summary: string;
@@ -215,11 +215,11 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
 
   // Extraction des informations fournisseur
   private extractSupplierInfo(lines: string[]): IntelligentOCRResult['structuredData']['supplier'] {
-    const supplier: any = {};
+    const supplierPartial: { name?: string; address?: string; phone?: string; email?: string; siret?: string } = {};
 
     // Nom (généralement dans les premières lignes)
-    if (lines.length > 0) {
-      supplier.name = lines[0];
+    if (lines.length > 0 && lines[0].trim()) {
+      supplierPartial.name = lines[0].trim();
     }
 
     // Adresse (lignes suivantes)
@@ -228,31 +228,40 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
       line.length > 5
     );
     if (addressLines.length > 0) {
-      supplier.address = addressLines.join(', ');
+      supplierPartial.address = addressLines.join(', ');
     }
 
     // Téléphone
-    const phoneMatch = lines.find(line => line.match(/(?:tel|phone)[\s:]*([+\d\s\-\.]+)/i));
+    const phoneMatch = lines.find(line => line.match(/(?:tel|phone)[\s:]*([+\d\s.-]+)/i));
     if (phoneMatch) {
-      const match = phoneMatch.match(/([+\d\s\-\.]+)/);
-      if (match) supplier.phone = match[1].trim();
+      const match = phoneMatch.match(/([+\d\s.-]+)/);
+      if (match) supplierPartial.phone = match[1].trim();
     }
 
     // Email
     const emailMatch = lines.find(line => line.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/));
     if (emailMatch) {
       const match = emailMatch.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-      if (match) supplier.email = match[1];
+      if (match) supplierPartial.email = match[1];
     }
 
     // SIRET
     const siretMatch = lines.find(line => line.match(/siret[\s:]*(\d{14})/i));
     if (siretMatch) {
       const match = siretMatch.match(/(\d{14})/);
-      if (match) supplier.siret = match[1];
+      if (match) supplierPartial.siret = match[1];
     }
-
-    return Object.keys(supplier).length > 0 ? supplier : undefined;
+    
+    if (supplierPartial.name) {
+      return {
+        name: supplierPartial.name as string,
+        address: supplierPartial.address,
+        phone: supplierPartial.phone,
+        email: supplierPartial.email,
+        siret: supplierPartial.siret
+      };
+    }
+    return undefined;
   }
 
   // Extraction des informations client
@@ -277,7 +286,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
 
   // Extraction des articles/lignes
   private extractItems(text: string): IntelligentOCRResult['structuredData']['items'] {
-    const items: any[] = [];
+    const items: Array<{ description: string; quantity?: number; unitPrice?: number; totalPrice?: number; unit?: string }> = [];
     const lines = text.split('\n');
 
     // Patterns pour identifier les lignes d'articles
@@ -292,7 +301,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
       for (const pattern of itemPatterns) {
         const match = line.match(pattern);
         if (match) {
-          let item: any = {};
+          let item: { description: string; quantity?: number; unitPrice?: number; totalPrice?: number; unit?: string } = { description: '' };
           
           if (match.length === 5) {
             // Format: Qté Description Prix_unit Prix_total
@@ -324,7 +333,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
 
   // Extraction des informations de taxes
   private extractTaxInfo(text: string): IntelligentOCRResult['structuredData']['taxes'] {
-    const taxes: any = {};
+    const taxes: { tva?: number; totalHT?: number; totalTTC?: number } = {};
 
     // TVA
     const tvaMatch = text.match(/tva[\s:]*(\d+(?:[.,]\d+)?)\s*%/i);
@@ -349,7 +358,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
 
   // Extraction des informations de paiement
   private extractPaymentInfo(text: string): IntelligentOCRResult['structuredData']['payment'] {
-    const payment: any = {};
+    const payment: { method?: string; dueDate?: string; terms?: string } = {};
 
     // Méthode de paiement
     const methodPatterns = [
@@ -368,8 +377,8 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
 
     // Date d'échéance
     const dueDatePatterns = [
-      /échéance[\s:]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i,
-      /à payer avant le[\s:]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i
+      /échéance[\s:]*(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i,
+      /à payer avant le[\s:]*(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i
     ];
 
     for (const pattern of dueDatePatterns) {
@@ -435,7 +444,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
   }
 
   // Suggérer des catégories basées sur les articles
-  private suggestCategories(items: any[]): string[] {
+  private suggestCategories(items: Array<{ description?: string }>): string[] {
     const categories = new Set<string>();
     
     for (const item of items) {
@@ -482,7 +491,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
   private getFallbackAnalysis(text: string): IntelligentOCRResult['aiAnalysis'] {
     const wordCount = text.split(/\s+/).length;
     const hasAmounts = /\d+(?:[.,]\d{3})*[.,]\d{2}/.test(text);
-    const hasDate = /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(text);
+    const hasDate = /\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(text);
     
     return {
       summary: `Document de ${wordCount} mots ${hasAmounts ? 'avec montants' : 'sans montants'} ${hasDate ? 'et dates' : ''}`,

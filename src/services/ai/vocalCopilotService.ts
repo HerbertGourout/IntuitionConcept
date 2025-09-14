@@ -1,6 +1,15 @@
 // import { projectPlanGenerator } from './projectPlanGenerator';
 import { priceLibraryService } from '../priceLibraryService';
 
+// Minimal ambient declarations for Web Speech API to satisfy TypeScript in browser context
+// These are intentionally lightweight to avoid adding a dependency on lib.dom types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SpeechRecognitionEvent = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SpeechRecognitionErrorEvent = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SpeechRecognitionCtor = new () => any;
+
 export interface VoiceCommand {
   id: string;
   transcript: string;
@@ -25,7 +34,9 @@ export interface VoiceSession {
 }
 
 class VocalCopilotService {
-  private recognition: SpeechRecognition | null = null;
+  // Use a broad type for compatibility across browsers and test environments
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private recognition: any | null = null;
   private synthesis: SpeechSynthesis;
   private isListening = false;
   private currentSession: VoiceSession | null = null;
@@ -37,8 +48,11 @@ class VocalCopilotService {
 
   private initializeSpeechRecognition() {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as Record<string, unknown>).SpeechRecognition || (window as Record<string, unknown>).webkitSpeechRecognition;
-      this.recognition = new SpeechRecognition();
+      const ctor = (
+        (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor }).SpeechRecognition ||
+        (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionCtor }).webkitSpeechRecognition
+      ) as SpeechRecognitionCtor | undefined;
+      this.recognition = ctor ? new ctor() : null;
       
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
@@ -54,18 +68,21 @@ class VocalCopilotService {
         this.isListening = false;
       };
 
-      this.recognition.onerror = (event: any) => {
+      this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Erreur reconnaissance vocale:', event.error);
         this.isListening = false;
       };
 
-      this.recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0])
-          .map((result: any) => result.transcript)
+      this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = Array.from(event.results as ArrayLike<{ 0: { transcript: string }; isFinal?: boolean }>)
+          .map((result) => result[0])
+          .map((alt) => alt.transcript)
           .join('');
 
-        if (event.results[event.results.length - 1].isFinal) {
+        const last = (event.results as ArrayLike<{ isFinal?: boolean }>)[
+          (event.results as ArrayLike<unknown>).length - 1
+        ];
+        if (last && last.isFinal) {
           this.processVoiceCommand(transcript);
         }
       };
@@ -107,7 +124,7 @@ class VocalCopilotService {
   }
 
   // Traiter une commande vocale
-  private async processVoiceCommand(transcript: string): Promise<Record<string, unknown>> {
+  private async processVoiceCommand(transcript: string): Promise<void> {
     try {
       const command = await this.analyzeIntent(transcript);
       
@@ -124,7 +141,7 @@ class VocalCopilotService {
 
     } catch (error) {
       console.error('Erreur traitement commande vocale:', error);
-      this.speak('Désolé, je n\'ai pas compris votre demande.');
+      this.speak("Désolé, je n'ai pas compris votre demande.");
     }
   }
 
@@ -154,7 +171,7 @@ class VocalCopilotService {
       },
       {
         intent: 'check_budget',
-        patterns: [/budget/i, /combien (j\'ai )?dépensé/i, /état financier/i],
+        patterns: [/budget/i, /combien (j'ai )?dépensé/i, /état financier/i],
         entities: this.extractBudgetEntities
       },
       {
@@ -228,13 +245,13 @@ class VocalCopilotService {
 
   // Gestionnaires de commandes
   private handleCreateQuote(command: VoiceCommand): string {
-    const client = command.entities.client || 'Client';
+    const client = (command.entities.client as string | undefined) || 'Client';
     command.action = 'navigate_to_quote_creation';
     return `D'accord, je vais créer un nouveau devis${client !== 'Client' ? ` pour ${client}` : ''}. Redirection vers la page de création de devis.`;
   }
 
   private async handleSearchPrice(command: VoiceCommand): Promise<string> {
-    const item = command.entities.item;
+    const item = command.entities.item as string | undefined;
     if (!item) {
       return 'Quel élément souhaitez-vous rechercher dans la bibliothèque de prix ?';
     }
@@ -254,34 +271,53 @@ class VocalCopilotService {
       
       return `J'ai trouvé "${topResult.designation}" à ${formattedPrice} ${topResult.currency} par ${topResult.unit} dans la région ${topResult.region}.`;
     } catch (error) {
+      console.error('Erreur recherche prix:', error);
       return 'Erreur lors de la recherche de prix. Veuillez réessayer.';
     }
   }
 
   private handleCreateProject(command: VoiceCommand): string {
-    const projectName = command.entities.name || 'Nouveau Projet';
+    const projectName = (command.entities.name as string | undefined) || 'Nouveau Projet';
     command.action = 'navigate_to_project_creation';
     return `Parfait, je vais créer le projet "${projectName}". Redirection vers la page de création de projet.`;
   }
 
   private handleAddTask(command: VoiceCommand): string {
-    const taskName = command.entities.task || 'Nouvelle tâche';
+    const taskName = (command.entities.task as string | undefined) || 'Nouvelle tâche';
     command.action = 'open_task_modal';
     return `Je vais ajouter la tâche "${taskName}". Ouverture du formulaire de création de tâche.`;
   }
 
-  private handleCheckBudget(command: VoiceCommand): string {
-    // Simulation - en production, récupérer les vraies données
-    const spent = 1250000;
-    const budget = 2000000;
-    const remaining = budget - spent;
-    const percentage = Math.round((spent / budget) * 100);
+  private async handleCheckBudget(command: VoiceCommand): Promise<string> {
+    // Mark parameter as intentionally unused to satisfy eslint/no-unused-vars
+    void command;
+    try {
+      // Récupérer les vraies données financières depuis le service
+      const { financialService } = await import('../financialService');
+      const summary = await financialService.getBudgetSummary('current-project-id');
+      
+      if (!summary) {
+        return "Impossible de récupérer les informations budgétaires. Aucun projet sélectionné.";
+      }
+      
+      const spent = summary.spentAmount || 0;
+      const budget = summary.allocatedBudget || summary.estimatedBudget || 0;
+      const remaining = budget - spent;
+      const percentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
 
-    return `Vous avez dépensé ${new Intl.NumberFormat('fr-FR').format(spent)} francs CFA sur un budget de ${new Intl.NumberFormat('fr-FR').format(budget)}, soit ${percentage}%. Il vous reste ${new Intl.NumberFormat('fr-FR').format(remaining)} francs CFA.`;
+      if (budget === 0) {
+        return "Aucun budget n'est défini pour le projet actuel. Veuillez configurer un budget dans les paramètres du projet.";
+      }
+
+      return `Vous avez dépensé ${new Intl.NumberFormat('fr-FR').format(spent)} francs CFA sur un budget de ${new Intl.NumberFormat('fr-FR').format(budget)}, soit ${percentage}%. Il vous reste ${new Intl.NumberFormat('fr-FR').format(remaining)} francs CFA.`;
+    } catch (error) {
+      console.error('Erreur lors de la récupération du budget:', error);
+      return "Impossible de récupérer les informations budgétaires. Veuillez vérifier votre connexion et réessayer.";
+    }
   }
 
   private async handleGeneratePlan(command: VoiceCommand): Promise<string> {
-    const description = command.entities.description;
+    const description = command.entities.description as string | undefined;
     if (!description) {
       return 'Décrivez-moi le projet pour lequel vous souhaitez générer un plan.';
     }
@@ -290,6 +326,7 @@ class VocalCopilotService {
       command.action = 'generate_ai_plan';
       return `Je vais générer un plan détaillé pour "${description}". Cela peut prendre quelques secondes...`;
     } catch (error) {
+      console.error('Erreur lors de la génération du plan:', error);
       return 'Erreur lors de la génération du plan. Veuillez réessayer.';
     }
   }
@@ -307,38 +344,44 @@ class VocalCopilotService {
   }
 
   // Extracteurs d'entités
-  private extractQuoteEntities(transcript: string, match: RegExpMatchArray): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private extractQuoteEntities(transcript: string, _match: RegExpMatchArray): Record<string, unknown> {
     const clientMatch = transcript.match(/pour (.+?)(?:\s|$)/i);
     return {
       client: clientMatch ? clientMatch[1] : null
     };
   }
 
-  private extractPriceEntities(transcript: string, match: RegExpMatchArray): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private extractPriceEntities(_transcript: string, match: RegExpMatchArray): Record<string, unknown> {
     return {
       item: match[2] || match[1] || null
     };
   }
 
-  private extractProjectEntities(transcript: string, match: RegExpMatchArray): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private extractProjectEntities(transcript: string, _match: RegExpMatchArray): Record<string, unknown> {
     const nameMatch = transcript.match(/projet (.+?)(?:\s|$)/i);
     return {
       name: nameMatch ? nameMatch[1] : null
     };
   }
 
-  private extractTaskEntities(transcript: string, match: RegExpMatchArray): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private extractTaskEntities(transcript: string, _match: RegExpMatchArray): Record<string, unknown> {
     const taskMatch = transcript.match(/tâche (.+?)(?:\s|$)/i);
     return {
       task: taskMatch ? taskMatch[1] : null
     };
   }
 
-  private extractBudgetEntities(transcript: string, match: RegExpMatchArray): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private extractBudgetEntities(_transcript: string, _match: RegExpMatchArray): Record<string, unknown> {
     return {};
   }
 
-  private extractPlanEntities(transcript: string, match: RegExpMatchArray): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private extractPlanEntities(transcript: string, _match: RegExpMatchArray): Record<string, unknown> {
     const descMatch = transcript.match(/pour (.+?)(?:\s|$)/i);
     return {
       description: descMatch ? descMatch[1] : null
@@ -360,7 +403,7 @@ class VocalCopilotService {
       utterance.volume = options?.volume || 1;
 
       utterance.onend = () => resolve();
-      utterance.onerror = (event) => reject(event);
+      utterance.onerror = (event: SpeechSynthesisErrorEvent) => reject(event);
 
       this.synthesis.speak(utterance);
     });

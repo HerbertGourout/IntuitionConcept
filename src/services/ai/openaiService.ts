@@ -1,4 +1,5 @@
 import { aiConfig } from './aiConfig';
+import type { AIEnhancementData } from './ocrEnhancer';
 
 export interface OpenAIResponse {
   choices: Array<{
@@ -16,6 +17,22 @@ export interface OpenAIVisionResponse {
   }>;
 }
 
+// Types structurés pour l'analyse OCR d'une facture via OpenAI
+type AnalyzedAmount = { value: number; currency?: string; confidence: number };
+type AnalyzedDate = { value: string; confidence: number };
+type AnalyzedVendor = { value: string; normalized?: string; confidence: number };
+type AnalyzedInvoiceNumber = { value: string; confidence: number };
+type AnalyzedValidation = { isValid?: boolean; issues?: string[]; suggestions?: string[] };
+
+interface AnalyzedOCR {
+  amounts?: AnalyzedAmount[];
+  dates?: AnalyzedDate[];
+  vendorName?: AnalyzedVendor;
+  invoiceNumber?: AnalyzedInvoiceNumber;
+  total?: AnalyzedAmount;
+  validation?: AnalyzedValidation;
+}
+
 class OpenAIService {
   private apiKey: string;
   private baseUrl = 'https://api.openai.com/v1';
@@ -24,7 +41,96 @@ class OpenAIService {
     this.apiKey = aiConfig.openaiApiKey || '';
   }
 
+  /**
+   * Enrichit des données OCR brutes en utilisant l'analyse OpenAI existante
+   * et retourne un objet conforme à AIEnhancementData (utilisé par OCREnhancer).
+   */
+  async enhanceOCRData(originalText: string): Promise<AIEnhancementData | null> {
+    try {
+      const analyzed = await this.analyzeDocument(originalText, 'invoice');
+
+      const a = analyzed as Partial<AnalyzedOCR>;
+      const total = a.total;
+      const vendorName = a.vendorName;
+      // Si l'IA renvoie un seul objet date, on le supporte; sinon on peut prendre la première des dates[]
+      const date: AnalyzedDate | undefined = (a as unknown as { date?: AnalyzedDate })?.date || a.dates?.[0];
+      const invoiceNumber = a.invoiceNumber;
+      const validation = a.validation;
+
+      const aiData: AIEnhancementData = {
+        validation: {
+          suggestions: validation?.suggestions ?? []
+        },
+        total: total?.value !== undefined && total?.confidence !== undefined
+          ? { value: total.value!, confidence: total.confidence!, currency: total.currency }
+          : undefined,
+        vendorName: vendorName?.value && vendorName?.confidence !== undefined
+          ? { value: vendorName.value, normalized: vendorName.normalized, confidence: vendorName.confidence! }
+          : undefined,
+        date: date?.value && date?.confidence !== undefined
+          ? { value: date.value, confidence: date.confidence! }
+          : undefined,
+        invoiceNumber: invoiceNumber?.value && invoiceNumber?.confidence !== undefined
+          ? { value: invoiceNumber.value, confidence: invoiceNumber.confidence! }
+          : undefined
+      };
+
+      return aiData;
+    } catch (error) {
+      console.error('OpenAI enhanceOCRData error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Traitement d'une requête Copilot via OpenAI et retour d'un message texte.
+   * Conserve la signature attendue par AICopilot (string simple).
+   */
+  async processCopilotQuery(message: string, context: unknown): Promise<string> {
+    if (!this.apiKey) {
+      console.warn('OpenAI API key not configured, returning mock copilot response');
+      return 'Copilot (mock): fonctionnalité IA non configurée. Voici quelques actions possibles: Voir projets, Créer devis, Voir finances.';
+    }
+
+    try {
+      const messages = [
+        { role: 'system', content: aiConfig.copilot.systemPrompt },
+        {
+          role: 'user',
+          content: `Contexte JSON:\n${JSON.stringify(context, null, 2)}\n\nQuestion utilisateur:\n${message}`
+        }
+      ];
+
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: aiConfig.copilot.model,
+          messages,
+          max_tokens: aiConfig.copilot.maxTokens,
+          temperature: aiConfig.copilot.temperature,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data: OpenAIResponse = await response.json();
+      const content = data.choices[0]?.message?.content?.trim();
+      return content || "Désolé, je n'ai pas pu générer de réponse.";
+    } catch (error) {
+      console.error('OpenAI copilot query error:', error);
+      return 'Désolé, je rencontre une difficulté technique. Pouvez-vous réessayer ?';
+    }
+  }
+
   async analyzeDocument(documentText: string, _documentType: string): Promise<Record<string, unknown>> {
+    // prevent unused parameter lint when documentType is not used by the current prompt
+    void _documentType;
     if (!this.apiKey) {
       console.warn('OpenAI API key not configured, using mock data');
       return this.getMockEnhancedData(documentText);
@@ -90,6 +196,8 @@ class OpenAIService {
   }
 
   async generateQuote(projectData: Record<string, unknown>, _requirements: Record<string, unknown>): Promise<Record<string, unknown>> {
+    // Mark parameter as intentionally unused to satisfy eslint/no-unused-vars
+    void _requirements;
     if (!this.apiKey) {
       console.warn('OpenAI API key not configured, using mock data');
       return this.getMockQuoteData(projectData);
@@ -130,12 +238,29 @@ class OpenAIService {
         },
         {
           role: 'user',
-          content: `Génère un devis pour ce projet BTP:
-          Type: ${projectData.projectType}
-          Description: ${projectData.description}
-          Budget: ${(projectData.budget as any)?.min || 0} - ${(projectData.budget as any)?.max || 0} XAF
-          Localisation: ${projectData.location || 'Cameroun'}
-          Délai: ${projectData.timeline || 'Standard'}`
+          content: (() => {
+            // Narrow budget type safely without using 'any'
+            const budgetUnknown = (projectData as Record<string, unknown>).budget;
+            let min = 0;
+            let max = 0;
+            if (budgetUnknown && typeof budgetUnknown === 'object') {
+              const b = budgetUnknown as Partial<{ min: unknown; max: unknown }>;
+              if (typeof b.min === 'number') min = b.min;
+              if (typeof b.max === 'number') max = b.max;
+            }
+
+            const location = (projectData as Record<string, unknown>).location as string | undefined;
+            const timeline = (projectData as Record<string, unknown>).timeline as string | undefined;
+            const projectType = (projectData as Record<string, unknown>).projectType as string | undefined;
+            const description = (projectData as Record<string, unknown>).description as string | undefined;
+
+            return `Génère un devis pour ce projet BTP:
+          Type: ${projectType ?? ''}
+          Description: ${description ?? ''}
+          Budget: ${min} - ${max} XAF
+          Localisation: ${location || 'Cameroun'}
+          Délai: ${timeline || 'Standard'}`;
+          })()
         }
       ];
 
@@ -172,6 +297,9 @@ class OpenAIService {
   }
 
   async processDocumentWithAI(_content: string, _metadata: Record<string, unknown>): Promise<Record<string, unknown>> {
+    // Mark parameters as intentionally unused to satisfy eslint/no-unused-vars
+    void _content;
+    void _metadata;
     if (!this.apiKey) {
       console.warn('OpenAI API key not configured, using mock response');
       return { error: "Je suis désolé, l'API OpenAI n'est pas configurée. Veuillez vérifier votre clé API." };
@@ -224,6 +352,8 @@ class OpenAIService {
     total: {value: number; currency: string; confidence: number};
     validation: {isValid: boolean; issues: string[]; suggestions: string[]};
   } {
+    // Mark parameter as intentionally unused to satisfy eslint/no-unused-vars
+    void _ocrText;
     return {
       amounts: [
         { value: 750000, currency: 'XAF', confidence: 85 },
