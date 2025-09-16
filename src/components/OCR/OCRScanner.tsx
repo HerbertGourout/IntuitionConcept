@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, Camera, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { Button, Modal, Progress } from 'antd';
 import { ocrService, OCRResult, ExtractedData } from '../../services/ocrService';
 import { ocrEnhancer, EnhancedOCRData } from '../../services/ai/ocrEnhancer';
 
@@ -101,87 +100,138 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
   };
 
   return (
-    <Modal
-      title={
-        <div className="flex items-center gap-2">
-          <FileText className="w-5 h-5 text-blue-600" />
-          <span>{title}</span>
-        </div>
-      }
-      open={isOpen}
-      onCancel={handleClose}
-      footer={[
-        <Button key="close" onClick={handleClose}>
-          Fermer
-        </Button>
-      ]}
-      width={800}
-      className="ocr-scanner-modal"
-    >
+    <div className={`fixed inset-0 z-50 ${isOpen ? 'block' : 'hidden'}`}>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose}></div>
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Header avec gradient */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-2xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-xl">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">{title}</h2>
+                  <p className="text-blue-100 text-sm">Scanner et analyser vos documents avec l'IA</p>
+                </div>
+              </div>
+              <button
+                onClick={handleClose}
+                className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6">
       <div className="space-y-6">
-        {/* Zone de téléchargement */}
+        {/* Zone de téléchargement moderne */}
         {!isProcessing && !ocrResult && (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <div className="space-y-4">
-              <div className="flex justify-center gap-4">
-                <Button
-                  type="primary"
-                  icon={<Upload className="w-4 h-4" />}
-                  onClick={() => fileInputRef.current?.click()}
-                  size="large"
-                >
-                  Choisir un fichier
-                </Button>
-                <Button
-                  icon={<Camera className="w-4 h-4" />}
-                  onClick={() => cameraInputRef.current?.click()}
-                  size="large"
-                >
-                  Prendre une photo
-                </Button>
+          <div className="relative">
+            <div className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-2xl p-12 text-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 transition-all duration-300">
+              <div className="space-y-6">
+                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                  <FileText className="w-8 h-8 text-white" />
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Glissez votre document ici
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    ou choisissez un fichier depuis votre appareil
+                  </p>
+                </div>
+
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-base btn-gradient-primary hover-lift px-6 py-3 flex items-center space-x-2"
+                  >
+                    <Upload className="w-5 h-5" />
+                    <span>Choisir un fichier</span>
+                  </button>
+                  <button
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="btn-base btn-gradient-accent hover-lift px-6 py-3 flex items-center space-x-2"
+                  >
+                    <Camera className="w-5 h-5" />
+                    <span>Prendre une photo</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>JPG, PNG, PDF</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span>Max 10MB</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="text-sm text-gray-600">
-                <p>Formats supportés : JPG, PNG, PDF</p>
-                <p>Taille maximale : 10MB</p>
-              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleCameraCapture}
+                className="hidden"
+              />
             </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.pdf"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleCameraCapture}
-              className="hidden"
-            />
           </div>
         )}
 
-        {/* Barre de progression */}
+        {/* Barre de progression moderne */}
         {isProcessing && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-              <span className="text-gray-700">Traitement du document en cours...</span>
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+                <Loader2 className="w-6 h-6 animate-spin text-white" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-white">Traitement en cours</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Analyse du document avec l'IA...</p>
+              </div>
             </div>
-            <Progress percent={progress} status="active" />
+            <div className="relative">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <div className="text-right mt-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{progress}%</span>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Erreur */}
+        {/* Erreur moderne */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-              <span className="text-red-700">{error}</span>
+          <div className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-700 rounded-2xl p-6">
+            <div className="flex items-start space-x-4">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-red-800 dark:text-red-300 mb-1">Erreur de traitement</h4>
+                <p className="text-red-700 dark:text-red-400">{error}</p>
+              </div>
             </div>
           </div>
         )}
@@ -298,19 +348,31 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-between items-center">
-              <Button onClick={resetScanner}>
-                Scanner un autre document
-              </Button>
-              <div className="text-sm text-gray-600">
-                Confiance OCR : {Math.round(ocrResult.confidence)}%
+            {/* Actions modernes */}
+            <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-600">
+              <button
+                onClick={resetScanner}
+                className="btn-base btn-gradient-secondary hover-lift px-6 py-3 flex items-center space-x-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Scanner un autre document</span>
+              </button>
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    Confiance OCR : {Math.round(ocrResult.confidence)}%
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
-    </Modal>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

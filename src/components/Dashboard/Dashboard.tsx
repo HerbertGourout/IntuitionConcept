@@ -29,6 +29,10 @@ import VocalCopilot from '../AI/VocalCopilot';
 import HybridAITestPanel from '../AI/HybridAITestPanel';
 import AnomalyDetectionDashboard from '../AI/AnomalyDetectionDashboard';
 
+// Import des widgets d'automatisation
+import { AutomationDashboard } from '../Automation/AutomationDashboard';
+import { WorkflowManager } from '../Automation/WorkflowManager';
+
 interface DashboardProps {
   onNavigate?: (section: string) => void;
 }
@@ -910,6 +914,39 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             return null;
           })}
         </div>
+
+        {/* Section Automatisations n8n */}
+        <div className={`${prefs.density === 'compact' ? 'mb-6' : 'mb-8'}`}>
+          <SectionHeader 
+            title="Automatisations & Workflows" 
+            subtitle="Gestion des workflows n8n et automatisations BTP"
+            icon={<Zap className="w-6 h-6" />}
+          />
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+            <AutomationDashboard />
+          </div>
+        </div>
+
+        {/* Section IA Avancée */}
+        {showAdvanced && (
+          <div className={`${prefs.density === 'compact' ? 'mb-6' : 'mb-8'}`}>
+            <SectionHeader 
+              title="Intelligence Artificielle" 
+              subtitle="Copilot vocal et détection d'anomalies"
+              icon={<AlertTriangle className="w-6 h-6" />}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Copilot Vocal</h4>
+                <VocalCopilot />
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Détection d'Anomalies</h4>
+                <AnomalyDetectionDashboard />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Widgets avancés - Quatrième ligne */}
         <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>

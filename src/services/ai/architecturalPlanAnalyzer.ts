@@ -66,8 +66,25 @@ class ArchitecturalPlanAnalyzer {
   // Analyse complète d'un plan d'architecture
   async analyzePlan(planFile: File): Promise<ArchitecturalPlanAnalysis> {
     try {
+      // Validation du fichier
+      const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp'];
+      if (!supportedTypes.includes(planFile.type)) {
+        throw new Error(`Format de fichier non supporté: ${planFile.type}. Veuillez utiliser une image (JPG, PNG, BMP, TIFF, WebP).`);
+      }
+
+      // Vérification de la taille
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (planFile.size > maxSize) {
+        throw new Error('Fichier trop volumineux. Taille maximum: 10MB');
+      }
+
       // Étape 1: OCR intelligent du plan
       const ocrResult = await intelligentOcrService.processDocumentIntelligently(planFile);
+      
+      // Vérification que du texte a été extrait
+      if (!ocrResult.text || ocrResult.text.trim().length < 10) {
+        throw new Error('Impossible d\'extraire du texte du plan. Vérifiez que l\'image est claire et contient du texte lisible.');
+      }
       
       // Étape 2: Analyse spécialisée pour plans d'architecture
       const planAnalysis = await this.analyzeArchitecturalContent(ocrResult, planFile);
@@ -75,7 +92,23 @@ class ArchitecturalPlanAnalyzer {
       return planAnalysis;
     } catch (error) {
       console.error('Erreur analyse plan architectural:', error);
-      throw new Error('Impossible d\'analyser le plan d\'architecture');
+      
+      // Gestion spécifique des erreurs
+      if (error instanceof Error) {
+        if (error.message.includes('Type de fichier non supporté') || 
+            error.message.includes('Format de fichier non supporté')) {
+          throw new Error(error.message);
+        }
+        if (error.message.includes('Fichier trop volumineux')) {
+          throw new Error(error.message);
+        }
+        if (error.message.includes('Aucun texte détecté') || 
+            error.message.includes('Impossible d\'extraire du texte')) {
+          throw new Error('Le plan ne contient pas de texte lisible. Assurez-vous que l\'image est de bonne qualité et contient des annotations textuelles.');
+        }
+      }
+      
+      throw new Error('Erreur lors de l\'analyse du plan d\'architecture. Vérifiez que le fichier est une image claire d\'un plan architectural.');
     }
   }
 

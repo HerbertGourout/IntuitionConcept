@@ -44,7 +44,10 @@ const Layout: React.FC<LayoutProps> = ({
     'payments': 'Paiements',
     'locations': 'Localisation',
     'notifications': 'Notifications',
-    'settings': 'Paramètres'
+    'settings': 'Paramètres',
+    'automation-dashboard': 'Automatisations',
+    'workflow-manager': 'Gestion Workflows',
+    'automation-templates': 'Templates Automatisation'
   };
 
   return (
@@ -65,7 +68,7 @@ const Layout: React.FC<LayoutProps> = ({
       )}
 
       {/* Rangée principale: Sidebar + Contenu (décalée sous le header fixe de 80px) */}
-      <div className="flex flex-1 mt-20">
+      <div className="flex flex-1 pt-20">
         <Sidebar
           collapsed={sidebarCollapsed}
           onCollapse={(collapsed) => {

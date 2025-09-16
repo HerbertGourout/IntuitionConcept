@@ -38,6 +38,11 @@ button, .ant-btn {
   min-width: 44px;
 }
 
+/* Fix pour éviter que le header cache le contenu */
+body {
+  scroll-padding-top: 80px;
+}
+
 /* Optimisation pour les écrans mobiles */
 @media (max-width: 768px) {
   .ant-layout-content {

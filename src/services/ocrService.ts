@@ -24,12 +24,7 @@ class OCRService {
 
   async initialize(): Promise<void> {
     if (!this.worker) {
-      this.worker = await createWorker();
-      await this.worker.load();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (this.worker as any).loadLanguage('fra+eng'); // Français + Anglais
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (this.worker as any).initialize('fra+eng');
+      this.worker = await createWorker('fra+eng');
     }
   }
 
@@ -38,57 +33,78 @@ class OCRService {
       await this.initialize();
     }
 
-    const { data } = await this.worker!.recognize(file);
-
-    // In Tesseract.js v6, the structure is different - lines and words are in blocks/paragraphs
-    const extractedLines: string[] = [];
-    const extractedWords: Array<{
-      text: string;
-      confidence: number;
-      bbox: { x0: number; y0: number; x1: number; y1: number };
-    }> = [];
-
-    // Extract lines and words from the hierarchical structure
-    if (data.blocks) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data.blocks.forEach((block: any) => {
-        if (block.paragraphs) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          block.paragraphs.forEach((paragraph: any) => {
-            if (paragraph.lines) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              paragraph.lines.forEach((line: any) => {
-                if (line.text && line.text.trim()) {
-                  extractedLines.push(line.text.trim());
-                }
-                if (line.words) {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  line.words.forEach((word: any) => {
-                    if (word.text && word.text.trim()) {
-                      extractedWords.push({
-                        text: word.text,
-                        confidence: word.confidence || 0,
-                        bbox: word.bbox || { x0: 0, y0: 0, x1: 0, y1: 0 }
-                      });
-                    }
-                  });
-                }
-              });
-            }
-          });
-        }
-      });
+    // Validate file type
+    const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp'];
+    if (!supportedTypes.includes(file.type)) {
+      throw new Error(`Type de fichier non supporté: ${file.type}. Formats supportés: JPG, PNG, BMP, TIFF, WebP`);
     }
 
-    return {
-      text: data.text,
-      confidence: data.confidence,
-      lines: extractedLines,
-      words: extractedWords
-    };
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      throw new Error('Fichier trop volumineux. Taille maximum: 10MB');
+    }
+
+    try {
+      const { data } = await this.worker!.recognize(file);
+      
+      if (!data.text || data.text.trim().length === 0) {
+        throw new Error('Aucun texte détecté dans l\'image. Vérifiez la qualité de l\'image.');
+      }
+
+      // In Tesseract.js v6, the structure is different - lines and words are in blocks/paragraphs
+      const extractedLines: string[] = [];
+      const extractedWords: Array<{
+        text: string;
+        confidence: number;
+        bbox: { x0: number; y0: number; x1: number; y1: number };
+      }> = [];
+
+      // Extract lines and words from the hierarchical structure
+      if (data.blocks) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data.blocks.forEach((block: any) => {
+          if (block.paragraphs) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            block.paragraphs.forEach((paragraph: any) => {
+              if (paragraph.lines) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                paragraph.lines.forEach((line: any) => {
+                  if (line.text && line.text.trim()) {
+                    extractedLines.push(line.text.trim());
+                  }
+                  if (line.words) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    line.words.forEach((word: any) => {
+                      if (word.text && word.text.trim()) {
+                        extractedWords.push({
+                          text: word.text,
+                          confidence: word.confidence || 0,
+                          bbox: word.bbox || { x0: 0, y0: 0, x1: 0, y1: 0 }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+
+      return {
+        text: data.text,
+        confidence: data.confidence,
+        lines: extractedLines,
+        words: extractedWords
+      };
+    } catch (error) {
+      console.error('Erreur OCR:', error);
+      throw new Error(`Erreur lors du traitement OCR: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    }
   }
 
-  extractData(text: string): ExtractedData {
+  public extractData(text: string): ExtractedData {
     const lines = text.split('\n').map(line => line.trim()).filter(line => line);
 
     // Extraction des montants (patterns courants en Afrique)

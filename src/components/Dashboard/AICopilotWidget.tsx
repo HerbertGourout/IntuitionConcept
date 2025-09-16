@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageCircle, Send, Bot, User, Sparkles, X, Minimize2, Maximize2 } from 'lucide-react';
 import { aiCopilot, CopilotMessage, CopilotContext, CopilotResponse } from '../../services/ai/copilot';
 
 interface AICopilotWidgetProps {
   context: CopilotContext;
-  onActionRequested?: (action: { type: string; params?: Record<string, any> }) => void;
+  onActionRequested?: (action: { type: string; params?: Record<string, unknown> }) => void;
 }
 
 export const AICopilotWidget: React.FC<AICopilotWidgetProps> = ({
@@ -50,7 +50,7 @@ export const AICopilotWidget: React.FC<AICopilotWidgetProps> = ({
     setIsTyping(true);
 
     try {
-      const response = await aiCopilot.processQuery(inputValue.trim(), context);
+      const response = await aiCopilot.processMessage(inputValue.trim(), context);
       setLastResponse(response);
 
       const assistantMessage: CopilotMessage = {
@@ -85,7 +85,7 @@ export const AICopilotWidget: React.FC<AICopilotWidgetProps> = ({
     }
   };
 
-  const handleActionClick = (action: { type: string; params?: Record<string, any> }) => {
+  const handleActionClick = (action: { type: string; params?: Record<string, unknown> }) => {
     onActionRequested?.(action);
   };
 
@@ -104,12 +104,12 @@ export const AICopilotWidget: React.FC<AICopilotWidgetProps> = ({
     return 'Bonsoir';
   };
 
-  const initializeChat = () => {
+  const initializeChat = useCallback(() => {
     if (messages.length === 0) {
       const welcomeMessage: CopilotMessage = {
         id: 'welcome_msg',
         role: 'assistant',
-        content: `${getGreeting()} ${context.currentUser.name} ! 👋
+        content: `${getGreeting()} ${context.currentUser?.name || 'cher utilisateur'} ! 👋
 
 Je suis votre assistant IA pour la gestion BTP. Je peux vous aider avec:
 
@@ -124,13 +124,13 @@ Comment puis-je vous aider aujourd'hui ?`,
       };
       setMessages([welcomeMessage]);
     }
-  };
+  }, [messages.length, context.currentUser?.name, context.projects.length, context.quotes.length]);
 
   useEffect(() => {
     if (isOpen) {
       initializeChat();
     }
-  }, [isOpen]);
+  }, [isOpen, context.currentUser?.name, context.projects.length, context.quotes.length, messages.length, initializeChat]);
 
   if (!isOpen) {
     return (

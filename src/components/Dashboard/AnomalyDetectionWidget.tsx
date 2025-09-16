@@ -48,9 +48,6 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [dismissedAnomalies, setDismissedAnomalies] = useState<Set<string>>(new Set());
-  const [showPanel, setShowPanel] = useState(false);
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-
   const loadAnomalies = async () => {
     setIsLoading(true);
     try {
@@ -166,200 +163,152 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
   const summary = getAnomalySummary();
   const totalAnomalies = anomalies.length;
 
-  const handleMouseEnter = () => {
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
-    }
-    setShowPanel(true);
-  };
-
-  const handleMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setShowPanel(false);
-    }, 300); // Délai de 300ms avant fermeture
-    setHoverTimeout(timeout);
-  };
-
-  const handlePanelMouseEnter = () => {
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
-    }
-  };
-
-  const handlePanelMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setShowPanel(false);
-    }, 300);
-    setHoverTimeout(timeout);
-  };
 
   return (
-    <div className="relative">
-      {/* Bouton flottant */}
-      <button
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className="bg-white hover:bg-gray-50 rounded-full shadow-lg border border-gray-200 p-3 transition-all duration-200 hover:shadow-xl relative"
-        title={`${totalAnomalies} anomalie${totalAnomalies !== 1 ? 's' : ''} détectée${totalAnomalies !== 1 ? 's' : ''}`}
-      >
-        <AlertTriangle className={`w-6 h-6 ${totalAnomalies > 0 ? 'text-red-600' : 'text-gray-400'}`} />
-        {totalAnomalies > 0 && (
-          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
-            {totalAnomalies > 9 ? '9+' : totalAnomalies}
+    <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+      {/* Header moderne */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className={`p-3 rounded-xl ${totalAnomalies > 0 ? 'bg-gradient-to-r from-red-500 to-pink-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'}`}>
+            <AlertTriangle className="w-6 h-6 text-white" />
           </div>
-        )}
-      </button>
-
-      {/* Panneau déroulant */}
-      {showPanel && (
-        <div 
-          className="absolute top-full right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50"
-          onMouseEnter={handlePanelMouseEnter}
-          onMouseLeave={handlePanelMouseLeave}
-        >
-          {/* Header */}
-          <div className="p-4 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-red-100 rounded-xl">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">
-                    Détection d'Anomalies
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {totalAnomalies} anomalie{totalAnomalies !== 1 ? 's' : ''} détectée{totalAnomalies !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
-              <div className="flex space-x-1">
-                <button
-                  onClick={loadAnomalies}
-                  disabled={isLoading}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                  title="Actualiser"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                </button>
-                <button
-                  onClick={() => setShowPanel(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Fermer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Summary */}
-            {totalAnomalies > 0 && (
-              <div className="mt-3 grid grid-cols-4 gap-2">
-                {Object.entries(summary).map(([severity, count]) => {
-                  const config = SEVERITY_CONFIG[severity as keyof typeof SEVERITY_CONFIG];
-                  return (
-                    <div
-                      key={severity}
-                      className={`p-2 rounded-lg ${config.bgColor} ${config.borderColor} border`}
-                    >
-                      <div className="text-center">
-                        <div className={`text-sm font-bold ${config.color}`}>{count}</div>
-                        <div className="text-xs text-gray-600 capitalize">{severity}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Content */}
-          <div className="p-4 max-h-96 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-6">
-                <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
-                <span className="ml-2 text-gray-600 text-sm">Analyse en cours...</span>
-              </div>
-            ) : totalAnomalies === 0 ? (
-              <div className="text-center py-6">
-                <div className="text-3xl mb-2">✅</div>
-                <p className="text-gray-600 text-sm">Aucune anomalie détectée</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Tous vos projets semblent en bonne santé financière
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {anomalies.slice(0, 5).map((anomaly) => {
-                  const config = SEVERITY_CONFIG[anomaly.severity];
-                  const TypeIcon = TYPE_ICONS[anomaly.type] || AlertTriangle;
-                  
-                  return (
-                    <div
-                      key={anomaly.id}
-                      onClick={() => onAnomalyClick?.(anomaly)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${config.bgColor} ${config.borderColor} group`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-2 flex-1">
-                          <div className="flex-shrink-0">
-                            <TypeIcon className={`w-4 h-4 ${config.color}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2">
-                              <h4 className={`font-medium ${config.color} text-xs`}>
-                                {anomaly.title}
-                              </h4>
-                              <span className="text-xs px-1 py-0.5 bg-white rounded text-gray-600">
-                                {anomaly.confidence}%
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-700 mt-1 line-clamp-2">
-                              {anomaly.description}
-                            </p>
-                            <div className="flex items-center justify-between mt-1">
-                              <span className={`font-semibold text-xs ${config.color}`}>
-                                {formatCurrency(anomaly.amount, anomaly.currency)}
-                              </span>
-                              <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={(e) => handleDismissAnomaly(anomaly.id, e)}
-                          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-white rounded transition-colors"
-                          title="Ignorer cette anomalie"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-                
-                {anomalies.length > 5 && (
-                  <div className="text-center pt-2">
-                    <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                      Voir toutes les anomalies ({anomalies.length})
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Last update */}
-            {lastUpdate && (
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500 text-center">
-                  Dernière analyse: {lastUpdate.toLocaleTimeString('fr-FR')}
-                </p>
-              </div>
-            )}
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Détection d'Anomalies</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Surveillance IA en temps réel
+            </p>
           </div>
         </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={loadAnomalies}
+            disabled={isLoading}
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-xl transition-all duration-300 hover:scale-110 disabled:opacity-50"
+            title="Actualiser"
+          >
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          {totalAnomalies > 0 && (
+            <div className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full text-sm font-medium">
+              {totalAnomalies} anomalie{totalAnomalies !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Résumé des anomalies */}
+      {totalAnomalies > 0 && (
+        <div className="grid grid-cols-4 gap-3 mb-6">
+          {Object.entries(summary).map(([severity, count]) => {
+            const config = SEVERITY_CONFIG[severity as keyof typeof SEVERITY_CONFIG];
+            return (
+              <div
+                key={severity}
+                className={`p-4 rounded-xl border-2 ${config.bgColor} ${config.borderColor} hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}
+              >
+                <div className="text-center">
+                  <div className="text-2xl mb-1">{config.icon}</div>
+                  <div className={`text-xl font-bold ${config.color}`}>{count}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 capitalize font-medium">{severity}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
+
+      {/* Contenu principal */}
+      <div className="space-y-4">
+            {isLoading ? (
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl p-8 text-center border border-blue-200 dark:border-blue-700">
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+                <RefreshCw className="w-6 h-6 text-white animate-spin" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-white">Analyse IA en cours</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Détection des anomalies financières...</p>
+              </div>
+            </div>
+          </div>
+        ) : totalAnomalies === 0 ? (
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl p-8 text-center border border-green-200 dark:border-green-700">
+            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="text-2xl">✅</div>
+            </div>
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Aucune anomalie détectée</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Tous vos projets semblent en bonne santé financière
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {anomalies.slice(0, 5).map((anomaly) => {
+              const config = SEVERITY_CONFIG[anomaly.severity];
+              const TypeIcon = TYPE_ICONS[anomaly.type] || AlertTriangle;
+              
+              return (
+                <div
+                  key={anomaly.id}
+                  onClick={() => onAnomalyClick?.(anomaly)}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${config.bgColor} ${config.borderColor} group`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3 flex-1">
+                      <div className={`p-2 rounded-xl ${config.bgColor} border ${config.borderColor}`}>
+                        <TypeIcon className={`w-5 h-5 ${config.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className={`font-semibold ${config.color} text-sm`}>
+                            {anomaly.title}
+                          </h4>
+                          <span className="px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300">
+                            {anomaly.confidence}% confiance
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-2">
+                          {anomaly.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className={`font-bold text-lg ${config.color}`}>
+                            {formatCurrency(anomaly.amount, anomaly.currency)}
+                          </span>
+                          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => handleDismissAnomaly(anomaly.id, e)}
+                      className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-white dark:hover:bg-gray-600 rounded-xl transition-all duration-300 hover:scale-110"
+                      title="Ignorer cette anomalie"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {anomalies.length > 5 && (
+              <div className="text-center pt-4">
+                <button className="btn-base btn-gradient-primary hover-lift px-6 py-3 text-sm">
+                  Voir toutes les anomalies ({anomalies.length})
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Dernière mise à jour */}
+        {lastUpdate && (
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600 text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Dernière analyse: {lastUpdate.toLocaleTimeString('fr-FR')}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

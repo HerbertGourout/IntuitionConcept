@@ -1,6 +1,7 @@
 import { ocrService, ExtractedData } from '../ocrService';
 
 export interface IntelligentOCRResult extends ExtractedData {
+  text: string;
   documentType: 'invoice' | 'quote' | 'receipt' | 'contract' | 'delivery_note' | 'unknown';
   confidence: number;
   structuredData: {
@@ -76,6 +77,7 @@ class IntelligentOCRService {
 
       return {
         ...extractedData,
+        text: ocrResult.text,
         documentType,
         confidence: ocrResult.confidence,
         structuredData,
@@ -91,6 +93,7 @@ class IntelligentOCRService {
       
       return {
         ...extractedData,
+        text: ocrResult.text,
         documentType: 'unknown',
         confidence: ocrResult.confidence,
         structuredData: {},

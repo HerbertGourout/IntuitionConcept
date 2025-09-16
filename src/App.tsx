@@ -16,6 +16,9 @@ import AuthWrapper from './components/Auth/AuthWrapper';
 import SecureLayout from './components/Layout/SecureLayout';
 
 import { Dashboard, Quotes, Projects, Equipment, Tasks, Finances, Planning, Documents, ProjectBudget, Reports, Team, PurchaseOrders, PaymentDashboard, Locations, NotificationCenter, Settings, QuoteCreator } from './components/LazyLoad/LazyComponents';
+import { AutomationDashboard } from './components/Automation/AutomationDashboard';
+import { WorkflowManager } from './components/Automation/WorkflowManager';
+import { AutomationTemplates } from './components/Automation/AutomationTemplates';
 import SupportCenter from './components/Support/SupportCenter';
 import SupportAgentDashboard from './components/Support/SupportAgentDashboard';
 import TransactionDashboard from './components/Transactions/TransactionDashboard';
@@ -273,6 +276,12 @@ const AppContent: React.FC = () => {
         return <AuthTestPage />;
       case 'email-test':
         return <EmailTestPage />;
+      case 'automation-dashboard':
+        return <AutomationDashboard />;
+      case 'workflow-manager':
+        return <WorkflowManager />;
+      case 'automation-templates':
+        return <AutomationTemplates />;
       default:
         return <div>Section non trouvée</div>;
     }
@@ -321,7 +330,7 @@ const AppContent: React.FC = () => {
               console.log('Action demandée par le copilote:', action);
               // Gérer les actions du copilote (navigation, création, etc.)
               if (action.type === 'navigate') {
-                setActiveSection(action.params?.section || 'dashboard');
+                setActiveSection((action.params?.section as string) || 'dashboard');
               } else if (action.type === 'create_project') {
                 setIsCreateProjectOpen(true);
               }
