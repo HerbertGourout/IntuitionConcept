@@ -30,6 +30,26 @@ export interface EmailResult {
     error?: string;
 }
 
+export interface BrandingConfig {
+    companyName?: string;
+    logo?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+}
+
+export interface EmailStats {
+    provider: string;
+    configured: boolean;
+    lastTest: string;
+    totalSent?: number;
+    totalDelivered?: number;
+    totalBounced?: number;
+}
+
 class EmailService {
     private config: EmailServiceConfig | null = null;
 
@@ -121,38 +141,13 @@ class EmailService {
             const error = await response.text();
             throw new Error(`Erreur Mailgun: ${error}`);
         }
+
+        const result = await response.json();
+        return result;
     }
 
-    // Envoyer un email avec SMTP
-    private async sendWithSMTP(emailData: EmailData, attachments?: EmailAttachment[]): Promise<Record<string, unknown>> {
-        if (!this.config) throw new Error('Service email non configuré');
-
-        const payload = {
-            from: `${this.config.fromName} <${this.config.fromEmail}>`,
-            to: [emailData.to],
-            ...(emailData.cc && { cc: [emailData.cc] }),
-            subject: emailData.subject,
-            text: emailData.message,
-            html: emailData.message.replace(/\n/g, '<br>'),
-            ...(attachments && attachments.length > 0 && { attachments })
-        };
-
-        const transporter = nodemailer.createTransport({
-            host: this.config.host,
-            port: this.config.port,
-            secure: this.config.secure,
-            auth: {
-                user: this.config.username,
-                pass: this.config.password
-            }
-        });
-
-        const response = await transporter.sendMail(payload);
-
-        if (!response) {
-            throw new Error(`Erreur SMTP: ${response}`);
-        }
-    }
+    // Note: SMTP direct n'est pas supporté dans les applications frontend
+    // Utilisez SendGrid, Mailgun ou Resend pour l'envoi d'emails
 
     // Envoyer un email avec Resend
     private async sendWithResend(emailData: EmailData, attachments?: EmailAttachment[]): Promise<Record<string, unknown>> {
@@ -181,6 +176,9 @@ class EmailService {
             const error = await response.text();
             throw new Error(`Erreur Resend: ${error}`);
         }
+
+        const result = await response.json();
+        return result;
     }
 
     // Méthode principale pour envoyer un email
@@ -212,9 +210,9 @@ class EmailService {
 
     // Envoyer un devis par email
     async sendQuoteEmail(
-        quote: Quote, 
-        emailData: EmailData, 
-        branding?: any
+        quote: Quote,
+        emailData: EmailData,
+        branding?: BrandingConfig
     ): Promise<EmailResult> {
         const attachments: EmailAttachment[] = [];
 
@@ -226,7 +224,7 @@ class EmailService {
                     return { success: false, error: 'Échec de la génération du PDF' };
                 }
                 const pdfBase64 = await this.blobToBase64(pdfBlob);
-                
+
                 attachments.push({
                     filename: `Devis_${quote.reference || quote.id}.pdf`,
                     content: pdfBase64.split(',')[1], // Retirer le préfixe data:
@@ -253,7 +251,7 @@ class EmailService {
                 subject: `[COPIE] ${emailData.subject}`,
                 message: `Copie de l'email envoyé à ${emailData.to}\n\n${emailData.message}`
             };
-            
+
             const copyResult = await this.sendEmail(copyEmailData, attachments);
             if (!copyResult.success) {
                 return copyResult;
@@ -297,7 +295,7 @@ class EmailService {
     }
 
     // Obtenir les statistiques d'envoi (si supporté par le provider)
-    async getEmailStats(): Promise<any> {
+    async getEmailStats(): Promise<EmailStats> {
         if (!this.config) {
             throw new Error('Service email non configuré');
         }
@@ -316,50 +314,39 @@ export const emailService = new EmailService();
 
 // Configuration par défaut basée sur les variables d'environnement
 const getEmailConfig = (): EmailServiceConfig => {
-  const provider = (import.meta.env.VITE_EMAIL_PROVIDER || 'sendgrid') as 'sendgrid' | 'mailgun' | 'resend';
-  
-  switch (provider) {
-    case 'sendgrid':
-      return {
-        provider: 'sendgrid',
-        apiKey: import.meta.env.VITE_SENDGRID_API_KEY || '',
-        fromEmail: import.meta.env.VITE_SENDGRID_FROM_EMAIL || 'noreply@votredomaine.com',
-        fromName: import.meta.env.VITE_SENDGRID_FROM_NAME || 'BTP Manager'
-      };
-    case 'mailgun':
-      this.configure({
-        provider: 'mailgun',
-        apiKey: process.env.VITE_MAILGUN_API_KEY,
-        domain: process.env.VITE_MAILGUN_DOMAIN,
-        fromEmail: process.env.VITE_FROM_EMAIL,
-        fromName: process.env.VITE_FROM_NAME || 'BTP Manager'
-      });
-      return {
-        provider: 'mailgun',
-        apiKey: import.meta.env.VITE_MAILGUN_API_KEY || '',
-        domain: import.meta.env.VITE_MAILGUN_DOMAIN || 'mg.votredomaine.com',
-        fromEmail: import.meta.env.VITE_MAILGUN_FROM_EMAIL || 'noreply@votredomaine.com'
-      };
-    case 'resend':
-      this.configure({
-        provider: 'resend',
-        apiKey: process.env.VITE_RESEND_API_KEY,
-        fromEmail: process.env.VITE_FROM_EMAIL,
-        fromName: process.env.VITE_FROM_NAME || 'BTP Manager'
-      });
-      return {
-        provider: 'resend',
-        apiKey: import.meta.env.VITE_RESEND_API_KEY || '',
-        fromEmail: import.meta.env.VITE_RESEND_FROM_EMAIL || 'noreply@votredomaine.com'
-      };
-    default:
-      return {
-        provider: 'sendgrid',
-        apiKey: '',
-        fromEmail: 'noreply@votredomaine.com',
-        fromName: 'BTP Manager'
-      };
-  }
+    const provider = (import.meta.env.VITE_EMAIL_PROVIDER || 'sendgrid') as 'sendgrid' | 'mailgun' | 'resend';
+
+    switch (provider) {
+        case 'sendgrid':
+            return {
+                provider: 'sendgrid',
+                apiKey: import.meta.env.VITE_SENDGRID_API_KEY || '',
+                fromEmail: import.meta.env.VITE_SENDGRID_FROM_EMAIL || 'noreply@votredomaine.com',
+                fromName: import.meta.env.VITE_SENDGRID_FROM_NAME || 'BTP Manager'
+            };
+        case 'mailgun':
+            return {
+                provider: 'mailgun',
+                apiKey: import.meta.env.VITE_MAILGUN_API_KEY || '',
+                domain: import.meta.env.VITE_MAILGUN_DOMAIN || 'mg.votredomaine.com',
+                fromEmail: import.meta.env.VITE_MAILGUN_FROM_EMAIL || 'noreply@votredomaine.com',
+                fromName: import.meta.env.VITE_MAILGUN_FROM_NAME || 'BTP Manager'
+            };
+        case 'resend':
+            return {
+                provider: 'resend',
+                apiKey: import.meta.env.VITE_RESEND_API_KEY || '',
+                fromEmail: import.meta.env.VITE_RESEND_FROM_EMAIL || 'noreply@votredomaine.com',
+                fromName: import.meta.env.VITE_RESEND_FROM_NAME || 'BTP Manager'
+            };
+        default:
+            return {
+                provider: 'sendgrid',
+                apiKey: '',
+                fromEmail: 'noreply@votredomaine.com',
+                fromName: 'BTP Manager'
+            };
+    }
 };
 
 // Configuration automatique au démarrage
@@ -367,26 +354,26 @@ emailService.configure(getEmailConfig());
 
 // Configuration manuelle (optionnelle)
 export const configureEmailService = (config: EmailServiceConfig) => {
-  emailService.configure(config);
+    emailService.configure(config);
 };
 
 // Exemple de configuration pour différents providers
 export const EMAIL_PROVIDERS = {
-  sendgrid: {
-    name: 'SendGrid',
-    description: 'Service email fiable avec API simple',
-    setupUrl: 'https://sendgrid.com/docs/api-reference/'
-  },
-  mailgun: {
-    name: 'Mailgun',
-    description: 'Service email pour développeurs',
-    setupUrl: 'https://documentation.mailgun.com/en/latest/api_reference.html'
-  },
-  resend: {
-    name: 'Resend',
-    description: 'Service email moderne pour développeurs',
-    setupUrl: 'https://resend.com/docs'
-  }
+    sendgrid: {
+        name: 'SendGrid',
+        description: 'Service email fiable avec API simple',
+        setupUrl: 'https://sendgrid.com/docs/api-reference/'
+    },
+    mailgun: {
+        name: 'Mailgun',
+        description: 'Service email pour développeurs',
+        setupUrl: 'https://documentation.mailgun.com/en/latest/api_reference.html'
+    },
+    resend: {
+        name: 'Resend',
+        description: 'Service email moderne pour développeurs',
+        setupUrl: 'https://resend.com/docs'
+    }
 };
 
 export default emailService;

@@ -1,21 +1,21 @@
 import { Permission } from './permissions';
 
-export type PlanId = 'basic' | 'pro' | 'enterprise';
+export type PlanId = 'starter' | 'pro' | 'enterprise';
 export type Currency = 'XOF' | 'XAF' | 'MAD' | 'DZD' | 'TND' | 'GNF' | 'LRD' | 'SLL' | 'CDF' | 'KES' | 'TZS' | 'UGX' | 'RWF' | 'BIF' | 'ETB' | 'ZAR' | 'USD' | 'ZMW' | 'MWK' | 'MZN' | 'BWP' | 'NAD' | 'SZL' | 'LSL' | 'LYD' | 'EGP';
 
 // Messages d'affichage pour les plans
 export const PLAN_DISPLAY_MESSAGES = {
-  basic: {
+  starter: {
     title: 'Fonctionnalités incluses :',
-    features: 'Toutes les fonctionnalités de base + IA d\'assistance'
+    features: 'Essentiels BTP + IA basique + Essai 14 jours'
   },
   pro: {
-    title: 'Tout du plan Artisan +',
-    features: 'Suite IA complète + Fonctionnalités avancées'
+    title: 'Tout Starter +',
+    features: 'Finances + Facturation + IA LLM'
   },
   enterprise: {
-    title: 'Tout du plan Pro +', 
-    features: 'IA Prédictive + Analytics + Intégrations Enterprise'
+    title: 'Tout Pro +', 
+    features: 'IA Avancée + Analytics + Support Premium'
   }
 };
 
@@ -39,6 +39,15 @@ export interface Plan {
     users: number | 'unlimited';
     storage: string;
   };
+  usersIncluded: number;
+  pricePerExtraUser: number;
+  aiCreditsIncluded: number; // en FCFA
+  aiOverage: {
+    llmPer100Calls: number; // FCFA
+    ocrPerPage: number; // FCFA
+    planReaderPerPlan: number; // FCFA
+  };
+  trialDays?: number; // Essai gratuit en jours
 }
 
 // Fonctionnalités mappées aux permissions réelles avec affichage incrémental
@@ -341,48 +350,71 @@ export const PLAN_FEATURES: PlanFeature[] = [
 // Configuration des plans avec affichage incrémental optimisé
 export const PLANS: Plan[] = [
   {
-    id: 'basic',
-    name: 'Artisan',
-    description: 'Idéal pour artisans et petites entreprises BTP + IA basique',
+    id: 'starter',
+    name: 'Starter',
+    description: 'Parfait pour artisans - Multi-projets + IA basique',
     color: 'blue',
-    popular: false,
+    popular: true,
     features: PLAN_FEATURES.filter(f => 
       f.category === 'core'
     ),
     limits: {
-      projects: 5,
-      users: 10,
-      storage: '2GB'
-    }
+      projects: 10,
+      users: 5,
+      storage: '5GB'
+    },
+    usersIncluded: 3,
+    pricePerExtraUser: 1500,
+    aiCreditsIncluded: 5000,
+    aiOverage: {
+      llmPer100Calls: 2000,
+      ocrPerPage: 200,
+      planReaderPerPlan: 1200
+    },
+    trialDays: 14
   },
   {
     id: 'pro',
-    name: 'Professionnel BTP',
-    description: 'Tout Artisan + Suite IA complète + Fonctionnalités avancées',
+    name: 'Pro BTP',
+    description: 'PME BTP - Finances + Facturation + IA LLM complète',
     color: 'green',
-    popular: true,
+    popular: false,
     features: PLAN_FEATURES.filter(f => 
-      f.category === 'advanced'
+      f.category === 'core' || f.category === 'advanced'
     ),
     limits: {
-      projects: 50,
-      users: 100,
-      storage: '25GB'
+      projects: 100,
+      users: 25,
+      storage: '50GB'
+    },
+    usersIncluded: 8,
+    pricePerExtraUser: 2500,
+    aiCreditsIncluded: 25000,
+    aiOverage: {
+      llmPer100Calls: 1500,
+      ocrPerPage: 150,
+      planReaderPerPlan: 900
     }
   },
   {
     id: 'enterprise',
-    name: 'Enterprise BTP',
-    description: 'Tout Pro + IA Prédictive + Analytics Avancés + Intégrations',
+    name: 'Enterprise',
+    description: 'Grandes structures - IA Avancée + Analytics + Support Premium',
     color: 'purple',
     popular: false,
-    features: PLAN_FEATURES.filter(f => 
-      f.category === 'premium'
-    ),
+    features: PLAN_FEATURES,
     limits: {
-      projects: 1000,
-      users: 500,
+      projects: 'unlimited',
+      users: 'unlimited',
       storage: '500GB'
+    },
+    usersIncluded: 50,
+    pricePerExtraUser: 1500,
+    aiCreditsIncluded: 100000,
+    aiOverage: {
+      llmPer100Calls: 1000,
+      ocrPerPage: 100,
+      planReaderPerPlan: 600
     }
   }
 ];
@@ -393,7 +425,7 @@ export const getAllPlanFeatures = (planId: PlanId): PlanFeature[] => {
   if (!plan) return [];
   
   switch (planId) {
-    case 'basic':
+    case 'starter':
       return PLAN_FEATURES.filter(f => f.category === 'core');
     case 'pro':
       return PLAN_FEATURES.filter(f => f.category === 'core' || f.category === 'advanced');
@@ -410,34 +442,34 @@ export const getPlanIncrementalFeatures = (planId: PlanId): PlanFeature[] => {
   return plan?.features || [];
 };
 
-// Tarification par devise (prix mensuel) - Marge 50% minimum
+// Tarification par devise (prix mensuel) - Ultra abordable et rentable
 export const PRICING: Record<Currency, Record<PlanId, number>> = {
-  XOF: { basic: 12600, pro: 35700, enterprise: 76900 },
-  XAF: { basic: 12600, pro: 35700, enterprise: 76900 },
-  MAD: { basic: 260, pro: 740, enterprise: 1600 },
-  DZD: { basic: 3360, pro: 9520, enterprise: 20500 },
-  TND: { basic: 50, pro: 143, enterprise: 308 },
-  GNF: { basic: 126000, pro: 357000, enterprise: 769000 },
-  LRD: { basic: 1890, pro: 5355, enterprise: 11535 },
-  SLL: { basic: 252000, pro: 714000, enterprise: 1538000 },
-  CDF: { basic: 31500, pro: 89250, enterprise: 192250 },
-  KES: { basic: 1575, pro: 4462, enterprise: 9612 },
-  TZS: { basic: 29400, pro: 83300, enterprise: 179380 },
-  UGX: { basic: 47250, pro: 133875, enterprise: 288225 },
-  RWF: { basic: 13125, pro: 37187, enterprise: 80062 },
-  BIF: { basic: 26250, pro: 74375, enterprise: 160125 },
-  ETB: { basic: 682, pro: 1932, enterprise: 4162 },
-  ZAR: { basic: 210, pro: 595, enterprise: 1282 },
-  USD: { basic: 13, pro: 36, enterprise: 77 },
-  ZMW: { basic: 315, pro: 892, enterprise: 1922 },
-  MWK: { basic: 13125, pro: 37187, enterprise: 80062 },
-  MZN: { basic: 787, pro: 2232, enterprise: 4807 },
-  BWP: { basic: 168, pro: 476, enterprise: 1025 },
-  NAD: { basic: 210, pro: 595, enterprise: 1282 },
-  SZL: { basic: 210, pro: 595, enterprise: 1282 },
-  LSL: { basic: 210, pro: 595, enterprise: 1282 },
-  LYD: { basic: 58, pro: 164, enterprise: 353 },
-  EGP: { basic: 388, pro: 1100, enterprise: 2370 }
+  XOF: { starter: 4900, pro: 19900, enterprise: 79900 },
+  XAF: { starter: 4900, pro: 19900, enterprise: 79900 },
+  MAD: { starter: 50, pro: 200, enterprise: 800 },
+  DZD: { starter: 650, pro: 2600, enterprise: 10500 },
+  TND: { starter: 10, pro: 40, enterprise: 160 },
+  GNF: { starter: 49000, pro: 199000, enterprise: 799000 },
+  LRD: { starter: 75, pro: 300, enterprise: 1200 },
+  SLL: { starter: 10000, pro: 40000, enterprise: 160000 },
+  CDF: { starter: 1225, pro: 4900, enterprise: 19600 },
+  KES: { starter: 63, pro: 250, enterprise: 1000 },
+  TZS: { starter: 1150, pro: 4600, enterprise: 18400 },
+  UGX: { starter: 1850, pro: 7400, enterprise: 29600 },
+  RWF: { starter: 515, pro: 2060, enterprise: 8240 },
+  BIF: { starter: 1030, pro: 4120, enterprise: 16480 },
+  ETB: { starter: 27, pro: 108, enterprise: 432 },
+  ZAR: { starter: 8, pro: 32, enterprise: 128 },
+  USD: { starter: 5, pro: 20, enterprise: 80 },
+  ZMW: { starter: 12, pro: 48, enterprise: 192 },
+  MWK: { starter: 515, pro: 2060, enterprise: 8240 },
+  MZN: { starter: 31, pro: 124, enterprise: 496 },
+  BWP: { starter: 7, pro: 28, enterprise: 112 },
+  NAD: { starter: 8, pro: 32, enterprise: 128 },
+  SZL: { starter: 8, pro: 32, enterprise: 128 },
+  LSL: { starter: 8, pro: 32, enterprise: 128 },
+  LYD: { starter: 2, pro: 8, enterprise: 32 },
+  EGP: { starter: 15, pro: 60, enterprise: 240 }
 };
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {

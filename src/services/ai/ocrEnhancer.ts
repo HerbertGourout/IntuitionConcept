@@ -311,7 +311,7 @@ class OCREnhancer {
 
   private async enhanceWithOpenAI(originalText: string, currentData: EnhancedOCRData): Promise<Partial<EnhancedOCRData>> {
     try {
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!apiKey) {
         console.warn('Clé API OpenAI non configurée');
         return {

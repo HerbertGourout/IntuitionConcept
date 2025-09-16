@@ -23,6 +23,12 @@ import EquipmentScannerWidget from './widgets/EquipmentScannerWidget';
 import WeatherWidget from './widgets/WeatherWidget';
 import OfflineStatusWidget from './widgets/OfflineStatusWidget';
 
+// Import des widgets IA
+import HybridAIMonitoringWidget from './HybridAIMonitoringWidget';
+import VocalCopilot from '../AI/VocalCopilot';
+import HybridAITestPanel from '../AI/HybridAITestPanel';
+import AnomalyDetectionDashboard from '../AI/AnomalyDetectionDashboard';
+
 interface DashboardProps {
   onNavigate?: (section: string) => void;
 }
@@ -789,8 +795,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             return null;
           })}
         </div>
-        {/* Troisième ligne (ordre & DnD) */}
-        <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
+
+        {/* AI Monitoring Section */}
+        <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
+          <div className="xl:col-span-2 lg:col-span-1">
+            <HybridAIMonitoringWidget />
+          </div>
+          {user?.role === 'admin' && (
+            <div className="xl:col-span-1 lg:col-span-1">
+              <HybridAITestPanel />
+            </div>
+          )}
+        </div>
+
+        {/* Troisième ligne de widgets */}
+        <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 ${prefs.density === 'compact' ? 'gap-3 mb-6' : 'gap-6 mb-8'}`}>
           {prefs.thirdRowOrder.map((key) => {
             if (key === 'circularProgress' && prefs.showCircularProgress) {
               return (
@@ -809,11 +828,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 >
                   <h4 className="heading-4 heading-gradient mb-4">Productivité Équipe</h4>
                   <CircularProgressWidget 
-                    percentage={currentProjectData.progress}
+                    percentage={currentProjectData?.progress || 0}
                     title="Avancement Projet"
-                    value={`${currentProjectData.progress}%`}
+                    value={`${currentProjectData?.progress || 0}%`}
                     color="#C2693A"
-                    subtitle={`${currentProjectData.completedTasks}/${(currentProjectData.phases || []).flatMap(p => p.tasks || []).length} tâches`}
+                    subtitle={`${currentProjectData?.completedTasks || 0}/${(currentProjectData?.phases || []).flatMap(p => p.tasks || []).length} tâches`}
                   />
                 </div>
                 </div>

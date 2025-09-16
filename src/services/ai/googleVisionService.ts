@@ -21,7 +21,7 @@ export class GoogleVisionService {
 
   constructor() {
     this.config = {
-      apiKey: process.env.GOOGLE_VISION_API_KEY || '',
+      apiKey: import.meta.env.VITE_GOOGLE_VISION_API_KEY || '',
       baseUrl: 'https://vision.googleapis.com/v1'
     };
   }

@@ -10,7 +10,8 @@ import {
   Edit,
   Trash2,
   Send,
-  Copy
+  Copy,
+  Sparkles
 } from 'lucide-react';
 import { useCurrency } from '../../hooks/useCurrency';
 import { AnimatedCounter } from '../UI/VisualEffects';
@@ -209,13 +210,25 @@ const Quotes: React.FC = () => {
           title="Devis"
           subtitle="Gestion des devis et propositions commerciales"
           actions={(
-            <button
-              onClick={handleCreateQuote}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 shadow-lg"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Nouveau Devis</span>
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCreateQuote}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 shadow-lg"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Nouveau Devis</span>
+              </button>
+              <button
+                onClick={() => {
+                  // TODO: Ouvrir le générateur IA de devis
+                  console.log('Ouverture du générateur IA de devis');
+                }}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 shadow-lg"
+              >
+                <Sparkles className="h-5 w-5" />
+                <span>Créer avec IA</span>
+              </button>
+            </div>
           )}
         />
       </div>
@@ -451,7 +464,7 @@ const Quotes: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

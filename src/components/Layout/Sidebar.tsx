@@ -17,7 +17,10 @@ import {
   Building,
   Truck,
   Target,
-  Clock
+  Clock,
+  Scan, 
+  AlertTriangle, 
+  FileImage
 } from 'lucide-react';
 
 interface Project {
@@ -206,6 +209,33 @@ const Sidebar: React.FC<SidebarProps> = ({
       bgColor: 'bg-blue-500/10',
       hoverColor: 'hover:bg-blue-500/20',
       description: 'Centre de notifications'
+    },
+    { 
+      id: 'ocr-scanner', 
+      label: 'Scanner OCR IA', 
+      icon: Scan, 
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10',
+      hoverColor: 'hover:bg-purple-500/20',
+      description: 'Reconnaissance optique intelligente'
+    },
+    { 
+      id: 'anomaly-detection', 
+      label: 'Détection d\'Anomalies', 
+      icon: AlertTriangle, 
+      color: 'text-red-500',
+      bgColor: 'bg-red-500/10',
+      hoverColor: 'hover:bg-red-500/20',
+      description: 'Analyse IA des anomalies projet'
+    },
+    { 
+      id: 'architectural-plan-analyzer', 
+      label: 'Analyseur de Plans', 
+      icon: FileImage, 
+      color: 'text-indigo-500',
+      bgColor: 'bg-indigo-500/10',
+      hoverColor: 'hover:bg-indigo-500/20',
+      description: 'Analyse IA de plans architecturaux'
     },
     { 
       id: 'settings', 

@@ -4,7 +4,8 @@ import { useProjectContext } from './contexts/ProjectContext';
 import { useAuth } from './contexts/AuthContext';
 import { AICopilotWidget } from './components/Dashboard/AICopilotWidget';
 import { AnomalyDetectionWidget } from './components/Dashboard/AnomalyDetectionWidget';
-// Services will be integrated when methods are available
+import SessionMonitor from './components/Auth/SessionMonitor';
+import VocalCopilot from './components/AI/VocalCopilot';
 import { GeolocationProvider } from './contexts/GeolocationContext';
 import { OfflineProvider } from './contexts/OfflineContext';
 import { BrandingProvider } from './contexts/BrandingContext';
@@ -13,7 +14,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { WidgetProvider } from './contexts/WidgetContext';
 import AuthWrapper from './components/Auth/AuthWrapper';
 import SecureLayout from './components/Layout/SecureLayout';
-import SessionMonitor from './components/Auth/SessionMonitor';
 
 import { Dashboard, Quotes, Projects, Equipment, Tasks, Finances, Planning, Documents, ProjectBudget, Reports, Team, PurchaseOrders, PaymentDashboard, Locations, NotificationCenter, Settings, QuoteCreator } from './components/LazyLoad/LazyComponents';
 import SupportCenter from './components/Support/SupportCenter';
@@ -22,6 +22,8 @@ import TransactionDashboard from './components/Transactions/TransactionDashboard
 import IntelligentOCRScanner from './components/OCR/IntelligentOCRScanner';
 import AuthTestPage from './components/Auth/AuthTestPage';
 import EmailTestPage from './components/Email/EmailTestPage';
+import AnomalyDetectionDashboard from './components/AI/AnomalyDetectionDashboard';
+import ArchitecturalPlanAnalyzer from './components/AI/ArchitecturalPlanAnalyzer';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
 import { useToast } from './hooks/useToast';
 import { Result } from 'antd';
@@ -40,6 +42,7 @@ const AppContent: React.FC = () => {
   // Utilise l'état de chargement du ProjectContext pour éviter les flashs d'état vide
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [showVocalCopilot, setShowVocalCopilot] = useState(false);
   // État pour les fonctionnalités interactives (à implémenter)
 
   // Router hooks (doivent être à l'intérieur d'un composant React)
@@ -262,6 +265,10 @@ const AppContent: React.FC = () => {
         return <TransactionDashboard />;
       case 'ocr-scanner':
         return <IntelligentOCRScanner />;
+      case 'anomaly-detection':
+        return <AnomalyDetectionDashboard />;
+      case 'architectural-plan-analyzer':
+        return <ArchitecturalPlanAnalyzer />;
       case 'auth-test':
         return <AuthTestPage />;
       case 'email-test':
@@ -325,6 +332,41 @@ const AppContent: React.FC = () => {
           <div className="fixed top-20 right-4 z-40">
             <AnomalyDetectionWidget />
           </div>
+
+          {/* VocalCopilot - Bouton flottant et modal */}
+          <div className="fixed bottom-20 right-4 z-50">
+            <button
+              onClick={() => setShowVocalCopilot(!showVocalCopilot)}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              title="Assistant Vocal IA"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* VocalCopilot Modal */}
+          {showVocalCopilot && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Assistant Vocal IA</h2>
+                  <button
+                    onClick={() => setShowVocalCopilot(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="p-4">
+                  <VocalCopilot />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Contenu principal en fonction de la section active */}
           {renderContent()}

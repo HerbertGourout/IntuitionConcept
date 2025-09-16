@@ -77,9 +77,9 @@ export class AIRouter {
    */
   private isProviderAvailable(provider: AIProvider): boolean {
     const configs = {
-      groq: process.env.GROQ_API_KEY,
-      claude: process.env.ANTHROPIC_API_KEY,
-      google_vision: process.env.GOOGLE_VISION_API_KEY,
+      groq: import.meta.env.VITE_GROQ_API_KEY,
+      claude: import.meta.env.VITE_ANTHROPIC_API_KEY,
+      google_vision: import.meta.env.VITE_GOOGLE_VISION_API_KEY,
       openai: aiConfig.openaiApiKey
     };
 

@@ -381,7 +381,33 @@ export const generateQuotePdf = (
   doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
   doc.text(formatMoney(subTotal), pageWidth - marginX - 10, boxY + 16, { align: 'right' });
   
-  // Save
+  // Return PDF as Blob for email attachment
+  return doc.output('blob');
+};
+
+/**
+ * Génère et télécharge directement un PDF d'un devis
+ */
+export const downloadQuotePdf = (
+  quote: Quote,
+  branding?: {
+    companyName?: string;
+    companyAddress?: string;
+    footerContact?: string;
+    logoDataUrl?: string;
+    logoWidthPt?: number;
+  }
+) => {
+  const blob = generateQuotePdf(quote, branding);
   const safeTitle = (quote.title || 'devis').replace(/[^a-z0-9\-_]+/gi, '_');
-  doc.save(`${safeTitle}.pdf`);
+  
+  // Créer un lien de téléchargement
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${safeTitle}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };

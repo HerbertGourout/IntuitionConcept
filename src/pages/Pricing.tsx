@@ -235,6 +235,11 @@ export const Pricing: React.FC = () => {
                       /{billingCycle === 'monthly' ? 'mois' : 'an'}
                     </span>
                   </div>
+                  {plan.trialDays && (
+                    <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                      🎁 Essai gratuit {plan.trialDays} jours
+                    </div>
+                  )}
                   {billingCycle === 'yearly' && getSavings(plan.id as PlanId) > 0 && (
                     <p className="text-green-600 text-sm mt-1">
                       Économisez {getSavings(plan.id as PlanId).toLocaleString()} {currencySymbol}/an
@@ -247,11 +252,25 @@ export const Pricing: React.FC = () => {
                 
                 {/* Limites du plan */}
                 <div className="mb-6 p-5 bg-gray-50 rounded-lg">
-                  <div className="text-sm text-gray-600 space-y-1">
+                  <div className="text-sm text-gray-600 space-y-2">
                     <div>📊 {typeof plan.limits.projects === 'number' ? `${plan.limits.projects} projets` : 'Projets illimités'}</div>
-                    <div>👥 {typeof plan.limits.users === 'number' ? `${plan.limits.users} utilisateurs` : 'Utilisateurs illimités'}</div>
+                    <div>👥 {plan.usersIncluded} utilisateurs inclus{plan.pricePerExtraUser > 0 && ` (+${plan.pricePerExtraUser.toLocaleString()} ${currencySymbol}/user sup.)`}</div>
                     <div>💾 {plan.limits.storage} de stockage</div>
+                    {plan.aiCreditsIncluded > 0 && (
+                      <div>🤖 {plan.aiCreditsIncluded.toLocaleString()} {currencySymbol} crédits IA inclus</div>
+                    )}
                   </div>
+                  {plan.aiCreditsIncluded > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <div>Dépassement IA: {plan.aiOverage.llmPer100Calls} {currencySymbol}/100 prompts</div>
+                        <div>OCR: {plan.aiOverage.ocrPerPage} {currencySymbol}/page</div>
+                        {plan.aiOverage.planReaderPerPlan > 0 && (
+                          <div>Lecture plans: {plan.aiOverage.planReaderPerPlan} {currencySymbol}/plan</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Divider subtil */}
@@ -299,7 +318,7 @@ export const Pricing: React.FC = () => {
                       : 'bg-gray-900 hover:bg-gray-800 text-white'
                   } ${!selectedCountry ? 'opacity-60 cursor-not-allowed hover:bg-inherit' : ''}`}
                 >
-                  S'abonner <ChevronRight className="inline w-5 h-5 ml-2" />
+                  {plan.trialDays ? `Commencer l'essai gratuit` : 'S\'abonner'} <ChevronRight className="inline w-5 h-5 ml-2" />
                 </button>
                 {!selectedCountry && (
                   <p className="text-gray-500 text-xs text-center mt-2">

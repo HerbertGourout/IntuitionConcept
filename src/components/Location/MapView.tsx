@@ -1,6 +1,74 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapPin, ZoomIn, ZoomOut, Layers, Navigation, Maximize2 } from 'lucide-react';
 
+// Types Google Maps spécifiques
+interface GoogleMapOptions {
+  center: { lat: number; lng: number };
+  zoom: number;
+  mapTypeId: string;
+  styles?: Array<{
+    featureType?: string;
+    elementType?: string;
+    stylers: Array<{ visibility?: string; [key: string]: unknown }>;
+  }>;
+}
+
+interface GoogleMarkerOptions {
+  position: { lat: number; lng: number };
+  map: GoogleMap;
+  title?: string;
+  icon?: string | {
+    url: string;
+    scaledSize: GoogleSize;
+  };
+}
+
+interface GoogleInfoWindowOptions {
+  content?: string;
+}
+
+interface GoogleMap {
+  setCenter(latLng: { lat: number; lng: number }): void;
+  setZoom(zoom: number): void;
+  getZoom(): number | undefined;
+  setMapTypeId(mapTypeId: string): void;
+  fitBounds(bounds: GoogleLatLngBounds): void;
+}
+
+interface GoogleMarker {
+  setMap(map: GoogleMap | null): void;
+  getPosition(): { lat(): number; lng(): number } | undefined;
+  addListener(event: string, handler: () => void): void;
+}
+
+interface GoogleInfoWindow {
+  open(map: GoogleMap, anchor?: GoogleMarker): void;
+}
+
+interface GoogleLatLngBounds {
+  extend(point: { lat: number; lng: number } | { lat(): number; lng(): number }): void;
+}
+
+interface GoogleSize {
+  width: number;
+  height: number;
+}
+
+// Déclaration globale pour window.google
+declare global {
+  interface Window {
+    google: {
+      maps: {
+        Map: new (element: HTMLElement, options: GoogleMapOptions) => GoogleMap;
+        Marker: new (options: GoogleMarkerOptions) => GoogleMarker;
+        InfoWindow: new (options?: GoogleInfoWindowOptions) => GoogleInfoWindow;
+        LatLngBounds: new () => GoogleLatLngBounds;
+        Size: new (width: number, height: number) => GoogleSize;
+      };
+    };
+  }
+}
+
 interface MapLocation {
   id: string;
   name: string;
@@ -31,10 +99,10 @@ const MapView: React.FC<MapViewProps> = ({
   mapType = 'roadmap'
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
+  const [map, setMap] = useState<GoogleMap | null>(null);
+  const [markers, setMarkers] = useState<GoogleMarker[]>([]);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
-  const [currentMapType, setCurrentMapType] = useState(mapType);
+  const [currentMapType, setCurrentMapType] = useState<'roadmap' | 'satellite' | 'hybrid' | 'terrain'>(mapType);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Charger Google Maps API
@@ -46,7 +114,7 @@ const MapView: React.FC<MapViewProps> = ({
       }
 
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => setIsGoogleMapsLoaded(true);
@@ -61,10 +129,10 @@ const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!isGoogleMapsLoaded || !mapRef.current || map) return;
 
-    const newMap = new google.maps.Map(mapRef.current, {
+    const newMap = new window.google.maps.Map(mapRef.current, {
       center,
       zoom,
-      mapTypeId: currentMapType as google.maps.MapTypeId,
+      mapTypeId: currentMapType,
       styles: [
         {
           featureType: 'poi',
@@ -75,7 +143,7 @@ const MapView: React.FC<MapViewProps> = ({
     });
 
     setMap(newMap);
-  }, [isGoogleMapsLoaded, center, zoom, currentMapType]);
+  }, [isGoogleMapsLoaded, center, zoom, currentMapType, map]);
 
   // Mettre à jour les marqueurs
   useEffect(() => {
@@ -86,7 +154,7 @@ const MapView: React.FC<MapViewProps> = ({
 
     // Créer les nouveaux marqueurs
     const newMarkers = locations.map(location => {
-      const marker = new google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position: { lat: location.latitude, lng: location.longitude },
         map,
         title: location.name,
@@ -94,7 +162,7 @@ const MapView: React.FC<MapViewProps> = ({
       });
 
       // Info window
-      const infoWindow = new google.maps.InfoWindow({
+      const infoWindow = new window.google.maps.InfoWindow({
         content: `
           <div class="p-2">
             <h3 class="font-semibold text-gray-900">${location.name}</h3>
@@ -119,14 +187,14 @@ const MapView: React.FC<MapViewProps> = ({
 
     // Ajuster la vue pour inclure tous les marqueurs
     if (newMarkers.length > 0) {
-      const bounds = new google.maps.LatLngBounds();
+      const bounds = new window.google.maps.LatLngBounds();
       newMarkers.forEach(marker => {
         const position = marker.getPosition();
         if (position) bounds.extend(position);
       });
       map.fitBounds(bounds);
     }
-  }, [map, locations, onLocationClick]);
+  }, [map, locations, onLocationClick, markers]);
 
   // Obtenir l'icône du marqueur selon le type
   const getMarkerIcon = (type?: string, status?: string) => {
@@ -185,11 +253,11 @@ const MapView: React.FC<MapViewProps> = ({
   const changeMapType = () => {
     const types = ['roadmap', 'satellite', 'hybrid', 'terrain'];
     const currentIndex = types.indexOf(currentMapType);
-    const nextType = types[(currentIndex + 1) % types.length];
+    const nextType = types[(currentIndex + 1) % types.length] as 'roadmap' | 'satellite' | 'hybrid' | 'terrain';
     setCurrentMapType(nextType);
     
     if (map) {
-      map.setMapTypeId(nextType as google.maps.MapTypeId);
+      map.setMapTypeId(nextType);
     }
   };
 
@@ -211,13 +279,13 @@ const MapView: React.FC<MapViewProps> = ({
           map.setZoom(15);
 
           // Ajouter un marqueur temporaire
-          new google.maps.Marker({
+          new window.google.maps.Marker({
             position: pos,
             map,
             title: 'Votre position',
             icon: {
               url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              scaledSize: new google.maps.Size(32, 32)
+              scaledSize: new window.google.maps.Size(32, 32)
             }
           });
         },
