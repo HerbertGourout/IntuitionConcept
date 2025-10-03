@@ -6,12 +6,17 @@ import { PaymentProvider } from './contexts/PaymentContext';
 import { AuthProvider } from './contexts/AuthContext';
 
 // Pages publiques
+import ModernHomePage from './pages/ModernHomePage';
 import UltraModernHomePage from './pages/UltraModernHomePage';
 import Pricing from './pages/Pricing';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AuthTestPage from './components/Auth/AuthTestPage';
 import Subscription from './pages/Subscription';
+import InspectorDemo from './pages/ai/InspectorDemo';
+import VocalCopilotDemo from './pages/ai/VocalCopilotDemo';
+import MaterialsDemo from './pages/ai/MaterialsDemo';
+import PredictionsDemo from './pages/ai/PredictionsDemo';
 
 // Application principale (existante)
 import App from './App';
@@ -23,10 +28,16 @@ const AppRouter: React.FC = () => {
         <Router>
           <Routes>
             {/* Pages publiques */}
-            <Route path="/" element={<UltraModernHomePage />} />
+            <Route path="/" element={<ModernHomePage />} />
+            <Route path="/ultra-home" element={<UltraModernHomePage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/auth-test" element={<AuthTestPage />} />
+            {/* Démos publiques IA */}
+            <Route path="/demo/inspector" element={<InspectorDemo />} />
+            <Route path="/demo/vocal" element={<VocalCopilotDemo />} />
+            <Route path="/demo/materials" element={<MaterialsDemo />} />
+            <Route path="/demo/predictions" element={<PredictionsDemo />} />
             
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

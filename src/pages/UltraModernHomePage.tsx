@@ -2,6 +2,20 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GlobalLayout from '../components/Layout/GlobalLayout';
+// Images d'illustration de la page d'accueil
+import heroConstructionTeam from '../assets/images/homepage/hero-construction-team.jpg';
+import dashboardInterface from '../assets/images/homepage/dashboard-interface.jpg';
+import collaborativeProjectManagement from '../assets/images/homepage/collaborative-project-management.jpg';
+import intelligentQuoteSystem from '../assets/images/homepage/intelligent-quote-system.jpg';
+import aiOcrProcessing from '../assets/images/homepage/ai-ocr-processing.jpg';
+import teamGpsTracking from '../assets/images/homepage/team-gps-tracking.jpg';
+import trainingSupport from '../assets/images/homepage/training-support.jpg';
+import mobileMoneyPayment from '../assets/images/homepage/mobile-money-payment.jpg';
+import satisfiedCustomer from '../assets/images/homepage/satisfied-customer.jpg';
+import digitalConstructionTeam from '../assets/images/homepage/digital-construction-team.jpg';
+import performanceMetric from '../assets/images/homepage/performance-metric.jpg';
+import africanUrbanConstruction from '../assets/images/homepage/african-urban-construction.jpg';
+import infrastructureProject from '../assets/images/homepage/infrastructure-project.jpg';
 import {
   ArrowRight,
   Zap,
@@ -28,21 +42,24 @@ const UltraModernHomePage: React.FC = () => {
       title: 'Gestion de Projets',
       description: 'Organisez et suivez vos projets avec des outils intuitifs et collaboratifs.',
       color: 'from-blue-500 to-cyan-500',
-      delay: 0.1
+      delay: 0.1,
+      image: dashboardInterface
     },
     {
       icon: Users,
       title: 'Collaboration d\'Équipe',
       description: 'Travaillez ensemble efficacement, même à distance, avec des outils de communication intégrés.',
       color: 'from-purple-500 to-pink-500',
-      delay: 0.2
+      delay: 0.2,
+      image: collaborativeProjectManagement
     },
     {
       icon: Smartphone,
       title: 'Paiements Mobile Money',
       description: 'Intégration native avec Orange Money, MTN Money et autres solutions de paiement mobile.',
       color: 'from-green-500 to-emerald-500',
-      delay: 0.3
+      delay: 0.3,
+      image: mobileMoneyPayment
     },
     {
       icon: Calendar,
@@ -138,8 +155,17 @@ const UltraModernHomePage: React.FC = () => {
       heroTitle="Gérez Vos Projets avec Excellence"
       heroSubtitle="La plateforme SaaS moderne pour la gestion de projets. Intégration Mobile Money, interface intuitive, et outils collaboratifs adaptés à vos besoins."
     >
-      {/* Section CTA Hero */}
-      <section className="relative -mt-20 pb-20">
+      {/* Section CTA Hero avec image de fond */}
+      <section className="relative -mt-20 pb-20 overflow-hidden">
+        {/* Image de fond Hero */}
+        <div className="absolute inset-0 -z-10">
+          <img
+            src={heroConstructionTeam}
+            alt="Équipe BTP sur chantier"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-white/0" />
+        </div>
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -212,6 +238,70 @@ const UltraModernHomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* Galerie d'illustrations */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Aperçu Visuel</h2>
+            <p className="text-gray-600 text-lg">Illustrations des cas d'usage et fonctionnalités clés</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={heroConstructionTeam} alt="Équipe BTP utilisant la plateforme" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Gestion de projets sur le terrain</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={dashboardInterface} alt="Interface dashboard IntuitionConcept" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Dashboard moderne et intuitif</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={collaborativeProjectManagement} alt="Collaboration projet" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Collaboration d'équipe sur chantier</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={intelligentQuoteSystem} alt="Devis intelligent" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Devis intelligents et structurés</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={aiOcrProcessing} alt="OCR et IA" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">OCR intelligent et extraction automatisée</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={teamGpsTracking} alt="Suivi GPS des équipes" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Géolocalisation et suivi des équipes</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={mobileMoneyPayment} alt="Paiements Mobile Money" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Paiements Mobile Money intégrés</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={trainingSupport} alt="Support et formation" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Support et formation client</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={satisfiedCustomer} alt="Client satisfait" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Témoignages clients satisfaits</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={performanceMetric} alt="Métriques de performance" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Métriques et indicateurs clés</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white">
+              <img src={digitalConstructionTeam} alt="Équipe BTP numérique" loading="lazy" className="w-full h-64 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Transformation numérique sur le terrain</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white md:col-span-2">
+              <img src={africanUrbanConstruction} alt="Chantier urbain africain" loading="lazy" className="w-full h-72 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Chantiers urbains modernes</figcaption>
+            </figure>
+            <figure className="rounded-2xl overflow-hidden shadow-lg bg-white md:col-span-2">
+              <img src={infrastructureProject} alt="Projet d'infrastructure" loading="lazy" className="w-full h-72 object-cover" />
+              <figcaption className="p-4 text-gray-700 font-medium">Grands projets d'infrastructure</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
       {/* Section Fonctionnalités */}
       <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="container mx-auto px-6">
@@ -251,6 +341,17 @@ const UltraModernHomePage: React.FC = () => {
                 whileHover={{ scale: 1.05, y: -10 }}
                 className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 relative overflow-hidden group"
               >
+                {/* Image de fond discrète si définie */}
+                {('image' in feature && feature.image) ? (
+                  <div className="absolute inset-0 z-0">
+                    <img
+                      src={feature.image as string}
+                      alt={feature.title}
+                      className="w-full h-full object-cover opacity-15 group-hover:opacity-25 transition-opacity duration-300"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : null}
                 {/* Effet de fond animé */}
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
@@ -366,6 +467,7 @@ const UltraModernHomePage: React.FC = () => {
           </motion.div>
         </div>
       </section>
+      {/* (Section Interface Moderne supprimée car images non souhaitées) */}
 
       {/* Section CTA Final */}
       <section className="py-20 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden">

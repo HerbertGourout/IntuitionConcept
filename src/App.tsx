@@ -3,7 +3,7 @@ import type { Project } from './contexts/projectTypes';
 import { useProjectContext } from './contexts/ProjectContext';
 import { useAuth } from './contexts/AuthContext';
 import { AICopilotWidget } from './components/Dashboard/AICopilotWidget';
-import { AnomalyDetectionWidget } from './components/Dashboard/AnomalyDetectionWidget';
+import AnomalyAlertButton from './components/Dashboard/AnomalyAlertButton';
 import SessionMonitor from './components/Auth/SessionMonitor';
 import VocalCopilot from './components/AI/VocalCopilot';
 import { GeolocationProvider } from './contexts/GeolocationContext';
@@ -16,9 +16,7 @@ import AuthWrapper from './components/Auth/AuthWrapper';
 import SecureLayout from './components/Layout/SecureLayout';
 
 import { Dashboard, Quotes, Projects, Equipment, Tasks, Finances, Planning, Documents, ProjectBudget, Reports, Team, PurchaseOrders, PaymentDashboard, Locations, NotificationCenter, Settings, QuoteCreator } from './components/LazyLoad/LazyComponents';
-import { AutomationDashboard } from './components/Automation/AutomationDashboard';
-import { WorkflowManager } from './components/Automation/WorkflowManager';
-import { AutomationTemplates } from './components/Automation/AutomationTemplates';
+import AutomationHub from './components/Automation/AutomationHub';
 import SupportCenter from './components/Support/SupportCenter';
 import SupportAgentDashboard from './components/Support/SupportAgentDashboard';
 import TransactionDashboard from './components/Transactions/TransactionDashboard';
@@ -26,6 +24,7 @@ import IntelligentOCRScanner from './components/OCR/IntelligentOCRScanner';
 import AuthTestPage from './components/Auth/AuthTestPage';
 import EmailTestPage from './components/Email/EmailTestPage';
 import AnomalyDetectionDashboard from './components/AI/AnomalyDetectionDashboard';
+import CountryPricing from './pages/CountryPricing';
 import ArchitecturalPlanAnalyzer from './components/AI/ArchitecturalPlanAnalyzer';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
 import { useToast } from './hooks/useToast';
@@ -276,12 +275,12 @@ const AppContent: React.FC = () => {
         return <AuthTestPage />;
       case 'email-test':
         return <EmailTestPage />;
-      case 'automation-dashboard':
-        return <AutomationDashboard />;
-      case 'workflow-manager':
-        return <WorkflowManager />;
-      case 'automation-templates':
-        return <AutomationTemplates />;
+      case 'automation-hub':
+        return <AutomationHub />;
+      case 'business-simulator':
+        return React.createElement(React.lazy(() => import('./components/Business/BusinessModelSimulator')));
+      case 'country-pricing':
+        return <CountryPricing />;
       default:
         return <div>Section non trouvée</div>;
     }
@@ -337,9 +336,9 @@ const AppContent: React.FC = () => {
             }}
           />
 
-          {/* Widget d'alertes d'anomalies - Position fixe en haut à droite */}
-          <div className="fixed top-20 right-4 z-40">
-            <AnomalyDetectionWidget />
+          {/* Bouton d'alerte anomalies */}
+          <div className="fixed top-4 right-4 z-50">
+            <AnomalyAlertButton />
           </div>
 
           {/* VocalCopilot - Bouton flottant et modal */}

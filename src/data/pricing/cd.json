@@ -1,0 +1,101 @@
+{
+  "id": "cd-q3-2025",
+  "country": "République Démocratique du Congo",
+  "countryCode": "CD",
+  "currency": "CDF",
+  "currencySymbol": "FC",
+  "categories": {
+    "terrassement": {
+      "id": "terrassement",
+      "name": "Terrassement",
+      "description": "",
+      "ouvrages": [
+        {
+          "id": "T.01.002",
+          "code": "T.01.002",
+          "designation": "Fouille en pleine masse (profondeur ≤ 1,5 m)",
+          "unite": "m³",
+          "prixUnitaire": 165000,
+          "devise": "CDF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Kinshasa — tarifs moyens entreprises"
+        }
+      ]
+    },
+    "grosOeuvre": {
+      "id": "gros-oeuvre",
+      "name": "Gros Œuvre",
+      "description": "",
+      "ouvrages": [
+        {
+          "id": "B.01.005",
+          "code": "B.01.005",
+          "designation": "Béton de fondation C20/25, mise en œuvre et vibration",
+          "unite": "m³",
+          "prixUnitaire": 495000,
+          "devise": "CDF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Kinshasa — barème interne entreprises"
+        },
+        {
+          "id": "F.03.002",
+          "code": "F.03.002",
+          "designation": "Ferraillage HA Fe500, façonnage et pose (panier)",
+          "unite": "kg",
+          "prixUnitaire": 4100,
+          "devise": "CDF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Kinshasa — distributeurs acier"
+        }
+      ]
+    },
+    "electricite": {
+      "id": "electricite",
+      "name": "Électricité",
+      "description": "",
+      "ouvrages": [
+        {
+          "id": "E.01.010",
+          "code": "E.01.010",
+          "designation": "Point lumineux encastré complet (boîte + appareillage)",
+          "unite": "u",
+          "prixUnitaire": 28000,
+          "devise": "CDF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Kinshasa — fournisseurs électricité"
+        }
+      ]
+    },
+    "plomberie": {
+      "id": "plomberie",
+      "name": "Plomberie",
+      "description": "",
+      "ouvrages": [
+        {
+          "id": "P.02.001",
+          "code": "P.02.001",
+          "designation": "Appoint WC complet (cuvette + réservoir + accessoires)",
+          "unite": "u",
+          "prixUnitaire": 245000,
+          "devise": "CDF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Kinshasa — grossistes sanitaires"
+        }
+      ]
+    },
+    "charpente": { "id": "charpente", "name": "Charpente", "description": "", "ouvrages": [] },
+    "couverture": { "id": "couverture", "name": "Couverture", "description": "", "ouvrages": [] },
+    "menuiserie": { "id": "menuiserie", "name": "Menuiserie", "description": "", "ouvrages": [] },
+    "peinture": { "id": "peinture", "name": "Peinture", "description": "", "ouvrages": [] },
+    "carrelage": { "id": "carrelage", "name": "Carrelage", "description": "", "ouvrages": [] },
+    "equipements": { "id": "equipements", "name": "Équipements", "description": "", "ouvrages": [] }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-09-01T00:00:00.000Z",
+    "source": "Kinshasa — relevés fournisseurs & barèmes internes",
+    "validityPeriod": "Q3-2025",
+    "region": "Kinshasa",
+    "indexCoefficient": 1.0
+  }
+}

@@ -130,7 +130,9 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
 
   useEffect(() => {
     loadAnomalies();
-    
+  }, [loadAnomalies]); 
+
+  useEffect(() => {
     // Actualiser toutes les 5 minutes
     const interval = setInterval(loadAnomalies, 5 * 60 * 1000);
     return () => clearInterval(interval);
@@ -163,19 +165,18 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
   const summary = getAnomalySummary();
   const totalAnomalies = anomalies.length;
 
-
   return (
-    <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-      {/* Header moderne */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <div className={`p-3 rounded-xl ${totalAnomalies > 0 ? 'bg-gradient-to-r from-red-500 to-pink-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'}`}>
-            <AlertTriangle className="w-6 h-6 text-white" />
+    <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-4 border border-gray-200 dark:border-gray-600 shadow-lg backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
+      {/* Header compact */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-2">
+          <div className={`p-2 rounded-lg ${totalAnomalies > 0 ? 'bg-gradient-to-r from-red-500 to-pink-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'}`}>
+            <AlertTriangle className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Détection d'Anomalies</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Surveillance IA en temps réel
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Anomalies</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-300">
+              IA temps réel
             </p>
           </div>
         </div>
@@ -216,6 +217,22 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
           })}
         </div>
       )}
+
+      {/* Statistiques compactes */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="text-center p-2 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-lg border border-red-200 dark:border-red-700">
+          <div className="text-lg font-bold text-red-600 dark:text-red-400">{summary.high}</div>
+          <div className="text-xs text-red-500 dark:text-red-300 font-medium">Critique</div>
+        </div>
+        <div className="text-center p-2 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
+          <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{summary.medium}</div>
+          <div className="text-xs text-yellow-500 dark:text-yellow-300 font-medium">Modéré</div>
+        </div>
+        <div className="text-center p-2 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg border border-blue-200 dark:border-blue-700">
+          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{summary.low}</div>
+          <div className="text-xs text-blue-500 dark:text-blue-300 font-medium">Faible</div>
+        </div>
+      </div>
 
       {/* Contenu principal */}
       <div className="space-y-4">

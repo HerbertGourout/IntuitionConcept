@@ -122,7 +122,7 @@ const CompactCountrySelector: React.FC<CompactCountrySelectorProps> = ({
         )}
         
         <Select
-          placeholder="⚠️ Sélection obligatoire - Choisissez votre pays"
+          placeholder="⚠️ Sélection obligatoire — Marché par défaut: République du Congo (Brazzaville)"
           value={selectedCountry?.code}
           onChange={handleCountryChange}
           className="w-full"

@@ -4,7 +4,7 @@ import GlobalLayout from '../components/Layout/GlobalLayout';
 import { Check, Smartphone, CreditCard, Star, ShieldCheck, ChevronRight } from 'lucide-react';
 import CompactCountrySelector from '../components/Pricing/CompactCountrySelector';
 import { useNavigate } from 'react-router-dom';
-import { PLANS, PRICING, CURRENCY_SYMBOLS, PlanId, Currency } from '../config/pricing';
+import { PLANS, PRICING, CURRENCY_SYMBOLS, PlanId, Currency, getPlanIncrementalFeatures } from '../config/pricing';
 import { useAuth } from '../contexts/AuthContext';
  
  
@@ -23,14 +23,22 @@ interface Country {
 
 
 export const Pricing: React.FC = () => {
-  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>({
+    code: 'CG',
+    name: 'République du Congo',
+    currency: 'XAF',
+    currencySymbol: 'FCFA',
+    flag: '🇨🇬',
+    region: 'central',
+    mobileMoneyProviders: ['Airtel Money', 'MTN Money']
+  });
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const navigate = useNavigate();
   const { user } = useAuth();
   const [validationError, setValidationError] = useState<string>('');
   const [showFeatureDetails, setShowFeatureDetails] = useState<boolean>(true);
-  const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({});
   const [showPwaHelp, setShowPwaHelp] = useState<boolean>(false);
+  
 
   // Détermine la devise et les prix selon le pays sélectionné
   const currency: Currency = (selectedCountry?.currency as Currency) || 'XOF';
@@ -89,6 +97,7 @@ export const Pricing: React.FC = () => {
   };
 
   return (
+    <>
     <GlobalLayout
       showHero={true}
       heroTitle="Tarifs Transparents"
@@ -276,39 +285,51 @@ export const Pricing: React.FC = () => {
                 {/* Divider subtil */}
                 <div className="border-t border-gray-200 my-7" />
 
-                {/* Liste des fonctionnalités avec option d'affichage */}
-                {(() => {
-                  const expanded = !!expandedPlans[plan.id];
-                  const maxVisible = 8;
-                  const items = expanded ? plan.features : plan.features.slice(0, maxVisible);
-                  return (
-                    <>
-                      <ul className="space-y-5 mb-8">
-                        {items.map((feature, idx) => (
-                          <li key={idx} className="flex items-start">
-                          <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <span className="text-gray-900 font-medium">{feature.name}</span>
-                            {showFeatureDetails && (
-                              <p className="text-sm text-gray-600">{feature.description}</p>
-                            )}
-                          </div>
-                        </li>
-                        ))}
-                      </ul>
-                      {plan.features.length > maxVisible && (
-                        <div className="mb-10">
-                          <button
-                            onClick={() => setExpandedPlans(prev => ({ ...prev, [plan.id]: !expanded }))}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            {expanded ? 'Afficher moins' : `Afficher plus (${plan.features.length - maxVisible})`}
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+                {/* Fonctionnalités principales */}
+                <div className="mb-8">
+                  {/* Message d'inclusion pour les plans supérieurs */}
+                  {plan.id === 'pro' && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800 font-medium">
+                        ✓ Toutes les fonctionnalités Starter incluses
+                      </p>
+                    </div>
+                  )}
+                  {plan.id === 'enterprise' && (
+                    <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <p className="text-sm text-purple-800 font-medium">
+                        ✓ Toutes les fonctionnalités Pro BTP incluses
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Nouvelles fonctionnalités de ce plan */}
+                  {(() => {
+                    const feats = getPlanIncrementalFeatures(plan.id as PlanId);
+                    if (feats.length === 0) return null;
+                    
+                    return (
+                      <>
+                        <h4 className="font-semibold text-gray-900 mb-4">
+                          {plan.id === 'starter' ? 'Fonctionnalités incluses' : 'Nouvelles fonctionnalités'}
+                        </h4>
+                        <ul className="space-y-3">
+                          {feats.map((feature, idx: number) => (
+                            <li key={feature.id ?? idx} className="flex items-start">
+                              <Check className="w-4 h-4 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <span className="text-gray-900 font-medium text-sm">{feature.name}</span>
+                                {showFeatureDetails && feature.description && (
+                                  <p className="text-xs text-gray-600 mt-1">{feature.description}</p>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    );
+                  })()}
+                </div>
                 <button
                   onClick={() => handleSubscribe(plan.id)}
                   disabled={!selectedCountry}
@@ -390,6 +411,7 @@ export const Pricing: React.FC = () => {
         </div>
       </div>
     </GlobalLayout>
+    </>
   );
 };
 

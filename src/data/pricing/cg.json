@@ -1,0 +1,119 @@
+{
+  "id": "cg-q3-2025",
+  "country": "République du Congo",
+  "countryCode": "CG",
+  "currency": "XAF",
+  "currencySymbol": "FCFA",
+  "categories": {
+    "terrassement": {
+      "id": "terrassement",
+      "name": "Terrassement",
+      "description": "Décapage, déblais, remblais, évacuation",
+      "ouvrages": [
+        {
+          "id": "T.01.001",
+          "code": "T.01.001",
+          "designation": "Décapage de la terre végétale (ép. 20 cm)",
+          "unite": "m²",
+          "prixUnitaire": 1200,
+          "devise": "XAF",
+          "coefficients": { "main_oeuvre": 0.45, "materiaux": 0.4, "materiel": 0.15 },
+          "specifications": ["Évacuation en bordure", "Stockage provisoire sur site"],
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Réf. locale – Brazzaville (observatoire BTP)"
+        },
+        {
+          "id": "T.02.003",
+          "code": "T.02.003",
+          "designation": "Remblais contrôlés (latérite compactée Proctor 95%)",
+          "unite": "m³",
+          "prixUnitaire": 14500,
+          "devise": "XAF",
+          "coefficients": { "main_oeuvre": 0.30, "materiaux": 0.55, "materiel": 0.15 },
+          "specifications": ["Couche par 20 cm", "Compactage mécanique"],
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Réf. locale – Brazzaville (observatoire BTP)"
+        }
+      ]
+    },
+    "grosOeuvre": {
+      "id": "gros-oeuvre",
+      "name": "Gros Œuvre",
+      "description": "Béton, fondations, élévations, planchers",
+      "ouvrages": [
+        {
+          "id": "B.01.001",
+          "code": "B.01.001",
+          "designation": "Béton C25/30 coulé en place, vibration comprise",
+          "unite": "m³",
+          "prixUnitaire": 72000,
+          "devise": "XAF",
+          "coefficients": { "main_oeuvre": 0.35, "materiaux": 0.55, "materiel": 0.10 },
+          "specifications": ["Dosage 350 kg/m³", "Gravier 8/16"],
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Réf. locale – Brazzaville (barème entreprises)"
+        },
+        {
+          "id": "M.02.010",
+          "code": "M.02.010",
+          "designation": "Mur agglos creux 15 cm, mortier 300 kg, y compris joints",
+          "unite": "m²",
+          "prixUnitaire": 10500,
+          "devise": "XAF",
+          "coefficients": { "main_oeuvre": 0.4, "materiaux": 0.5, "materiel": 0.1 },
+          "specifications": ["Agglos 15x20x40", "Élévation courante"],
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Réf. locale – Brazzaville (barème entreprises)"
+        }
+      ]
+    },
+    "charpente": { "id": "charpente", "name": "Charpente", "description": "", "ouvrages": [] },
+    "couverture": { "id": "couverture", "name": "Couverture", "description": "", "ouvrages": [] },
+    "menuiserie": { "id": "menuiserie", "name": "Menuiserie", "description": "", "ouvrages": [] },
+    "plomberie": {
+      "id": "plomberie",
+      "name": "Plomberie",
+      "description": "Alimentation, évacuation, équipements sanitaires",
+      "ouvrages": [
+        {
+          "id": "P.01.005",
+          "code": "P.01.005",
+          "designation": "Réseau PER Ø16 encastré, accessoires et essais",
+          "unite": "ml",
+          "prixUnitaire": 3800,
+          "devise": "XAF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Réf. locale – Brazzaville (fournisseurs)"
+        }
+      ]
+    },
+    "electricite": {
+      "id": "electricite",
+      "name": "Électricité",
+      "description": "Câblage, appareillage, tableaux",
+      "ouvrages": [
+        {
+          "id": "E.02.002",
+          "code": "E.02.002",
+          "designation": "Câble U-1000 R2V 3G2,5 mm² posé en goulotte",
+          "unite": "ml",
+          "prixUnitaire": 2100,
+          "devise": "XAF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Réf. locale – Brazzaville (distributeurs)"
+        }
+      ]
+    },
+    "peinture": { "id": "peinture", "name": "Peinture", "description": "", "ouvrages": [] },
+    "carrelage": { "id": "carrelage", "name": "Carrelage", "description": "", "ouvrages": [] },
+    "equipements": { "id": "equipements", "name": "Équipements", "description": "", "ouvrages": [] }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-09-01T00:00:00.000Z",
+    "source": "Observatoire BTP Brazzaville + devis fournisseurs locaux",
+    "validityPeriod": "Q3-2025",
+    "region": "Brazzaville",
+    "indexCoefficient": 1.0
+  }
+}

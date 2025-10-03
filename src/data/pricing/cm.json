@@ -1,0 +1,101 @@
+{
+  "id": "cm-q3-2025",
+  "country": "Cameroun",
+  "countryCode": "CM",
+  "currency": "XAF",
+  "currencySymbol": "FCFA",
+  "categories": {
+    "terrassement": {
+      "id": "terrassement",
+      "name": "Terrassement",
+      "description": "",
+      "ouvrages": [
+        {
+          "id": "T.03.001",
+          "code": "T.03.001",
+          "designation": "Évacuation des déblais en décharge autorisée (≤ 10 km)",
+          "unite": "m³",
+          "prixUnitaire": 9500,
+          "devise": "XAF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Douala — barème transporteurs"
+        }
+      ]
+    },
+    "grosOeuvre": {
+      "id": "gros-oeuvre",
+      "name": "Gros Œuvre",
+      "description": "",
+      "ouvrages": [
+        {
+          "id": "B.02.002",
+          "code": "B.02.002",
+          "designation": "Béton C25/30 prêt à l'emploi (centrale), livré",
+          "unite": "m³",
+          "prixUnitaire": 78000,
+          "devise": "XAF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Yaoundé — centrales à béton"
+        },
+        {
+          "id": "M.01.004",
+          "code": "M.01.004",
+          "designation": "Bloc de 15, pose au mortier 300 kg, y compris joints",
+          "unite": "m²",
+          "prixUnitaire": 9800,
+          "devise": "XAF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Douala — maçonnerie"
+        }
+      ]
+    },
+    "electricite": {
+      "id": "electricite",
+      "name": "Électricité",
+      "description": "",
+      "ouvrages": [
+        {
+          "id": "E.02.005",
+          "code": "E.02.005",
+          "designation": "Tableau divisionnaire 12 modules équipé",
+          "unite": "u",
+          "prixUnitaire": 65000,
+          "devise": "XAF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Douala — distributeurs électricité"
+        }
+      ]
+    },
+    "plomberie": {
+      "id": "plomberie",
+      "name": "Plomberie",
+      "description": "",
+      "ouvrages": [
+        {
+          "id": "P.03.002",
+          "code": "P.03.002",
+          "designation": "Lavabo céramique posé, robinetterie standard, raccordements",
+          "unite": "u",
+          "prixUnitaire": 54000,
+          "devise": "XAF",
+          "dateValidite": "2025-09-01T00:00:00.000Z",
+          "source": "Yaoundé — grossistes sanitaires"
+        }
+      ]
+    },
+    "charpente": { "id": "charpente", "name": "Charpente", "description": "", "ouvrages": [] },
+    "couverture": { "id": "couverture", "name": "Couverture", "description": "", "ouvrages": [] },
+    "menuiserie": { "id": "menuiserie", "name": "Menuiserie", "description": "", "ouvrages": [] },
+    "peinture": { "id": "peinture", "name": "Peinture", "description": "", "ouvrages": [] },
+    "carrelage": { "id": "carrelage", "name": "Carrelage", "description": "", "ouvrages": [] },
+    "equipements": { "id": "equipements", "name": "Équipements", "description": "", "ouvrages": [] }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-09-01T00:00:00.000Z",
+    "source": "Douala/Yaoundé — relevés fournisseurs & entreprises",
+    "validityPeriod": "Q3-2025",
+    "region": "Douala / Yaoundé",
+    "indexCoefficient": 1.0
+  }
+}

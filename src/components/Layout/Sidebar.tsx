@@ -21,8 +21,7 @@ import {
   Scan, 
   AlertTriangle, 
   FileImage,
-  Zap,
-  Settings
+  Zap
 } from 'lucide-react';
 
 interface Project {
@@ -240,31 +239,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       description: 'Analyse IA de plans architecturaux'
     },
     { 
-      id: 'automation-dashboard', 
-      label: 'Automatisations', 
+      id: 'automation-hub', 
+      label: 'Automatisations & Workflows', 
       icon: Zap, 
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-500/10',
       hoverColor: 'hover:bg-yellow-500/20',
-      description: 'Tableau de bord des automatisations'
-    },
-    { 
-      id: 'workflow-manager', 
-      label: 'Gestion Workflows', 
-      icon: Settings, 
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
-      hoverColor: 'hover:bg-blue-500/20',
-      description: 'Créer et gérer les workflows'
-    },
-    { 
-      id: 'automation-templates', 
-      label: 'Templates Auto', 
-      icon: Target, 
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
-      hoverColor: 'hover:bg-green-500/20',
-      description: 'Templates d\'automatisation prêts'
+      description: 'Hub complet d\'automatisation et workflows'
     },
     { 
       id: 'settings', 

@@ -74,8 +74,8 @@ class OCREnhancer {
       
       // Sinon utiliser l'enrichissement local
       return await this.createFallbackEnhancedData(extractedData);
-    } catch (error) {
-      console.error('Erreur lors de l\'enrichissement OCR:', error);
+    } catch {
+      // Erreur lors de l'enrichissement OCR
       return await this.createFallbackEnhancedData(extractedData);
     }
   }
@@ -313,7 +313,7 @@ class OCREnhancer {
     try {
       const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!apiKey) {
-        console.warn('Clé API OpenAI non configurée');
+        // Clé API OpenAI non configurée
         return {
           suggestions: ['Configuration OpenAI requise']
         };
@@ -380,8 +380,8 @@ Réponds uniquement en JSON valide.`;
             'Données enrichies par OpenAI GPT-4'
           ]
         };
-      } catch (parseError) {
-        console.error('Erreur parsing réponse OpenAI:', parseError);
+      } catch {
+        // Erreur parsing réponse OpenAI
         return {
           suggestions: [
             'Enrichissement OpenAI effectué mais format invalide',
@@ -391,7 +391,7 @@ Réponds uniquement en JSON valide.`;
       }
 
     } catch (error) {
-      console.error('Erreur lors de l\'enrichissement OpenAI:', error);
+      // Erreur lors de l'enrichissement OpenAI
       return {
         suggestions: [`Erreur OpenAI: ${error instanceof Error ? error.message : 'Erreur inconnue'}`]
       };

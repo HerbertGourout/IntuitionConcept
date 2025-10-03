@@ -22,9 +22,8 @@ export class HybridAIService {
    */
   async processRequest(request: AIRequest): Promise<AIResponse> {
     const provider = this.router.selectProvider(request);
-    const estimatedCost = this.router.getEstimatedCost(provider, request.content.length);
     
-    console.log(`🤖 Routage: ${request.type} → ${provider} (coût estimé: ${estimatedCost} FCFA)`);
+    // Routage automatique vers le provider optimal
 
     try {
       let response: AIResponse;

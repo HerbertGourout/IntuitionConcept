@@ -55,6 +55,15 @@ export interface PlanBasedQuoteRequest extends Omit<QuoteGenerationRequest, 'spe
   considerLocalCodes: boolean;
 }
 
+// Utility type to represent a deeply partial version of a type
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends Array<infer U>
+    ? Array<DeepPartial<U>>
+    : T[K] extends object
+      ? DeepPartial<T[K]>
+      : T[K];
+};
+
 class ArchitecturalPlanAnalyzer {
   private openaiApiKey: string;
   private baseUrl = 'https://api.openai.com/v1';
@@ -157,45 +166,41 @@ class ArchitecturalPlanAnalyzer {
     try {
       // Analyse IA avancée pour plans d'architecture
       const prompt = `
-Analyse ce plan d'architecture BTP et extrais les informations techniques:
+Analyse ce plan d'architecture BTP et extrais les informations techniques.
+
+CONTRAINTES DE SORTIE: Réponds en JSON STRICT UNIQUEMENT, sans texte additionnel ni markdown.
 
 TEXTE EXTRAIT DU PLAN:
 ${ocrResult.text}
 
 TYPE DE FICHIER: ${planFile.name}
 
-Réponds au format JSON avec:
+Schéma JSON attendu (exemple de structure, types indicatifs):
 {
   "planType": "floor_plan|elevation|section|site_plan|detail|unknown",
   "extractedMeasurements": {
-    "totalArea": nombre_en_m2,
-    "rooms": [{"name": "nom_piece", "area": superficie_m2, "dimensions": "LxW"}],
-    "dimensions": {"length": longueur, "width": largeur, "height": hauteur},
-    "scale": "echelle_detectee"
+    "totalArea": 120.5,
+    "rooms": [{"name": "Chambre", "area": 12.3, "dimensions": "3x4"}],
+    "dimensions": {"length": 10.2, "width": 8.0, "height": 2.8},
+    "scale": "1/100"
   },
   "constructionElements": {
-    "walls": [{"type": "type_mur", "length": longueur, "thickness": "epaisseur", "material": "materiau"}],
-    "openings": [{"type": "door|window", "dimensions": "dimensions", "quantity": nombre}],
-    "floors": [{"material": "materiau_sol", "area": superficie}],
-    "roof": {"type": "type_toiture", "area": superficie, "material": "materiau"}
+    "walls": [{"type": "porteuse", "length": 8.5, "thickness": "20cm", "material": "béton"}],
+    "openings": [{"type": "door", "dimensions": "90x210", "quantity": 3}],
+    "floors": [{"material": "carrelage", "area": 60}],
+    "roof": {"type": "2 pentes", "area": 120, "material": "tôle"}
   },
   "technicalSpecs": {
-    "foundations": "type_fondations",
-    "structure": "type_structure",
-    "utilities": ["electricite", "plomberie", "climatisation"],
-    "accessibility": true_ou_false
+    "foundations": "semelles filantes",
+    "structure": "voile béton",
+    "utilities": ["electricite", "plomberie"],
+    "accessibility": true
   },
-  "estimatedComplexity": "simple|moderate|complex|very_complex",
-  "confidence": pourcentage_0_100
+  "estimatedComplexity": "moderate",
+  "confidence": 78
 }
 
-Concentre-toi sur:
-- Mesures et dimensions précises
-- Matériaux de construction identifiés
-- Éléments structurels (murs, ouvertures, toiture)
-- Complexité technique du projet
-- Conformité aux normes BTP africaines
-`;
+Ne renvoie que l'objet JSON final, sans explications.`;
 
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
@@ -207,7 +212,9 @@ Concentre-toi sur:
           model: 'gpt-4o',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.2,
-          max_tokens: 2000
+          max_tokens: 2000,
+          // Tente d'imposer un JSON strict si le modèle le supporte
+          response_format: { type: 'json_object' }
         })
       });
 
@@ -216,16 +223,15 @@ Concentre-toi sur:
       }
 
       const data = await response.json();
-      const content = data.choices[0].message.content;
-      
-      // Parser la réponse JSON
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const analysis = JSON.parse(jsonMatch[0]);
-        return this.validateAndNormalizePlanAnalysis(analysis);
+      const content = data.choices?.[0]?.message?.content ?? '';
+
+      // Parsing robuste de la réponse du modèle
+      const parsed = this.parseModelJson(content);
+      if (parsed) {
+        return this.validateAndNormalizePlanAnalysis(parsed as DeepPartial<ArchitecturalPlanAnalysis>);
       }
-      
-      throw new Error('Format de réponse invalide');
+
+      throw new Error('Format de réponse invalide (JSON non détecté)');
     } catch (error) {
       console.error('Erreur analyse IA plan:', error);
       return this.getFallbackPlanAnalysis(ocrResult);
@@ -388,30 +394,140 @@ Concentre-toi sur:
   }
 
   // Validation et normalisation de l'analyse
-  private validateAndNormalizePlanAnalysis(analysis: any): ArchitecturalPlanAnalysis {
+  private validateAndNormalizePlanAnalysis(analysis: DeepPartial<ArchitecturalPlanAnalysis>): ArchitecturalPlanAnalysis {
+    // Aides de coercition basiques
+    const ensureNumber = (v: unknown): number | undefined => {
+      if (typeof v === 'number' && !Number.isNaN(v)) return v;
+      if (typeof v === 'string') {
+        const n = Number(v.replace(',', '.'));
+        return Number.isFinite(n) ? n : undefined;
+      }
+      return undefined;
+    };
+    const ensureString = (v: unknown): string | undefined => typeof v === 'string' ? v : undefined;
+    const ensureBool = (v: unknown): boolean => Boolean(v);
+    const ensureDimensions = (d: unknown): { length?: number; width?: number; height?: number } => {
+      if (!d || typeof d !== 'object') return {};
+      const o = d as Record<string, unknown>;
+      return {
+        length: ensureNumber(o.length),
+        width: ensureNumber(o.width),
+        height: ensureNumber(o.height)
+      };
+    };
+    const ensureRooms = (arr: unknown): Array<{ name: string; area?: number; dimensions?: string }> => {
+      if (!Array.isArray(arr)) return [];
+      return arr.map((r) => {
+        const o = (r && typeof r === 'object') ? r as Record<string, unknown> : {};
+        return {
+          name: ensureString(o.name) || 'Pièce',
+          area: ensureNumber(o.area),
+          dimensions: ensureString(o.dimensions)
+        };
+      });
+    };
+    const ensureWalls = (arr: unknown): Array<{ type: string; length?: number; thickness?: string; material?: string }> => {
+      if (!Array.isArray(arr)) return [];
+      return arr.map((w) => {
+        const o = (w && typeof w === 'object') ? w as Record<string, unknown> : {};
+        return {
+          type: ensureString(o.type) || 'mur',
+          length: ensureNumber(o.length),
+          thickness: ensureString(o.thickness),
+          material: ensureString(o.material)
+        };
+      });
+    };
+    const ensureOpenings = (arr: unknown): Array<{ type: 'door' | 'window'; dimensions?: string; quantity?: number }> => {
+      if (!Array.isArray(arr)) return [];
+      return arr.map((op) => {
+        const o = (op && typeof op === 'object') ? op as Record<string, unknown> : {};
+        const typeStr = ensureString(o.type);
+        const type = (typeStr === 'door' || typeStr === 'window') ? typeStr : 'door';
+        return {
+          type,
+          dimensions: ensureString(o.dimensions),
+          quantity: ensureNumber(o.quantity)
+        };
+      });
+    };
+    const ensureFloors = (arr: unknown): Array<{ material?: string; area?: number }> => {
+      if (!Array.isArray(arr)) return [];
+      return arr.map((fl) => {
+        const o = (fl && typeof fl === 'object') ? fl as Record<string, unknown> : {};
+        return {
+          material: ensureString(o.material),
+          area: ensureNumber(o.area)
+        };
+      });
+    };
+
     return {
       planType: analysis.planType || 'unknown',
       extractedMeasurements: {
-        totalArea: analysis.extractedMeasurements?.totalArea || undefined,
-        rooms: analysis.extractedMeasurements?.rooms || [],
-        dimensions: analysis.extractedMeasurements?.dimensions || {},
-        scale: analysis.extractedMeasurements?.scale || undefined
+        totalArea: ensureNumber(analysis.extractedMeasurements?.totalArea),
+        rooms: ensureRooms(analysis.extractedMeasurements?.rooms),
+        dimensions: ensureDimensions(analysis.extractedMeasurements?.dimensions),
+        scale: ensureString(analysis.extractedMeasurements?.scale)
       },
       constructionElements: {
-        walls: analysis.constructionElements?.walls || [],
-        openings: analysis.constructionElements?.openings || [],
-        floors: analysis.constructionElements?.floors || [],
-        roof: analysis.constructionElements?.roof || {}
+        walls: ensureWalls(analysis.constructionElements?.walls),
+        openings: ensureOpenings(analysis.constructionElements?.openings),
+        floors: ensureFloors(analysis.constructionElements?.floors),
+        roof: ((): { type?: string; area?: number; material?: string } => {
+          const r = analysis.constructionElements?.roof as Record<string, unknown> | undefined;
+          return r ? {
+            type: ensureString(r.type),
+            area: ensureNumber(r.area),
+            material: ensureString(r.material)
+          } : {};
+        })()
       },
       technicalSpecs: {
-        foundations: analysis.technicalSpecs?.foundations || undefined,
-        structure: analysis.technicalSpecs?.structure || undefined,
-        utilities: analysis.technicalSpecs?.utilities || [],
-        accessibility: analysis.technicalSpecs?.accessibility || false
+        foundations: ensureString(analysis.technicalSpecs?.foundations),
+        structure: ensureString(analysis.technicalSpecs?.structure),
+        utilities: Array.isArray(analysis.technicalSpecs?.utilities)
+          ? (analysis.technicalSpecs?.utilities as unknown[]).map(ensureString).filter(Boolean) as string[]
+          : [],
+        accessibility: ensureBool(analysis.technicalSpecs?.accessibility)
       },
       estimatedComplexity: analysis.estimatedComplexity || 'moderate',
-      confidence: Math.max(0, Math.min(100, analysis.confidence || 70))
+      confidence: Math.max(0, Math.min(100, ensureNumber(analysis.confidence) ?? 70))
     };
+  }
+
+  // Parsing robuste des réponses modèle
+  private parseModelJson(content: string): unknown | null {
+    const trimmed = (content || '').trim();
+    // 1) Tentative JSON direct
+    try {
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        return JSON.parse(trimmed);
+      }
+    } catch {
+      // ignore
+    }
+    // 2) Bloc markdown ```json ... ```
+    const codeBlockMatch = trimmed.match(/```json\s*([\s\S]*?)```/i);
+    if (codeBlockMatch) {
+      try {
+        return JSON.parse(codeBlockMatch[1]);
+      } catch {
+        // ignore
+      }
+    }
+    // 3) Fallback: première accolade → dernière accolade
+    const first = trimmed.indexOf('{');
+    const last = trimmed.lastIndexOf('}');
+    if (first !== -1 && last !== -1 && last > first) {
+      const slice = trimmed.slice(first, last + 1);
+      try {
+        return JSON.parse(slice);
+      } catch {
+        // ignore
+      }
+    }
+    return null;
   }
 
   // Analyse de fallback sans IA

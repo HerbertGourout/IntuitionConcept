@@ -74,8 +74,8 @@ class QuoteGenerator {
     if (aiConfig.openaiApiKey) {
       try {
         return await this.generateWithOpenAI(request);
-      } catch (error) {
-        console.error('Erreur OpenAI, fallback vers templates:', error);
+      } catch {
+        // Erreur OpenAI, fallback vers templates
         return this.generateFromTemplate(request);
       }
     }
@@ -119,7 +119,7 @@ class QuoteGenerator {
     const normalizedType = projectType?.toLowerCase().trim();
     
     if (!normalizedType) {
-      console.error('Type de projet manquant ou invalide:', projectType);
+      // Type de projet manquant ou invalide
       return null;
     }
 
@@ -205,7 +205,7 @@ class QuoteGenerator {
   private adaptTemplate(template: QuoteTemplate, request: QuoteGenerationRequest): GeneratedQuotePhase[] {
     // Vérifier que template et basePhases existent
     if (!template || !template.basePhases || !Array.isArray(template.basePhases)) {
-      console.error('Template invalide:', template);
+      // Template invalide
       return [];
     }
 

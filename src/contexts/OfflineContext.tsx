@@ -87,9 +87,9 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
         }
 
         setIsInitialized(true);
-        console.log('🔄 Mode offline initialisé');
-      } catch (error) {
-        console.error('Erreur lors de l\'initialisation offline:', error);
+        // Mode offline initialisé
+      } catch {
+        // Erreur lors de l'initialisation offline
         setIsInitialized(true);
       }
     };
@@ -132,7 +132,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
-      console.error('Erreur de sauvegarde locale:', error);
+      // Erreur de sauvegarde locale
       // Nettoyer le cache si l'espace est plein
       if (error instanceof DOMException && error.code === 22) {
         toast.error('Cache plein - Nettoyage automatique...');
@@ -198,7 +198,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
   const syncPendingActions = useCallback(async () => {
     if (!isOnline || pendingActions.length === 0) return;
 
-    console.log(`🔄 Synchronisation de ${pendingActions.length} actions...`);
+    // Synchronisation de ${pendingActions.length} actions
     
     const successfulActions: string[] = [];
     const failedActions: OfflineAction[] = [];
@@ -206,11 +206,11 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
     for (const action of pendingActions) {
       try {
         // Simuler l'appel API (remplacer par vos vraies API)
-        await simulateApiCall(action);
+        await simulateApiCall();
         successfulActions.push(action.id);
-        console.log(`✅ Action ${action.type} synchronisée:`, action.collection);
-      } catch (error) {
-        console.error(`❌ Échec de synchronisation:`, error);
+        // Action ${action.type} synchronisée: ${action.collection}
+      } catch {
+        // Échec de synchronisation
         
         // Réessayer jusqu'à 3 fois
         if (action.retryCount < 3) {
@@ -219,7 +219,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
             retryCount: action.retryCount + 1
           });
         } else {
-          console.error(`🚫 Action abandonnée après 3 tentatives:`, action);
+          // Action abandonnée après 3 tentatives
         }
       }
     }
@@ -248,7 +248,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
   }, [syncPendingActions]);
 
   // Simuler un appel API (à remplacer par vos vraies API)
-  const simulateApiCall = async (action: OfflineAction): Promise<void> => {
+  const simulateApiCall = async (): Promise<void> => {
     // Simuler un délai réseau
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
     
@@ -257,7 +257,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
       throw new Error('Erreur de synchronisation simulée');
     }
     
-    console.log(`API Call: ${action.type} ${action.collection}`, action.data);
+    // API Call simulé
   };
 
   // Vider le cache

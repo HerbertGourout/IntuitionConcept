@@ -104,6 +104,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
       ]
     },
     { name: 'Tarification', href: '/pricing' },
+    { name: "Base d'ouvrages (BETA)", href: '/app/country-pricing' },
   ];
 
   const menuItems: MenuItem[] = React.useMemo(() => {
@@ -150,7 +151,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
           : 'bg-transparent'
       }`}
     >
-      <div className="container mx-auto px-6">
+      <div className="w-full px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo animé */}
           <motion.div
@@ -165,7 +166,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                 </div>
               </div>
               <span className={`text-xl font-bold ${
-                solid ? 'text-gray-800' : 'text-white drop-shadow-lg'
+                solid ? 'text-gray-800' : 'text-gray-900'
               }`}>
                 IntuitionConcept
               </span>
@@ -193,8 +194,8 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                       isItemActive(item)
                         ? 'text-blue-600'
                         : solid
-                          ? 'text-gray-700 hover:text-blue-600'
-                          : 'text-white hover:text-blue-200 drop-shadow-lg'
+                        ? 'text-gray-700 hover:text-blue-600'
+                        : 'text-gray-900 hover:text-blue-600 font-semibold'
                     }`}>
                       <span className="relative">
                         <span>{item.name}</span>
@@ -219,8 +220,9 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                           ? 'text-blue-600'
                           : solid
                             ? 'text-gray-700 hover:text-blue-600'
-                            : 'text-white hover:text-blue-200 drop-shadow-lg'
+                            : 'text-gray-900 hover:text-blue-600 font-semibold'
                       }`}
+                      title={item.href === '/app/country-pricing' ? 'Catalogue prix par pays (Congo, RDC, Cameroun)' : undefined}
                       onClick={(e) => {
                         const section = sectionFromHref(item.href);
                         if (section && onNavigate) {
@@ -229,8 +231,11 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                         }
                       }}
                     >
-                      <span className="relative">
-                        <span>{item.name}</span>
+                      <span className="relative flex items-center gap-2">
+                        <span>{item.href === '/app/country-pricing' ? "Base d'ouvrages" : item.name}</span>
+                        {item.href === '/app/country-pricing' && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">BETA</span>
+                        )}
                         <span
                           className={`absolute left-0 -bottom-1 h-0.5 rounded bg-blue-600 transition-all duration-200 ${
                             isItemActive(item) ? 'w-full opacity-100' : 'w-0 opacity-0'
@@ -395,7 +400,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                     className={`font-medium transition-colors ${
                       solid 
                         ? 'text-gray-700 hover:text-blue-600' 
-                        : 'text-white hover:text-blue-200 drop-shadow-lg'
+                        : 'text-gray-900 hover:text-blue-600 font-semibold'
                     }`}
                   >
                     Connexion
@@ -438,7 +443,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={`p-2 transition-colors ${
-                solid ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-blue-200'
+                solid ? 'text-gray-700 hover:text-blue-600' : 'text-gray-900 hover:text-blue-600'
               }`}
             >
               <AnimatePresence mode="wait">
@@ -489,6 +494,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                     <Link
                       to={item.href}
                       className="block text-gray-700 hover:text-blue-600 font-medium py-2 transition-colors"
+                      title={item.href === '/app/country-pricing' ? 'Catalogue prix par pays (Congo, RDC, Cameroun)' : undefined}
                       onClick={(e) => {
                         const section = sectionFromHref(item.href);
                         if (section && onNavigate) {
@@ -500,7 +506,12 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                         }
                       }}
                     >
-                      {item.name}
+                      <span className="inline-flex items-center gap-2">
+                        <span>{item.href === '/app/country-pricing' ? "Base d'ouvrages" : item.name}</span>
+                        {item.href === '/app/country-pricing' && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">BETA</span>
+                        )}
+                      </span>
                     </Link>
                   </motion.div>
                 ))}

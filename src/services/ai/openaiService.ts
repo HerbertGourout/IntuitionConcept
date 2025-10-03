@@ -76,8 +76,8 @@ class OpenAIService {
       };
 
       return aiData;
-    } catch (error) {
-      console.error('OpenAI enhanceOCRData error:', error);
+    } catch {
+      // OpenAI enhanceOCRData error
       return null;
     }
   }
@@ -88,7 +88,7 @@ class OpenAIService {
    */
   async processCopilotQuery(message: string, context: unknown): Promise<string> {
     if (!this.apiKey) {
-      console.warn('OpenAI API key not configured, returning mock copilot response');
+      // OpenAI API key not configured
       return 'Copilot (mock): fonctionnalité IA non configurée. Voici quelques actions possibles: Voir projets, Créer devis, Voir finances.';
     }
 
@@ -122,8 +122,8 @@ class OpenAIService {
       const data: OpenAIResponse = await response.json();
       const content = data.choices[0]?.message?.content?.trim();
       return content || "Désolé, je n'ai pas pu générer de réponse.";
-    } catch (error) {
-      console.error('OpenAI copilot query error:', error);
+    } catch {
+      // OpenAI copilot query error
       return 'Désolé, je rencontre une difficulté technique. Pouvez-vous réessayer ?';
     }
   }
@@ -132,7 +132,7 @@ class OpenAIService {
     // prevent unused parameter lint when documentType is not used by the current prompt
     void _documentType;
     if (!this.apiKey) {
-      console.warn('OpenAI API key not configured, using mock data');
+      // OpenAI API key not configured
       return this.getMockEnhancedData(documentText);
     }
 
@@ -189,8 +189,8 @@ class OpenAIService {
       }
 
       return JSON.parse(content);
-    } catch (error) {
-      console.error('OpenAI OCR enhancement error:', error);
+    } catch {
+      // OpenAI OCR enhancement error
       return this.getMockEnhancedData(documentText);
     }
   }
@@ -199,7 +199,7 @@ class OpenAIService {
     // Mark parameter as intentionally unused to satisfy eslint/no-unused-vars
     void _requirements;
     if (!this.apiKey) {
-      console.warn('OpenAI API key not configured, using mock data');
+      // OpenAI API key not configured
       return this.getMockQuoteData(projectData);
     }
 
@@ -290,8 +290,8 @@ class OpenAIService {
       }
 
       return JSON.parse(content);
-    } catch (error) {
-      console.error('OpenAI quote generation error:', error);
+    } catch {
+      // OpenAI quote generation error
       return this.getMockQuoteData(projectData);
     }
   }
@@ -301,7 +301,7 @@ class OpenAIService {
     void _content;
     void _metadata;
     if (!this.apiKey) {
-      console.warn('OpenAI API key not configured, using mock response');
+      // OpenAI API key not configured
       return { error: "Je suis désolé, l'API OpenAI n'est pas configurée. Veuillez vérifier votre clé API." };
     }
 
@@ -337,8 +337,8 @@ class OpenAIService {
 
       const data: OpenAIResponse = await response.json();
       return { result: data.choices[0]?.message?.content || 'Désolé, je n\'ai pas pu traiter votre demande.' };
-    } catch (error) {
-      console.error('OpenAI copilot error:', error);
+    } catch {
+      // OpenAI copilot error
       return { error: 'Désolé, je rencontre une difficulté technique. Pouvez-vous réessayer ?' };
     }
   }

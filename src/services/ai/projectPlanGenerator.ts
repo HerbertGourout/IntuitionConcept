@@ -33,7 +33,7 @@ class ProjectPlanGenerator {
 
   async generatePlanFromPrompt(projectPrompt: string): Promise<ProjectPlan> {
     if (!this.apiKey) {
-      console.warn('OpenAI API key not configured, using mock plan');
+      // OpenAI API key not configured, using mock plan
       return this.getMockProjectPlan(projectPrompt);
     }
 
@@ -124,8 +124,8 @@ class ProjectPlanGenerator {
       const projectPlan = JSON.parse(jsonMatch[0]);
       return projectPlan;
 
-    } catch (error) {
-      console.error('Erreur génération plan OpenAI:', error);
+    } catch {
+      // Erreur génération plan OpenAI
       return this.getMockProjectPlan(projectPrompt);
     }
   }

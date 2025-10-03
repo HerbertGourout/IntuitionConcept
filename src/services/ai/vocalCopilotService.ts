@@ -6,8 +6,6 @@ import { priceLibraryService } from '../priceLibraryService';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SpeechRecognitionEvent = any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SpeechRecognitionErrorEvent = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SpeechRecognitionCtor = new () => any;
 
 export interface VoiceCommand {
@@ -60,16 +58,16 @@ class VocalCopilotService {
       this.recognition.maxAlternatives = 1;
 
       this.recognition.onstart = () => {
-        console.log('🎤 Écoute vocale démarrée');
+        // Écoute vocale démarrée
       };
 
       this.recognition.onend = () => {
-        console.log('🎤 Écoute vocale arrêtée');
+        // Écoute vocale arrêtée
         this.isListening = false;
       };
 
-      this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Erreur reconnaissance vocale:', event.error);
+      this.recognition.onerror = () => {
+        // Erreur reconnaissance vocale: event.error
         this.isListening = false;
       };
 
@@ -139,8 +137,8 @@ class VocalCopilotService {
         command.response = response;
       }
 
-    } catch (error) {
-      console.error('Erreur traitement commande vocale:', error);
+    } catch {
+      // Erreur traitement commande vocale
       this.speak("Désolé, je n'ai pas compris votre demande.");
     }
   }
@@ -270,8 +268,8 @@ class VocalCopilotService {
       const formattedPrice = new Intl.NumberFormat('fr-FR').format(topResult.unitPrice);
       
       return `J'ai trouvé "${topResult.designation}" à ${formattedPrice} ${topResult.currency} par ${topResult.unit} dans la région ${topResult.region}.`;
-    } catch (error) {
-      console.error('Erreur recherche prix:', error);
+    } catch {
+      // Erreur recherche prix
       return 'Erreur lors de la recherche de prix. Veuillez réessayer.';
     }
   }
@@ -310,8 +308,8 @@ class VocalCopilotService {
       }
 
       return `Vous avez dépensé ${new Intl.NumberFormat('fr-FR').format(spent)} francs CFA sur un budget de ${new Intl.NumberFormat('fr-FR').format(budget)}, soit ${percentage}%. Il vous reste ${new Intl.NumberFormat('fr-FR').format(remaining)} francs CFA.`;
-    } catch (error) {
-      console.error('Erreur lors de la récupération du budget:', error);
+    } catch {
+      // Erreur lors de la récupération du budget
       return "Impossible de récupérer les informations budgétaires. Veuillez vérifier votre connexion et réessayer.";
     }
   }
@@ -325,8 +323,8 @@ class VocalCopilotService {
     try {
       command.action = 'generate_ai_plan';
       return `Je vais générer un plan détaillé pour "${description}". Cela peut prendre quelques secondes...`;
-    } catch (error) {
-      console.error('Erreur lors de la génération du plan:', error);
+    } catch {
+      // Erreur lors de la génération du plan
       return 'Erreur lors de la génération du plan. Veuillez réessayer.';
     }
   }
@@ -423,7 +421,7 @@ class VocalCopilotService {
     if (this.currentSession) {
       this.currentSession.endTime = new Date();
       // Sauvegarder la session si nécessaire
-      console.log('Session vocale terminée:', this.currentSession);
+      // Session vocale terminée
       this.currentSession = null;
     }
   }

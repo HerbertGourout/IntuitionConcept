@@ -7,15 +7,15 @@ export type Currency = 'XOF' | 'XAF' | 'MAD' | 'DZD' | 'TND' | 'GNF' | 'LRD' | '
 export const PLAN_DISPLAY_MESSAGES = {
   starter: {
     title: 'Fonctionnalités incluses :',
-    features: 'Essentiels BTP + IA basique + Essai 14 jours'
+    features: 'Essentiels BTP + IA basique + Automations n8n (sans LLM payant) + Essai 14 jours'
   },
   pro: {
     title: 'Tout Starter +',
-    features: 'Finances + Facturation + IA LLM'
+    features: 'Finances + Facturation + IA LLM de base + Automations n8n (sans LLM payant)'
   },
   enterprise: {
     title: 'Tout Pro +', 
-    features: 'IA Avancée + Analytics + Support Premium'
+    features: 'IA Avancée + Analytics + Automations n8n Avancées (LLM payants) + Support Premium'
   }
 };
 
@@ -117,6 +117,15 @@ export const PLAN_FEATURES: PlanFeature[] = [
     category: 'core'
   },
   
+  // === AUTOMATION DE BASE (DISPONIBLE STATER/PRO) ===
+  {
+    id: 'automation_basic',
+    name: 'Automations n8n (hors LLM payants)',
+    description: 'Webhooks, enchaînements API, emails et règles sans coûts LLM',
+    requiredPermissions: ['automation.run', 'webhooks.manage'],
+    category: 'core'
+  },
+
   // === PLAN PRO - TOUT ARTISAN + FONCTIONNALITÉS AVANCÉES ===
   {
     id: 'quotes_advanced',
@@ -126,11 +135,11 @@ export const PLAN_FEATURES: PlanFeature[] = [
     category: 'advanced'
   },
   {
-    id: 'finances_advanced',
+    id: 'finances_basic',
     name: 'Gestion financière BTP',
     description: 'Suivi coûts, fournisseurs, trésorerie chantier',
     requiredPermissions: ['finances.view', 'finances.edit'],
-    category: 'advanced'
+    category: 'core'
   },
   {
     id: 'ocr_intelligent',
@@ -341,7 +350,7 @@ export const PLAN_FEATURES: PlanFeature[] = [
   {
     id: 'workflows_automation',
     name: 'Automations & Workflows',
-    description: 'Automatisations (n8n), webhooks et intégrations de processus',
+    description: 'Automatisations n8n avancées avec LLM payants, webhooks et intégrations de processus',
     requiredPermissions: ['automation.run', 'webhooks.manage'],
     category: 'premium'
   }
@@ -438,14 +447,22 @@ export const getAllPlanFeatures = (planId: PlanId): PlanFeature[] => {
 
 // Fonction pour obtenir uniquement les nouvelles fonctionnalités d'un plan
 export const getPlanIncrementalFeatures = (planId: PlanId): PlanFeature[] => {
-  const plan = PLANS.find(p => p.id === planId);
-  return plan?.features || [];
+  switch (planId) {
+    case 'starter':
+      return PLAN_FEATURES.filter(f => f.category === 'core');
+    case 'pro':
+      return PLAN_FEATURES.filter(f => f.category === 'advanced'); // Seulement les nouvelles
+    case 'enterprise':
+      return PLAN_FEATURES.filter(f => f.category === 'premium'); // Seulement les nouvelles
+    default:
+      return [];
+  }
 };
 
 // Tarification par devise (prix mensuel) - Ultra abordable et rentable
 export const PRICING: Record<Currency, Record<PlanId, number>> = {
-  XOF: { starter: 4900, pro: 19900, enterprise: 79900 },
-  XAF: { starter: 4900, pro: 19900, enterprise: 79900 },
+  XOF: { starter: 9000, pro: 24400, enterprise: 61500 },
+  XAF: { starter: 9000, pro: 24400, enterprise: 61500 },
   MAD: { starter: 50, pro: 200, enterprise: 800 },
   DZD: { starter: 650, pro: 2600, enterprise: 10500 },
   TND: { starter: 10, pro: 40, enterprise: 160 },

@@ -84,8 +84,8 @@ class IntelligentOCRService {
         suggestions,
         aiAnalysis
       };
-    } catch (error) {
-      console.error('Erreur traitement intelligent OCR:', error);
+    } catch {
+      // Erreur traitement intelligent OCR
       
       // Fallback vers OCR basique
       const ocrResult = await ocrService.processImage(file);
@@ -160,8 +160,8 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
       }
       
       throw new Error('Format de réponse invalide');
-    } catch (error) {
-      console.error('Erreur analyse IA:', error);
+    } catch {
+      // Erreur analyse IA
       return this.getFallbackAnalysis(text);
     }
   }

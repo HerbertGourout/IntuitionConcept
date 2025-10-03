@@ -119,16 +119,16 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
     if (savedZones) {
       try {
         setGeofenceZones(JSON.parse(savedZones));
-      } catch (error) {
-        console.error('Erreur lors du chargement des zones:', error);
+      } catch {
+        // Erreur lors du chargement des zones
       }
     }
 
     if (savedMembers) {
       try {
         setTeamMembers(JSON.parse(savedMembers));
-      } catch (error) {
-        console.error('Erreur lors du chargement des membres:', error);
+      } catch {
+        // Erreur lors du chargement des membres
       }
     }
 
@@ -142,8 +142,8 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
           new Date(event.timestamp) > weekAgo
         );
         setLocationEvents(recentEvents);
-      } catch (error) {
-        console.error('Erreur lors du chargement des événements:', error);
+      } catch {
+        // Erreur lors du chargement des événements
       }
     }
   }, []);
@@ -187,19 +187,22 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
       setIsLocationEnabled(true);
       setLocationError(null);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errorMessage = 'Erreur de géolocalisation';
       
-      switch (error.code) {
-        case error.PERMISSION_DENIED:
-          errorMessage = 'Permission de géolocalisation refusée';
-          break;
-        case error.POSITION_UNAVAILABLE:
-          errorMessage = 'Position non disponible';
-          break;
-        case error.TIMEOUT:
-          errorMessage = 'Timeout de géolocalisation';
-          break;
+      if (error && typeof error === 'object' && 'code' in error) {
+        const geolocationError = error as GeolocationPositionError;
+        switch (geolocationError.code) {
+          case geolocationError.PERMISSION_DENIED:
+            errorMessage = 'Permission de géolocalisation refusée';
+            break;
+          case geolocationError.POSITION_UNAVAILABLE:
+            errorMessage = 'Position non disponible';
+            break;
+          case geolocationError.TIMEOUT:
+            errorMessage = 'Timeout de géolocalisation';
+            break;
+        }
       }
       
       setLocationError(errorMessage);
@@ -235,8 +238,8 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
         // (assumons que l'utilisateur actuel a l'ID 'current-user')
         checkGeofenceViolations('current-user', location);
       },
-      (error) => {
-        console.error('Erreur de suivi:', error);
+      () => {
+        // Erreur de suivi
         setLocationError('Erreur lors du suivi de position');
       },
       {
@@ -276,8 +279,8 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
         accuracy: position.coords.accuracy,
         timestamp: new Date(),
       };
-    } catch (error) {
-      console.error('Erreur getCurrentPosition:', error);
+    } catch {
+      // Erreur getCurrentPosition
       return null;
     }
   }, []);
@@ -395,8 +398,8 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
       );
       const data = await response.json();
       return data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-    } catch (error) {
-      console.error('Erreur géocodage:', error);
+    } catch {
+      // Erreur géocodage
       return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
   }, []);

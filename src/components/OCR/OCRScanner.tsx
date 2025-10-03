@@ -103,16 +103,16 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
     <div className={`fixed inset-0 z-50 ${isOpen ? 'block' : 'hidden'}`}>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose}></div>
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto">
           {/* Header avec gradient */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-2xl p-6 text-white">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-2xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-white/20 rounded-xl">
-                  <FileText className="w-6 h-6" />
+                  <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{title}</h2>
+                  <h2 className="text-lg font-bold">{title}</h2>
                   <p className="text-blue-100 text-sm">Scanner et analyser vos documents avec l'IA</p>
                 </div>
               </div>
@@ -127,19 +127,19 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
             </div>
           </div>
 
-          <div className="p-6">
-      <div className="space-y-6">
+          <div className="p-4">
+      <div className="space-y-4">
         {/* Zone de téléchargement moderne */}
         {!isProcessing && !ocrResult && (
           <div className="relative">
-            <div className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-2xl p-12 text-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 transition-all duration-300">
-              <div className="space-y-6">
-                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
-                  <FileText className="w-8 h-8 text-white" />
+            <div className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-xl p-8 text-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 transition-all duration-300">
+              <div className="space-y-4">
+                <div className="mx-auto w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-white" />
                 </div>
                 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                     Glissez votre document ici
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300">
@@ -147,19 +147,19 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
                   </p>
                 </div>
 
-                <div className="flex justify-center gap-4">
+                <div className="flex justify-center gap-3">
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="btn-base btn-gradient-primary hover-lift px-6 py-3 flex items-center space-x-2"
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center space-x-2 text-sm"
                   >
-                    <Upload className="w-5 h-5" />
+                    <Upload className="w-4 h-4" />
                     <span>Choisir un fichier</span>
                   </button>
                   <button
                     onClick={() => cameraInputRef.current?.click()}
-                    className="btn-base btn-gradient-accent hover-lift px-6 py-3 flex items-center space-x-2"
+                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-700 transition-all duration-200 flex items-center space-x-2 text-sm"
                   >
-                    <Camera className="w-5 h-5" />
+                    <Camera className="w-4 h-4" />
                     <span>Prendre une photo</span>
                   </button>
                 </div>
@@ -197,10 +197,10 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
 
         {/* Barre de progression moderne */}
         {isProcessing && (
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
-                <Loader2 className="w-6 h-6 animate-spin text-white" />
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white">Traitement en cours</h4>
@@ -223,10 +223,10 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
 
         {/* Erreur moderne */}
         {error && (
-          <div className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-700 rounded-2xl p-6">
-            <div className="flex items-start space-x-4">
+          <div className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-700 rounded-xl p-4">
+            <div className="flex items-start space-x-3">
               <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
                 <h4 className="font-semibold text-red-800 dark:text-red-300 mb-1">Erreur de traitement</h4>
@@ -238,27 +238,27 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
 
         {/* Résultats */}
         {ocrResult && enhancedData && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Image prévisualisée */}
             {previewImage && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-800 mb-2">Document scanné</h4>
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Document scanné</h4>
                 <img
                   src={previewImage}
                   alt="Document scanné"
-                  className="max-w-full max-h-64 object-contain border rounded"
+                  className="max-w-full max-h-48 object-contain border rounded"
                 />
               </div>
             )}
 
             {/* Données extraites */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <h4 className="font-medium text-green-800">Données extraites automatiquement</h4>
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <h4 className="text-sm font-medium text-green-800 dark:text-green-300">Données extraites automatiquement</h4>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Nom du fournisseur */}
                 {enhancedData.normalizedData.vendorName && (
                   <div className="space-y-1">
@@ -349,10 +349,10 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
             </div>
 
             {/* Actions modernes */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-600">
+            <div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-600">
               <button
                 onClick={resetScanner}
-                className="btn-base btn-gradient-secondary hover-lift px-6 py-3 flex items-center space-x-2"
+                className="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg font-medium hover:from-gray-600 hover:to-gray-700 transition-all duration-200 flex items-center space-x-2 text-sm"
               >
                 <FileText className="w-4 h-4" />
                 <span>Scanner un autre document</span>
