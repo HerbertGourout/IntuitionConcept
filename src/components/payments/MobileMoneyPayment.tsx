@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { FlutterWaveButton, closePaymentModal } from 'flutterwave-react-v3';
+import { FlutterWaveButton } from 'flutterwave-react-v3';
 import { PaymentService, PaymentConfig } from '../../services/PaymentService';
 import { CreditCard, Smartphone, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -63,9 +63,6 @@ export const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
   const handleSuccess = useCallback((response: Record<string, unknown>) => {
     console.log('✅ Paiement réussi:', response);
     setIsProcessing(false);
-    
-    // Fermer le modal Flutterwave
-    closePaymentModal();
     
     // Appeler le callback de succès
     onSuccess(response);
