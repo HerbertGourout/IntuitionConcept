@@ -34,27 +34,30 @@ import { FocusMode } from './components/UI/InteractiveFeatures';
 import { usingEmulators } from './firebase';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-// Appliquer les styles globaux
 import './index.css';
 
 
 
-
 const AppContent: React.FC = () => {
-  // Utilise l'état de chargement du ProjectContext pour éviter les flashs d'état vide
-  const [activeSection, setActiveSection] = useState('dashboard');
-  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
-  const [showVocalCopilot, setShowVocalCopilot] = useState(false);
-  // État pour les fonctionnalités interactives (à implémenter)
-
   // Router hooks (doivent être à l'intérieur d'un composant React)
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Utilise l'état de chargement du ProjectContext pour éviter les flashs d'état vide
+  // Initialiser depuis l'URL pour éviter un flash de la section 'dashboard' avant synchronisation
+  const [activeSection, setActiveSection] = useState(() => {
+    const m = location.pathname.match(/^\/app\/(\w[\w-]*)/);
+    return m && m[1] ? m[1] : 'dashboard';
+  });
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [showVocalCopilot, setShowVocalCopilot] = useState(false);
+  // État pour les fonctionnalités interactives (à implémenter)
 
   // Synchroniser la section active avec l'URL (/app/:section)
   useEffect(() => {
     const m = location.pathname.match(/^\/app\/(\w[\w-]*)/);
     if (m && m[1] && m[1] !== activeSection) {
+      // Navigation instantanée lors du changement d'URL
       setActiveSection(m[1]);
     }
   }, [location.pathname, activeSection]);
@@ -144,17 +147,21 @@ const AppContent: React.FC = () => {
 
 
   const handleNavigate = (section: string, id?: string) => {
-    setActiveSection(section);
-    // Keep URL in sync
-    navigate(`/app/${section}`);
-    if (id) {
-      console.log(`Navigate to ${section} with ID: ${id}`);
-      // Mettre à jour le projet sélectionné si nécessaire
-      const project = projects.find(p => p.id === id);
-      if (project) {
-        setCurrentProject(id);
+    // Éviter la navigation si on est déjà sur la section
+    if (section === activeSection) return;
+    
+    // Navigation instantanée avec React.startTransition pour éviter les flashs
+    React.startTransition(() => {
+      setActiveSection(section);
+      navigate(`/app/${section}`, { replace: false });
+      
+      if (id) {
+        const project = projects.find(p => p.id === id);
+        if (project) {
+          setCurrentProject(id);
+        }
       }
-    }
+    });
   };
 
   const handleCreateProject = async (
@@ -200,8 +207,11 @@ const AppContent: React.FC = () => {
     const requiresProject = new Set([
       'dashboard', 'project-budget', 'equipment', 'tasks', 'planning', 'finances', 'documents', 'purchase-orders'
     ]);
-    // Si la section requiert un projet mais qu'aucun n'est sélectionné, afficher un message d'erreur
+    // Si la section requiert un projet mais qu'aucun n'est sélectionné
     if (requiresProject.has(activeSection) && !currentProject) {
+      // Éviter un flash si des projets existent mais que currentProject n'est pas encore défini
+      if (projects.length > 0) return null;
+      // Aucun projet n'existe: afficher l'info
       return (
         <div className="app">
           <div className="no-project-selected">
@@ -377,7 +387,9 @@ const AppContent: React.FC = () => {
           )}
 
           {/* Contenu principal en fonction de la section active */}
-          {renderContent()}
+          <div key={activeSection} className="page-content-wrapper page-active">
+            {renderContent()}
+          </div>
 
             {/* Emulator Badge */}
             {usingEmulators && (
@@ -418,7 +430,6 @@ const App: React.FC = () => {
   );
 };
 
-// Ajout de la configuration pour les animations de page
-document.body.classList.add('page-transition');
+// Navigation instantanée - pas d'animations de page
 
 export default App;

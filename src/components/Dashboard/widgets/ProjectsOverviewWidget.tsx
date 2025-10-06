@@ -3,16 +3,44 @@ import { motion } from 'framer-motion';
 import { Briefcase, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import ProgressBar from '../../UI/ProgressBar';
+import { Project } from '../../../types/project';
 
 interface ProjectsOverviewWidgetProps {
   className?: string;
+  currentProject?: Project | null;
+  stats?: {
+    totalTasks: number;
+    completedTasks: number;
+    inProgressTasks: number;
+    pendingTasks: number;
+    totalEquipment: number;
+    availableEquipment: number;
+    inUseEquipment: number;
+    maintenanceEquipment: number;
+    teamMembers: number;
+    budgetUsed: number;
+    totalBudget: number;
+    spentBudget: number;
+    progress: number;
+  };
 }
 
-const ProjectsOverviewWidget: React.FC<ProjectsOverviewWidgetProps> = ({ className = '' }) => {
+const ProjectsOverviewWidget: React.FC<ProjectsOverviewWidgetProps> = ({ 
+  className = '', 
+  currentProject,
+  stats 
+}) => {
   const { resolvedTheme } = useTheme();
 
-  // Données simulées (en production, récupérer depuis l'API)
-  const projectStats = {
+  // Utiliser les stats passées en props ou des données par défaut
+  const projectStats = stats ? {
+    total: 1, // Projet actuel
+    active: currentProject ? 1 : 0,
+    completed: stats.completedTasks,
+    delayed: 0, // À calculer selon les dates
+    totalBudget: stats.totalBudget,
+    completedBudget: stats.spentBudget,
+  } : {
     total: 12,
     active: 8,
     completed: 3,
@@ -21,7 +49,17 @@ const ProjectsOverviewWidget: React.FC<ProjectsOverviewWidgetProps> = ({ classNa
     completedBudget: 850000,
   };
 
-  const recentProjects = [
+  // Utiliser le projet actuel ou des données d'exemple
+  const recentProjects = currentProject ? [
+    { 
+      id: currentProject.id, 
+      name: currentProject.name, 
+      progress: stats?.progress || 0, 
+      status: currentProject.status === 'completed' ? 'completed' : 
+              currentProject.status === 'on_hold' ? 'delayed' : 'active', 
+      budget: currentProject.budget || 0 
+    }
+  ] : [
     { id: 1, name: 'Immeuble Almadies', progress: 75, status: 'active', budget: 450000 },
     { id: 2, name: 'Villa Ngor', progress: 100, status: 'completed', budget: 280000 },
     { id: 3, name: 'Centre Commercial', progress: 45, status: 'delayed', budget: 890000 },

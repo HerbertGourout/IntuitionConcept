@@ -177,31 +177,116 @@ const ProjectActionsMenu: React.FC<ProjectActionsMenuProps> = ({ projectId, proj
         </div>
       )}
 
-      {/* Modal de confirmation de suppression */}
-      <Modal
-        title="Confirmer la suppression"
-        open={isDeleteModalOpen}
-        onCancel={() => !isDeleting && setIsDeleteModalOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleting}>
-            Annuler
-          </Button>,
-          <Button 
-            key="delete" 
-            danger 
-            type="primary" 
-            onClick={confirmDelete}
-            loading={isDeleting}
-            disabled={isDeleting}
-          >
-            Supprimer
-          </Button>
-        ]}
-        maskClosable={!isDeleting}
-        closable={!isDeleting}
-      >
-        <p>Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.</p>
-      </Modal>
+      {/* Modal de confirmation de suppression - Version Modernisée */}
+      {isDeleteModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+          onClick={(e) => !isDeleting && e.target === e.currentTarget && setIsDeleteModalOpen(false)}
+        >
+          <div className="glass-card w-full max-w-xl transform transition-all duration-300 animate-slideUp" onClick={(e) => e.stopPropagation()}>
+            {/* Header avec gradient rouge */}
+            <div className="relative bg-gradient-to-r from-red-500 to-orange-500 p-6 rounded-t-xl">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full">
+                  <Trash2 className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-white">Confirmer la suppression</h2>
+                  <p className="text-white/90 text-sm mt-1">Cette action est irréversible</p>
+                </div>
+                {!isDeleting && (
+                  <button 
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
+                    title="Fermer"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Contenu */}
+            <div className="p-6 space-y-6">
+              {/* Message principal */}
+              <div className="flex items-start gap-4">
+                <div className="bg-gradient-to-br from-red-100 to-orange-100 p-3 rounded-xl">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Supprimer définitivement ce projet ?
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    Vous êtes sur le point de supprimer le projet{' '}
+                    <span className="font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
+                      {project.name}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              
+              {/* Zone d'avertissement */}
+              <div className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 rounded-xl p-4 backdrop-blur-sm">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-red-900">
+                      ⚠️ Attention : Toutes les données seront perdues
+                    </p>
+                    <ul className="text-sm text-red-800 space-y-1 ml-4 list-disc">
+                      <li>Tâches et sous-tâches</li>
+                      <li>Phases et plannings</li>
+                      <li>Budgets et dépenses</li>
+                      <li>Documents et fichiers</li>
+                      <li>Équipements assignés</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Boutons d'action */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  disabled={isDeleting}
+                  className="px-6 py-2.5 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 hover:scale-105 transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 hover:scale-105 hover:shadow-xl transition-all duration-200 shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeleting ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Suppression...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Supprimer définitivement
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de confirmation d'archivage */}
       <Modal

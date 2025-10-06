@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, message } from 'antd';
 import { 
   MapPin, 
   Building2,
@@ -16,13 +15,11 @@ import {
   Clock,
   Activity,
   Navigation,
-  Map
+  Map,
+  X
 } from 'lucide-react';
 import { LocationService } from '../../services/locationService';
 import InteractiveMap from '../Maps/InteractiveMap';
-
-const { Option } = Select;
-const { TextArea } = Input;
 
 // Interface locale pour compatibilité avec l'UI existante
 interface LocalLocation {
@@ -53,8 +50,21 @@ const Locations: React.FC = () => {
   console.log('Loading state:', loading); // Pour éviter l'erreur unused variable
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingLocation, setEditingLocation] = useState<LocalLocation | null>(null);
-  const [form] = Form.useForm();
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [formData, setFormData] = useState({
+    name: '',
+    type: 'site' as 'site' | 'office' | 'warehouse' | 'depot',
+    address: '',
+    city: '',
+    region: '',
+    status: 'active' as 'active' | 'inactive' | 'maintenance',
+    description: '',
+    contact: {
+      name: '',
+      phone: '',
+      email: ''
+    }
+  });
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -147,51 +157,102 @@ const Locations: React.FC = () => {
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      type: 'site',
+      address: '',
+      city: '',
+      region: '',
+      status: 'active',
+      description: '',
+      contact: {
+        name: '',
+        phone: '',
+        email: ''
+      }
+    });
+  };
+
   const handleAdd = () => {
     setEditingLocation(null);
-    form.resetFields();
+    resetForm();
     setIsModalVisible(true);
   };
 
   const handleEdit = (location: LocalLocation) => {
     setEditingLocation(location);
-    form.setFieldsValue(location);
+    setFormData({
+      name: location.name,
+      type: location.type,
+      address: location.address,
+      city: location.city,
+      region: location.region,
+      status: location.status,
+      description: location.description || '',
+      contact: {
+        name: location.contact.name,
+        phone: location.contact.phone,
+        email: location.contact.email || ''
+      }
+    });
     setIsModalVisible(true);
   };
 
   const handleDelete = (id: string) => {
-    setLocations(locations.filter(l => l.id !== id));
-    message.success('Localisation supprimée avec succès');
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette localisation ?')) {
+      setLocations(locations.filter(l => l.id !== id));
+      console.log('Localisation supprimée avec succès');
+    }
   };
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      
-      if (editingLocation) {
-        // Modification
-        setLocations(locations.map(l => 
-          l.id === editingLocation.id 
-            ? { ...l, ...values }
-            : l
-        ));
-        message.success('Localisation modifiée avec succès');
-      } else {
-        // Ajout
-        const newLocation: LocalLocation = {
-          id: Date.now().toString(),
-          ...values,
-          projectsCount: 0,
-          equipmentCount: 0
-        };
-        setLocations([...locations, newLocation]);
-        message.success('Localisation ajoutée avec succès');
-      }
-      
-      setIsModalVisible(false);
-      form.resetFields();
-    } catch (error) {
-      console.error('Erreur lors de la validation:', error);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.address || !formData.city || !formData.region) {
+      alert('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    
+    if (editingLocation) {
+      // Modification
+      setLocations(locations.map(l => 
+        l.id === editingLocation.id 
+          ? { ...l, ...formData, projectsCount: l.projectsCount, equipmentCount: l.equipmentCount }
+          : l
+      ));
+      console.log('Localisation modifiée avec succès');
+    } else {
+      // Ajout
+      const newLocation: LocalLocation = {
+        id: Date.now().toString(),
+        ...formData,
+        projectsCount: 0,
+        equipmentCount: 0
+      };
+      setLocations([...locations, newLocation]);
+      console.log('Localisation ajoutée avec succès');
+    }
+    
+    setIsModalVisible(false);
+    resetForm();
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    if (field.startsWith('contact.')) {
+      const contactField = field.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        contact: {
+          ...prev.contact,
+          [contactField]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
     }
   };
 
@@ -442,124 +503,195 @@ const Locations: React.FC = () => {
       </div>
 
       {/* Modal de création/édition */}
-      <Modal
-        title={
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
-              <MapPin className="w-5 h-5" />
-            </div>
-            <span className="text-lg font-semibold">
-              {editingLocation ? 'Modifier la localisation' : 'Nouvelle localisation'}
-            </span>
-          </div>
-        }
-        open={isModalVisible}
-        onOk={handleSubmit}
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
-        }}
-        width={600}
-        okText={editingLocation ? 'Modifier' : 'Ajouter'}
-        cancelText="Annuler"
-        className="modal-glassmorphism"
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          className="mt-6"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item
-              name="name"
-              label="Nom de la localisation"
-              rules={[{ required: true, message: 'Le nom est requis' }]}
-            >
-              <Input placeholder="Ex: Chantier Centre-Ville" />
-            </Form.Item>
-
-            <Form.Item
-              name="type"
-              label="Type"
-              rules={[{ required: true, message: 'Le type est requis' }]}
-            >
-              <Select placeholder="Sélectionner un type">
-                <Option value="site">Chantier</Option>
-                <Option value="office">Bureau</Option>
-                <Option value="warehouse">Entrepôt</Option>
-                <Option value="depot">Dépôt</Option>
-              </Select>
-            </Form.Item>
-          </div>
-
-          <Form.Item
-            name="address"
-            label="Adresse"
-            rules={[{ required: true, message: 'L\'adresse est requise' }]}
-          >
-            <Input placeholder="123 Rue de la Construction" />
-          </Form.Item>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item
-              name="city"
-              label="Ville"
-              rules={[{ required: true, message: 'La ville est requise' }]}
-            >
-              <Input placeholder="Paris" />
-            </Form.Item>
-
-            <Form.Item
-              name="region"
-              label="Région"
-              rules={[{ required: true, message: 'La région est requise' }]}
-            >
-              <Input placeholder="Île-de-France" />
-            </Form.Item>
-          </div>
-
-          <Form.Item
-            name="status"
-            label="Statut"
-            rules={[{ required: true, message: 'Le statut est requis' }]}
-          >
-            <Select placeholder="Sélectionner un statut">
-              <Option value="active">Actif</Option>
-              <Option value="inactive">Inactif</Option>
-              <Option value="maintenance">Maintenance</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <TextArea 
-              rows={3} 
-              placeholder="Description optionnelle de la localisation"
-            />
-          </Form.Item>
-
-          <div className="border-t pt-4 mt-4">
-            <h4 className="font-medium text-gray-700 mb-3">Contact</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Form.Item
-                name={['contact', 'name']}
-                label="Nom du responsable"
+      {isModalVisible && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <span className="text-lg font-semibold">
+                  {editingLocation ? 'Modifier la localisation' : 'Nouvelle localisation'}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setIsModalVisible(false);
+                  resetForm();
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <Input placeholder="Nom du contact" />
-              </Form.Item>
-
-              <Form.Item
-                name={['contact', 'phone']}
-                label="Téléphone"
-              >
-                <Input placeholder="01 23 45 67 89" />
-              </Form.Item>
+                <X className="w-5 h-5" />
+              </button>
             </div>
+
+            {/* Formulaire */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom de la localisation *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Ex: Chantier Centre-Ville"
+                    className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type *
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => handleInputChange('type', e.target.value)}
+                    className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                    required
+                  >
+                    <option value="site">🏗️ Chantier</option>
+                    <option value="office">🏢 Bureau</option>
+                    <option value="warehouse">🏭 Entrepôt</option>
+                    <option value="depot">📦 Dépôt</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Adresse *
+                </label>
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder="123 Rue de la Construction"
+                  className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ville *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    placeholder="Paris"
+                    className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Région *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.region}
+                    onChange={(e) => handleInputChange('region', e.target.value)}
+                    placeholder="Île-de-France"
+                    className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Statut *
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => handleInputChange('status', e.target.value)}
+                  className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                  required
+                >
+                  <option value="active">✅ Actif</option>
+                  <option value="inactive">❌ Inactif</option>
+                  <option value="maintenance">🔧 Maintenance</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  rows={3}
+                  placeholder="Description optionnelle de la localisation"
+                  className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 resize-none"
+                />
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Contact
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nom du responsable
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.contact.name}
+                      onChange={(e) => handleInputChange('contact.name', e.target.value)}
+                      placeholder="Nom du contact"
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Téléphone
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.contact.phone}
+                      onChange={(e) => handleInputChange('contact.phone', e.target.value)}
+                      placeholder="01 23 45 67 89"
+                      className="w-full px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalVisible(false);
+                    resetForm();
+                  }}
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium hover:scale-105 transition-all duration-200 shadow-lg"
+                >
+                  {editingLocation ? 'Modifier' : 'Ajouter'}
+                </button>
+              </div>
+            </form>
           </div>
-        </Form>
-      </Modal>
+        </div>
+      )}
     </div>
   );
 };

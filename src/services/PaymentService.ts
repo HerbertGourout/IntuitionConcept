@@ -8,7 +8,7 @@ export interface PaymentConfig {
   payment_options: string;
   customer: {
     email: string;
-    phone_number: string;
+    phonenumber: string;
     name: string;
   };
   customizations: {
@@ -98,7 +98,7 @@ export class PaymentService {
       payment_options: 'mobilemoney,card,banktransfer',
       customer: {
         email: customerEmail,
-        phone_number: customerPhone,
+        phonenumber: customerPhone,
         name: customerName,
       },
       customizations: {

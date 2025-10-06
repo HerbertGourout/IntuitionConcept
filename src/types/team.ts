@@ -1,5 +1,6 @@
 export interface TeamMember {
   id: string;
+  projectId: string; // Isolation par projet
   name: string;
   email: string;
   phone: string;

@@ -7,12 +7,12 @@ import Badge, { statusToBadge } from '../UI/Badge';
 interface EquipmentCardProps {
   equipment: Equipment;
   onClick: () => void;
+  onMaintenanceClick: () => void;
 }
 
-const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onClick }) => {
+const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onClick, onMaintenanceClick }) => {
   const { formatAmount } = useCurrency();
   
-
   const getEquipmentIcon = (type: string) => {
     switch (type) {
       case 'excavator':
@@ -100,10 +100,16 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment, onClick }) => 
             S/N: {equipment.serialNumber}
           </span>
           {isMaintenanceNeeded() && (
-            <div className="flex items-center gap-1 text-orange-600">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onMaintenanceClick();
+              }}
+              className="flex items-center gap-1 text-orange-600 hover:text-orange-700 transition-colors"
+            >
               <Wrench className="w-3 h-3" />
               <span className="text-xs font-medium">Maintenance requise</span>
-            </div>
+            </button>
           )}
         </div>
       </div>

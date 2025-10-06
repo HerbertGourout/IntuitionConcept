@@ -3,6 +3,7 @@ import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { addSubTaskRecursive, removeSubTaskRecursive, reorderSubTasksRecursive } from '../utils/taskUtils';
 import { aggregateProjectSpent, cleanHistory } from './projectContextUtils';
 import { ProjectService } from '../services/projectService';
+import { ProjectDataService } from '../services/projectDataService';
 import type { Project, ProjectPhase, ProjectTask, ProjectContextType } from './projectTypes';
 import type { FinancialRecord } from '../types';
 import { sumTaskBudgets } from './projectUtils';
@@ -269,29 +270,52 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const deleteProject = async (id: string, user?: string): Promise<void> => {
     try {
-      const projectRef = doc(db, 'projects', id);
-      const projectSnap = await getDoc(projectRef);
-      if (projectSnap.exists()) {
-        const projectData = projectSnap.data() as Project;
-        const currentHistory = Array.isArray(projectData.history) ? projectData.history : [];
-        const newHistory = cleanHistory([
-          {
-            date: new Date().toISOString(),
-            action: 'Projet supprimé',
-            user: user || 'Développeur',
-            details: ''
-          },
-          ...currentHistory
-        ].slice(0, 100));
-        await updateDoc(projectRef, { history: newHistory });
-      }
-      await deleteDoc(projectRef);
-      setProjects(prev => prev.filter(p => p.id !== id));
+      console.log('🗑️ [ProjectContext] Suppression du projet:', id);
+      
+      // Supprimer immédiatement du state local pour une réactivité instantanée
+      setProjects(prev => {
+        console.log('📊 [ProjectContext] Projets avant suppression:', prev.length);
+        const filtered = prev.filter(p => p.id !== id);
+        console.log('📊 [ProjectContext] Projets après suppression:', filtered.length);
+        return filtered;
+      });
+      
+      // Réinitialiser le projet actuel si c'est celui supprimé
       if (currentProjectId === id) {
+        console.log('🎯 [ProjectContext] Réinitialisation currentProjectId');
         setCurrentProjectId(null);
       }
+      
+      // Supprimer de Firebase (sans mise à jour d'historique)
+      const projectRef = doc(db, 'projects', id);
+      await deleteDoc(projectRef);
+      
+      console.log('✅ [ProjectContext] Projet supprimé avec succès de Firebase');
     } catch (error) {
-      console.error('Erreur lors de la suppression du projet:', error);
+      console.error('❌ [ProjectContext] Erreur lors de la suppression du projet:', error);
+      // En cas d'erreur, recharger les projets depuis Firebase
+      const firebaseProjects = await ProjectService.getAllProjects();
+      const convertedProjects: Project[] = firebaseProjects.map((fbProject: any) => ({
+        id: fbProject.id,
+        name: fbProject.name,
+        location: fbProject.location,
+        description: fbProject.description,
+        startDate: fbProject.startDate,
+        endDate: fbProject.endDate,
+        status: (fbProject.status === 'active' ? 'in_progress' : fbProject.status) as Project['status'],
+        budget: fbProject.budget,
+        spent: fbProject.spent || aggregateProjectSpent((fbProject.phases as ProjectPhase[]) || []),
+        phases: (fbProject.phases as ProjectPhase[]) || [],
+        manager: fbProject.manager || 'Non assigné',
+        client: fbProject.client,
+        progress: fbProject.progress,
+        priority: fbProject.priority || 'medium',
+        team: fbProject.team || [],
+        createdAt: fbProject.createdAt instanceof Date ? fbProject.createdAt.toISOString() : (fbProject.createdAt || new Date().toISOString()),
+        updatedAt: fbProject.updatedAt instanceof Date ? fbProject.updatedAt.toISOString() : (fbProject.updatedAt || new Date().toISOString()),
+        history: cleanHistory((fbProject.history as Array<{date?: string, action?: string, user?: string, details?: string}>) || [])
+      }));
+      setProjects(convertedProjects);
       throw error;
     }
   };

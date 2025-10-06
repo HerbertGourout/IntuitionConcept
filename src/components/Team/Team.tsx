@@ -80,36 +80,22 @@ const Team: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Charger les membres depuis Firebase
+  // Charger/écouter les membres du projet courant
   useEffect(() => {
-    const loadTeamMembers = async () => {
-      try {
-        setLoading(true);
-        const members = await TeamService.getAllMembers();
-        setTeamMembers(members);
-        setError(null);
-      } catch (error) {
-        console.error('Erreur lors du chargement des membres:', error);
-        setError('Erreur lors du chargement des membres');
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!currentProject?.id) {
+      setTeamMembers([]);
+      setLoading(false);
+      return;
+    }
 
-    loadTeamMembers();
-
-    // S'abonner aux mises à jour temps réel
-    const unsubscribe = TeamService.subscribeToMembers((members) => {
+    setLoading(true);
+    const unsubscribe = TeamService.subscribeToProjectMembers(currentProject.id, (members) => {
       setTeamMembers(members);
       setLoading(false);
+      setError(null);
     });
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, []);
+    return () => unsubscribe();
+  }, [currentProject?.id]);
 
   const roles: Role[] = [
     {
@@ -261,7 +247,8 @@ const Team: React.FC = () => {
       if (selectedMember) {
         await TeamService.updateMember(selectedMember.id, memberData);
       } else {
-        await TeamService.addMember(memberData);
+        if (!currentProject?.id) throw new Error('Aucun projet sélectionné');
+        await TeamService.addMemberToProject(currentProject.id, memberData);
       }
 
       // Fermer la modal et réinitialiser le formulaire

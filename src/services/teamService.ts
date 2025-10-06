@@ -8,6 +8,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -21,13 +22,27 @@ export class TeamService {
     try {
       const q = query(collection(db, COLLECTION_NAME), orderBy('joinDate', 'desc'));
       const querySnapshot = await getDocs(q);
-      
       return querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as TeamMember[];
     } catch (error) {
       console.error('Erreur lors de la récupération des membres:', error);
+      throw error;
+    }
+  }
+  // Obtenir les membres d'un projet
+  static async getMembersByProject(projectId: string): Promise<TeamMember[]> {
+    try {
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        where('projectId', '==', projectId),
+        orderBy('joinDate', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as TeamMember[];
+    } catch (error) {
+      console.error('Erreur lors de la récupération des membres du projet:', error);
       throw error;
     }
   }
@@ -45,6 +60,22 @@ export class TeamService {
       return docRef.id;
     } catch (error) {
       console.error('Erreur lors de l\'ajout du membre:', error);
+      throw error;
+    }
+  }
+
+  // Ajouter un membre pour un projet (force projectId)
+  static async addMemberToProject(projectId: string, memberData: Omit<TeamMember, 'id' | 'projectId'>): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+        ...memberData,
+        projectId,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du membre au projet:', error);
       throw error;
     }
   }
@@ -89,6 +120,21 @@ export class TeamService {
       callback(members);
     }, (error) => {
       console.error('Erreur lors de l\'écoute des membres:', error);
+    });
+  }
+
+  // Écouter les membres d'un projet en temps réel
+  static subscribeToProjectMembers(projectId: string, callback: (members: TeamMember[]) => void): () => void {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('projectId', '==', projectId),
+      orderBy('joinDate', 'desc')
+    );
+    return onSnapshot(q, (querySnapshot) => {
+      const members = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as TeamMember[];
+      callback(members);
+    }, (error) => {
+      console.error('Erreur lors de l\'écoute des membres du projet:', error);
     });
   }
 

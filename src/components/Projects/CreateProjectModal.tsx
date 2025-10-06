@@ -25,20 +25,18 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onCancel, onCre
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.name.trim()) newErrors.name = 'Le nom du projet est requis';
     if (!formData.description.trim()) newErrors.description = 'La description est requise';
     if (!formData.location.trim()) newErrors.location = 'La localisation est requise';
     if (!formData.startDate) newErrors.startDate = 'La date de début est requise';
     if (!formData.endDate) newErrors.endDate = 'La date de fin est requise';
-    if (!formData.budget || parseFloat(formData.budget) <= 0) {
-      newErrors.budget = 'Le budget doit être supérieur à 0';
+    if (!formData.budget || isNaN(parseFloat(formData.budget))) {
+      newErrors.budget = 'Le budget doit être un nombre valide';
     }
 
     if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
       newErrors.endDate = 'La date de fin doit être postérieure à la date de début';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

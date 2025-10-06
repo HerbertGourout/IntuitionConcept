@@ -22,7 +22,10 @@ const CircularProgressWidget: React.FC<CircularProgressWidgetProps> = ({
   const normalizedRadius = radius - strokeWidth * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDasharray = `${circumference} ${circumference}`;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  
+  // Sécuriser le calcul du strokeDashoffset pour éviter NaN
+  const safePercentage = typeof percentage === 'number' && !isNaN(percentage) ? Math.max(0, Math.min(100, percentage)) : 0;
+  const strokeDashoffset = circumference - (safePercentage / 100) * circumference;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
@@ -66,7 +69,7 @@ const CircularProgressWidget: React.FC<CircularProgressWidgetProps> = ({
           {/* Center content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-gray-900 dark:text-white">{value}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{percentage}%</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{safePercentage.toFixed(0)}%</span>
           </div>
         </div>
       </div>

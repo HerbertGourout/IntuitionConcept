@@ -23,6 +23,7 @@ import type { Phase } from '../types/StructuredQuote';
 // Interface pour les devis (compatible avec QuoteCreatorSimple)
 export interface Quote {
     id: string;
+    projectId: string; // Isolation par projet
     reference?: string;
     title: string;
     clientName: string;
@@ -167,11 +168,11 @@ export class QuotesService {
      * S'abonner en temps réel à la liste des devis (trié par date de création desc)
      */
     static subscribeToQuotes(callback: (quotes: Quote[]) => void): Unsubscribe {
-        const q = query(
+        const qAll = query(
             collection(db, QUOTES_COLLECTION),
             orderBy('createdAt', 'desc')
         );
-        return onSnapshot(q, 
+        return onSnapshot(qAll, 
             (snapshot: QuerySnapshot) => {
                 try {
                     const quotes: Quote[] = snapshot.docs.map((d) => {
@@ -197,6 +198,40 @@ export class QuotesService {
                     console.warn('Service Firestore temporairement indisponible');
                 }
                 callback([]); // Fallback avec tableau vide
+            }
+        );
+    }
+
+    /**
+     * S'abonner en temps réel aux devis d'un projet
+     */
+    static subscribeToProjectQuotes(projectId: string, callback: (quotes: Quote[]) => void): Unsubscribe {
+        const qByProject = query(
+            collection(db, QUOTES_COLLECTION),
+            where('projectId', '==', projectId),
+            orderBy('createdAt', 'desc')
+        );
+        return onSnapshot(qByProject,
+            (snapshot: QuerySnapshot) => {
+                try {
+                    const quotes: Quote[] = snapshot.docs.map((d) => {
+                        const data = d.data() as DocumentData;
+                        return {
+                            ...data,
+                            id: d.id,
+                            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+                            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+                        } as Quote;
+                    });
+                    callback(quotes);
+                } catch (processingError) {
+                    console.error('Erreur lors du traitement des devis du projet:', processingError);
+                    callback([]);
+                }
+            },
+            (error) => {
+                console.error('Erreur Firestore lors de l\'écoute des devis du projet:', error);
+                callback([]);
             }
         );
     }

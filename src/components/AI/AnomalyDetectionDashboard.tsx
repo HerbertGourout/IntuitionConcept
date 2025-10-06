@@ -135,10 +135,11 @@ const AnomalyDetectionDashboard: React.FC = () => {
       // Générer des anomalies basées sur les vraies données des projets
       const realAnomalies = generateRealAnomalies();
       
-      // Combiner anomalies réelles et exemples de démonstration
+      // Utiliser uniquement les anomalies réelles basées sur les données du projet
       const combinedAnomalies = [...realAnomalies];
       
-      // Ajouter quelques exemples si pas assez d'anomalies réelles
+      // Plus de données fictives - afficher seulement les vraies anomalies
+      /*
       if (combinedAnomalies.length < 2) {
         const mockAnomalies: Anomaly[] = [
           {
@@ -241,6 +242,7 @@ const AnomalyDetectionDashboard: React.FC = () => {
         ];
         combinedAnomalies.push(...mockAnomalies);
       }
+      */
 
       setAnomalies(combinedAnomalies);
     } catch (error) {

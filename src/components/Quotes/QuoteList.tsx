@@ -23,6 +23,7 @@ import QuoteStatusManager from './QuoteStatusManager';
 import QuoteEmailSender from './QuoteEmailSender';
 import PageContainer from '../Layout/PageContainer';
 import Badge, { statusToBadge } from '../UI/Badge';
+import { useProjects } from '../../hooks/useProjects';
 
 interface QuoteListProps {
     onCreateNew: () => void;
@@ -31,6 +32,7 @@ interface QuoteListProps {
 
 const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
     const { resolvedTheme } = useTheme();
+    const { currentProject } = useProjects();
     const brandingCtx = useBranding();
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -38,12 +40,17 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
     const [sortBy, setSortBy] = useState<'date' | 'amount' | 'client'>('date');
 
     useEffect(() => {
-        // S'abonner en temps réel aux devis Firebase
-        const unsubscribe = QuotesService.subscribeToQuotes((list) => {
+        // Si pas de projet, vider la liste
+        if (!currentProject?.id) {
+            setQuotes([]);
+            return;
+        }
+        // S'abonner en temps réel aux devis du projet courant
+        const unsubscribe = QuotesService.subscribeToProjectQuotes(currentProject.id, (list) => {
             setQuotes(list);
         });
         return () => unsubscribe();
-    }, []);
+    }, [currentProject?.id]);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
@@ -82,6 +89,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
             
             await QuotesService.createQuote({
                 ...rest,
+                projectId: quote.projectId,
                 title: `${quote.title} (Copie)`,
                 status: 'draft',
                 createdAt: new Date().toISOString(),

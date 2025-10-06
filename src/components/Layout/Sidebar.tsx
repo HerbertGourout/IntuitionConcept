@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   BarChart3, 
   Users, 
@@ -48,7 +48,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   projects,
   onProjectSelect
 }) => {
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   
   // Données simulées pour les mini-aperçus
   const getProjectStats = (projectId: string | null) => {
@@ -68,7 +67,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: HardHat, 
       color: 'text-orange-500',
       bgColor: 'bg-orange-500/10',
-      hoverColor: 'hover:bg-orange-500/20',
       description: 'Vue d\'ensemble du projet'
     },
     { 
@@ -77,7 +75,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: Building, 
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
-      hoverColor: 'hover:bg-blue-500/20',
       description: 'Gestion des projets'
     },
     { 
@@ -87,7 +84,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       disabled: !currentProjectId,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
-      hoverColor: 'hover:bg-green-500/20',
       description: 'Suivi budgétaire',
       status: currentProjectId ? 'active' : 'disabled'
     },
@@ -98,7 +94,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       disabled: !currentProjectId,
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-500/10',
-      hoverColor: 'hover:bg-yellow-500/20',
       description: 'Matériel de chantier',
       status: currentProjectId ? 'active' : 'disabled'
     },
@@ -109,7 +104,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       disabled: !currentProjectId,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
-      hoverColor: 'hover:bg-purple-500/20',
       description: 'Gestion des tâches',
       status: currentProjectId ? 'active' : 'disabled'
     },
@@ -120,7 +114,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       disabled: !currentProjectId,
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-500/10',
-      hoverColor: 'hover:bg-indigo-500/20',
       description: 'Planification projet',
       status: currentProjectId ? 'active' : 'disabled'
     },
@@ -131,7 +124,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       disabled: !currentProjectId,
       color: 'text-emerald-500',
       bgColor: 'bg-emerald-500/10',
-      hoverColor: 'hover:bg-emerald-500/20',
       description: 'Analyse financière',
       status: currentProjectId ? 'active' : 'disabled'
     },
@@ -142,7 +134,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       disabled: !currentProjectId,
       color: 'text-cyan-500',
       bgColor: 'bg-cyan-500/10',
-      hoverColor: 'hover:bg-cyan-500/20',
       description: 'Documentation projet',
       status: currentProjectId ? 'active' : 'disabled'
     },
@@ -152,7 +143,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: Euro, 
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
-      hoverColor: 'hover:bg-green-500/20',
       description: 'Création et gestion des devis'
     },
     { 
@@ -161,7 +151,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: BarChart3, 
       color: 'text-pink-500',
       bgColor: 'bg-pink-500/10',
-      hoverColor: 'hover:bg-pink-500/20',
       description: 'Rapports et analyses'
     },
     { 
@@ -170,7 +159,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: Users, 
       color: 'text-violet-500',
       bgColor: 'bg-violet-500/10',
-      hoverColor: 'hover:bg-violet-500/20',
       description: 'Gestion de l\'équipe'
     },
     { 
@@ -180,7 +168,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       disabled: !currentProjectId,
       color: 'text-orange-500',
       bgColor: 'bg-orange-500/10',
-      hoverColor: 'hover:bg-orange-500/20',
       description: 'Gestion des commandes et livraisons',
       status: currentProjectId ? 'active' : 'disabled'
     },
@@ -190,7 +177,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: CreditCard, 
       color: 'text-teal-500',
       bgColor: 'bg-teal-500/10',
-      hoverColor: 'hover:bg-teal-500/20',
       description: 'Mobile Money et paiements'
     },
     { 
@@ -199,7 +185,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: MapPin, 
       color: 'text-red-500',
       bgColor: 'bg-red-500/10',
-      hoverColor: 'hover:bg-red-500/20',
       description: 'Géolocalisation'
     },
     { 
@@ -208,7 +193,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: Bell, 
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
-      hoverColor: 'hover:bg-blue-500/20',
       description: 'Centre de notifications'
     },
     { 
@@ -217,7 +201,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: Scan, 
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
-      hoverColor: 'hover:bg-purple-500/20',
       description: 'Reconnaissance optique intelligente'
     },
     { 
@@ -226,7 +209,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: AlertTriangle, 
       color: 'text-red-500',
       bgColor: 'bg-red-500/10',
-      hoverColor: 'hover:bg-red-500/20',
       description: 'Analyse IA des anomalies projet'
     },
     { 
@@ -235,7 +217,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: FileImage, 
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-500/10',
-      hoverColor: 'hover:bg-indigo-500/20',
       description: 'Analyse IA de plans architecturaux'
     },
     { 
@@ -244,7 +225,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: Zap, 
       color: 'text-yellow-500',
       bgColor: 'bg-yellow-500/10',
-      hoverColor: 'hover:bg-yellow-500/20',
       description: 'Hub complet d\'automatisation et workflows'
     },
     { 
@@ -253,7 +233,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: Wrench, 
       color: 'text-gray-500',
       bgColor: 'bg-gray-500/10',
-      hoverColor: 'hover:bg-gray-500/20',
       description: 'Configuration'
     }
   ];
@@ -261,7 +240,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const projectStats = getProjectStats(currentProjectId);
 
   return (
-    <div className={`bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-300 flex-shrink-0 shadow-2xl ${
+    <div className={`bg-gradient-to-b from-slate-900 to-slate-800 text-white flex-shrink-0 shadow-2xl ${
       collapsed ? 'w-16' : 'w-72'
     } md:relative fixed md:translate-x-0 ${collapsed ? '-translate-x-full md:translate-x-0' : 'translate-x-0'} z-50 h-full md:h-auto`}>
       {/* Header avec logo et toggle */}
@@ -279,10 +258,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
         <button
           onClick={() => onCollapse(!collapsed)}
-          className="p-2 rounded-lg hover:bg-slate-700/50 transition-all duration-200 group"
+          className="p-2 rounded-lg group"
           title={collapsed ? 'Agrandir' : 'Réduire'}
         >
-          <ChevronLeft className={`h-4 w-4 transition-transform duration-200 group-hover:scale-110 ${
+          <ChevronLeft className={`h-4 w-4 ${
             !collapsed ? 'rotate-180' : ''
           }`} />
         </button>
@@ -298,7 +277,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <select
               value={currentProjectId || ''}
               onChange={(e) => onProjectSelect(e.target.value || null)}
-              className="w-full bg-slate-700/50 text-white rounded-lg p-3 text-sm border border-slate-600/50 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+              className="w-full bg-slate-700/50 text-white rounded-lg p-3 text-sm border border-slate-600/50 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
             >
               <option value="">Sélectionner un projet</option>
               {projects.map((project) => (
@@ -348,14 +327,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   onClick={() => !item.disabled && onNavigate(item.id)}
                   disabled={item.disabled}
-                  onMouseEnter={() => setHoveredItem(item.id)}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  className={`group relative flex items-center w-full p-3 rounded-xl transition-all duration-200 ${
+                  className={`group relative flex items-center w-full p-3 rounded-xl ${
                     isActive 
                       ? `bg-gradient-to-r from-orange-500/20 to-orange-600/20 border border-orange-500/30 text-white shadow-lg` 
                       : item.disabled
                       ? 'text-slate-500 cursor-not-allowed'
-                      : `text-slate-300 hover:text-white ${item.hoverColor} hover:shadow-md hover:transform hover:scale-105`
+                      : `text-slate-300`
                   }`}
                   title={collapsed ? item.label : item.disabled ? 'Sélectionnez d\'abord un projet' : item.description}
                 >
@@ -378,11 +355,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                   {!collapsed && (
                     <div className="ml-3 flex-1">
                       <div className="font-medium text-sm">{item.label}</div>
-                      {hoveredItem === item.id && !item.disabled && (
-                        <div className="text-xs text-slate-400 mt-0.5">
-                          {item.description}
-                        </div>
-                      )}
                     </div>
                   )}
                   
@@ -407,7 +379,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {!collapsed && (
           <div className="mt-6 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
             <div className="flex items-center space-x-2 mb-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-xs text-slate-400">Système en ligne</span>
             </div>
             <div className="text-xs text-slate-500">

@@ -102,7 +102,7 @@ export const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
     ...paymentConfig,
     customer: {
       ...paymentConfig.customer,
-      phone_number: PaymentService.formatPhoneNumber(phoneNumber)
+      phonenumber: PaymentService.formatPhoneNumber(phoneNumber)
     },
     customizations: {
       ...paymentConfig.customizations,

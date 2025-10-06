@@ -84,7 +84,7 @@ const Layout: React.FC<LayoutProps> = ({
           onProjectSelect={onProjectSelect}
         />
 
-        <div className="flex-1 flex flex-col transition-all duration-300">
+        <div className="flex-1 flex flex-col">
           {/* Sous-entête sticky contextuel */}
           <AppSubheader
             title={sectionTitles[activeSection] || 'Section'}

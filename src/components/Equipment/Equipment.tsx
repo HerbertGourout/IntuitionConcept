@@ -1,66 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Filter, Search, Calendar, Wrench, Settings, BarChart3, CheckCircle, AlertTriangle, Grid3X3 } from 'lucide-react';
+/**
+ * EXEMPLE DE MIGRATION - Equipment.tsx
+ * 
+ * Ce fichier montre comment migrer Equipment.tsx pour utiliser l'isolation par projet
+ * Copiez ce code dans Equipment.tsx pour appliquer la migration
+ */
+
+import React, { useState } from 'react';
+import { Plus, Filter, Search, Wrench, Settings, BarChart3, CheckCircle, AlertTriangle, Grid3X3 } from 'lucide-react';
 import EquipmentCard from './EquipmentCard';
 import EquipmentDetailModal from './EquipmentDetailModal';
 import MaintenancePlanningModal from './MaintenancePlanningModal';
 import EquipmentForm from './EquipmentForm';
-import { EquipmentService } from '../../services/equipmentService';
+import { useProjectEquipment } from '../../hooks/useProjectData';
+import { useProjects } from '../../hooks/useProjects';
 import type { Equipment } from '../../types/index';
 import PageContainer from '../Layout/PageContainer';
 import SectionHeader from '../UI/SectionHeader';
+import EmptyState from '../UI/EmptyState';
+import NoProjectSelected from '../UI/NoProjectSelected';
 
-// Fonction utilitaire pour nettoyer les données avant Firestore
-function cleanEquipmentData(equipment: Equipment): Equipment {
-  const cleaned: Equipment = {
-    id: equipment.id?.toString() || Date.now().toString(),
-    name: (equipment.name || '').trim(),
-    type: equipment.type || 'other',
-    model: (equipment.model || '').trim(),
-    serialNumber: (equipment.serialNumber || '').trim(),
-    status: equipment.status || 'available',
-    location: (equipment.location || '').trim(),
-    lastMaintenance: equipment.lastMaintenance || new Date().toISOString(),
-    nextMaintenance: equipment.nextMaintenance || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  };
+const EquipmentMigrated: React.FC = () => {
+  const { currentProject } = useProjects();
+  const { equipment, loading, addEquipment } = useProjectEquipment(currentProject?.id || null);
   
-  // Ajouter les propriétés optionnelles seulement si définies et non vides
-  if (equipment.assignedProject && equipment.assignedProject.trim()) {
-    cleaned.assignedProject = equipment.assignedProject.trim();
-  }
-  
-  if (equipment.operator && equipment.operator.trim()) {
-    cleaned.operator = equipment.operator.trim();
-  }
-  
-  if (equipment.brand && equipment.brand.trim()) {
-    cleaned.brand = equipment.brand.trim();
-  }
-  
-  if (equipment.dailyRate !== undefined) {
-    cleaned.dailyRate = equipment.dailyRate;
-  }
-  
-  if (equipment.description && equipment.description.trim()) {
-    cleaned.description = equipment.description.trim();
-  }
-  
-  // Ajouter coordinates seulement si défini et valide
-  if (equipment.coordinates && 
-      typeof equipment.coordinates.lat === 'number' && 
-      typeof equipment.coordinates.lng === 'number' &&
-      !isNaN(equipment.coordinates.lat) &&
-      !isNaN(equipment.coordinates.lng)) {
-    cleaned.coordinates = {
-      lat: equipment.coordinates.lat,
-      lng: equipment.coordinates.lng
-    };
-  }
-  
-  return cleaned;
-}
-
-const Equipment: React.FC = () => {
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,326 +31,274 @@ const Equipment: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
 
-  // Charger les équipements depuis Firebase
-  useEffect(() => {
-    const loadEquipment = async () => {
-      try {
-        // Ne plus initialiser automatiquement les données de test
-        // Les données de test doivent être ajoutées manuellement via une action spécifique si nécessaire
-        
-        // Charger les équipements
-        const equipmentList = await EquipmentService.getAllEquipment();
-        setEquipment(equipmentList);
-      } catch (error) {
-        console.error('Erreur lors du chargement des équipements:', error);
-      } finally {
-        // Loading terminé
-      }
-    };
-
-    loadEquipment();
-
-    // Écouter les changements en temps réel
-    const unsubscribe = EquipmentService.subscribeToEquipment((equipmentList) => {
-      setEquipment(equipmentList);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const newEquipment: Equipment = {
-    id: '',
-    name: '',
-    type: 'other',
-    model: '',
-    serialNumber: '',
-    status: 'available',
-    location: '',
-    lastMaintenance: new Date().toISOString(),
-    nextMaintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-  };
-
-  // Gestion de l'ajout d'équipement
-  const handleAddEquipment = async (values: Equipment) => {
-    try {
-      const cleanedData = cleanEquipmentData(values);
-      await EquipmentService.addEquipment(cleanedData);
-      setShowAddEquipment(false);
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout:', error);
-      alert('Erreur lors de l\'ajout de l\'équipement.');
-    }
-  };
+  // Si aucun projet n'est sélectionné
+  if (!currentProject) {
+    return (
+      <PageContainer>
+        <NoProjectSelected />
+      </PageContainer>
+    );
+  }
 
   // Filtrage des équipements
-  const filteredEquipment = equipment.filter((item) => {
+  const filteredEquipment = equipment.filter(item => {
     const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
     const matchesType = filterType === 'all' || item.type === filterType;
     const matchesSearch = !searchTerm || 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchTerm.toLowerCase());
+      item.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesStatus && matchesType && matchesSearch;
   });
 
-  // Types d'équipements uniques pour le filtre
-  const equipmentTypes = Array.from(new Set(equipment.map(item => item.type)));
+  // Statistiques calculées depuis les vraies données
+  const stats = {
+    total: equipment.length,
+    available: equipment.filter(e => e.status === 'available').length,
+    inUse: equipment.filter(e => e.status === 'in_use').length,
+    maintenance: equipment.filter(e => e.status === 'maintenance').length,
+  };
+
+  const handleAddEquipment = async (equipmentData: Omit<Equipment, 'id'>) => {
+    try {
+      await addEquipment(equipmentData);
+      setShowAddEquipment(false);
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de l\'équipement:', error);
+      alert('Erreur lors de l\'ajout de l\'équipement');
+    }
+  };
+
+  const handleEquipmentClick = (item: Equipment) => {
+    setSelectedEquipment(item);
+    setShowDetailModal(true);
+  };
+
+  const handleMaintenanceClick = (item: Equipment) => {
+    setSelectedEquipment(item);
+    setShowMaintenanceModal(true);
+  };
 
   return (
-    <PageContainer className="space-y-6">
-        {/* Header avec design glassmorphism */}
-        <div className="glass-card p-6 rounded-xl">
-          <SectionHeader
-            icon={<Settings className="w-8 h-8" />}
-            title="Gestion des Équipements"
-            subtitle="Suivi et maintenance du parc d'équipements"
-            actions={(
-              <>
-                <button
-                  onClick={() => setShowMaintenanceModal(true)}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-xl hover:from-blue-700 hover:to-cyan-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Planning Maintenance
-                </button>
-                <button
-                  onClick={() => setShowAddEquipment(true)}
-                  className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-xl hover:from-orange-700 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-orange-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
-                >
-                  <Plus className="w-4 h-4" />
-                  Ajouter
-                </button>
-              </>
-            )}
-          />
-
-          {/* Statistiques rapides */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {equipment.filter(e => e.status === 'available').length}
-                  </div>
-                  <div className="text-sm text-green-700">Disponibles</div>
-                </div>
-              </div>
+    <PageContainer>
+      {/* Header */}
+      <div className="glass-card p-6 rounded-2xl bg-gradient-to-r from-orange-50 to-red-50 backdrop-blur-sm border border-white/20 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl">
+              <Wrench className="w-8 h-8 text-white" />
             </div>
-            <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-              <div className="flex items-center gap-3">
-                <BarChart3 className="w-8 h-8 text-blue-600" />
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {equipment.filter(e => e.status === 'in-use').length}
-                  </div>
-                  <div className="text-sm text-blue-700">En utilisation</div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
-              <div className="flex items-center gap-3">
-                <Wrench className="w-8 h-8 text-orange-600" />
-                <div>
-                  <div className="text-2xl font-bold text-orange-600">
-                    {equipment.filter(e => e.status === 'maintenance').length}
-                  </div>
-                  <div className="text-sm text-orange-700">En maintenance</div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-red-50 p-4 rounded-xl border border-red-200">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-8 h-8 text-red-600" />
-                <div>
-                  <div className="text-2xl font-bold text-red-600">
-                    {equipment.filter(e => e.status === 'out-of-service').length}
-                  </div>
-                  <div className="text-sm text-red-700">Hors service</div>
-                </div>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                Équipements
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Projet: {currentProject.name}
+              </p>
             </div>
           </div>
+          <button
+            onClick={() => setShowAddEquipment(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+            Nouvel Équipement
+          </button>
+        </div>
+      </div>
 
-          {/* Filtres et recherche */}
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-gray-500" />
-              <input
-                type="text"
-                placeholder="Rechercher un équipement..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+      {/* Statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="glass-card p-6 rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-gray-100 rounded-xl">
+              <BarChart3 className="w-6 h-6 text-gray-600" />
             </div>
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="available">Disponible</option>
-                <option value="in-use">En utilisation</option>
-                <option value="maintenance">En maintenance</option>
-                <option value="out-of-service">Hors service</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">Tous les types</option>
-                {equipmentTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
+            <span className="text-3xl font-bold text-gray-900">{stats.total}</span>
           </div>
+          <h3 className="text-sm font-semibold text-gray-600">Total Équipements</h3>
         </div>
 
-        {/* Modal d'ajout d'équipement */}
-        {showAddEquipment && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="glass-card p-8 w-full max-w-2xl shadow-2xl rounded-2xl">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl">
-                  <Plus className="w-6 h-6 text-orange-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">Ajouter un équipement</h2>
-              </div>
-              <EquipmentForm
-                initialValues={newEquipment}
-                mode="add"
-                onCancel={() => setShowAddEquipment(false)}
-                onSubmit={handleAddEquipment}
+        <div className="glass-card p-6 rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-green-100 rounded-xl">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <span className="text-3xl font-bold text-green-600">{stats.available}</span>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-600">Disponibles</h3>
+          {stats.total > 0 && (
+            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-800"
+                style={{ width: `${(stats.available / stats.total) * 100}%` }}
               />
             </div>
+          )}
+        </div>
+
+        <div className="glass-card p-6 rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <Settings className="w-6 h-6 text-blue-600" />
+            </div>
+            <span className="text-3xl font-bold text-blue-600">{stats.inUse}</span>
           </div>
-        )}
+          <h3 className="text-sm font-semibold text-gray-600">En Service</h3>
+          {stats.total > 0 && (
+            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-800"
+                style={{ width: `${(stats.inUse / stats.total) * 100}%` }}
+              />
+            </div>
+          )}
+        </div>
 
-        {/* Modale planning maintenance */}
-        {showMaintenanceModal && (
-          <MaintenancePlanningModal
-            equipment={equipment}
-            onClose={() => setShowMaintenanceModal(false)}
+        <div className="glass-card p-6 rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-orange-100 rounded-xl">
+              <AlertTriangle className="w-6 h-6 text-orange-600" />
+            </div>
+            <span className="text-3xl font-bold text-orange-600">{stats.maintenance}</span>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-600">Maintenance</h3>
+          {stats.total > 0 && (
+            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-800"
+                style={{ width: `${(stats.maintenance / stats.total) * 100}%` }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filtres */}
+      <div className="glass-card p-6 rounded-xl mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-900">Filtres</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+            />
+          </div>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+          >
+            <option value="all">Tous les statuts</option>
+            <option value="available">Disponible</option>
+            <option value="in_use">En service</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="out_of_service">Hors service</option>
+          </select>
+
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+          >
+            <option value="all">Tous les types</option>
+            <option value="vehicle">Véhicule</option>
+            <option value="machinery">Machinerie</option>
+            <option value="tool">Outil</option>
+            <option value="other">Autre</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Liste des équipements */}
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Chargement des équipements...</p>
+        </div>
+      ) : filteredEquipment.length === 0 ? (
+        equipment.length === 0 ? (
+          <EmptyState
+            icon={Wrench}
+            title="Aucun équipement"
+            description={`Commencez par ajouter votre premier équipement au projet "${currentProject.name}"`}
+            actionLabel="Ajouter un équipement"
+            onAction={() => setShowAddEquipment(true)}
           />
-        )}
-
-        {/* Grille d'équipements avec design moderne */}
+        ) : (
+          <EmptyState
+            icon={Search}
+            title="Aucun résultat"
+            description="Aucun équipement ne correspond à vos critères de recherche"
+            actionLabel="Réinitialiser les filtres"
+            onAction={() => {
+              setSearchTerm('');
+              setFilterStatus('all');
+              setFilterType('all');
+            }}
+          />
+        )
+      ) : (
         <div className="glass-card p-6 rounded-xl">
           <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl">
-              <Grid3X3 className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900">Parc d'équipements</h3>
-            <div className="ml-auto flex items-center gap-2 text-sm text-gray-600">
-              <span>{filteredEquipment.length} équipement{filteredEquipment.length > 1 ? 's' : ''}</span>
-            </div>
+            <Grid3X3 className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              Équipements ({filteredEquipment.length})
+            </h3>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredEquipment.map((equipment) => (
+            {filteredEquipment.map((item) => (
               <EquipmentCard
-                key={equipment.id}
-                equipment={equipment}
-                onClick={() => {
-                  setSelectedEquipment(equipment);
-                  setShowDetailModal(true);
-                }}
+                key={item.id}
+                equipment={item}
+                onClick={() => handleEquipmentClick(item)}
+                onMaintenanceClick={() => handleMaintenanceClick(item)}
               />
             ))}
           </div>
         </div>
+      )}
 
-        {/* Modal fiche détail équipement */}
-        {showDetailModal && selectedEquipment && (
-          <EquipmentDetailModal
-            equipment={selectedEquipment}
-            onClose={() => {
-              setSelectedEquipment(null);
-              setShowDetailModal(false);
-            }}
-            onEdit={async (updated) => {
-              try {
-                await EquipmentService.updateEquipment(updated.id, {
-                  name: updated.name,
-                  type: updated.type,
-                  brand: updated.model,
-                  model: updated.model,
-                  serialNumber: updated.serialNumber,
-                  status: updated.status as Equipment['status'],
-                  location: updated.location,
-                  assignedTo: updated.operator
-                });
-                setSelectedEquipment(updated);
-              } catch (error) {
-                console.error('Erreur lors de la modification:', error);
-                alert('Erreur lors de la modification de l\'équipement.');
-              }
-            }}
-            onDelete={async (toDelete) => {
-              try {
-                // Fermer la modale immédiatement pour une meilleure réactivité
-                setShowDetailModal(false);
-                
-                // Supprimer l'équipement
-                await EquipmentService.deleteEquipment(toDelete.id);
-                
-                // Mettre à jour l'état local pour refléter la suppression
-                setEquipment(prevEquipment => 
-                  prevEquipment.filter(eq => eq.id !== toDelete.id)
-                );
-                
-                // S'assurer que l'équipement sélectionné est bien effacé
-                setSelectedEquipment(null);
-                
-              } catch (error) {
-                console.error('Erreur lors de la suppression:', error);
-                alert('Erreur lors de la suppression de l\'équipement.');
-              }
-            }}
-            onUpdateMaintenance={async (updated) => {
-              try {
-                await EquipmentService.updateEquipment(updated.id, {
-                  lastMaintenanceDate: updated.lastMaintenance ? new Date(updated.lastMaintenance) : undefined,
-                  nextMaintenanceDate: updated.nextMaintenance ? new Date(updated.nextMaintenance) : undefined
-                });
-                setSelectedEquipment(updated);
-              } catch (error) {
-                console.error('Erreur lors de la mise à jour maintenance:', error);
-                alert('Erreur lors de la mise à jour de la maintenance.');
-              }
-            }}
-          />
-        )}
+      {/* Modals */}
+      {showAddEquipment && (
+        <EquipmentForm
+          onClose={() => setShowAddEquipment(false)}
+          onSave={handleAddEquipment}
+        />
+      )}
 
-        {/* État vide avec design glassmorphism */}
-        {filteredEquipment.length === 0 && (
-          <div className="glass-card p-12 rounded-xl text-center">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-              <Settings className="w-12 h-12 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Aucun équipement trouvé</h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Essayez de modifier vos critères de recherche ou ajoutez un nouvel équipement pour commencer.
-            </p>
-            <button
-              onClick={() => setShowAddEquipment(true)}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-orange-500/30 transform hover:scale-105 transition-all duration-300 shadow-lg"
-            >
-              <Plus className="w-4 h-4" />
-              Ajouter un équipement
-            </button>
-          </div>
-        )}
+      {showDetailModal && selectedEquipment && (
+        <EquipmentDetailModal
+          equipment={selectedEquipment}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedEquipment(null);
+          }}
+        />
+      )}
+
+      {showMaintenanceModal && selectedEquipment && (
+        <MaintenancePlanningModal
+          equipment={selectedEquipment}
+          onClose={() => {
+            setShowMaintenanceModal(false);
+            setSelectedEquipment(null);
+          }}
+        />
+      )}
     </PageContainer>
   );
 };
 
-export default Equipment;
+export default EquipmentMigrated;

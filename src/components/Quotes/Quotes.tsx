@@ -19,104 +19,60 @@ import PageContainer from '../Layout/PageContainer';
 import SectionHeader from '../UI/SectionHeader';
 import Badge, { BadgeTone } from '../UI/Badge';
 import QuoteCreatorSimple from './QuoteCreatorSimple';
-import { Quote } from '../../services/quotesService';
+import { Quote, QuotesService } from '../../services/quotesService';
+import { useProjectQuotes } from '../../hooks/useProjectData';
+import { useProjects } from '../../hooks/useProjects';
+import EmptyState from '../UI/EmptyState';
+import NoProjectSelected from '../UI/NoProjectSelected';
 
 const Quotes: React.FC = () => {
   const { formatAmount } = useCurrency();
+  const { currentProject } = useProjects();
+  const { quotes, loading, addQuote } = useProjectQuotes(currentProject?.id || null);
   
-  // États locaux
-  const [quotes, setQuotes] = useState<Quote[]>([
-    {
-      id: '1',
-      title: 'Devis Construction Villa Moderne',
-      clientName: 'M. Jean Dupont',
-      clientEmail: 'jean.dupont@email.com',
-      clientPhone: '+237 6XX XX XX XX',
-      companyName: 'Dupont Construction SARL',
-      projectType: 'construction',
-      status: 'sent',
-      totalAmount: 45000000,
-      subtotal: 38135593,
-      taxRate: 18,
-      taxAmount: 6864407,
-      validityDays: 30,
-      validUntil: '2025-10-15',
-      createdAt: '2025-09-01',
-      updatedAt: '2025-09-05',
-      phases: [
-        {
-          id: 'p1',
-          name: 'Gros œuvre',
-          description: 'Fondations, murs porteurs, dalle',
-          totalPrice: 25000000,
-          expanded: true,
-          tasks: [
-            {
-              id: 't1',
-              name: 'Fondations',
-              description: 'Travaux de fondations',
-              totalPrice: 10200000,
-              expanded: true,
-              articles: [
-                {
-                  id: 'a1',
-                  description: 'Fondations en béton armé',
-                  quantity: 120,
-                  unit: 'm²',
-                  unitPrice: 85000,
-                  totalPrice: 10200000
-                }
-              ]
-            },
-            {
-              id: 't2',
-              name: 'Murs',
-              description: 'Construction des murs',
-              totalPrice: 9000000,
-              expanded: true,
-              articles: [
-                {
-                  id: 'a2',
-                  description: 'Murs en parpaings',
-                  quantity: 200,
-                  unit: 'm²',
-                  unitPrice: 45000,
-                  totalPrice: 9000000
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      notes: 'Devis valable 45 jours',
-      paymentTerms: 'Paiement en 3 tranches : 40% à la commande, 40% à mi-parcours, 20% à la livraison'
-    },
-    {
-      id: '2',
-      title: 'Devis Rénovation Appartement',
-      clientName: 'Mme Marie Martin',
-      clientEmail: 'marie.martin@email.com',
-      clientPhone: '+237 6XX XX XX XX',
-      companyName: 'Martin Rénovation',
-      projectType: 'renovation',
-      status: 'draft',
-      totalAmount: 12500000,
-      subtotal: 10593220,
-      taxRate: 18,
-      taxAmount: 1906780,
-      validityDays: 30,
-      validUntil: '2025-11-01',
-      createdAt: '2025-09-03',
-      updatedAt: '2025-09-06',
-      phases: [],
-      notes: 'En cours de finalisation'
-    }
-  ]);
+  // Si aucun projet n'est sélectionné
+  if (!currentProject) {
+    return (
+      <PageContainer>
+        <NoProjectSelected />
+      </PageContainer>
+    );
+  }
   
+  // États locaux pour l'interface
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showQuoteCreator, setShowQuoteCreator] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+
+  // État vide pour nouveau projet
+  if (quotes.length === 0 && !loading) {
+    return (
+      <PageContainer>
+        <EmptyState
+          icon={FileText}
+          title="Aucun devis"
+          description={`Commencez par créer votre premier devis pour le projet "${currentProject.name}"`}
+          actionLabel="Créer un devis"
+          onAction={() => setShowQuoteCreator(true)}
+        />
+        {showQuoteCreator && (
+          <QuoteCreatorSimple
+            onClose={() => {
+              setShowQuoteCreator(false);
+              setSelectedQuote(null);
+            }}
+            onQuoteCreated={() => {
+              // La création est gérée en interne par QuoteCreatorSimple via QuotesService
+              // Nous fermons simplement le créateur après la création
+              setShowQuoteCreator(false);
+            }}
+            editQuote={selectedQuote}
+          />
+        )}
+      </PageContainer>
+    );
+  }
 
   // Filtrage des devis
   const filteredQuotes = useMemo(() => {
@@ -152,40 +108,51 @@ const Quotes: React.FC = () => {
     setShowQuoteCreator(true);
   };
 
-  const handleDeleteQuote = (quoteId: string) => {
+  const handleDeleteQuote = async (quoteId: string) => {
     const quote = quotes.find(q => q.id === quoteId);
-    if (quote && window.confirm(`Êtes-vous sûr de vouloir supprimer le devis "${quote.title}" ?`)) {
-      setQuotes(prev => prev.filter(q => q.id !== quoteId));
+    if (!quote) return;
+    const confirmed = window.confirm(`Êtes-vous sûr de vouloir supprimer le devis "${quote.title}" ?`);
+    if (!confirmed) return;
+    try {
+      await QuotesService.deleteQuote(quoteId);
+      // La liste se mettra à jour via l'abonnement temps réel dans useProjectQuotes
+    } catch (error) {
+      console.error('Erreur lors de la suppression du devis:', error);
     }
   };
 
-  const handleDuplicateQuote = (quote: Quote) => {
-    const newQuote: Quote = {
-      ...quote,
-      id: Date.now().toString(),
-      title: `${quote.title} (Copie)`,
-      status: 'draft',
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0]
-    };
-    setQuotes(prev => [newQuote, ...prev]);
+  const handleDuplicateQuote = async (quote: Quote) => {
+    try {
+      const { id: _ignored, createdAt: _c, updatedAt: _u, ...rest } = quote;
+      await addQuote({
+        ...(rest as Omit<Quote, 'id'>),
+        title: `${quote.title} (Copie)`,
+        status: 'draft'
+      });
+      // La nouvelle copie sera reçue via l'abonnement temps réel
+    } catch (error) {
+      console.error('Erreur lors de la duplication du devis:', error);
+    }
   };
 
-  const handleStatusChange = (quoteId: string, newStatus: Quote['status']) => {
-    setQuotes(prev => prev.map(q => 
-      q.id === quoteId 
-        ? { ...q, status: newStatus, updatedAt: new Date().toISOString().split('T')[0] }
-        : q
-    ));
+  const handleStatusChange = async (quoteId: string, newStatus: Quote['status']) => {
+    try {
+      await QuotesService.updateQuote(quoteId, { status: newStatus });
+      // L'updatedAt est géré côté service; l'UI se met à jour via l'abonnement
+    } catch (error) {
+      console.error('Erreur lors du changement de statut du devis:', error);
+    }
   };
 
   const getStatusBadge = (status: Quote['status']) => {
     const map: Record<Quote['status'], { tone: BadgeTone; label: string }> = {
       draft: { tone: 'gray', label: 'Brouillon' },
       sent: { tone: 'blue', label: 'Envoyé' },
+      viewed: { tone: 'blue', label: 'Consulté' },
       accepted: { tone: 'green', label: 'Accepté' },
       rejected: { tone: 'red', label: 'Rejeté' },
-      expired: { tone: 'orange', label: 'Expiré' }
+      expired: { tone: 'orange', label: 'Expiré' },
+      cancelled: { tone: 'gray', label: 'Annulé' }
     } as const;
     const conf = map[status] || { tone: 'gray' as BadgeTone, label: String(status) };
     return <Badge tone={conf.tone}>{conf.label}</Badge>;
