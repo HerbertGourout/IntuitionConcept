@@ -19,6 +19,7 @@ import {
   X
 } from 'lucide-react';
 import { LocationService } from '../../services/locationService';
+import { useProjectContext } from '../../contexts/ProjectContext';
 import InteractiveMap from '../Maps/InteractiveMap';
 
 // Interface locale pour compatibilité avec l'UI existante
@@ -46,11 +47,11 @@ interface LocalLocation {
 
 const Locations: React.FC = () => {
   const [locations, setLocations] = useState<LocalLocation[]>([]);
-  const [loading, setLoading] = useState(true);
-  console.log('Loading state:', loading); // Pour éviter l'erreur unused variable
+  const [_loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingLocation, setEditingLocation] = useState<LocalLocation | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const { currentProject, projects } = useProjectContext();
   const [formData, setFormData] = useState({
     name: '',
     type: 'site' as 'site' | 'office' | 'warehouse' | 'depot',
@@ -73,7 +74,7 @@ const Locations: React.FC = () => {
         const firebaseLocations = await LocationService.getAllLocations();
         
         // Convertir vers le format local pour compatibilité UI
-        const convertedLocations: LocalLocation[] = firebaseLocations.map(loc => ({
+        let convertedLocations: LocalLocation[] = firebaseLocations.map(loc => ({
           id: loc.id,
           name: loc.name,
           type: loc.type === 'construction_site' ? 'site' : 
@@ -83,11 +84,22 @@ const Locations: React.FC = () => {
           region: 'Région',
           coordinates: loc.coordinates,
           status: loc.status,
-          projectsCount: Math.floor(Math.random() * 5), // Simulation
+          // Calcul réel du nombre de projets liés à cette localisation
+          projectsCount: projects.filter(p => (p as any).locationId === loc.id || p.location === loc.name).length,
           equipmentCount: loc.equipmentCount,
           description: loc.description,
           contact: loc.contact
         }));
+
+        // Filtrer uniquement les localisations liées au projet sélectionné
+        if (currentProject) {
+          convertedLocations = convertedLocations.filter(l =>
+            (currentProject as any).locationId === l.id || currentProject.location === l.name
+          );
+        } else {
+          // Si aucun projet n'est sélectionné, pas de données (éviter d'afficher des localisations hors contexte)
+          convertedLocations = [];
+        }
         
         setLocations(convertedLocations);
       } catch (error) {
@@ -99,7 +111,8 @@ const Locations: React.FC = () => {
       }
     };
     fetchLocations();
-  }, []);
+    // Recalculer quand le projet sélectionné change ou que la liste des projets évolue
+  }, [currentProject, projects]);
 
   // Statistiques calculées
   const stats = {
@@ -202,7 +215,7 @@ const Locations: React.FC = () => {
   const handleDelete = (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette localisation ?')) {
       setLocations(locations.filter(l => l.id !== id));
-      console.log('Localisation supprimée avec succès');
+      // suppression effectuée
     }
   };
 
@@ -221,7 +234,6 @@ const Locations: React.FC = () => {
           ? { ...l, ...formData, projectsCount: l.projectsCount, equipmentCount: l.equipmentCount }
           : l
       ));
-      console.log('Localisation modifiée avec succès');
     } else {
       // Ajout
       const newLocation: LocalLocation = {
@@ -231,7 +243,6 @@ const Locations: React.FC = () => {
         equipmentCount: 0
       };
       setLocations([...locations, newLocation]);
-      console.log('Localisation ajoutée avec succès');
     }
     
     setIsModalVisible(false);

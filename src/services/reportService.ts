@@ -472,9 +472,7 @@ export class ReportService {
       ['Tâches en cours', inProgressTasks.toString()],
       ['Tâches restantes', (totalTasks - completedTasks).toString()],
       ['Projets actifs', activeProjectsCount.toString()],
-      ['Projets terminés', completedProjectsCount.toString()],
-      ['Efficacité moyenne', `${Math.round(Math.random() * 20 + 80)}%`], // Simulé
-      ['Respect des délais', `${Math.round(Math.random() * 15 + 85)}%`] // Simulé
+      ['Projets terminés', completedProjectsCount.toString()]
     ];
 
     doc.autoTable({
@@ -500,37 +498,26 @@ export class ReportService {
         acc + (phase.tasks?.filter(task => task.status === 'done').length || 0), 0) || 0;
       const projectProgress = projectTotalTasks > 0 ? Math.round((projectCompletedTasks / projectTotalTasks) * 100) : 0;
       
-      // Calcul simulé de l'efficacité et du respect des délais
-      const efficiency = Math.round(Math.random() * 20 + 75);
-      const onTimeDelivery = Math.round(Math.random() * 25 + 70);
-      const qualityScore = Math.round(Math.random() * 15 + 85);
-
       return [
         project.name,
         `${projectProgress}%`,
         `${projectCompletedTasks}/${projectTotalTasks}`,
-        `${efficiency}%`,
-        `${onTimeDelivery}%`,
-        `${qualityScore}%`,
         this.getStatusText(project.status)
       ];
     });
 
     doc.autoTable({
       startY: 60,
-      head: [['Projet', 'Progression', 'Tâches', 'Efficacité', 'Délais', 'Qualité', 'Statut']],
+      head: [['Projet', 'Progression', 'Tâches', 'Statut']],
       body: projectPerformanceData,
       theme: 'grid',
       headStyles: { fillColor: [147, 51, 234] },
       styles: { fontSize: 9 },
       columnStyles: {
-        0: { cellWidth: 30 },
-        1: { cellWidth: 20 },
-        2: { cellWidth: 20 },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 20 },
-        5: { cellWidth: 20 },
-        6: { cellWidth: 25 }
+        0: { cellWidth: 60 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 30 }
       }
     });
 

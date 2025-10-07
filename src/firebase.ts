@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator, initializeFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence } from "firebase/auth";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
@@ -16,10 +16,25 @@ const firebaseConfig = {
 // Éviter la double initialisation lors du HMR (Hot Module Replacement)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-export const db = getFirestore(app);
+// Initialize Firestore with enhanced settings for better connectivity
+let db: ReturnType<typeof getFirestore>;
+const useEmulators = import.meta.env?.VITE_USE_FIREBASE_EMULATORS === 'true';
+
+if (useEmulators) {
+  // Use standard getFirestore for emulators
+  db = getFirestore(app);
+} else {
+  // Use initializeFirestore with fallback settings for production
+  db = initializeFirestore(app, {
+    experimentalForceLongPolling: true, // Fallback for CORS/WebChannel issues
+  });
+}
+
+export { db };
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
+export const usingEmulators = useEmulators;
 
 // Configure Auth persistence from env: 'local' | 'session' | 'none'
 try {
@@ -36,10 +51,26 @@ try {
   console.warn('[Firebase] Failed to set auth persistence:', e);
 }
 
+// Enable offline persistence for better reliability
+if (!useEmulators) {
+  try {
+    enableIndexedDbPersistence(db);
+    console.info('[Firebase] IndexedDB persistence enabled');
+  } catch (err: unknown) {
+    const error = err as { code?: string };
+    if (error.code === 'failed-precondition') {
+      console.warn('[Firebase] Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    } else if (error.code === 'unimplemented') {
+      console.warn('[Firebase] The current browser does not support all features required for persistence.');
+    } else {
+      console.warn('[Firebase] Failed to enable persistence:', err);
+    }
+  }
+}
+
 // Optionally connect to local emulators for development
 // Set VITE_USE_FIREBASE_EMULATORS=true in your .env.local to enable
-export const usingEmulators = import.meta.env?.VITE_USE_FIREBASE_EMULATORS === 'true';
-if (usingEmulators) {
+if (useEmulators) {
   try {
     // Use 127.0.0.1 for Windows compatibility
     connectAuthEmulator(auth, 'http://127.0.0.1:9099');

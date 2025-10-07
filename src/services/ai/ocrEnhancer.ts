@@ -18,6 +18,14 @@ export interface EnhancedOCRData extends ExtractedData {
     invoiceNumber: string | null;
     vendorName: string | null;
   };
+  items?: Array<{
+    description: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    totalPrice: number;
+    category?: string;
+  }>;
 }
 
 export interface OCREnhancementConfig {
@@ -311,31 +319,57 @@ class OCREnhancer {
 
   private async enhanceWithOpenAI(originalText: string, currentData: EnhancedOCRData): Promise<Partial<EnhancedOCRData>> {
     try {
-      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      const apiKey = aiConfig.openaiApiKey;
       if (!apiKey) {
-        // Clé API OpenAI non configurée
+        console.warn('🔑 Clé API OpenAI non configurée');
         return {
-          suggestions: ['Configuration OpenAI requise']
+          suggestions: ['Configuration OpenAI requise pour l\'enrichissement IA']
         };
       }
 
-      const prompt = `
-Analyse ce texte OCR extrait d'une facture BTP et enrichis les données structurées:
+      console.log('🤖 Enrichissement OCR avec OpenAI...');
 
-Texte original:
+      const prompt = `
+Analyse ce texte OCR d'une facture BTP et enrichis les données:
+
+TEXTE OCR:
 ${originalText}
 
-Données actuelles extraites:
-${JSON.stringify(currentData, null, 2)}
+DONNÉES ACTUELLES:
+${JSON.stringify({
+  vendorName: currentData.vendorName,
+  total: currentData.total,
+  amounts: currentData.amounts,
+  dates: currentData.dates,
+  invoiceNumber: currentData.invoiceNumber
+}, null, 2)}
 
-Enrichis et corrige ces données en format JSON avec:
-- Correction des erreurs OCR
-- Extraction d'informations manquantes
-- Validation des montants et dates
-- Suggestions d'amélioration
-- Classification des articles par catégorie BTP
-
-Réponds uniquement en JSON valide.`;
+INSTRUCTIONS:
+1. Corrige les erreurs OCR (caractères mal reconnus)
+2. Extrait/valide: montant total, nom fournisseur, date, numéro facture
+3. Identifie les articles BTP avec quantités et prix
+4. Réponds en JSON strict avec cette structure:
+{
+  "normalizedData": {
+    "amount": number,
+    "currency": "XAF",
+    "date": "YYYY-MM-DD",
+    "vendorName": "string",
+    "invoiceNumber": "string"
+  },
+  "items": [
+    {
+      "description": "string",
+      "quantity": number,
+      "unit": "string", 
+      "unitPrice": number,
+      "totalPrice": number,
+      "category": "materiau|main_oeuvre|equipement|transport"
+    }
+  ],
+  "suggestions": ["string"],
+  "confidence": number
+}`;
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -348,20 +382,22 @@ Réponds uniquement en JSON valide.`;
           messages: [
             {
               role: 'system',
-              content: 'Tu es un expert en analyse de factures BTP. Réponds uniquement en JSON valide.'
+              content: 'Tu es un expert comptable BTP. Analyse les factures avec précision. Réponds UNIQUEMENT en JSON valide, sans texte avant/après.'
             },
             {
               role: 'user',
               content: prompt
             }
           ],
-          max_tokens: 1500,
+          max_tokens: 2000,
           temperature: 0.1
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Erreur API OpenAI: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Erreur API OpenAI:', response.status, errorText);
+        throw new Error(`API OpenAI: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -371,29 +407,42 @@ Réponds uniquement en JSON valide.`;
         throw new Error('Réponse OpenAI vide');
       }
 
+      console.log('📝 Réponse OpenAI reçue:', enhancedContent.substring(0, 200) + '...');
+
       try {
-        const parsedEnhancement = JSON.parse(enhancedContent);
+        // Nettoyer la réponse (enlever markdown si présent)
+        const cleanContent = enhancedContent
+          .replace(/```json\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+
+        const parsedEnhancement = JSON.parse(cleanContent);
+        
+        console.log('✅ Enrichissement OpenAI réussi');
+        
         return {
-          ...parsedEnhancement,
+          normalizedData: parsedEnhancement.normalizedData || currentData.normalizedData,
+          items: parsedEnhancement.items || [],
           suggestions: [
             ...(parsedEnhancement.suggestions || []),
-            'Données enrichies par OpenAI GPT-4'
-          ]
+            '🤖 Données enrichies par OpenAI GPT-4o-mini'
+          ],
+          confidence: Math.max(currentData.confidence, parsedEnhancement.confidence || 85)
         };
-      } catch {
-        // Erreur parsing réponse OpenAI
+      } catch (parseError) {
+        console.error('❌ Erreur parsing JSON OpenAI:', parseError);
         return {
           suggestions: [
-            'Enrichissement OpenAI effectué mais format invalide',
-            enhancedContent.substring(0, 200) + '...'
+            '⚠️ Enrichissement OpenAI reçu mais format JSON invalide',
+            `Réponse brute: ${enhancedContent.substring(0, 150)}...`
           ]
         };
       }
 
     } catch (error) {
-      // Erreur lors de l'enrichissement OpenAI
+      console.error('❌ Erreur enrichissement OpenAI:', error);
       return {
-        suggestions: [`Erreur OpenAI: ${error instanceof Error ? error.message : 'Erreur inconnue'}`]
+        suggestions: [`❌ Erreur OpenAI: ${error instanceof Error ? error.message : 'Erreur inconnue'}`]
       };
     }
   }

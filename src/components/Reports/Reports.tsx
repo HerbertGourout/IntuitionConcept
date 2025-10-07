@@ -35,11 +35,12 @@ interface ReportStats {
 }
 
 const Reports: React.FC = () => {
-  const { projects } = useProjectContext();
+  const { currentProject } = useProjectContext();
 
   // Calcul des données de rapport
   const reportData: ReportData[] = useMemo(() => {
-    return projects.map(project => {
+    const source = currentProject ? [currentProject] : [];
+    return source.map(project => {
       const totalTasks = project.phases?.reduce((acc, phase) => acc + (phase.tasks?.length || 0), 0) || 0;
       const completedTasks = project.phases?.reduce((acc, phase) => 
         acc + (phase.tasks?.filter(task => task.status === 'done').length || 0), 0) || 0;
@@ -65,7 +66,7 @@ const Reports: React.FC = () => {
         status
       };
     });
-  }, [projects]);
+  }, [currentProject]);
 
   // Calcul des statistiques globales
   const stats: ReportStats = useMemo(() => {
@@ -91,23 +92,28 @@ const Reports: React.FC = () => {
   }, [reportData]);
 
   // (simplified) No filtering UI; this page shows a compact overview only
+  const hasProjects = reportData.length > 0;
+  const hasTasks = stats.totalTasks > 0;
 
   const generateReport = (type: string) => {
     try {
       switch (type) {
         case 'global':
-          ReportService.generateGlobalReport(projects);
+          if (!currentProject) return;
+          ReportService.generateGlobalReport([currentProject]);
           break;
         case 'financial':
-          ReportService.generateFinancialReport(projects);
+          if (!currentProject) return;
+          ReportService.generateFinancialReport([currentProject]);
           break;
         case 'performance':
-          ReportService.generatePerformanceReport(projects);
+          if (!currentProject) return;
+          ReportService.generatePerformanceReport([currentProject]);
           break;
         default:
           if (type.startsWith('project-')) {
             const projectId = type.replace('project-', '');
-            const project = projects.find(p => p.id === projectId);
+            const project = currentProject && currentProject.id === projectId ? currentProject : null;
             if (project) {
               ReportService.generateProjectReport(project);
             }
@@ -123,7 +129,8 @@ const Reports: React.FC = () => {
   const exportData = (format: string) => {
     try {
       if (format === 'Excel' || format.startsWith('project-')) {
-        ReportService.exportToExcel(projects, format === 'Excel' ? 'export-global' : format);
+        if (!currentProject) return;
+        ReportService.exportToExcel([currentProject], format === 'Excel' ? 'export-global' : format);
       }
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
@@ -194,14 +201,19 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Statistiques globales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5 w-full">
-        <StatsCard title="Total Projets" value={stats.totalProjects} icon={Target} color="bg-blue-500" subtitle={`${stats.activeProjects} actifs`} />
-        <StatsCard title="Budget Total" value={`${stats.totalBudget.toLocaleString()} FCFA`} icon={DollarSign} color="bg-green-500" subtitle={`${stats.totalSpent.toLocaleString()} FCFA dépensés`} />
-        <StatsCard title="Tâches" value={`${stats.completedTasks}/${stats.totalTasks}`} icon={CheckCircle} color="bg-purple-500" subtitle={`${Math.round((stats.completedTasks / Math.max(stats.totalTasks, 1)) * 100)}% terminées`} />
-        <StatsCard title="Progression Moyenne" value={`${stats.averageProgress}%`} icon={TrendingUp} color="bg-orange-500" subtitle={`${stats.completedProjects} projets terminés`} />
-      </div>
+      {hasProjects ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5 w-full">
+          <StatsCard title="Total Projets" value={stats.totalProjects} icon={Target} color="bg-blue-500" subtitle={`${stats.activeProjects} actifs`} />
+          <StatsCard title="Budget Total" value={`${stats.totalBudget.toLocaleString()} FCFA`} icon={DollarSign} color="bg-green-500" subtitle={`${stats.totalSpent.toLocaleString()} FCFA dépensés`} />
+          <StatsCard title="Tâches" value={`${stats.completedTasks}/${stats.totalTasks}`} icon={CheckCircle} color="bg-purple-500" subtitle={`${Math.round((stats.completedTasks / Math.max(stats.totalTasks, 1)) * 100)}% terminées`} />
+          <StatsCard title="Progression Moyenne" value={`${stats.averageProgress}%`} icon={TrendingUp} color="bg-orange-500" subtitle={`${stats.completedProjects} projets terminés`} />
+        </div>
+      ) : (
+        <div className="glass-card p-6 text-center text-gray-600">Sélectionnez un projet pour voir ses rapports.</div>
+      )}
 
       {/* Vue d'ensemble simplifiée */}
+      {hasProjects && (
       <div className="glass-card w-full">
         <div className="p-3 md:p-4 lg:p-5">
           <div className="space-y-6">
@@ -257,31 +269,20 @@ const Reports: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Tendances récentes (résumé) */}
-            <div className="glass-card p-3 md:p-4 lg:p-5 w-full">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
-                Tendances Récentes
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <span className="text-lg font-bold text-blue-600">+15%</span>
-                  <p className="text-sm text-gray-600">Productivité ce mois</p>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <span className="text-lg font-bold text-green-600">98%</span>
-                  <p className="text-sm text-gray-600">Taux de satisfaction</p>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <span className="text-lg font-bold text-purple-600">-8%</span>
-                  <p className="text-sm text-gray-600">Délais de livraison</p>
-                </div>
+            {/* Tendances (afficher seulement si des tâches existent) */}
+            {hasTasks ? (
+              <div className="glass-card p-3 md:p-4 lg:p-5 w-full">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                  <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
+                  Tendances
+                </h3>
+                <div className="text-sm text-gray-500">Tendances basées sur vos données de tâches et projets.</div>
               </div>
-            </div>
+            ) : null}
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

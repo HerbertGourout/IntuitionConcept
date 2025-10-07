@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { toast } from 'react-hot-toast';
+import { offlineManager, OfflineState } from '../utils/offlineUtils';
 
 // Types pour la gestion offline
 interface OfflineAction {
@@ -23,6 +24,7 @@ interface OfflineContextType {
   isInitialized: boolean;
   pendingActions: OfflineAction[];
   offlineData: OfflineData;
+  offlineState: OfflineState;
   
   // Méthodes principales
   cacheData: (collection: string, id: string, data: Record<string, unknown>) => void;
@@ -34,6 +36,10 @@ interface OfflineContextType {
   // Statistiques
   getCacheSize: () => number;
   getLastSyncTime: () => Date | null;
+  
+  // Contrôles offline
+  forceOffline: () => Promise<void>;
+  forceOnline: () => Promise<void>;
 }
 
 const OfflineContext = createContext<OfflineContextType | undefined>(undefined);
@@ -56,6 +62,7 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
   const [pendingActions, setPendingActions] = useState<OfflineAction[]>([]);
   const [offlineData, setOfflineData] = useState<OfflineData>({});
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [offlineState, setOfflineState] = useState<OfflineState>(offlineManager.getState());
 
   // Clés de stockage local
   const STORAGE_KEYS = useMemo(() => ({
@@ -95,6 +102,14 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
     };
 
     initializeOfflineData();
+
+    // Subscribe to offline manager state changes
+    const unsubscribe = offlineManager.subscribe((state) => {
+      setOfflineState(state);
+      setIsOnline(state.isOnline && state.isFirebaseConnected);
+    });
+
+    return unsubscribe;
   }, [STORAGE_KEYS]);
 
   // Référence stable vers la fonction de synchronisation pour éviter les soucis de dépendances
@@ -294,6 +309,15 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
 
   const getLastSyncTime = useCallback(() => lastSyncTime, [lastSyncTime]);
 
+  // Contrôles offline
+  const forceOffline = useCallback(async () => {
+    await offlineManager.forceOffline();
+  }, []);
+
+  const forceOnline = useCallback(async () => {
+    await offlineManager.forceOnline();
+  }, []);
+
   // Synchronisation automatique périodique
   useEffect(() => {
     if (!isOnline) return;
@@ -312,13 +336,16 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
     isInitialized,
     pendingActions,
     offlineData,
+    offlineState,
     cacheData,
     getCachedData,
     queueAction,
     syncPendingActions,
     clearCache,
     getCacheSize,
-    getLastSyncTime
+    getLastSyncTime,
+    forceOffline,
+    forceOnline
   };
 
   return (

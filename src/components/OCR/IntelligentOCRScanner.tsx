@@ -11,6 +11,8 @@ import {
   UserOutlined
 } from '@ant-design/icons';
 import { intelligentOcrService, IntelligentOCRResult } from '../../services/ai/intelligentOcrService';
+import PageContainer from '../Layout/PageContainer';
+import SectionHeader from '../UI/SectionHeader';
 
 const { TabPane } = Tabs;
 
@@ -95,36 +97,28 @@ Mode de paiement: Virement bancaire`);
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <PageContainer className="space-y-6">
+      {/* Header harmonisé */}
+      <div className="glass-card p-6 rounded-xl">
+        <SectionHeader
+          icon={<CameraOutlined className="text-blue-600" />}
+          title="Scanner OCR Intelligent IA"
+          subtitle="Analyse et extraction automatiques des données de vos documents"
+        />
+      </div>
+
       {/* Interface de scan */}
-      <Card
-        title={
-          <Space>
-            <CameraOutlined />
-            Scanner OCR Intelligent IA
-          </Space>
-        }
-        style={{ marginBottom: 16 }}
-      >
-        <Space direction="vertical" style={{ width: '100%', textAlign: 'center' }}>
+      <Card className="glass-card">
+        <Space direction="vertical" className="w-full text-center">
           <div>
             <Space size="large">
               <Upload {...uploadProps}>
-                <Button 
-                  type="primary" 
-                  icon={<UploadOutlined />} 
-                  size="large"
-                  loading={loading}
-                >
+                <Button type="primary" icon={<UploadOutlined />} size="large" loading={loading}>
                   Sélectionner un document
                 </Button>
               </Upload>
               
-              <Button 
-                icon={<CameraOutlined />} 
-                size="large"
-                onClick={() => fileInputRef.current?.click()}
-              >
+              <Button icon={<CameraOutlined />} size="large" onClick={() => fileInputRef.current?.click()}>
                 Prendre une photo
               </Button>
             </Space>
@@ -135,7 +129,7 @@ Mode de paiement: Virement bancaire`);
             type="file"
             accept="image/*"
             capture="environment"
-            style={{ display: 'none' }}
+            className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleFileUpload(file);
@@ -153,21 +147,19 @@ Mode de paiement: Virement bancaire`);
 
       {/* Résultats */}
       {loading && (
-        <Card>
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <Card className="glass-card">
+          <div className="text-center py-10">
             <Spin size="large" />
-            <div style={{ marginTop: 16 }}>
+            <div className="mt-4">
               <p>Analyse intelligente en cours...</p>
-              <p style={{ fontSize: '12px', color: '#666' }}>
-                OCR + Classification + Extraction IA + Suggestions
-              </p>
+              <p className="text-xs text-gray-600">OCR + Classification + Extraction IA + Suggestions</p>
             </div>
           </div>
         </Card>
       )}
 
       {result && (
-        <Card>
+        <Card className="glass-card">
           <Tabs defaultActiveKey="overview">
             {/* Vue d'ensemble */}
             <TabPane 
@@ -179,11 +171,11 @@ Mode de paiement: Virement bancaire`);
               } 
               key="overview"
             >
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space direction="vertical" className="w-full">
                 {/* En-tête */}
                 <Row gutter={16}>
                   <Col span={6}>
-                    <Card size="small">
+                    <Card size="small" className="glass-card">
                       <Statistic
                         title="Type de document"
                         value=""
@@ -192,21 +184,18 @@ Mode de paiement: Virement bancaire`);
                     </Card>
                   </Col>
                   <Col span={6}>
-                    <Card size="small">
+                    <Card size="small" className="glass-card">
                       <Statistic
                         title="Confiance OCR"
                         value={result.confidence}
                         suffix="%"
                         precision={1}
-                        valueStyle={{ 
-                          color: result.confidence > 80 ? '#52c41a' : 
-                                result.confidence > 60 ? '#faad14' : '#ff4d4f' 
-                        }}
+                        valueStyle={{ color: result.confidence > 80 ? '#52c41a' : result.confidence > 60 ? '#faad14' : '#ff4d4f' }}
                       />
                     </Card>
                   </Col>
                   <Col span={6}>
-                    <Card size="small">
+                    <Card size="small" className="glass-card">
                       <Statistic
                         title="Montant total"
                         value={result.total || 0}
@@ -216,7 +205,7 @@ Mode de paiement: Virement bancaire`);
                     </Card>
                   </Col>
                   <Col span={6}>
-                    <Card size="small">
+                    <Card size="small" className="glass-card">
                       <Statistic
                         title="Éléments extraits"
                         value={Object.keys(result.structuredData).length}
@@ -230,17 +219,17 @@ Mode de paiement: Virement bancaire`);
                 <Row gutter={16}>
                   {result.structuredData.supplier && (
                     <Col span={12}>
-                      <Card size="small" title={<><UserOutlined /> Fournisseur</>}>
+                      <Card size="small" title={<><UserOutlined /> Fournisseur</>} className="glass-card">
                         <Space direction="vertical" size="small">
                           <div><strong>{result.structuredData.supplier.name}</strong></div>
                           {result.structuredData.supplier.address && (
-                            <div style={{ fontSize: '12px' }}>{result.structuredData.supplier.address}</div>
+                            <div className="text-xs">{result.structuredData.supplier.address}</div>
                           )}
                           {result.structuredData.supplier.phone && (
-                            <div style={{ fontSize: '12px' }}>📞 {result.structuredData.supplier.phone}</div>
+                            <div className="text-xs">📞 {result.structuredData.supplier.phone}</div>
                           )}
                           {result.structuredData.supplier.email && (
-                            <div style={{ fontSize: '12px' }}>✉️ {result.structuredData.supplier.email}</div>
+                            <div className="text-xs">✉️ {result.structuredData.supplier.email}</div>
                           )}
                         </Space>
                       </Card>
@@ -249,10 +238,10 @@ Mode de paiement: Virement bancaire`);
 
                   {result.structuredData.client && (
                     <Col span={12}>
-                      <Card size="small" title={<><UserOutlined /> Client</>}>
+                      <Card size="small" title={<><UserOutlined /> Client</>} className="glass-card">
                         <div><strong>{result.structuredData.client.name}</strong></div>
                         {result.structuredData.client.address && (
-                          <div style={{ fontSize: '12px' }}>{result.structuredData.client.address}</div>
+                          <div className="text-xs">{result.structuredData.client.address}</div>
                         )}
                       </Card>
                     </Col>
@@ -260,15 +249,15 @@ Mode de paiement: Virement bancaire`);
                 </Row>
 
                 {/* Analyse IA */}
-                <Card size="small" title={<><BulbOutlined /> Analyse IA</>}>
+                <Card size="small" title={<><BulbOutlined /> Analyse IA</>} className="glass-card">
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div>
                       <strong>Résumé:</strong> {result.aiAnalysis.summary}
                     </div>
                     
                     {result.aiAnalysis.keyInsights.length > 0 && (
-                      <div>
-                        <strong>Points clés:</strong>
+                      <div className="mb-4">
+                        <strong className="text-lg">Points clés:</strong>
                         <List
                           size="small"
                           dataSource={result.aiAnalysis.keyInsights}
@@ -278,12 +267,12 @@ Mode de paiement: Virement bancaire`);
                     )}
 
                     {result.aiAnalysis.recommendations.length > 0 && (
-                      <div>
-                        <strong>Recommandations:</strong>
+                      <div className="mb-4">
+                        <strong className="text-lg">Recommandations:</strong>
                         <List
                           size="small"
                           dataSource={result.aiAnalysis.recommendations}
-                          renderItem={item => <List.Item style={{ color: '#1890ff' }}>💡 {item}</List.Item>}
+                          renderItem={item => <List.Item className="text-blue-600">💡 {item}</List.Item>}
                         />
                       </div>
                     )}
@@ -292,7 +281,6 @@ Mode de paiement: Virement bancaire`);
               </Space>
             </TabPane>
 
-            {/* Articles détaillés */}
             {result.structuredData.items && (
               <TabPane 
                 tab={
@@ -304,15 +292,16 @@ Mode de paiement: Virement bancaire`);
                 key="items"
               >
                 <List
+                  className="divide-y divide-gray-200"
                   dataSource={result.structuredData.items}
                   renderItem={(item, index) => (
-                    <List.Item>
+                    <List.Item className="py-4">
                       <List.Item.Meta
                         title={`${index + 1}. ${item.description}`}
                         description={
-                          <Space>
-                            {item.quantity && <Tag>Qté: {item.quantity} {item.unit || 'u'}</Tag>}
-                            {item.unitPrice && <Tag color="blue">PU: {formatCurrency(item.unitPrice)}</Tag>}
+                          <Space className="flex flex-wrap">
+                            {item.quantity && <Tag className="mr-2">Qté: {item.quantity} {item.unit || 'u'}</Tag>}
+                            {item.unitPrice && <Tag className="mr-2" color="blue">PU: {formatCurrency(item.unitPrice)}</Tag>}
                             {item.totalPrice && <Tag color="green">Total: {formatCurrency(item.totalPrice)}</Tag>}
                           </Space>
                         }
@@ -333,7 +322,7 @@ Mode de paiement: Virement bancaire`);
               } 
               key="suggestions"
             >
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space direction="vertical" className="w-full">
                 {result.suggestions.category && (
                   <Alert
                     message="Catégorie suggérée"
@@ -352,7 +341,7 @@ Mode de paiement: Virement bancaire`);
                   />
                 )}
 
-                <Card size="small" title="Champs auto-remplis">
+                <Card size="small" title="Champs auto-remplis" className="glass-card">
                   <List
                     size="small"
                     dataSource={Object.entries(result.suggestions.autoFillFields)}
@@ -367,7 +356,7 @@ Mode de paiement: Virement bancaire`);
                   />
                 </Card>
 
-                <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <div className="text-center mt-4">
                   <Space>
                     <Button type="primary" size="large">
                       Créer une dépense avec ces données
@@ -390,16 +379,8 @@ Mode de paiement: Virement bancaire`);
               } 
               key="raw"
             >
-              <Card size="small">
-                <pre style={{ 
-                  whiteSpace: 'pre-wrap', 
-                  fontSize: '12px', 
-                  maxHeight: '400px', 
-                  overflow: 'auto',
-                  backgroundColor: '#f5f5f5',
-                  padding: '12px',
-                  borderRadius: '4px'
-                }}>
+              <Card size="small" className="glass-card">
+                <pre className="whitespace-pre-wrap text-xs max-h-[400px] overflow-auto bg-gray-100 p-3 rounded">
                   {rawText}
                 </pre>
               </Card>
@@ -407,7 +388,7 @@ Mode de paiement: Virement bancaire`);
           </Tabs>
         </Card>
       )}
-    </div>
+    </PageContainer>
   );
 };
 

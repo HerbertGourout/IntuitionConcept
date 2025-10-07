@@ -27,6 +27,9 @@ import { useProjectContext } from '../../contexts/ProjectContext';
 import { TeamMember, Role, TeamStats } from '../../types/team';
 import TeamService from '../../services/teamService';
 import CurrencyService from '../../services/currencyService';
+import LoadingState from '../UI/LoadingState';
+import ErrorState from '../UI/ErrorState';
+import EmptyState from '../UI/EmptyState';
 
 const Team: React.FC = () => {
   const { currentProject } = useProjectContext();
@@ -36,6 +39,8 @@ const Team: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -78,7 +83,7 @@ const Team: React.FC = () => {
   // État des membres d'équipe depuis Firebase
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [teamError, setTeamError] = useState<string | null>(null);
 
   // Charger/écouter les membres du projet courant
   useEffect(() => {
@@ -89,12 +94,37 @@ const Team: React.FC = () => {
     }
 
     setLoading(true);
-    const unsubscribe = TeamService.subscribeToProjectMembers(currentProject.id, (members) => {
-      setTeamMembers(members);
-      setLoading(false);
-      setError(null);
-    });
-    return () => unsubscribe();
+    let timeoutId: number | undefined;
+
+    // Sécurité: si aucun snapshot n'arrive (règles/permissions/index), arrêter le chargement
+    // après 10s et afficher un message d'erreur.
+    if (typeof window !== 'undefined') {
+      timeoutId = window.setTimeout(() => {
+        setLoading(false);
+        setTeamError("Impossible de charger l'équipe (timeout). Vérifiez les permissions Firestore et les index.");
+      }, 10000);
+    }
+
+    const unsubscribe = TeamService.subscribeToProjectMembers(
+      currentProject.id,
+      (members) => {
+        setTeamMembers(members);
+        setLoading(false);
+        setTeamError(null);
+        if (timeoutId) window.clearTimeout(timeoutId);
+      },
+      (err) => {
+        console.error('[Team] subscribeToProjectMembers error:', err);
+        setTeamError("Erreur lors du chargement de l'équipe. ");
+        setLoading(false);
+        if (timeoutId) window.clearTimeout(timeoutId);
+      }
+    );
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, [currentProject?.id]);
 
   const roles: Role[] = [
@@ -215,7 +245,7 @@ const Team: React.FC = () => {
       // La mise à jour se fera automatiquement via l'abonnement temps réel
     } catch (error) {
       console.error('Erreur lors de la suppression du membre:', error);
-      setError('Erreur lors de la suppression du membre');
+      setTeamError('Erreur lors de la suppression du membre');
     }
   };
 
@@ -267,7 +297,7 @@ const Team: React.FC = () => {
       });
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du membre:', error);
-      setError('Erreur lors de la sauvegarde du membre');
+      setTeamError('Erreur lors de la sauvegarde du membre');
     }
   };
 
@@ -333,8 +363,8 @@ const Team: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Affichage des erreurs */}
-      {error && (
+      {/* Affichage des erreurs (uniquement en développement) */}
+      {import.meta.env.DEV && teamError && (
         <div className="glass-card border-red-200 bg-red-50/50">
           <div className="p-4">
             <div className="flex items-center">
@@ -342,11 +372,11 @@ const Team: React.FC = () => {
                 <X className="h-5 w-5 text-red-400" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
+                <p className="text-sm text-red-800">{teamError}</p>
               </div>
               <div className="ml-auto pl-3">
                 <button
-                  onClick={() => setError(null)}
+                  onClick={() => setTeamError(null)}
                   className="inline-flex text-red-400 hover:text-red-600"
                 >
                   <X className="h-4 w-4" />

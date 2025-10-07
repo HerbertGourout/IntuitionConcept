@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useProjects } from '../../hooks/useProjects';
 import { useProjectStats } from '../../hooks/useProjectData';
-import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap } from 'lucide-react';
+import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap, Scan } from 'lucide-react';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
@@ -25,15 +25,13 @@ import EquipmentScannerWidget from './widgets/EquipmentScannerWidget';
 import WeatherWidget from './widgets/WeatherWidget';
 import OfflineStatusWidget from './widgets/OfflineStatusWidget';
 
-// Import des widgets IA
+// Import des widgets IA uniques (pas de doublons avec sidebar)
 import HybridAIMonitoringWidget from './HybridAIMonitoringWidget';
 import VocalCopilot from '../AI/VocalCopilot';
 import HybridAITestPanel from '../AI/HybridAITestPanel';
-import AnomalyDetectionDashboard from '../AI/AnomalyDetectionDashboard';
 
-// Import des widgets d'automatisation
-import { AutomationDashboard } from '../Automation/AutomationDashboard';
-import { WorkflowManager } from '../Automation/WorkflowManager';
+// Note: AnomalyDetectionDashboard, AIServicesDashboard, AutomationDashboard 
+// sont disponibles via le sidebar - pas besoin de les dupliquer ici
 
 interface DashboardProps {
   onNavigate?: (section: string) => void;
@@ -419,9 +417,53 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <HybridAIMonitoringWidget />
             </div>
             
-            <AnomalyDetectionDashboard />
-            <AutomationDashboard />
-            <WorkflowManager />
+            {/* Navigation Cards vers les pages dédiées */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Carte Anomalies */}
+              <div 
+                className="glass-card p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border border-red-200/20"
+                onClick={() => onNavigate?.('anomaly-detection')}
+              >
+                <div className="flex items-center space-x-3 mb-4">
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
+                  <h3 className="text-lg font-semibold">Détection d'Anomalies</h3>
+                </div>
+                <p className="text-gray-600 mb-4">Analyse IA des anomalies projet</p>
+                <button className="text-red-500 font-medium hover:text-red-600">
+                  Accéder au module →
+                </button>
+              </div>
+
+              {/* Carte Automatisations */}
+              <div 
+                className="glass-card p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border border-yellow-200/20"
+                onClick={() => onNavigate?.('automation-hub')}
+              >
+                <div className="flex items-center space-x-3 mb-4">
+                  <Zap className="w-6 h-6 text-yellow-500" />
+                  <h3 className="text-lg font-semibold">Automatisations</h3>
+                </div>
+                <p className="text-gray-600 mb-4">Hub complet d'automatisation et workflows</p>
+                <button className="text-yellow-500 font-medium hover:text-yellow-600">
+                  Gérer les workflows →
+                </button>
+              </div>
+
+              {/* Carte Scanner OCR */}
+              <div 
+                className="glass-card p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border border-purple-200/20"
+                onClick={() => onNavigate?.('ocr-scanner')}
+              >
+                <div className="flex items-center space-x-3 mb-4">
+                  <Scan className="w-6 h-6 text-purple-500" />
+                  <h3 className="text-lg font-semibold">Scanner OCR IA</h3>
+                </div>
+                <p className="text-gray-600 mb-4">Reconnaissance optique intelligente</p>
+                <button className="text-purple-500 font-medium hover:text-purple-600">
+                  Ouvrir le scanner →
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

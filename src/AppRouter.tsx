@@ -4,6 +4,7 @@ import { ProjectProvider } from './contexts/ProjectContext';
 import { PurchaseOrderProvider } from './contexts/PurchaseOrderContext';
 import { PaymentProvider } from './contexts/PaymentContext';
 import { AuthProvider } from './contexts/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Pages publiques
 import ModernHomePage from './pages/ModernHomePage';
@@ -44,11 +45,13 @@ const AppRouter: React.FC = () => {
             
             {/* Application principale */}
             <Route path="/app/*" element={
-              <ProjectProvider>
-                <PurchaseOrderProvider>
-                  <App />
-                </PurchaseOrderProvider>
-              </ProjectProvider>
+              <ErrorBoundary>
+                <ProjectProvider>
+                  <PurchaseOrderProvider>
+                    <App />
+                  </PurchaseOrderProvider>
+                </ProjectProvider>
+              </ErrorBoundary>
             } />
             
             {/* Redirections */}

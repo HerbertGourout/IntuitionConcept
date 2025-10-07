@@ -56,7 +56,7 @@ export class TeamService {
         updatedAt: Timestamp.now()
       });
       
-      console.log('Membre ajouté avec ID:', docRef.id);
+      if (import.meta.env.DEV) console.log('Membre ajouté avec ID:', docRef.id);
       return docRef.id;
     } catch (error) {
       console.error('Erreur lors de l\'ajout du membre:', error);
@@ -89,7 +89,7 @@ export class TeamService {
         updatedAt: Timestamp.now()
       });
       
-      console.log('Membre mis à jour:', memberId);
+      if (import.meta.env.DEV) console.log('Membre mis à jour:', memberId);
     } catch (error) {
       console.error('Erreur lors de la mise à jour du membre:', error);
       throw error;
@@ -100,7 +100,7 @@ export class TeamService {
   static async deleteMember(memberId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, COLLECTION_NAME, memberId));
-      console.log('Membre supprimé:', memberId);
+      if (import.meta.env.DEV) console.log('Membre supprimé:', memberId);
     } catch (error) {
       console.error('Erreur lors de la suppression du membre:', error);
       throw error;
@@ -124,7 +124,11 @@ export class TeamService {
   }
 
   // Écouter les membres d'un projet en temps réel
-  static subscribeToProjectMembers(projectId: string, callback: (members: TeamMember[]) => void): () => void {
+  static subscribeToProjectMembers(
+    projectId: string,
+    callback: (members: TeamMember[]) => void,
+    onError?: (error: unknown) => void
+  ): () => void {
     const q = query(
       collection(db, COLLECTION_NAME),
       where('projectId', '==', projectId),
@@ -135,6 +139,7 @@ export class TeamService {
       callback(members);
     }, (error) => {
       console.error('Erreur lors de l\'écoute des membres du projet:', error);
+      if (onError) onError(error);
     });
   }
 

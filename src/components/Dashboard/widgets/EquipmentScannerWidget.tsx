@@ -12,6 +12,7 @@ import {
   Search
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useProjects } from '../../../hooks/useProjects';
 import QRScanner from '../../Equipment/QRScanner';
 
 interface Equipment {
@@ -37,51 +38,30 @@ const EquipmentScannerWidget: React.FC<EquipmentScannerWidgetProps> = ({ classNa
   const [recentScans, setRecentScans] = useState<Equipment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Données simulées d'équipements
+  // Données réelles d'équipements depuis le projet actuel
+  const { currentProject } = useProjects();
+  const equipment = currentProject?.equipment || [];
+  
   const equipmentStats = {
-    total: 45,
-    available: 32,
-    inUse: 8,
-    maintenance: 3,
-    damaged: 2,
+    total: equipment.length,
+    available: equipment.filter((eq: any) => eq.status === 'available').length,
+    inUse: equipment.filter((eq: any) => eq.status === 'in_use' || eq.status === 'in-use').length,
+    maintenance: equipment.filter((eq: any) => eq.status === 'maintenance').length,
+    damaged: equipment.filter((eq: any) => eq.status === 'out_of_order' || eq.status === 'out-of-service').length,
   };
 
-  const recentEquipment = [
-    {
-      id: 'eq-001',
-      name: 'Pelleteuse CAT 320',
-      type: 'Engin de chantier',
-      serialNumber: 'CAT320-2024-001',
-      status: 'available' as const,
-      location: 'Chantier Dakar Nord',
-      qrCode: 'QR001',
-      lastMaintenance: new Date('2024-07-01'),
-      nextMaintenance: new Date('2024-08-15'),
-    },
-    {
-      id: 'eq-002',
-      name: 'Grue mobile 50T',
-      type: 'Engin de levage',
-      serialNumber: 'GROVE-RT550-002',
-      status: 'in-use' as const,
-      location: 'Chantier Almadies',
-      assignedTo: 'Mamadou Diallo',
-      qrCode: 'QR002',
-      lastMaintenance: new Date('2024-06-15'),
-      nextMaintenance: new Date('2024-09-01'),
-    },
-    {
-      id: 'eq-003',
-      name: 'Bétonnière 500L',
-      type: 'Équipement de construction',
-      serialNumber: 'BET500-2024-003',
-      status: 'maintenance' as const,
-      location: 'Atelier central',
-      qrCode: 'QR003',
-      lastMaintenance: new Date('2024-07-20'),
-      nextMaintenance: new Date('2024-08-20'),
-    },
-  ];
+  // Utiliser les vrais équipements du projet (les 3 plus récents)
+  const recentEquipment = equipment.slice(0, 3).map((eq: any) => ({
+    id: eq.id,
+    name: eq.name,
+    type: eq.type,
+    serialNumber: eq.serialNumber || 'N/A',
+    status: eq.status,
+    location: eq.location || 'Non définie',
+    qrCode: eq.qrCode || 'N/A',
+    lastMaintenance: eq.lastMaintenance ? new Date(eq.lastMaintenance) : null,
+    nextMaintenance: eq.nextMaintenance ? new Date(eq.nextMaintenance) : null,
+  }));
 
   const handleScanSuccess = (equipment: Equipment) => {
     setRecentScans(prev => [equipment, ...prev.slice(0, 4)]);

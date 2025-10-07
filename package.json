@@ -11,7 +11,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ci": "vitest run --reporter=verbose --coverage",
-    "test:ci:stable": "vitest run --reporter=verbose --coverage --pool=forks"
+    "test:ci:stable": "vitest run --reporter=verbose --coverage --pool=forks",
+    "test:integration": "vitest run src/__tests__/integration --reporter=verbose",
+    "test:e2e": "vitest run src/__tests__/e2e --reporter=verbose",
+    "deploy:dev": "node scripts/deploy.js development",
+    "deploy:prod": "node scripts/deploy.js production",
+    "deploy:dev:quick": "node scripts/deploy.js development --skip-tests",
+    "deploy:prod:safe": "node scripts/deploy.js production",
+    "firebase:emulators": "firebase emulators:start",
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules",
+    "firebase:deploy:indexes": "firebase deploy --only firestore:indexes"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",

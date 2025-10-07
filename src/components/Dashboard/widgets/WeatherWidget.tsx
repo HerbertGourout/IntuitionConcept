@@ -21,13 +21,13 @@ const WeatherWidget: React.FC<{ location?: string }> = ({ location = "Chantier" 
   // Simulation de données météo changeantes
   useEffect(() => {
     const interval = setInterval(() => {
-      const conditions: WeatherData['condition'][] = ['sunny', 'cloudy', 'rainy', 'windy'];
+      // Données météo statiques réalistes pour Dakar, Sénégal
       setWeather(prev => ({
         ...prev,
-        temperature: Math.round(25 + Math.random() * 10),
-        condition: conditions[Math.floor(Math.random() * conditions.length)],
-        humidity: Math.round(50 + Math.random() * 40),
-        windSpeed: Math.round(5 + Math.random() * 20)
+        temperature: 28, // Température moyenne à Dakar
+        condition: 'sunny' as const,
+        humidity: 65, // Humidité moyenne
+        windSpeed: 12 // Vitesse du vent moyenne
       }));
     }, 30000); // Change toutes les 30 secondes
 

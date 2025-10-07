@@ -14,6 +14,8 @@ import {
 import { Anomaly } from '../../services/ai/anomalyDetectionService';
 import { useProjects } from '../../hooks/useProjects';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import PageContainer from '../Layout/PageContainer';
+import SectionHeader from '../UI/SectionHeader';
 
 const AnomalyDetectionDashboard: React.FC = () => {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
@@ -429,21 +431,30 @@ const AnomalyDetectionDashboard: React.FC = () => {
   ];
 
   return (
-    <div>
+    <PageContainer className="space-y-6">
+      {/* Header harmonisé */}
+      <div className="glass-card p-6 rounded-xl">
+        <SectionHeader
+          icon={<WarningOutlined className="text-orange-600" />}
+          title="Détection d'anomalies IA"
+          subtitle="Analyse des projets, retards et dépassements budgétaires"
+        />
+      </div>
+
       {/* Statistiques globales */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={16} className="mb-4">
         <Col span={6}>
-          <Card>
+          <Card className="glass-card">
             <Statistic
               title="Anomalies Totales"
               value={stats.total}
               prefix={<WarningOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              valueStyle={{ color: '#1677ff' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card className="glass-card">
             <Statistic
               title="Anomalies Actives"
               value={stats.active}
@@ -453,7 +464,7 @@ const AnomalyDetectionDashboard: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card className="glass-card">
             <Statistic
               title="Critiques + Hautes"
               value={stats.critical + stats.high}
@@ -463,7 +474,7 @@ const AnomalyDetectionDashboard: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card className="glass-card">
             <Statistic
               title="Impact Financier"
               value={stats.totalFinancialImpact}
@@ -482,7 +493,7 @@ const AnomalyDetectionDashboard: React.FC = () => {
           description="Des anomalies nécessitent votre attention immédiate."
           type="warning"
           showIcon
-          style={{ marginBottom: 16 }}
+          className="mb-4"
           action={
             <Button size="small" onClick={runAnalysis} loading={loading}>
               Réanalyser
@@ -493,7 +504,8 @@ const AnomalyDetectionDashboard: React.FC = () => {
 
       {/* Tableau des anomalies */}
       <Card
-        title="Détection d'Anomalies IA"
+        className="glass-card"
+        title="Anomalies détectées"
         extra={
           <Space>
             <Button 
@@ -533,8 +545,8 @@ const AnomalyDetectionDashboard: React.FC = () => {
         width={700}
       >
         {selectedAnomaly && (
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Card size="small">
+          <Space direction="vertical" className="w-full">
+            <Card size="small" className="glass-card">
               <Row gutter={16}>
                 <Col span={12}>
                   <Statistic
@@ -562,11 +574,11 @@ const AnomalyDetectionDashboard: React.FC = () => {
               </Row>
             </Card>
 
-            <Card size="small" title="Description">
+            <Card size="small" title="Description" className="glass-card">
               <p>{selectedAnomaly.description}</p>
             </Card>
 
-            <Card size="small" title="Impact Estimé">
+            <Card size="small" title="Impact Estimé" className="glass-card">
               <Row gutter={16}>
                 <Col span={8}>
                   <Statistic
@@ -595,7 +607,7 @@ const AnomalyDetectionDashboard: React.FC = () => {
               </Row>
             </Card>
 
-            <Card size="small" title="Recommandations">
+            <Card size="small" title="Recommandations" className="glass-card">
               <List
                 size="small"
                 dataSource={selectedAnomaly.recommendations}
@@ -633,7 +645,7 @@ const AnomalyDetectionDashboard: React.FC = () => {
           background-color: #fff7e6 !important;
         }
       `}</style>
-    </div>
+    </PageContainer>
   );
 };
 

@@ -291,6 +291,12 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       await deleteDoc(projectRef);
       
       console.log('✅ [ProjectContext] Projet supprimé avec succès de Firebase');
+      
+      // Vérifier que la suppression a bien eu lieu
+      const deletedDoc = await getDoc(projectRef);
+      if (deletedDoc.exists()) {
+        throw new Error('La suppression a échoué - le document existe encore');
+      }
     } catch (error) {
       console.error('❌ [ProjectContext] Erreur lors de la suppression du projet:', error);
       // En cas d'erreur, recharger les projets depuis Firebase

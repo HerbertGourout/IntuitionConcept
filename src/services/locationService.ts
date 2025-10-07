@@ -71,7 +71,7 @@ export class LocationService {
         createdAt: now,
         updatedAt: now
       });
-      console.log('Localisation ajoutée avec ID:', docRef.id);
+      if (import.meta.env.DEV) console.log('Localisation ajoutée avec ID:', docRef.id);
       return docRef.id;
     } catch (error) {
       console.error('Erreur lors de l\'ajout de la localisation:', error);
@@ -89,7 +89,7 @@ export class LocationService {
         ...updates,
         updatedAt: Timestamp.now()
       });
-      console.log('Localisation mise à jour:', id);
+      if (import.meta.env.DEV) console.log('Localisation mise à jour:', id);
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la localisation:', error);
       throw error;
@@ -102,7 +102,7 @@ export class LocationService {
   static async deleteLocation(id: string): Promise<void> {
     try {
       await deleteDoc(doc(db, COLLECTION_NAME, id));
-      console.log('Localisation supprimée:', id);
+      if (import.meta.env.DEV) console.log('Localisation supprimée:', id);
     } catch (error) {
       console.error('Erreur lors de la suppression de la localisation:', error);
       throw error;
@@ -182,7 +182,7 @@ export class LocationService {
     try {
       const existingLocations = await this.getAllLocations();
       if (existingLocations.length > 0) {
-        console.log('Les localisations existent déjà, pas d\'initialisation nécessaire');
+        if (import.meta.env.DEV) console.log('Les localisations existent déjà, pas d\'initialisation nécessaire');
         return;
       }
 
@@ -237,7 +237,7 @@ export class LocationService {
         await this.addLocation(location);
       }
 
-      console.log('✅ Données de test des localisations initialisées');
+      if (import.meta.env.DEV) console.log('✅ Données de test des localisations initialisées');
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation des données de test:', error);
       throw error;

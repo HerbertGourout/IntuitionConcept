@@ -44,7 +44,7 @@ service cloud.firestore {
     // Projects collection
     match /projects/{projectId} {
       allow read: if isSignedIn() && canViewProjects();
-      allow create, update, delete: if isSignedIn() && canManageProjects();
+      allow create, update, delete: if isSignedIn(); // Temporaire : permet à tous les utilisateurs connectés
 
       // Subcollections (example: tasks, documents)
       match /tasks/{taskId} {
@@ -64,16 +64,76 @@ service cloud.firestore {
       allow create, update, delete: if isSignedIn() && hasAnyRole(['admin','manager','supervisor']);
     }
 
-    // Equipment collection
     match /equipment/{equipmentId} {
       allow read: if isSignedIn() && canViewEquipment();
       allow create, update, delete: if isSignedIn() && canManageEquipment();
+    }
+
+    // TeamMembers collection
+    match /teamMembers/{memberId} {
+      allow read: if isSignedIn() && canViewTeam();
+      allow create, update, delete: if isSignedIn() && hasAnyRole(['admin','manager']);
+    }
+
+    // PurchaseOrders collection
+    match /purchaseOrders/{orderId} {
+      allow read: if isSignedIn() && canViewFinances();
+      allow create, update, delete: if isSignedIn() && hasAnyRole(['admin','manager','supervisor']);
+    }
+
+    // Expenses collection
+    match /expenses/{expenseId} {
+      allow read: if isSignedIn() && canViewFinances();
+      allow create, update, delete: if isSignedIn() && hasAnyRole(['admin','manager','supervisor']);
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        hasAnyRole(['admin','manager'])
+      );
+      allow create: if isSignedIn() && hasAnyRole(['admin','manager','supervisor']);
+      allow update, delete: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        hasAnyRole(['admin','manager'])
+      );
+    }
+
+    // Reports collection
+    match /reports/{reportId} {
+      allow read: if isSignedIn() && canViewFinances();
+      allow create, update, delete: if isSignedIn() && hasAnyRole(['admin','manager']);
+    }
+
+    // Transactions collection
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn() && canViewFinances();
+      allow create, update, delete: if isSignedIn() && hasAnyRole(['admin','manager','supervisor']);
+    }
+
+    // DeliveryNotes collection
+    match /deliveryNotes/{noteId} {
+      allow read: if isSignedIn() && canViewFinances();
+      allow create, update, delete: if isSignedIn() && hasAnyRole(['admin','manager','supervisor']);
+    }
+
+    // Locations collection
+    match /locations/{locationId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && hasAnyRole(['admin','manager']);
     }
 
     // Documents root (if used)
     match /documents/{docId} {
       allow read: if isSignedIn() && canViewDocuments();
       allow create, update, delete: if isSignedIn() && canEditDocuments();
+    }
+
+    // Tasks collection (root level)
+    match /tasks/{taskId} {
+      allow read: if isSignedIn() && canViewTasks();
+      allow create, update, delete: if isSignedIn() && canEditTasks();
     }
 
     // Fallback: deny

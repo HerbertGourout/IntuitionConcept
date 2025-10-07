@@ -33,16 +33,20 @@ const PurchaseOrders: React.FC = () => {
     loadingPurchaseOrders,
     deleteDeliveryNote
   } = usePurchaseOrderContext();
-  const { projects } = useProjectContext();
+  const { projects, currentProject } = useProjectContext();
   const { formatAmount } = useCurrency();
 
-  // États pour les filtres
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [projectFilter, setProjectFilter] = useState<string>(currentProject?.id || 'all');
   const [supplierFilter, setSupplierFilter] = useState<string>('all');
   
-  // État pour l'onglet actif
+  // Sync project filter when selected project changes
+  React.useEffect(() => {
+    if (currentProject?.id) setProjectFilter(currentProject.id);
+  }, [currentProject?.id]);
+
+  // États pour l'onglet actif
   const [activeTab, setActiveTab] = useState<'purchase-orders' | 'delivery-notes'>('purchase-orders');
   
   // États pour les modals
@@ -68,6 +72,15 @@ const PurchaseOrders: React.FC = () => {
       return matchesSearch && matchesStatus && matchesProject && matchesSupplier;
     });
   }, [purchaseOrders, searchTerm, statusFilter, projectFilter, supplierFilter]);
+
+  const filteredDeliveryNotes = useMemo(() => {
+    return deliveryNotes.filter(note => {
+      const matchesSearch = note.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (note.purchaseOrder?.orderNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesProject = projectFilter === 'all' || note.purchaseOrder?.projectId === projectFilter;
+      return matchesSearch && matchesProject;
+    });
+  }, [deliveryNotes, searchTerm, projectFilter]);
 
   // Fonctions pour gérer les modals
   const handleCreatePurchaseOrder = () => {
@@ -137,12 +150,12 @@ const PurchaseOrders: React.FC = () => {
 
   // Calculer les statistiques
   const stats = useMemo(() => {
-    const total = purchaseOrders.length;
-    const pending = purchaseOrders.filter(order => order.status === 'draft' || order.status === 'pending_approval').length;
-    const approved = purchaseOrders.filter(order => order.status === 'approved').length;
-    const ordered = purchaseOrders.filter(order => order.status === 'ordered').length;
-    const delivered = purchaseOrders.filter(order => order.status === 'delivered').length;
-    const totalValue = purchaseOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const total = filteredOrders.length;
+    const pending = filteredOrders.filter(order => order.status === 'draft' || order.status === 'pending_approval').length;
+    const approved = filteredOrders.filter(order => order.status === 'approved').length;
+    const ordered = filteredOrders.filter(order => order.status === 'ordered').length;
+    const delivered = filteredOrders.filter(order => order.status === 'delivered').length;
+    const totalValue = filteredOrders.reduce((sum, order) => sum + order.totalAmount, 0);
 
     return {
       total,
@@ -152,15 +165,15 @@ const PurchaseOrders: React.FC = () => {
       delivered,
       totalValue
     };
-  }, [purchaseOrders]);
+  }, [filteredOrders]);
 
   // Calculer les statistiques des bons de livraison
   const deliveryStats = useMemo(() => {
-    const total = deliveryNotes.length;
-    const pending = deliveryNotes.filter(note => note.status === 'pending').length;
-    const inTransit = deliveryNotes.filter(note => note.status === 'in_transit').length;
-    const delivered = deliveryNotes.filter(note => note.status === 'delivered').length;
-    const received = deliveryNotes.filter(note => note.status === 'received').length;
+    const total = filteredDeliveryNotes.length;
+    const pending = filteredDeliveryNotes.filter(note => note.status === 'pending').length;
+    const inTransit = filteredDeliveryNotes.filter(note => note.status === 'in_transit').length;
+    const delivered = filteredDeliveryNotes.filter(note => note.status === 'delivered').length;
+    const received = filteredDeliveryNotes.filter(note => note.status === 'received').length;
     
     return {
       total,
@@ -169,7 +182,7 @@ const PurchaseOrders: React.FC = () => {
       delivered,
       received
     };
-  }, [deliveryNotes]);
+  }, [filteredDeliveryNotes]);
 
   if (loadingPurchaseOrders) {
     return (
@@ -468,11 +481,11 @@ const PurchaseOrders: React.FC = () => {
           <div className="flex items-center space-x-2 mb-6">
             <Truck className="h-5 w-5 text-green-600" />
             <h3 className="text-lg font-semibold text-gray-900">
-              Bons de Livraison ({deliveryNotes.length})
+              Bons de Livraison ({filteredDeliveryNotes.length})
             </h3>
           </div>
 
-          {deliveryNotes.length === 0 ? (
+          {filteredDeliveryNotes.length === 0 ? (
             <div className="text-center py-12">
               <div className="mx-auto w-24 h-24 bg-gradient-to-br from-green-100 to-teal-100 rounded-full flex items-center justify-center mb-4">
                 <Truck className="h-12 w-12 text-green-500" />
@@ -493,7 +506,7 @@ const PurchaseOrders: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {deliveryNotes.map(note => (
+              {filteredDeliveryNotes.map(note => (
                 <div key={note.id} className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
                   <div className="flex items-start justify-between mb-4">
                     <div>

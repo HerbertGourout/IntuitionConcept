@@ -74,7 +74,7 @@ export const defaultAIConfig: AIConfig = {
   },
   
   quoteGeneration: {
-    enabled: false, // Désactivé par défaut jusqu'à configuration API
+    enabled: true, // Activé par défaut si clé API présente
     model: 'gpt-3.5-turbo',
     maxTokens: 2000,
     temperature: 0.3
@@ -90,7 +90,7 @@ export const defaultAIConfig: AIConfig = {
   },
   
   copilot: {
-    enabled: false, // Désactivé par défaut
+    enabled: true, // Activé par défaut si clé API présente
     model: 'gpt-3.5-turbo',
     maxTokens: 1000,
     temperature: 0.1,
