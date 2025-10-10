@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import type { FC } from 'react';
 import { Card, Badge, Button, Space, Typography, Alert, Spin, Divider } from 'antd';
 import { 
   RobotOutlined, 
@@ -15,7 +16,7 @@ import { aiActivationService, AIServiceStatus } from '../../services/ai/aiActiva
 
 const { Title, Text, Paragraph } = Typography;
 
-const AIServicesDashboard: React.FC = () => {
+const AIServicesDashboard: FC = () => {
   const [status, setStatus] = useState<AIServiceStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState<string | null>(null);

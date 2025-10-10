@@ -47,7 +47,7 @@ interface LocalLocation {
 
 const Locations: React.FC = () => {
   const [locations, setLocations] = useState<LocalLocation[]>([]);
-  const [_loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingLocation, setEditingLocation] = useState<LocalLocation | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');

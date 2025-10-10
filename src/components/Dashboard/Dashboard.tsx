@@ -1,15 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useProjects } from '../../hooks/useProjects';
 import { useProjectStats } from '../../hooks/useProjectData';
-import { FolderOpen, Euro, AlertTriangle, Clock, AlertCircle, Users, Calendar, Target, Zap, Scan } from 'lucide-react';
-import { useCurrency } from '../../hooks/useCurrency';
-import { useAuth } from '../../contexts/AuthContext';
-import { db } from '../../firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { AlertTriangle, Zap, Scan, Target, Users, Euro, Calendar } from 'lucide-react';
 import PageContainer from '../Layout/PageContainer';
-import SectionHeader from '../UI/SectionHeader';
-import ProgressBar from '../UI/ProgressBar';
-import NoProjectSelected from '../UI/NoProjectSelected';
 
 // Import des widgets essentiels
 import ProjectsOverviewWidget from './widgets/ProjectsOverviewWidget';
@@ -30,6 +23,10 @@ import HybridAIMonitoringWidget from './HybridAIMonitoringWidget';
 import VocalCopilot from '../AI/VocalCopilot';
 import HybridAITestPanel from '../AI/HybridAITestPanel';
 
+// Import du Stack IA Premium
+import MarketIntelligenceDashboard from '../AI/MarketIntelligenceDashboard';
+import GrokChatAssistant from '../AI/GrokChatAssistant';
+
 // Note: AnomalyDetectionDashboard, AIServicesDashboard, AutomationDashboard 
 // sont disponibles via le sidebar - pas besoin de les dupliquer ici
 
@@ -38,10 +35,8 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { currentProject, projects } = useProjects();
+  const { currentProject } = useProjects();
   const { stats, loading: statsLoading } = useProjectStats(currentProject?.id || null);
-  const { formatAmount } = useCurrency();
-  const { user } = useAuth();
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   
@@ -82,16 +77,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     sizeCircularProgress: 'medium',
     sizeQuickActions: 'large',
   };
-  const [prefs, setPrefs] = useState<typeof defaultPrefs>(defaultPrefs);
-
-  // Si aucun projet n'est sélectionné
-  if (!currentProject) {
-    return (
-      <PageContainer>
-        <NoProjectSelected onCreateProject={() => onNavigate?.('projects')} />
-      </PageContainer>
-    );
-  }
+  const [prefs] = useState<typeof defaultPrefs>(defaultPrefs);
 
   // Calculer les statistiques réelles du projet
   const projectStats = useMemo(() => {
@@ -114,7 +100,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         progress: 0,
       };
     }
-
     const totalTasks = currentProject.phases?.reduce((sum, phase) => sum + (phase.tasks?.length || 0), 0) || 0;
     const completedTasks = currentProject.phases?.reduce((sum, phase) => 
       sum + (phase.tasks?.filter(task => task.status === 'done').length || 0), 0) || 0;
@@ -122,7 +107,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       sum + (phase.tasks?.filter(task => task.status === 'in_progress').length || 0), 0) || 0;
     const pendingTasks = totalTasks - completedTasks - inProgressTasks;
 
-    const budgetUsed = currentProject.budget > 0 ? ((currentProject.spent || 0) / currentProject.budget) * 100 : 0;
 
     const totalBudget = Number(currentProject.budget) || 0;
     const spentBudget = Number(currentProject.spent) || 0;
@@ -144,50 +128,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       totalTransactions: stats.transactionCount,
       totalBudget,
       spentBudget,
-      budgetUsed,
+      budgetUsed: totalBudget > 0 ? (spentBudget / totalBudget) * 100 : 0,
       teamMembers: currentProject.team?.length || 0,
       progress: currentProject.progress || 0,
     };
   }, [currentProject, stats, statsLoading]);
 
-  const moveFirstRow = (key: 'projectsOverview' | 'teamProductivity' | 'budgetAlerts', direction: 'up' | 'down') => {
-    setPrefs((p) => {
-      const order = [...p.firstRowOrder];
-      const idx = order.indexOf(key);
-      if (idx === -1) return p;
-      const swapWith = direction === 'up' ? idx - 1 : idx + 1;
-      if (swapWith < 0 || swapWith >= order.length) return p;
-      [order[idx], order[swapWith]] = [order[swapWith], order[idx]];
-      return { ...p, firstRowOrder: order };
-    });
-  };
-
-  // Drag & Drop pour la deuxième rangée
-  const [dragSecondKey, setDragSecondKey] = useState<null | 'activityTimeline' | 'realTimeChart'>(null);
-  const onSecondDragStart = (key: 'activityTimeline' | 'realTimeChart') => (e: React.DragEvent) => {
-    setDragSecondKey(key);
-  };
-
-
-  const onSecondDrop = (key: 'activityTimeline' | 'realTimeChart') => (e: React.DragEvent) => {
-    e.preventDefault();
-    if (dragSecondKey && dragSecondKey !== key) {
-      setPrefs(p => {
-        const order = [...p.secondRowOrder];
-        const dragIdx = order.indexOf(dragSecondKey);
-        const dropIdx = order.indexOf(key);
-        if (dragIdx !== -1 && dropIdx !== -1) {
-          [order[dragIdx], order[dropIdx]] = [order[dropIdx], order[dragIdx]];
-        }
-        return { ...p, secondRowOrder: order };
-      });
-    }
-    setDragSecondKey(null);
-  };
-
-  const onSecondDragEnd = () => {
-    setDragSecondKey(null);
-  };
+  // Si aucun projet n'est sélectionné
+  if (!currentProject) {
+    return (
+      <PageContainer>
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold text-gray-600">Aucun projet sélectionné</h2>
+          <p className="text-gray-500 mt-2">Veuillez sélectionner un projet pour voir le dashboard</p>
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
@@ -270,18 +227,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div className="p-3 bg-orange-100 rounded-xl">
               <Euro className="w-6 h-6 text-orange-600" />
             </div>
-            <span className="text-3xl font-bold text-orange-600">{projectStats.budgetUsed.toFixed(1)}%</span>
+            <span className="text-3xl font-bold text-orange-600">{(projectStats.budgetUsed || 0).toFixed(1)}%</span>
           </div>
           <h3 className="text-sm font-semibold text-gray-600">Budget Utilisé</h3>
           <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
             <div
               className={`h-2 rounded-full transition-all duration-800 ${
-                projectStats.budgetUsed >= 100 ? 'bg-gradient-to-r from-red-500 to-red-600' :
-                projectStats.budgetUsed >= 90 ? 'bg-gradient-to-r from-orange-500 to-red-500' :
-                projectStats.budgetUsed >= 75 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                (projectStats.budgetUsed || 0) >= 100 ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                (projectStats.budgetUsed || 0) >= 90 ? 'bg-gradient-to-r from-orange-500 to-red-500' :
+                (projectStats.budgetUsed || 0) >= 75 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
                 'bg-gradient-to-r from-green-500 to-emerald-500'
               }`}
-              style={{ width: `${Math.min(projectStats.budgetUsed, 100)}%` }}
+              style={{ width: `${Math.min(projectStats.budgetUsed || 0, 100)}%` }}
             />
           </div>
         </div>
@@ -304,28 +261,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Alertes Budgétaires */}
-      {projectStats.budgetUsed >= 75 && (
+      {(projectStats.budgetUsed || 0) >= 75 && (
         <div className={`glass-card p-4 rounded-xl border-l-4 mb-6 ${
-          projectStats.budgetUsed >= 100 ? 'border-red-500 bg-red-50/50' :
-          projectStats.budgetUsed >= 90 ? 'border-orange-500 bg-orange-50/50' :
+          (projectStats.budgetUsed || 0) >= 100 ? 'border-red-500 bg-red-50/50' :
+          (projectStats.budgetUsed || 0) >= 90 ? 'border-orange-500 bg-orange-50/50' :
           'border-yellow-500 bg-yellow-50/50'
         }`}>
           <div className="flex items-center gap-3">
             <AlertTriangle className={`w-5 h-5 ${
-              projectStats.budgetUsed >= 100 ? 'text-red-600' :
-              projectStats.budgetUsed >= 90 ? 'text-orange-600' :
+              (projectStats.budgetUsed || 0) >= 100 ? 'text-red-600' :
+              (projectStats.budgetUsed || 0) >= 90 ? 'text-orange-600' :
               'text-yellow-600'
             }`} />
             <div>
               <h4 className="font-semibold text-gray-900">
-                {projectStats.budgetUsed >= 100 ? 'Budget dépassé !' :
-                 projectStats.budgetUsed >= 90 ? 'Attention au budget' :
+                {(projectStats.budgetUsed || 0) >= 100 ? 'Budget dépassé !' :
+                 (projectStats.budgetUsed || 0) >= 90 ? 'Attention au budget' :
                  'Budget à surveiller'}
               </h4>
               <p className="text-sm text-gray-600">
-                {projectStats.budgetUsed >= 100 ? 
-                  `Le budget a été dépassé de ${(projectStats.budgetUsed - 100).toFixed(1)}%` :
-                  `${projectStats.budgetUsed.toFixed(1)}% du budget a été utilisé`
+                {(projectStats.budgetUsed || 0) >= 100 ? 
+                  `Le budget a été dépassé de ${((projectStats.budgetUsed || 0) - 100).toFixed(1)}%` :
+                  `${(projectStats.budgetUsed || 0).toFixed(1)}% du budget a été utilisé`
                 }
               </p>
             </div>
@@ -417,6 +374,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <HybridAIMonitoringWidget />
             </div>
             
+            {/* Section IA Premium */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Zap className="w-6 h-6 text-purple-500" />
+                  Intelligence Artificielle Premium
+                </h2>
+                <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm rounded-full">
+                  Stack Hybride
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Veille Marché Temps Réel */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-1">
+                  <MarketIntelligenceDashboard />
+                </div>
+                
+                {/* Chat Assistant Grok */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-[600px]">
+                  <GrokChatAssistant />
+                </div>
+              </div>
+            </div>
+
             {/* Navigation Cards vers les pages dédiées */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Carte Anomalies */}

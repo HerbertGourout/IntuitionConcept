@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, TrendingUp, DollarSign, Users, RefreshCw, X, ChevronRight } from 'lucide-react';
-import { FinancialAnomaly, anomalyDetector } from '../../services/ai/anomalyDetector';
+import { FinancialAnomaly, anomalyDetectionService } from '../../services/ai/anomalyDetectionService';
 
 interface AnomalyDetectionWidgetProps {
   onAnomalyClick?: (anomaly: FinancialAnomaly) => void;
@@ -108,7 +108,7 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
         }
       ];
 
-      const detectedAnomalies = await anomalyDetector.detectAnomalies(
+      const detectedAnomalies = await anomalyDetectionService.detectAnomalies(
         mockProjects,
         mockTransactions,
         mockHistorical

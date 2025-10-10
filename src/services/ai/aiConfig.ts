@@ -113,8 +113,8 @@ export function loadAIConfigFromEnv(): AIConfig {
     config.copilot.enabled = true;
   }
   
-  if (import.meta.env.VITE_CLAUDE_API_KEY) {
-    config.claudeApiKey = import.meta.env.VITE_CLAUDE_API_KEY;
+  if (import.meta.env.VITE_ANTHROPIC_API_KEY) {
+    config.claudeApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
     config.provider = 'claude';
     config.quoteGeneration.enabled = true;
     config.copilot.enabled = true;

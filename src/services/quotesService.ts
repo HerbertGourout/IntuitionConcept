@@ -208,8 +208,8 @@ export class QuotesService {
     static subscribeToProjectQuotes(projectId: string, callback: (quotes: Quote[]) => void): Unsubscribe {
         const qByProject = query(
             collection(db, QUOTES_COLLECTION),
-            where('projectId', '==', projectId),
-            orderBy('createdAt', 'desc')
+            where('projectId', '==', projectId)
+            // orderBy supprimé pour éviter l'index composite - tri côté client
         );
         return onSnapshot(qByProject,
             (snapshot: QuerySnapshot) => {
@@ -222,6 +222,12 @@ export class QuotesService {
                             createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
                             updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
                         } as Quote;
+                    });
+                    // Tri côté client par createdAt décroissant
+                    quotes.sort((a, b) => {
+                        const dateA = new Date(a.createdAt || 0).getTime();
+                        const dateB = new Date(b.createdAt || 0).getTime();
+                        return dateB - dateA; // desc
                     });
                     callback(quotes);
                 } catch (processingError) {

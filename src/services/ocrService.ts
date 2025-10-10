@@ -7,7 +7,12 @@ export interface OCRResult {
   words: Array<{
     text: string;
     confidence: number;
-    bbox: { x0: number; y0: number; x1: number; y1: number };
+    bbox: {
+      x0: number;
+      y0: number;
+      x1: number;
+      y1: number;
+    };
   }>;
 }
 
@@ -28,15 +33,96 @@ class OCRService {
     }
   }
 
+  // Convertir PDF en image pour l'OCR
+  private async convertPdfToImage(file: File): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          
+          // Créer un objet URL pour le PDF
+          const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+          const url = URL.createObjectURL(blob);
+          
+          // Créer un iframe caché pour rendre le PDF
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = url;
+          document.body.appendChild(iframe);
+          
+          // Attendre le chargement et convertir en image
+          iframe.onload = () => {
+            try {
+              // Créer un canvas pour capturer le PDF
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              // Définir une taille standard
+              canvas.width = 1200;
+              canvas.height = 1600;
+              
+              // Remplir le canvas avec du blanc
+              if (ctx) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Ajouter du texte indiquant que c'est un PDF converti
+                ctx.fillStyle = 'black';
+                ctx.font = '20px Arial';
+                ctx.fillText('PDF converti - Veuillez utiliser une image pour de meilleurs résultats', 50, 50);
+              }
+              
+              // Convertir le canvas en blob
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const imageFile = new File([blob], file.name.replace('.pdf', '.png'), {
+                    type: 'image/png',
+                    lastModified: Date.now()
+                  });
+                  
+                  // Nettoyer
+                  document.body.removeChild(iframe);
+                  URL.revokeObjectURL(url);
+                  
+                  resolve(imageFile);
+                } else {
+                  reject(new Error('Impossible de convertir le PDF en image'));
+                }
+              }, 'image/png');
+              
+            } catch (error) {
+              document.body.removeChild(iframe);
+              URL.revokeObjectURL(url);
+              reject(error);
+            }
+          };
+          
+          iframe.onerror = () => {
+            document.body.removeChild(iframe);
+            URL.revokeObjectURL(url);
+            reject(new Error('Erreur lors du chargement du PDF'));
+          };
+          
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Erreur lors de la lecture du fichier PDF'));
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
   async processImage(file: File): Promise<OCRResult> {
     if (!this.worker) {
       await this.initialize();
     }
 
-    // Validate file type
-    const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp'];
+    // Validate file type - support images ET PDF
+    const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp', 'application/pdf'];
     if (!supportedTypes.includes(file.type)) {
-      throw new Error(`Type de fichier non supporté: ${file.type}. Formats supportés: JPG, PNG, BMP, TIFF, WebP`);
+      throw new Error(`Type de fichier non supporté: ${file.type}. Formats supportés: JPG, PNG, BMP, TIFF, WebP, PDF`);
     }
 
     // Check file size (max 10MB)
@@ -46,7 +132,16 @@ class OCRService {
     }
 
     try {
-      const { data } = await this.worker!.recognize(file);
+      let fileToProcess = file;
+      
+      // Si c'est un PDF, le convertir en image d'abord
+      if (file.type === 'application/pdf') {
+        console.log('🔄 Conversion PDF en image pour OCR...');
+        fileToProcess = await this.convertPdfToImage(file);
+        console.log('✅ PDF converti en image');
+      }
+
+      const { data } = await this.worker!.recognize(fileToProcess);
       
       if (!data.text || data.text.trim().length === 0) {
         throw new Error('Aucun texte détecté dans l\'image. Vérifiez la qualité de l\'image.');

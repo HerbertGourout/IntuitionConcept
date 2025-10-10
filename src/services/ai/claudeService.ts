@@ -1,6 +1,23 @@
 // Service Anthropic Claude - Analyse documentaire avancée
 import { aiConfig } from '../../config/aiConfig';
 
+// Types de réponse minimaux pour l'API Claude messages
+interface AnthropicUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+}
+
+interface AnthropicContentBlock {
+  type: string;
+  text?: string;
+}
+
+interface AnthropicResponse {
+  content?: AnthropicContentBlock[];
+  model?: string;
+  usage?: AnthropicUsage;
+}
+
 export interface ClaudeRequest {
   prompt: string;
   maxTokens?: number;
@@ -41,15 +58,91 @@ export class ClaudeService {
     if (!this.apiKey) return false;
     
     try {
-      const response = await this.makeRequest({
-        prompt: 'Test de connectivité',
-        maxTokens: 10
+      // Test simple avec requête minimale
+      const response = await fetch(import.meta.env.DEV 
+        ? 'http://localhost:3001/api/anthropic/v1/messages'
+        : `${this.baseUrl}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: 10,
+          messages: [{ role: 'user', content: 'test' }]
+        })
       });
-      return !!response.content;
+      
+      return response.ok;
     } catch (error) {
       console.error('❌ Claude health check failed:', error);
       return false;
     }
+  }
+
+  /**
+   * Analyse native d'un plan PDF avec Claude (document attaché)
+   */
+  async analyzePlanPDF(pdfBase64: string, planType?: string): Promise<ClaudeResponse> {
+    if (!this.apiKey) throw new Error('Clé API Claude manquante');
+
+    const url = import.meta.env.DEV
+      ? 'http://localhost:3001/api/anthropic/v1/messages'
+      : `${this.baseUrl}/messages`;
+
+    const systemPrompt = `Tu es un expert BIM/BTP. Analyse le plan PDF fourni et retourne un résumé structuré (pièces, surfaces estimées, éléments structurels, conformité, risques, recommandations). ${planType ? `Type de plan: ${planType}.` : ''}`.trim();
+
+    const body = {
+      model: this.model,
+      max_tokens: 2000,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: systemPrompt },
+            {
+              type: 'document',
+              source: { media_type: 'application/pdf', data: pdfBase64 }
+            }
+          ]
+        }
+      ]
+    } as unknown as Record<string, unknown>;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data: AnthropicResponse = await response.json();
+
+    const contentBlocks: AnthropicContentBlock[] = Array.isArray(data?.content)
+      ? data.content
+      : [];
+
+    const textContent = contentBlocks.find((block) => typeof block.text === 'string')?.text
+      ?? contentBlocks[0]?.text
+      ?? '';
+
+    const usage = data?.usage ?? {};
+    const inputTokens = usage.input_tokens ?? 0;
+    const outputTokens = usage.output_tokens ?? 0;
+    const totalTokens = inputTokens + outputTokens;
+    const cost = totalTokens * aiConfig.claude.costPerToken;
+
+    return {
+      content: textContent || '',
+      usage: {
+        inputTokens,
+        outputTokens,
+        totalTokens
+      },
+      model: data?.model || this.model,
+      cost
+    };
   }
 
   /**

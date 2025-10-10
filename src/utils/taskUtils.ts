@@ -12,8 +12,8 @@ export const findTaskById = (tasks: ProjectTask[], taskId: string): ProjectTask 
     if (task.id === taskId) {
       return task;
     }
-    if (task.subtasks && task.subtasks.length > 0) {
-      const subTask = findTaskById(task.subtasks, taskId);
+    if (task.subTasks && task.subTasks.length > 0) {
+      const subTask = findTaskById(task.subTasks, taskId);
       if (subTask) {
         return subTask;
       }
@@ -30,10 +30,10 @@ export const updateTaskInArray = (tasks: ProjectTask[], updatedTask: ProjectTask
     if (task.id === updatedTask.id) {
       return updatedTask;
     }
-    if (task.subtasks && task.subtasks.length > 0) {
+    if (task.subTasks && task.subTasks.length > 0) {
       return {
         ...task,
-        subtasks: updateTaskInArray(task.subtasks, updatedTask)
+        subTasks: updateTaskInArray(task.subTasks, updatedTask)
       };
     }
     return task;
@@ -44,15 +44,14 @@ export const updateTaskInArray = (tasks: ProjectTask[], updatedTask: ProjectTask
  * Supprime une tâche d'une arborescence de tâches
  */
 export const removeTaskFromArray = (tasks: ProjectTask[], taskId: string): ProjectTask[] => {
-  return tasks.filter(task => {
-    if (task.id === taskId) {
-      return false;
-    }
-    if (task.subtasks && task.subtasks.length > 0) {
-      task.subtasks = removeTaskFromArray(task.subtasks, taskId);
-    }
-    return true;
-  });
+  return tasks
+    .filter(task => task.id !== taskId)
+    .map(task => {
+      if (task.subTasks && task.subTasks.length > 0) {
+        return { ...task, subTasks: removeTaskFromArray(task.subTasks, taskId) };
+      }
+      return task;
+    });
 };
 
 /**
@@ -63,13 +62,13 @@ export const addSubTaskToParent = (tasks: ProjectTask[], parentId: string, newSu
     if (task.id === parentId) {
       return {
         ...task,
-        subtasks: [...(task.subtasks || []), newSubTask]
+        subTasks: [...(task.subTasks || []), newSubTask]
       };
     }
-    if (task.subtasks && task.subtasks.length > 0) {
+    if (task.subTasks && task.subTasks.length > 0) {
       return {
         ...task,
-        subtasks: addSubTaskToParent(task.subtasks, parentId, newSubTask)
+        subTasks: addSubTaskToParent(task.subTasks, parentId, newSubTask)
       };
     }
     return task;
@@ -84,13 +83,13 @@ export const addSubTaskRecursive = (tasks: ProjectTask[], parentTaskId: string, 
     if (task.id === parentTaskId) {
       return {
         ...task,
-        subtasks: [...(task.subtasks || []), subTask]
+        subTasks: [...(task.subTasks || []), subTask]
       };
     }
-    if (task.subtasks && task.subtasks.length > 0) {
+    if (task.subTasks && task.subTasks.length > 0) {
       return {
         ...task,
-        subtasks: addSubTaskRecursive(task.subtasks, parentTaskId, subTask)
+        subTasks: addSubTaskRecursive(task.subTasks, parentTaskId, subTask)
       };
     }
     return task;
@@ -102,11 +101,15 @@ export const addSubTaskRecursive = (tasks: ProjectTask[], parentTaskId: string, 
  */
 export const removeSubTaskRecursive = (tasks: ProjectTask[], subTaskId: string): ProjectTask[] => {
   return tasks.map(task => {
-    if (task.subtasks) {
+    if (task.subTasks) {
       return {
         ...task,
-        subtasks: task.subtasks.filter((st: ProjectTask) => st.id !== subTaskId)
-          .map((st: ProjectTask) => ({ ...st, subtasks: st.subtasks ? removeSubTaskRecursive(st.subtasks, subTaskId) : [] }))
+        subTasks: task.subTasks
+          .filter((st: ProjectTask) => st.id !== subTaskId)
+          .map((st: ProjectTask) => ({
+            ...st,
+            subTasks: st.subTasks ? removeSubTaskRecursive(st.subTasks, subTaskId) : []
+          }))
       };
     }
     return task;
@@ -118,16 +121,16 @@ export const removeSubTaskRecursive = (tasks: ProjectTask[], subTaskId: string):
  */
 export const reorderSubTasksRecursive = (tasks: ProjectTask[], parentTaskId: string, subTaskId: string, newIndex: number): ProjectTask[] => {
   return tasks.map(task => {
-    if (task.id === parentTaskId && task.subtasks) {
-      const idx = task.subtasks.findIndex(st => st.id === subTaskId);
+    if (task.id === parentTaskId && task.subTasks) {
+      const idx = task.subTasks.findIndex(st => st.id === subTaskId);
       if (idx !== -1) {
-        const reordered = [...task.subtasks];
+        const reordered = [...task.subTasks];
         const [removed] = reordered.splice(idx, 1);
         reordered.splice(newIndex, 0, removed);
-        return { ...task, subtasks: reordered };
+        return { ...task, subTasks: reordered };
       }
-    } else if (task.subtasks) {
-      return { ...task, subtasks: reorderSubTasksRecursive(task.subtasks, parentTaskId, subTaskId, newIndex) };
+    } else if (task.subTasks) {
+      return { ...task, subTasks: reorderSubTasksRecursive(task.subTasks, parentTaskId, subTaskId, newIndex) };
     }
     return task;
   });

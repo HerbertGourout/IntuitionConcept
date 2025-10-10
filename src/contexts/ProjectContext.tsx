@@ -3,7 +3,6 @@ import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { addSubTaskRecursive, removeSubTaskRecursive, reorderSubTasksRecursive } from '../utils/taskUtils';
 import { aggregateProjectSpent, cleanHistory } from './projectContextUtils';
 import { ProjectService } from '../services/projectService';
-import { ProjectDataService } from '../services/projectDataService';
 import type { Project, ProjectPhase, ProjectTask, ProjectContextType } from './projectTypes';
 import type { FinancialRecord } from '../types';
 import { sumTaskBudgets } from './projectUtils';
@@ -40,8 +39,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         console.log('📊 ProjectContext - Données brutes:', firebaseProjects);
         
         // Convertir les projets Firebase vers le format du contexte
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const convertedProjects: Project[] = firebaseProjects.map((fbProject: any) => ({
+        const convertedProjects: Project[] = firebaseProjects.map((fbProject: FirebaseProjectData) => ({
           id: fbProject.id,
           name: fbProject.name,
           location: fbProject.location,
@@ -268,7 +266,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Fonction utilitaire pour nettoyer l'historique
 // Utils déplacés dans projectContextUtils.ts
 
-  const deleteProject = async (id: string, user?: string): Promise<void> => {
+  const deleteProject = async (id: string): Promise<void> => {
     try {
       console.log('🗑️ [ProjectContext] Suppression du projet:', id);
       
@@ -301,7 +299,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       console.error('❌ [ProjectContext] Erreur lors de la suppression du projet:', error);
       // En cas d'erreur, recharger les projets depuis Firebase
       const firebaseProjects = await ProjectService.getAllProjects();
-      const convertedProjects: Project[] = firebaseProjects.map((fbProject: any) => ({
+      const convertedProjects: Project[] = firebaseProjects.map((fbProject: FirebaseProjectData) => ({
         id: fbProject.id,
         name: fbProject.name,
         location: fbProject.location,

@@ -28,9 +28,10 @@ export const aiConfig = {
   
   // Anthropic Claude Configuration
   claude: {
-    apiKey: import.meta.env.ANTHROPIC_API_KEY || '',
-    baseUrl: 'https://api.anthropic.com/v1',
-    model: 'claude-3-haiku-20240307',
+    apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
+    // In dev, go through Vite proxy to avoid CORS; in prod, call Anthropic directly
+    baseUrl: import.meta.env.DEV ? '/api/anthropic/v1' : 'https://api.anthropic.com/v1',
+    model: 'claude-3-5-sonnet-20241022',
     version: '2023-06-01',
     costPerToken: 0.0008 // FCFA
   },

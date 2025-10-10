@@ -219,7 +219,7 @@ class AIActivationService {
 
     try {
       switch (serviceName) {
-        case 'ocr':
+        case 'ocr': {
           // Test OCR avec un texte simple
           const ocrResult = await ocrEnhancer.enhanceOCRData({
             vendorName: 'Test Vendor',
@@ -232,8 +232,9 @@ class AIActivationService {
             success: true, 
             message: `OCR IA testé avec succès - Confiance: ${ocrResult.confidence}%` 
           };
+        }
 
-        case 'quote':
+        case 'quote': {
           // Test génération de devis simple
           const quoteResult = await quoteGenerator.generateQuote({
             projectType: 'renovation',
@@ -247,10 +248,11 @@ class AIActivationService {
             success: true, 
             message: `Génération devis IA testée - ${quoteResult.phases.length} phases générées` 
           };
+        }
 
-        case 'copilot':
+        case 'copilot': {
           // Test assistant simple
-          const copilotResult = await openaiService.processDocumentWithAI(
+          await openaiService.processDocumentWithAI(
             'Test message pour l\'assistant IA',
             { type: 'test' }
           );
@@ -258,6 +260,7 @@ class AIActivationService {
             success: true, 
             message: 'Assistant IA testé avec succès' 
           };
+        }
 
         default:
           return { success: false, message: 'Service non reconnu' };

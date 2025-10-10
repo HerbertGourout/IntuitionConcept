@@ -6,6 +6,7 @@
 
 ## ✨ Fonctionnalités principales
 
+### 🏗️ Gestion de Projets
 - **Gestion multi-projets** : création, duplication, modification, suppression, archivage
 - **Suivi des tâches** : planification, avancement, priorités, budget et dépenses
 - **Gestion documentaire** : stockage et organisation de plans, contrats, rapports, photos
@@ -13,6 +14,15 @@
 - **Équipements** : parc matériel, états, disponibilité, maintenance
 - **Planning Gantt** : visualisation des tâches et jalons
 - **Dashboard** : synthèse des KPIs, avancement global, alertes
+
+### 🤖 Intelligence Artificielle Premium
+- **Stack IA Hybride** : Orchestrateur intelligent multi-services
+- **OCR Premium** : Google Document AI pour factures, contrats, plans
+- **Analyse Multimodale** : GPT-4o pour images de chantier et plans
+- **Veille Marché** : Grok pour prix matériaux temps réel
+- **Analyse Projet** : Gemini 1.5 Pro pour dossiers complets
+- **Chat Assistant** : Grok conversationnel spécialisé BTP
+- **Optimisation Coûts** : Routage intelligent et fallback automatique
 
 ---
 
@@ -43,21 +53,55 @@ L’application sera accessible sur [http://localhost:5176](http://localhost:517
 
 ## 🛠️ Stack technique
 
+### Frontend
 - **React 18 + TypeScript**
 - **Vite** (développement ultra-rapide)
 - **Ant Design** (UI/UX moderne)
-- **Firebase Firestore** (base de données cloud)
+- **Tailwind CSS** (styling utilitaire)
 - **Framer Motion** (animations)
-- **Recharts** (graphiques)
-- **Tailwind CSS** (styles utilitaires)
-- **ESLint** (qualité de code)
+
+### Backend & Services
+- **Firebase Firestore** (base de données cloud)
+- **Firebase Storage** (stockage fichiers)
+- **Firebase Auth** (authentification)
+
+### Intelligence Artificielle
+- **Grok** (X.AI) - Chat conversationnel et veille marché
+- **Google Document AI** - OCR premium pour documents BTP
+- **GPT-4o** (OpenAI) - Analyse multimodale d'images
+- **Gemini 1.5 Pro** (Google) - Analyse de contexte ultra-long
+- **Claude 3.5 Sonnet** (Anthropic) - Analyse technique avancée
+
+### 4. Configuration du Stack IA Premium (Optionnel)
+
+Pour activer les fonctionnalités IA avancées, configurez vos clés API :
+
+```bash
+# Copiez le fichier d'exemple
+cp .env.example .env.local
+
+# Éditez .env.local avec vos clés API
+VITE_GROK_API_KEY=your_grok_api_key_here
+VITE_OPENAI_API_KEY=your_openai_api_key_here
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+VITE_GOOGLE_CLOUD_API_KEY=your_google_cloud_api_key_here
+```
+
+**Services IA supportés :**
+- 🤖 **Grok** : Chat conversationnel et veille marché temps réel
+- 📄 **Google Document AI** : OCR premium pour factures/contrats
+- 🖼️ **GPT-4o** : Analyse d'images de chantier et plans
+- 📊 **Gemini 1.5 Pro** : Analyse de dossiers complets
+- 🧠 **Claude 3.5 Sonnet** : Analyse technique avancée
+
+> **Note :** L'application fonctionne sans ces clés, mais les fonctionnalités IA seront limitées.
 
 ---
 
 ## ⚠️ Mode développement
 
-> **Important** : Toutes les restrictions d’authentification et de droits ont été désactivées pour faciliter le développement et la démonstration.  
-> **Remettez les contrôles d’accès** avant toute mise en production !
+> **Important** : Toutes les restrictions d'authentification et de droits ont été désactivées pour faciliter le développement et la démonstration.  
+> **Remettez les contrôles d'accès** avant toute mise en production !
 
 ---
 
@@ -72,7 +116,9 @@ src/
   pages/           # Pages principales
   types/           # Types TypeScript
   utils/           # Fonctions utilitaires
+  services/ai/     # Stack IA Premium
 public/            # Assets statiques
+docs/              # Documentation technique
 ```
 
 ---

@@ -551,7 +551,7 @@ const Settings: React.FC = () => {
                             const { uri, secretKey } = await mfaGenerateTotpSecret();
                             setTotpUri(uri);
                             setTotpSecret(secretKey);
-                          } catch {
+                          } catch (e) {
                             alert("Impossible de générer le secret TOTP. Assurez-vous d'être connecté.");
                           }
                         }}
@@ -593,7 +593,7 @@ const Settings: React.FC = () => {
                                   const factors = mfaGetEnrolledFactors();
                                   setMfaFactors(factors);
                                   alert('TOTP activé avec succès.');
-                                } catch {
+                                } catch (e) {
                                   alert('Échec de l\'activation TOTP. Vérifiez le code.');
                                 }
                               }}
@@ -632,7 +632,7 @@ const Settings: React.FC = () => {
                                     await mfaUnenroll(f.uid);
                                     const factors = mfaGetEnrolledFactors();
                                     setMfaFactors(factors);
-                                  } catch {
+                                  } catch (e) {
                                     alert('Échec de la suppression du facteur.');
                                   }
                                 }}
@@ -918,8 +918,3 @@ const Settings: React.FC = () => {
 };
 
 export default Settings;
-
-
-
-
-

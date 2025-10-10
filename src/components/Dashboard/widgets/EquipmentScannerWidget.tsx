@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Scan, 
   Package, 
@@ -28,6 +28,20 @@ interface Equipment {
   qrCode: string;
 }
 
+// Shape coming from currentProject.equipment can be less strict; accept strings or Dates
+type EquipmentRaw = {
+  id?: string;
+  name?: string;
+  type?: string;
+  serialNumber?: string;
+  status?: string;
+  location?: string;
+  assignedTo?: string;
+  lastMaintenance?: string | Date;
+  nextMaintenance?: string | Date;
+  qrCode?: string;
+};
+
 interface EquipmentScannerWidgetProps {
   className?: string;
 }
@@ -40,27 +54,34 @@ const EquipmentScannerWidget: React.FC<EquipmentScannerWidgetProps> = ({ classNa
 
   // Données réelles d'équipements depuis le projet actuel
   const { currentProject } = useProjects();
-  const equipment = currentProject?.equipment || [];
+  const equipmentRaw: EquipmentRaw[] = (currentProject?.equipment ?? []) as EquipmentRaw[];
   
   const equipmentStats = {
-    total: equipment.length,
-    available: equipment.filter((eq: any) => eq.status === 'available').length,
-    inUse: equipment.filter((eq: any) => eq.status === 'in_use' || eq.status === 'in-use').length,
-    maintenance: equipment.filter((eq: any) => eq.status === 'maintenance').length,
-    damaged: equipment.filter((eq: any) => eq.status === 'out_of_order' || eq.status === 'out-of-service').length,
+    total: equipmentRaw.length,
+    available: equipmentRaw.filter((eq) => eq.status === 'available').length,
+    inUse: equipmentRaw.filter((eq) => eq.status === 'in_use' || eq.status === 'in-use').length,
+    maintenance: equipmentRaw.filter((eq) => eq.status === 'maintenance').length,
+    damaged: equipmentRaw.filter((eq) => eq.status === 'out_of_order' || eq.status === 'out-of-service' || eq.status === 'damaged').length,
   };
 
   // Utiliser les vrais équipements du projet (les 3 plus récents)
-  const recentEquipment = equipment.slice(0, 3).map((eq: any) => ({
-    id: eq.id,
-    name: eq.name,
-    type: eq.type,
-    serialNumber: eq.serialNumber || 'N/A',
-    status: eq.status,
-    location: eq.location || 'Non définie',
-    qrCode: eq.qrCode || 'N/A',
-    lastMaintenance: eq.lastMaintenance ? new Date(eq.lastMaintenance) : null,
-    nextMaintenance: eq.nextMaintenance ? new Date(eq.nextMaintenance) : null,
+  const recentEquipment: Equipment[] = equipmentRaw.slice(0, 3).map((eq): Equipment => ({
+    id: eq.id ?? 'unknown',
+    name: eq.name ?? 'Équipement',
+    type: eq.type ?? 'N/A',
+    serialNumber: eq.serialNumber ?? 'N/A',
+    status: (() => {
+      if (eq.status === 'available') return 'available' as const;
+      if (eq.status === 'in_use' || eq.status === 'in-use') return 'in-use' as const;
+      if (eq.status === 'maintenance') return 'maintenance' as const;
+      if (eq.status === 'damaged' || eq.status === 'out_of_order' || eq.status === 'out-of-service') return 'damaged' as const;
+      return 'available' as const;
+    })(),
+    location: eq.location ?? 'Non définie',
+    assignedTo: eq.assignedTo,
+    lastMaintenance: eq.lastMaintenance ? new Date(eq.lastMaintenance) : undefined,
+    nextMaintenance: eq.nextMaintenance ? new Date(eq.nextMaintenance) : undefined,
+    qrCode: eq.qrCode ?? 'N/A',
   }));
 
   const handleScanSuccess = (equipment: Equipment) => {

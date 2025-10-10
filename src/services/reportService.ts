@@ -463,7 +463,7 @@ export class ReportService {
         acc + (phase.tasks?.filter(task => task.status === 'in_progress').length || 0), 0) || 0), 0);
     
     const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : '0';
-    const activeProjectsCount = projects.filter(p => p.status === 'active').length;
+    const activeProjectsCount = projects.filter(p => p.status === 'in_progress').length;
     const completedProjectsCount = projects.filter(p => p.status === 'completed').length;
 
     const performanceData = [
