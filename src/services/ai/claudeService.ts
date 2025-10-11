@@ -59,11 +59,13 @@ export class ClaudeService {
     
     try {
       // Test simple avec requête minimale
-      const response = await fetch(import.meta.env.DEV 
-        ? 'http://localhost:3001/api/anthropic/v1/messages'
-        : `${this.baseUrl}/messages`, {
+      const response = await fetch(`${this.baseUrl}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.apiKey,
+          'anthropic-version': aiConfig.claude.version
+        },
         body: JSON.stringify({
           model: this.model,
           max_tokens: 10,
@@ -84,9 +86,7 @@ export class ClaudeService {
   async analyzePlanPDF(pdfBase64: string, planType?: string): Promise<ClaudeResponse> {
     if (!this.apiKey) throw new Error('Clé API Claude manquante');
 
-    const url = import.meta.env.DEV
-      ? 'http://localhost:3001/api/anthropic/v1/messages'
-      : `${this.baseUrl}/messages`;
+    const url = `${this.baseUrl}/messages`;
 
     const systemPrompt = `Tu es un expert BIM/BTP. Analyse le plan PDF fourni et retourne un résumé structuré (pièces, surfaces estimées, éléments structurels, conformité, risques, recommandations). ${planType ? `Type de plan: ${planType}.` : ''}`.trim();
 
@@ -109,11 +109,18 @@ export class ClaudeService {
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': this.apiKey,
+        'anthropic-version': aiConfig.claude.version
+      },
       body: JSON.stringify(body)
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Claude API error: 401 Unauthorized - vérifiez la clé API.');
+      }
       throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
     }
 
