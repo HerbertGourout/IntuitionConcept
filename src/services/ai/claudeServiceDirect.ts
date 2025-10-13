@@ -120,18 +120,29 @@ export class ClaudeServiceDirect {
   private client: Anthropic;
   private config: Required<ClaudeConfig>;
   
-  // Modèles Claude disponibles
+  // Modèles Claude disponibles (versions récentes uniquement)
   private static readonly MODELS = {
-    OPUS: 'claude-3-opus-20240229', // Le plus puissant
-    SONNET: 'claude-3-5-sonnet-20241022', // Équilibre performance/coût
-    HAIKU: 'claude-3-5-haiku-20241022' // Le plus rapide
+    SONNET: 'claude-sonnet-4-5-20250929', // Snapshot le plus récent recommandé
+    SONNET_4: 'claude-sonnet-4-20250514',
+    SONNET_3_7: 'claude-3-7-sonnet-20250219',
+    OPUS_4_1: 'claude-opus-4.1-20250805',
+    OPUS_4: 'claude-opus-4-20250514',
+    HAIKU_3_5: 'claude-3-5-haiku-20241022'
   } as const;
 
   // Coûts par token (en FCFA, taux 1 USD = 600 FCFA)
   private static readonly COSTS = {
-    'claude-3-opus-20240229': { input: 0.009, output: 0.045 }, // 15$/MTok input, 75$/MTok output
-    'claude-3-5-sonnet-20241022': { input: 0.0018, output: 0.009 }, // 3$/MTok input, 15$/MTok output
-    'claude-3-5-haiku-20241022': { input: 0.0006, output: 0.0018 } // 1$/MTok input, 3$/MTok output
+    // Sonnet 4.x & dérivés
+    'claude-sonnet-4-5-20250929': { input: 0.0018, output: 0.009 },
+    'claude-sonnet-4-20250514': { input: 0.0018, output: 0.009 },
+    'claude-3-7-sonnet-20250219': { input: 0.0018, output: 0.009 },
+
+    // Opus 4.x & legacy
+    'claude-opus-4.1-20250805': { input: 0.015, output: 0.075 },
+    'claude-opus-4-20250514': { input: 0.015, output: 0.075 },
+
+    // Haiku 3.x
+    'claude-3-5-haiku-20241022': { input: 0.0006, output: 0.0018 }
   } as const;
 
   constructor(config: ClaudeConfig) {

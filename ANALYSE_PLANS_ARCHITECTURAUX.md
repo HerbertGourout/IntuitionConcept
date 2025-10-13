@@ -47,16 +47,19 @@ Service de communication directe avec l'API Anthropic Claude.
 ```typescript
 ClaudeServiceDirect.getAvailableModels()
 // {
-//   OPUS: 'claude-3-opus-20240229',        // Le plus puissant
-//   SONNET: 'claude-3-5-sonnet-20241022',  // ✅ RECOMMANDÉ - Équilibre performance/coût
-//   HAIKU: 'claude-3-5-haiku-20241022'     // Le plus rapide
+//   SONNET: 'claude-sonnet-4-5-20250929',    // ✅ Recommandé (snapshot le plus récent)
+//   SONNET_4: 'claude-sonnet-4-20250514',    // Snapshot précédent
+//   SONNET_3_7: 'claude-3-7-sonnet-20250219',// Version 3.7 long support
+//   OPUS_4_1: 'claude-opus-4.1-20250805',    // Qualité maximale, coût élevé
+//   OPUS_4: 'claude-opus-4-20250514',
+//   HAIKU_3_5: 'claude-3-5-haiku-20241022'   // Rapide et économique
 // }
 ```
 
 **Coûts par modèle (FCFA) :**
-- **Opus** : 0.009 FCFA/token input, 0.045 FCFA/token output
-- **Sonnet** : 0.0018 FCFA/token input, 0.009 FCFA/token output
-- **Haiku** : 0.0006 FCFA/token input, 0.0018 FCFA/token output
+- **Sonnet 4.5 / 4 / 3.7** : 0.0018 FCFA/token input, 0.009 FCFA/token output
+- **Opus 4.1 / 4** : 0.015 FCFA/token input, 0.075 FCFA/token output
+- **Haiku 3.5** : 0.0006 FCFA/token input, 0.0018 FCFA/token output
 
 #### 2. **PDFSplitter** (`src/utils/pdfSplitter.ts`)
 Service de découpe PDF sans compression.
@@ -134,7 +137,7 @@ function App() {
 ```typescript
 import { initializeClaudeServiceDirect, ClaudeServiceDirect } from './services/ai/claudeServiceDirect';
 
-// Initialiser avec clé API (SONNET recommandé pour équilibre performance/coût)
+// Initialiser avec clé API (Sonnet 4.5 recommandé pour équilibre performance/coût)
 const claudeService = initializeClaudeServiceDirect(
   'sk-ant-api03-xxxxx',
   ClaudeServiceDirect.getAvailableModels().SONNET
