@@ -51,41 +51,39 @@ export class HttpClient {
   }
 
   async get<T>(path: string, options?: { headers?: Record<string, string> }): Promise<T> {
-    const response = await fetch(this.buildUrl(path), {
-      method: 'GET',
-      headers: await this.buildHeaders(options?.headers)
-    });
-
-    if (!response.ok) {
-      throw await this.toError(response);
-    }
-
-    return response.json() as Promise<T>;
+    return this.request<T>('GET', path, undefined, options);
   }
 
   async post<T>(path: string, body?: unknown, options?: { headers?: Record<string, string> }): Promise<T> {
+    return this.request<T>('POST', path, body, options);
+  }
+
+  async delete<T>(path: string, options?: { headers?: Record<string, string> }): Promise<T> {
+    return this.request<T>('DELETE', path, undefined, options);
+  }
+
+  private async request<T>(
+    method: 'GET' | 'POST' | 'DELETE',
+    path: string,
+    body?: unknown,
+    options?: { headers?: Record<string, string> },
+    attempt: number = 0
+  ): Promise<T> {
     const response = await fetch(this.buildUrl(path), {
-      method: 'POST',
+      method,
       headers: await this.buildHeaders(options?.headers),
       body: body ? JSON.stringify(body) : undefined
     });
 
-    if (!response.ok) {
-      throw await this.toError(response);
+    if (response.status === 401 && attempt === 0 && auth.currentUser) {
+      try {
+        // Force refresh the Firebase ID token
+        await auth.currentUser.getIdToken(true);
+        return this.request<T>(method, path, body, options, attempt + 1);
+      } catch {
+        // fall through to error handling
+      }
     }
-
-    if (response.status === 204) {
-      return {} as T;
-    }
-
-    return response.json() as Promise<T>;
-  }
-
-  async delete<T>(path: string, options?: { headers?: Record<string, string> }): Promise<T> {
-    const response = await fetch(this.buildUrl(path), {
-      method: 'DELETE',
-      headers: await this.buildHeaders(options?.headers)
-    });
 
     if (!response.ok) {
       throw await this.toError(response);

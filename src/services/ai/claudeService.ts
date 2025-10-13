@@ -256,7 +256,7 @@ Format: JSON avec sections détaillées et scoring.
       const cost = calculateClaudeCost(totalTokens);
 
       return {
-        content: data.content[0]?.text || '',
+        content: data.content?.[0]?.text || '',
         usage: {
           inputTokens: usage.input_tokens || 0,
           outputTokens: usage.output_tokens || 0,

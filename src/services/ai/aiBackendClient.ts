@@ -13,6 +13,7 @@ export type BackendAIOperation =
   | 'chat_completion'
   | 'image_analysis'
   | 'plan_analysis'
+  | 'plan_pdf_analysis'
   | 'progress_comparison'
   | 'visual_report'
   | 'safety_compliance'
