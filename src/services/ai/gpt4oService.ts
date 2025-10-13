@@ -1,4 +1,5 @@
 // Service GPT-4o - Analyse multimodale (texte + images) pour BTP
+import { aiBackendClient } from './aiBackendClient';
 export interface GPT4oResponse {
   content: string;
   model: string;
@@ -52,35 +53,12 @@ export interface SiteAnalysisResult {
 }
 
 export class GPT4oService {
-  private apiKey: string;
-  private baseUrl = 'https://api.openai.com/v1';
-  private model = 'gpt-4o';
-
-  constructor() {
-    this.apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
-    
-    // Debug: Vérification de la clé
-    console.log('🔍 Debug OpenAI:', {
-      hasKey: !!this.apiKey,
-      keyLength: this.apiKey?.length || 0,
-      keyStart: this.apiKey?.substring(0, 10) || 'undefined'
-    });
-    
-    if (!this.apiKey) {
-      console.warn('⚠️ Clé API OpenAI manquante - GPT-4o indisponible');
-    } else {
-      console.log('✅ GPT-4o: Service configuré et prêt');
-    }
-  }
+  private readonly model = 'gpt-4o';
 
   /**
    * Analyse d'image de chantier avec contexte BTP
    */
   async analyzeSiteImage(base64Image: string, context?: string): Promise<GPT4oResponse> {
-    if (!this.apiKey) {
-      throw new Error('Clé API OpenAI requise');
-    }
-
     const prompt = `
 Analyse cette image de chantier BTP et fournis une évaluation technique détaillée.
 
@@ -100,45 +78,18 @@ Focus sur : sécurité, qualité, conformité, avancement des travaux.
 `;
 
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { 
-                type: 'image_url', 
-                image_url: { 
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                  detail: 'high'
-                }
-              }
-            ]
-          }],
-          max_tokens: 2000,
-          temperature: 0.3
-        })
+      const response = await this.callOpenAIChat({
+        operation: 'image_analysis',
+        payload: {
+          image: {
+            data: base64Image,
+            mimeType: 'image/jpeg'
+          },
+          context: prompt
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Erreur API OpenAI: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-
-      return {
-        content: data.choices[0]?.message?.content || '',
-        model: this.model,
-        usage,
-        cost: this.calculateCost(usage.prompt_tokens, usage.completion_tokens)
-      };
+      return this.mapToResponse(response);
 
     } catch (error) {
       console.error('Erreur analyse image GPT-4o:', error);
@@ -150,10 +101,6 @@ Focus sur : sécurité, qualité, conformité, avancement des travaux.
    * Analyse de plan architectural avec vision
    */
   async analyzePlan(base64Image: string, planType?: string, mimeType: string = 'image/jpeg'): Promise<GPT4oResponse> {
-    if (!this.apiKey) {
-      throw new Error('Clé API OpenAI requise');
-    }
-
     const prompt = `
 Analyse ce plan architectural BTP et extrais toutes les informations techniques.
 
@@ -188,46 +135,19 @@ Analyse technique approfondie avec estimation de coûts réaliste.
 `;
 
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${base64Image}`,
-                  detail: 'high'
-                }
-              }
-            ]
-          }],
-          max_tokens: 3000,
-          temperature: 0.2
-        })
+      const response = await this.callOpenAIChat({
+        operation: 'plan_analysis',
+        payload: {
+          file: {
+            data: base64Image,
+            mimeType
+          },
+          planType,
+          context: prompt
+        }
       });
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(`Erreur API OpenAI: ${response.status}${errText ? ` - ${errText}` : ''}`);
-      }
-
-      const data = await response.json();
-      const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-
-      return {
-        content: data.choices[0]?.message?.content || '',
-        model: this.model,
-        usage,
-        cost: this.calculateCost(usage.prompt_tokens, usage.completion_tokens)
-      };
+      return this.mapToResponse(response);
 
     } catch (error) {
       console.error('Erreur analyse plan GPT-4o:', error);
@@ -239,10 +159,6 @@ Analyse technique approfondie avec estimation de coûts réaliste.
    * Analyse comparative de photos avant/après
    */
   async compareProgress(beforeImage: string, afterImage: string, context?: string): Promise<GPT4oResponse> {
-    if (!this.apiKey) {
-      throw new Error('Clé API OpenAI requise');
-    }
-
     const prompt = `
 Compare ces deux images de chantier (avant/après) et analyse l'avancement des travaux.
 
@@ -263,52 +179,22 @@ Focus sur : qualité, conformité, respect du planning, problèmes potentiels.
 `;
 
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { 
-                type: 'image_url', 
-                image_url: { 
-                  url: `data:image/jpeg;base64,${beforeImage}`,
-                  detail: 'high'
-                }
-              },
-              { 
-                type: 'image_url', 
-                image_url: { 
-                  url: `data:image/jpeg;base64,${afterImage}`,
-                  detail: 'high'
-                }
-              }
-            ]
-          }],
-          max_tokens: 2500,
-          temperature: 0.3
-        })
+      const response = await this.callOpenAIChat({
+        operation: 'progress_comparison',
+        payload: {
+          beforeImage: {
+            data: beforeImage,
+            mimeType: 'image/jpeg'
+          },
+          afterImage: {
+            data: afterImage,
+            mimeType: 'image/jpeg'
+          },
+          context: prompt
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Erreur API OpenAI: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-
-      return {
-        content: data.choices[0]?.message?.content || '',
-        model: this.model,
-        usage,
-        cost: this.calculateCost(usage.prompt_tokens, usage.completion_tokens)
-      };
+      return this.mapToResponse(response);
 
     } catch (error) {
       console.error('Erreur comparaison images GPT-4o:', error);
@@ -320,10 +206,6 @@ Focus sur : qualité, conformité, respect du planning, problèmes potentiels.
    * Génération de rapport avec images
    */
   async generateVisualReport(images: string[], reportType: string, context?: Record<string, unknown>): Promise<GPT4oResponse> {
-    if (!this.apiKey) {
-      throw new Error('Clé API OpenAI requise');
-    }
-
     const prompt = `
 Génère un rapport ${reportType} professionnel basé sur ces images de chantier.
 
@@ -354,45 +236,23 @@ Format de réponse :
 Rapport professionnel et actionnable.
 `;
 
-    const content = [
-      { type: 'text', text: prompt },
-      ...images.map(img => ({
-        type: 'image_url' as const,
-        image_url: { 
-          url: `data:image/jpeg;base64,${img}`,
-          detail: 'high' as const
-        }
-      }))
-    ];
-
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [{ role: 'user', content }],
-          max_tokens: 4000,
-          temperature: 0.2
-        })
+      const response = await this.callOpenAIChat({
+        operation: 'visual_report',
+        payload: {
+          images: images.map((image) => ({
+            data: image,
+            mimeType: 'image/jpeg'
+          })),
+          reportType,
+          context: {
+            prompt,
+            ...context
+          }
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Erreur API OpenAI: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-
-      return {
-        content: data.choices[0]?.message?.content || '',
-        model: this.model,
-        usage,
-        cost: this.calculateCost(usage.prompt_tokens, usage.completion_tokens)
-      };
+      return this.mapToResponse(response);
 
     } catch (error) {
       console.error('Erreur génération rapport GPT-4o:', error);
@@ -404,10 +264,6 @@ Rapport professionnel et actionnable.
    * Analyse de conformité sécurité
    */
   async analyzeSafetyCompliance(base64Image: string, regulations?: string[]): Promise<GPT4oResponse> {
-    if (!this.apiKey) {
-      throw new Error('Clé API OpenAI requise');
-    }
-
     const prompt = `
 Analyse cette image de chantier pour la conformité sécurité et réglementaire.
 
@@ -440,45 +296,19 @@ Focus sur : EPI, signalisation, protection collective, accès, stockage.
 `;
 
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { 
-                type: 'image_url', 
-                image_url: { 
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                  detail: 'high'
-                }
-              }
-            ]
-          }],
-          max_tokens: 3000,
-          temperature: 0.1 // Très précis pour la sécurité
-        })
+      const response = await this.callOpenAIChat({
+        operation: 'safety_compliance',
+        payload: {
+          image: {
+            data: base64Image,
+            mimeType: 'image/jpeg'
+          },
+          regulations,
+          context: prompt
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Erreur API OpenAI: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-
-      return {
-        content: data.choices[0]?.message?.content || '',
-        model: this.model,
-        usage,
-        cost: this.calculateCost(usage.prompt_tokens, usage.completion_tokens)
-      };
+      return this.mapToResponse(response);
 
     } catch (error) {
       console.error('Erreur analyse sécurité GPT-4o:', error);
@@ -500,30 +330,69 @@ Focus sur : EPI, signalisation, protection collective, accès, stockage.
    * Vérification de santé du service
    */
   async healthCheck(): Promise<boolean> {
-    if (!this.apiKey) {
-      return false;
-    }
-
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [{ role: 'user', content: 'Test de connexion' }],
-          max_tokens: 10
-        })
+      const response = await aiBackendClient.generate({
+        type: 'simple_generation',
+        content: 'Test de connexion IA',
+        priority: 'low'
       });
 
-      return response.ok;
+      return Boolean(response?.content);
     } catch {
       return false;
     }
+  }
+
+  private async callOpenAIChat({
+    operation,
+    payload
+  }: {
+    operation:
+      | 'image_analysis'
+      | 'plan_analysis'
+      | 'progress_comparison'
+      | 'visual_report'
+      | 'safety_compliance';
+    payload: Record<string, unknown>;
+  }): Promise<OpenAIChatResponse> {
+    const response = await aiBackendClient.proxy<OpenAIChatResponse>({
+      provider: 'openai',
+      operation,
+      payload
+    });
+
+    return response.data;
+  }
+
+  private mapToResponse(data: OpenAIChatResponse): GPT4oResponse {
+    const usage = data.usage ?? { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      model: data.model || this.model,
+      usage,
+      cost: this.calculateCost(usage.prompt_tokens ?? 0, usage.completion_tokens ?? 0)
+    };
   }
 }
 
 export const gpt4oService = new GPT4oService();
 export default gpt4oService;
+
+interface OpenAIChatChoice {
+  message?: {
+    content?: string;
+  };
+}
+
+interface OpenAIChatUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}
+
+interface OpenAIChatResponse {
+  model?: string;
+  choices?: OpenAIChatChoice[];
+  usage?: OpenAIChatUsage;
+}

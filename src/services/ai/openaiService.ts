@@ -1,20 +1,12 @@
+import { apiClient } from '../api/httpClient';
 import { aiConfig } from './aiConfig';
 import type { AIEnhancementData } from './ocrEnhancer';
 
-export interface OpenAIResponse {
-  choices: Array<{
-    message: {
-      content: string;
-    };
-  }>;
-}
-
-export interface OpenAIVisionResponse {
-  choices: Array<{
-    message: {
-      content: string;
-    };
-  }>;
+interface BackendAIResponse {
+  provider: string;
+  content?: string;
+  usage?: unknown;
+  raw?: unknown;
 }
 
 // Types structurés pour l'analyse OCR d'une facture via OpenAI
@@ -34,15 +26,8 @@ interface AnalyzedOCR {
 }
 
 class OpenAIService {
-  private apiKey: string;
-  private baseUrl = 'https://api.openai.com/v1';
-
-  constructor() {
-    this.apiKey = aiConfig.openaiApiKey || '';
-  }
-
   /**
-   * Enrichit des données OCR brutes en utilisant l'analyse OpenAI existante
+   * Enrichit des données OCR brutes en utilisant l'analyse IA via le backend
    * et retourne un objet conforme à AIEnhancementData (utilisé par OCREnhancer).
    */
   async enhanceOCRData(originalText: string): Promise<AIEnhancementData | null> {
@@ -87,42 +72,19 @@ class OpenAIService {
    * Conserve la signature attendue par AICopilot (string simple).
    */
   async processCopilotQuery(message: string, context: unknown): Promise<string> {
-    if (!this.apiKey) {
-      // OpenAI API key not configured
-      return 'Copilot (mock): fonctionnalité IA non configurée. Voici quelques actions possibles: Voir projets, Créer devis, Voir finances.';
-    }
-
     try {
-      const messages = [
-        { role: 'system', content: aiConfig.copilot.systemPrompt },
-        {
-          role: 'user',
-          content: `Contexte JSON:\n${JSON.stringify(context, null, 2)}\n\nQuestion utilisateur:\n${message}`
+      const payload = {
+        type: 'conversational' as const,
+        content: `Contexte JSON:\n${JSON.stringify(context, null, 2)}\n\nQuestion utilisateur:\n${message}`,
+        priority: 'medium' as const,
+        context: {
+          response_format: aiConfig.copilot.enabled ? undefined : 'text'
         }
-      ];
+      };
 
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: aiConfig.copilot.model,
-          messages,
-          max_tokens: aiConfig.copilot.maxTokens,
-          temperature: aiConfig.copilot.temperature,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
-      const data: OpenAIResponse = await response.json();
-      const content = data.choices[0]?.message?.content?.trim();
-      return content || "Désolé, je n'ai pas pu générer de réponse.";
-    } catch {
+      const response = await apiClient.post<BackendAIResponse>('/ai/generate', payload);
+      return response.content ?? "Désolé, je n'ai pas pu générer de réponse.";
+    } catch (error) {
       // OpenAI copilot query error
       return 'Désolé, je rencontre une difficulté technique. Pouvez-vous réessayer ?';
     }
@@ -131,65 +93,22 @@ class OpenAIService {
   async analyzeDocument(documentText: string, _documentType: string): Promise<Record<string, unknown>> {
     // prevent unused parameter lint when documentType is not used by the current prompt
     void _documentType;
-    if (!this.apiKey) {
-      // OpenAI API key not configured
-      return this.getMockEnhancedData(documentText);
-    }
-
     try {
-      const messages = [
-        {
-          role: 'system',
-          content: `Tu es un expert en analyse de documents financiers BTP en Afrique. 
-          Analyse le texte OCR fourni et enrichis les données extraites.
-          
-          Retourne un JSON avec cette structure:
-          {
-            "amounts": [{"value": number, "currency": "XAF", "confidence": number}],
-            "dates": [{"value": "YYYY-MM-DD", "type": "invoice|due", "confidence": number}],
-            "vendorName": {"value": string, "confidence": number, "normalized": string},
-            "invoiceNumber": {"value": string, "confidence": number},
-            "total": {"value": number, "currency": "XAF", "confidence": number},
-            "validation": {
-              "isValid": boolean,
-              "issues": [string],
-              "suggestions": [string]
-            }
-          }`
-        },
-        {
-          role: 'user',
-          content: `Analyse ce texte OCR d'une facture/devis BTP:\n\n${documentText}`
+      const response = await apiClient.post<BackendAIResponse>('/ai/generate', {
+        type: 'document_analysis' as const,
+        content: documentText,
+        priority: 'high' as const,
+        context: {
+          documentType: _documentType
         }
-      ];
-
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages,
-          max_tokens: 1000,
-          temperature: 0.1,
-        }),
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+      if (!response.content) {
+        throw new Error('Réponse IA vide');
       }
 
-      const data: OpenAIResponse = await response.json();
-      const content = data.choices[0]?.message?.content;
-      
-      if (!content) {
-        throw new Error('No content in OpenAI response');
-      }
-
-      return JSON.parse(content);
-    } catch {
+      return JSON.parse(response.content);
+    } catch (error) {
       // OpenAI OCR enhancement error
       return this.getMockEnhancedData(documentText);
     }
@@ -198,99 +117,20 @@ class OpenAIService {
   async generateQuote(projectData: Record<string, unknown>, _requirements: Record<string, unknown>): Promise<Record<string, unknown>> {
     // Mark parameter as intentionally unused to satisfy eslint/no-unused-vars
     void _requirements;
-    if (!this.apiKey) {
-      // OpenAI API key not configured
-      return this.getMockQuoteData(projectData);
-    }
-
     try {
-      const messages = [
-        {
-          role: 'system',
-          content: `Tu es un expert en devis BTP en Afrique. Génère un devis détaillé basé sur la description du projet.
-          
-          Retourne un JSON avec cette structure:
-          {
-            "title": string,
-            "description": string,
-            "phases": [{
-              "name": string,
-              "description": string,
-              "duration": number,
-              "items": [{
-                "description": string,
-                "quantity": number,
-                "unit": string,
-                "unitPrice": number,
-                "totalPrice": number,
-                "category": "materials|labor|equipment|other"
-              }],
-              "totalCost": number
-            }],
-            "totalCost": number,
-            "totalDuration": number,
-            "recommendations": [string],
-            "assumptions": [string],
-            "confidence": number
-          }
-          
-          Utilise les prix du marché camerounais en FCFA. Sois réaliste et détaillé.`
-        },
-        {
-          role: 'user',
-          content: (() => {
-            // Narrow budget type safely without using 'any'
-            const budgetUnknown = (projectData as Record<string, unknown>).budget;
-            let min = 0;
-            let max = 0;
-            if (budgetUnknown && typeof budgetUnknown === 'object') {
-              const b = budgetUnknown as Partial<{ min: unknown; max: unknown }>;
-              if (typeof b.min === 'number') min = b.min;
-              if (typeof b.max === 'number') max = b.max;
-            }
-
-            const location = (projectData as Record<string, unknown>).location as string | undefined;
-            const timeline = (projectData as Record<string, unknown>).timeline as string | undefined;
-            const projectType = (projectData as Record<string, unknown>).projectType as string | undefined;
-            const description = (projectData as Record<string, unknown>).description as string | undefined;
-
-            return `Génère un devis pour ce projet BTP:
-          Type: ${projectType ?? ''}
-          Description: ${description ?? ''}
-          Budget: ${min} - ${max} XAF
-          Localisation: ${location || 'Cameroun'}
-          Délai: ${timeline || 'Standard'}`;
-          })()
-        }
-      ];
-
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages,
-          max_tokens: 2000,
-          temperature: 0.3,
-        }),
+      const response = await apiClient.post<BackendAIResponse>('/ai/generate', {
+        type: 'quote_generation' as const,
+        content: JSON.stringify(projectData),
+        priority: 'high' as const,
+        context: projectData
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+      if (!response.content) {
+        throw new Error('Réponse IA vide');
       }
 
-      const data: OpenAIResponse = await response.json();
-      const content = data.choices[0]?.message?.content;
-      
-      if (!content) {
-        throw new Error('No content in OpenAI response');
-      }
-
-      return JSON.parse(content);
-    } catch {
+      return JSON.parse(response.content);
+    } catch (error) {
       // OpenAI quote generation error
       return this.getMockQuoteData(projectData);
     }
@@ -300,44 +140,15 @@ class OpenAIService {
     // Mark parameters as intentionally unused to satisfy eslint/no-unused-vars
     void _content;
     void _metadata;
-    if (!this.apiKey) {
-      // OpenAI API key not configured
-      return { error: "Je suis désolé, l'API OpenAI n'est pas configurée. Veuillez vérifier votre clé API." };
-    }
-
     try {
-      const messages = [
-        {
-          role: 'system',
-          content: aiConfig.copilot.systemPrompt
-        },
-        {
-          role: 'user',
-          content: `Traitement de document demandé`
-        }
-      ];
-
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: aiConfig.copilot.model,
-          messages,
-          max_tokens: aiConfig.copilot.maxTokens,
-          temperature: aiConfig.copilot.temperature,
-        }),
+      const response = await apiClient.post<BackendAIResponse>('/ai/generate', {
+        type: 'document_analysis' as const,
+        content: 'Traitement de document demandé',
+        priority: 'medium' as const
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
-      const data: OpenAIResponse = await response.json();
-      return { result: data.choices[0]?.message?.content || 'Désolé, je n\'ai pas pu traiter votre demande.' };
-    } catch {
+      return { result: response.content || 'Désolé, je n\'ai pas pu traiter votre demande.' };
+    } catch (error) {
       // OpenAI copilot error
       return { error: 'Désolé, je rencontre une difficulté technique. Pouvez-vous réessayer ?' };
     }

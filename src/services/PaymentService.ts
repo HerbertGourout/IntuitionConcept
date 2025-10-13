@@ -1,3 +1,4 @@
+import { apiClient } from './api/httpClient';
 import { Timestamp } from 'firebase/firestore';
 
 export interface PaymentConfig {
@@ -16,6 +17,26 @@ export interface PaymentConfig {
     description: string;
     logo?: string;
   };
+}
+
+export interface PaymentInitiationPayload {
+  amount: number;
+  currency: string;
+  phoneNumber: string;
+  description: string;
+  projectId?: string;
+  provider?: 'flutterwave';
+}
+
+export interface PaymentInitiationResponse {
+  message: string;
+  data: PaymentInitiationPayload & { transactionId?: string };
+}
+
+export interface PaymentVerificationResponse {
+  message: string;
+  transactionId: string;
+  status?: string;
 }
 
 export interface PaymentRecord {
@@ -199,21 +220,16 @@ export class PaymentService {
    */
   static async verifyPayment(transactionId: string): Promise<{ status: string; data: { id: string; status: string; amount: number; currency: string } }> {
     try {
-      // En production, vous feriez un appel à l'API Flutterwave
-      // const response = await fetch(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
-      //   headers: {
-      //     'Authorization': `Bearer ${SECRET_KEY}`,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      
-      // Pour le moment, simulation
+      const response = await apiClient.post<PaymentVerificationResponse>('/payments/verify', {
+        transactionId
+      });
+
       return {
         status: 'success',
         data: {
-          id: transactionId,
-          status: 'successful',
-          amount: 5000,
+          id: response.transactionId,
+          status: response.status ?? 'pending',
+          amount: 0,
           currency: 'XOF'
         }
       };
@@ -253,5 +269,15 @@ export class PaymentService {
         features: []
       }
     };
+  }
+
+  static async initiatePayment(payload: PaymentInitiationPayload): Promise<PaymentInitiationResponse> {
+    try {
+      const response = await apiClient.post<PaymentInitiationResponse>('/payments/initiate', payload);
+      return response;
+    } catch (error) {
+      console.error('Erreur lors de l\'initiation du paiement:', error);
+      throw error;
+    }
   }
 }

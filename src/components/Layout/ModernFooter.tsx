@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
+
 import {
   Zap,
   Mail,
@@ -69,7 +70,7 @@ const ModernFooter: React.FC = () => {
     { name: 'YouTube', href: '#', icon: Youtube, color: 'hover:text-red-600' },
   ];
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -80,12 +81,12 @@ const ModernFooter: React.FC = () => {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
+      transition: { duration: 0.6, ease: [0.16, 0.84, 0.44, 1] as const }
     }
   };
 
@@ -96,7 +97,6 @@ const ModernFooter: React.FC = () => {
       transition: { duration: 0.2 }
     }
   };
-
   return (
     <footer className="bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white relative overflow-hidden">
       {/* Animations de fond */}

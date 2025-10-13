@@ -11,6 +11,11 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
+        '/ai': {
+          target: 'http://localhost:4000',
+          changeOrigin: true,
+          secure: false
+        },
         // Dev-only proxy to avoid CORS calling Anthropic from the browser
         '/api/anthropic': {
           target: 'https://api.anthropic.com',

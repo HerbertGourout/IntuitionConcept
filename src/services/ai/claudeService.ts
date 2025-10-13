@@ -1,5 +1,5 @@
 // Service Anthropic Claude - Analyse documentaire avancée
-import { aiConfig } from '../../config/aiConfig';
+import { aiBackendClient } from './aiBackendClient';
 
 // Types de réponse minimaux pour l'API Claude messages
 interface AnthropicUsage {
@@ -37,43 +37,24 @@ export interface ClaudeResponse {
 }
 
 export class ClaudeService {
-  private apiKey: string;
-  private baseUrl: string;
-  private model: string;
-
-  constructor() {
-    this.apiKey = aiConfig.claude.apiKey;
-    this.baseUrl = aiConfig.claude.baseUrl;
-    this.model = aiConfig.claude.model;
-    
-    if (!this.apiKey) {
-      console.warn('⚠️ Clé API Claude manquante. Service désactivé.');
-    }
-  }
+  private readonly defaultModel = 'claude-3-5-sonnet-20240620';
 
   /**
    * Vérifie la santé du service Claude
    */
   async healthCheck(): Promise<boolean> {
-    if (!this.apiKey) return false;
-    
     try {
-      // Test simple avec requête minimale
-      const response = await fetch(`${this.baseUrl}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
-          'anthropic-version': aiConfig.claude.version
-        },
-        body: JSON.stringify({
-          model: this.model,
-          max_tokens: 10,
-          messages: [{ role: 'user', content: 'test' }]
-        })
+      const response = await aiBackendClient.proxy({
+        provider: 'anthropic',
+        operation: 'chat_completion',
+        payload: {
+          messages: [
+            { role: 'user', content: 'test' }
+          ]
+        }
       });
-      
-      return response.ok;
+
+      return Boolean(response?.data);
     } catch (error) {
       console.error('❌ Claude health check failed:', error);
       return false;
@@ -84,47 +65,13 @@ export class ClaudeService {
    * Analyse native d'un plan PDF avec Claude (document attaché)
    */
   async analyzePlanPDF(pdfBase64: string, planType?: string): Promise<ClaudeResponse> {
-    if (!this.apiKey) throw new Error('Clé API Claude manquante');
-
-    const url = `${this.baseUrl}/messages`;
-
-    const systemPrompt = `Tu es un expert BIM/BTP. Analyse le plan PDF fourni et retourne un résumé structuré (pièces, surfaces estimées, éléments structurels, conformité, risques, recommandations). ${planType ? `Type de plan: ${planType}.` : ''}`.trim();
-
-    const body = {
-      model: this.model,
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: systemPrompt },
-            {
-              type: 'document',
-              source: { media_type: 'application/pdf', data: pdfBase64 }
-            }
-          ]
-        }
-      ]
-    } as unknown as Record<string, unknown>;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': aiConfig.claude.version
+    const data = await this.callPlanPdf({
+      file: {
+        data: pdfBase64,
+        mimeType: 'application/pdf'
       },
-      body: JSON.stringify(body)
+      planType
     });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Claude API error: 401 Unauthorized - vérifiez la clé API.');
-      }
-      throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data: AnthropicResponse = await response.json();
 
     const contentBlocks: AnthropicContentBlock[] = Array.isArray(data?.content)
       ? data.content
@@ -138,7 +85,7 @@ export class ClaudeService {
     const inputTokens = usage.input_tokens ?? 0;
     const outputTokens = usage.output_tokens ?? 0;
     const totalTokens = inputTokens + outputTokens;
-    const cost = totalTokens * aiConfig.claude.costPerToken;
+    const cost = calculateClaudeCost(totalTokens);
 
     return {
       content: textContent || '',
@@ -147,7 +94,7 @@ export class ClaudeService {
         outputTokens,
         totalTokens
       },
-      model: data?.model || this.model,
+      model: data?.model || this.defaultModel,
       cost
     };
   }
@@ -293,39 +240,20 @@ Format: JSON avec sections détaillées et scoring.
    * Requête générique vers l'API Claude
    */
   private async makeRequest(request: ClaudeRequest): Promise<ClaudeResponse> {
-    if (!this.apiKey) {
-      throw new Error('Clé API Claude manquante');
-    }
-
     try {
-      const response = await fetch(`${this.baseUrl}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'anthropic-version': aiConfig.claude.version
-        },
-        body: JSON.stringify({
-          model: this.model,
-          max_tokens: request.maxTokens || 3000,
-          temperature: request.temperature || 0.2,
-          messages: [
-            {
-              role: 'user',
-              content: request.prompt
-            }
-          ]
-        })
+      const data = await this.callChat({
+        messages: [
+          {
+            role: 'user',
+            content: request.prompt
+          }
+        ],
+        max_tokens: request.maxTokens || 3000,
+        temperature: request.temperature || 0.2
       });
-
-      if (!response.ok) {
-        throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
       const usage = data.usage || {};
       const totalTokens = (usage.input_tokens || 0) + (usage.output_tokens || 0);
-      const cost = totalTokens * aiConfig.claude.costPerToken;
+      const cost = calculateClaudeCost(totalTokens);
 
       return {
         content: data.content[0]?.text || '',
@@ -334,7 +262,7 @@ Format: JSON avec sections détaillées et scoring.
           outputTokens: usage.output_tokens || 0,
           totalTokens
         },
-        model: data.model,
+        model: data.model || this.defaultModel,
         cost
       };
 
@@ -343,4 +271,30 @@ Format: JSON avec sections détaillées et scoring.
       throw error;
     }
   }
+
+  private async callChat(payload: Record<string, unknown>): Promise<AnthropicResponse> {
+    const response = await aiBackendClient.proxy<AnthropicResponse>({
+      provider: 'anthropic',
+      operation: 'chat_completion',
+      payload
+    });
+
+    return response.data;
+  }
+
+  private async callPlanPdf(payload: Record<string, unknown>): Promise<AnthropicResponse> {
+    const response = await aiBackendClient.proxy<AnthropicResponse>({
+      provider: 'anthropic',
+      operation: 'plan_pdf_analysis',
+      payload
+    });
+
+    return response.data;
+  }
+}
+
+function calculateClaudeCost(totalTokens: number): number {
+  // Align cost with backend configuration (fallback value)
+  const costPerToken = 0.00002;
+  return totalTokens * costPerToken;
 }
