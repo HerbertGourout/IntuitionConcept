@@ -14,9 +14,9 @@ import {
   Loader2,
   X
 } from 'lucide-react';
-import { architecturalPlanAnalyzer } from '../../services/ai/architecturalPlanAnalyzer';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { pdfCompression } from '../../utils/pdfCompression';
+import { ClaudeServiceDirect, initializeClaudeServiceDirect } from '../../services/ai/claudeServiceDirect';
+import { PDFSplitter, extractPDFMetadata, getPDFFileStats } from '../../utils/pdfSplitter';
 
 // Types pour l'analyse architecturale
 interface Wall {
@@ -27,7 +27,7 @@ interface Wall {
 interface Room {
   name: string;
   area?: number;
-  dimensions?: string;
+  dimensions?: string | { length: number; width: number; height?: number };
 }
 
 interface AnalysisStep {
@@ -45,7 +45,7 @@ interface ArchitecturalPlanAnalysis {
   constructionElements?: {
     walls?: Wall[];
   };
-  estimatedComplexity?: 'low' | 'moderate' | 'high';
+  estimatedComplexity?: 'low' | 'moderate' | 'high' | 'very_high';
   planType?: string;
 }
 
@@ -97,37 +97,41 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
     ));
   };
 
-  const handleFileUpload = useCallback((file: File) => {
+  const handleFileUpload = useCallback(async (file: File) => {
     // Vérifier la taille du fichier
     const fileSizeMB = file.size / (1024 * 1024);
     
-    if (fileSizeMB > 20) {
-      setError(`⚠️ Fichier trop volumineux: ${fileSizeMB.toFixed(2)} MB. 
-      
-Limite maximale: 20 MB.
-
-💡 Solutions:
-• Utilisez un fichier plus petit
-• Divisez le PDF en plusieurs parties
-• Convertissez en image PNG/JPEG`);
+    console.log(`📄 Fichier uploadé: ${file.name} (${fileSizeMB.toFixed(2)} MB)`);
+    
+    // Validation du fichier
+    if (!file.type.includes('pdf')) {
+      setError('⚠️ Seuls les fichiers PDF sont supportés pour une analyse sans perte de qualité.');
       return;
     }
-    
-    if (fileSizeMB > 5) {
-      setError(null); // Clear previous errors
-      setUploadedFile(file);
-      setAnalysis(null);
-      // Le système compressera automatiquement lors de l'analyse
-      console.log(`📄 Fichier volumineux détecté (${fileSizeMB.toFixed(2)} MB) - compression automatique activée`);
-    } else {
+
+    try {
+      // Extraire les métadonnées sans modifier le fichier
+      const metadata = await extractPDFMetadata(file);
+      console.log('📊 Métadonnées PDF:', metadata);
+      
+      // Obtenir les statistiques
+      const stats = await getPDFFileStats(file);
+      console.log('📈 Statistiques PDF:', stats);
+      
       setUploadedFile(file);
       setError(null);
       setAnalysis(null);
+      setGeneratedQuote(null);
+      
+      // Reset analysis steps
+      setAnalysisSteps(prev => prev.map(step => ({ ...step, status: 'waiting', progress: 0 })));
+      
+      console.log(`✅ Fichier prêt pour analyse (${stats.pageCount} pages, qualité préservée à 100%)`);
+      
+    } catch (err) {
+      console.error('❌ Erreur validation PDF:', err);
+      setError('Erreur lors de la validation du PDF. Assurez-vous que le fichier est valide.');
     }
-    setGeneratedQuote(null);
-    
-    // Reset analysis steps
-    setAnalysisSteps(prev => prev.map(step => ({ ...step, status: 'waiting', progress: 0 })));
     
     return false; // Prevent default upload
   }, []);
@@ -139,71 +143,131 @@ Limite maximale: 20 MB.
     setError(null);
 
     try {
-      // Step 1: Compression automatique si nécessaire
       const fileSizeMB = uploadedFile.size / (1024 * 1024);
-      let fileToAnalyze = uploadedFile;
-      
-      if (fileSizeMB > 5 && uploadedFile.type === 'application/pdf') {
-        updateStepStatus('ocr', 'processing');
-        console.log('🔄 Compression PDF en cours...');
-        
-        // Convertir le fichier en base64
-        const reader = new FileReader();
-        const base64Promise = new Promise<string>((resolve) => {
-          reader.onload = () => {
-            const result = reader.result as string;
-            const base64 = result.split(',')[1]; // Enlever le préfixe data:
-            resolve(base64);
-          };
-        });
-        reader.readAsDataURL(uploadedFile);
-        const base64Data = await base64Promise;
-        
-        // Compresser le PDF
-        const compressionResult = await pdfCompression.compressPDF(base64Data, {
-          maxSizeMB: 5,
-          quality: 0.7
-        });
-        
-        if (compressionResult.success) {
-          // Créer un nouveau fichier avec les données compressées
-          const compressedBytes = Uint8Array.from(atob(compressionResult.compressedBase64), c => c.charCodeAt(0));
-          const compressedBlob = new Blob([compressedBytes], { type: 'application/pdf' });
-          fileToAnalyze = new File([compressedBlob], uploadedFile.name, { type: 'application/pdf' });
-          
-          const newSizeMB = compressionResult.compressedSize / (1024 * 1024);
-          console.log(`✅ PDF compressé: ${fileSizeMB.toFixed(2)} MB → ${newSizeMB.toFixed(2)} MB`);
-        } else {
-          console.warn('⚠️ Compression échouée, utilisation du fichier original');
-        }
-        
-        updateStepStatus('ocr', 'completed', 100);
-      } else {
-        // Step 1: OCR Extraction (simulation pour les petits fichiers)
-        updateStepStatus('ocr', 'processing');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        updateStepStatus('ocr', 'completed', 100);
-      }
+      console.log(`🚀 Démarrage analyse sans perte - Fichier: ${fileSizeMB.toFixed(2)} MB`);
 
-      // Step 2: AI Analysis
-      updateStepStatus('analysis', 'processing');
-      const analysisResult = await architecturalPlanAnalyzer.analyzePlan(fileToAnalyze);
-      setAnalysis(analysisResult);
+      // Step 1: Découpe PDF sans compression
+      updateStepStatus('ocr', 'processing', 10);
+      console.log('✂️ Découpe PDF par page (qualité 100% préservée)...');
+      
+      const splitResult = await PDFSplitter.splitPDF(uploadedFile, {
+        preserveMetadata: true,
+        preserveQuality: true,
+        extractImages: true,
+        includeAnnotations: true
+      });
+      
+      console.log(`📑 ${splitResult.pages.length} pages extraites sans perte`);
+      console.log(`📊 Taille totale: ${(splitResult.totalSize / 1024 / 1024).toFixed(2)} MB`);
+      updateStepStatus('ocr', 'completed', 100);
+
+      // Step 2: Initialiser Claude Service Direct
+      updateStepStatus('analysis', 'processing', 10);
+      
+      const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        throw new Error('❌ Clé API Anthropic manquante. Configurez VITE_ANTHROPIC_API_KEY dans .env.local');
+      }
+      
+      const claudeService = initializeClaudeServiceDirect(apiKey, ClaudeServiceDirect.getAvailableModels().SONNET);
+      
+      // Vérifier la santé du service
+      const isHealthy = await claudeService.healthCheck();
+      if (!isHealthy) {
+        throw new Error('❌ Service Claude non disponible. Vérifiez votre clé API.');
+      }
+      
+      console.log('✅ Service Claude initialisé et opérationnel');
+      updateStepStatus('analysis', 'processing', 30);
+
+      // Step 3: Analyser le PDF avec Claude (sans perte)
+      console.log('🔍 Analyse architecturale avec Claude (PDF natif)...');
+      
+      const analysisResult = await claudeService.analyzePDFArchitecturalPlan(uploadedFile, {
+        preserveQuality: true,
+        splitByPage: true,
+        extractMetadata: true,
+        maxPagesPerRequest: 5,
+        includeImages: true
+      });
+      
+      console.log('✅ Analyse Claude terminée:', analysisResult);
+      console.log(`💰 Coût: ${analysisResult.metadata.cost.toFixed(2)} FCFA`);
+      console.log(`⏱️ Durée: ${(analysisResult.metadata.processingTime / 1000).toFixed(2)}s`);
+      
+      // Convertir au format attendu par l'interface
+      const convertedAnalysis: ArchitecturalPlanAnalysis = {
+        extractedMeasurements: {
+          rooms: analysisResult.architecturalData.measurements.rooms || [],
+          totalArea: analysisResult.architecturalData.measurements.totalArea
+        },
+        constructionElements: {
+          walls: analysisResult.architecturalData.measurements.walls?.map(w => ({
+            type: w.type,
+            material: w.material
+          })) || []
+        },
+        estimatedComplexity: analysisResult.architecturalData.estimatedComplexity,
+        planType: analysisResult.architecturalData.planType
+      };
+      
+      setAnalysis(convertedAnalysis);
       updateStepStatus('analysis', 'completed', 100);
 
-      // Step 3: Quote Generation
-      updateStepStatus('quote', 'processing');
-      const quote = await architecturalPlanAnalyzer.generateQuoteFromPlan(analysisResult, {
-        clientName: 'Client',
-        projectName: 'Projet',
-        location: 'Location'
-      });
-      setGeneratedQuote(quote as GeneratedQuote);
+      // Step 4: Génération du devis (basé sur l'analyse)
+      updateStepStatus('quote', 'processing', 50);
+      console.log('📝 Génération du devis depuis l\'analyse...');
+      
+      const totalArea = analysisResult.architecturalData.measurements.totalArea || 100;
+      const roomCount = analysisResult.architecturalData.measurements.rooms?.length || 3;
+      const complexity = analysisResult.architecturalData.estimatedComplexity;
+      
+      // Calcul estimatif basé sur l'analyse
+      const basePrice = totalArea * 800; // 800 FCFA/m²
+      const complexityMultiplier = {
+        'low': 1.0,
+        'moderate': 1.3,
+        'high': 1.6,
+        'very_high': 2.0
+      }[complexity] || 1.3;
+      
+      const estimatedTotal = basePrice * complexityMultiplier;
+      
+      const generatedQuote: GeneratedQuote = {
+        totalCost: estimatedTotal,
+        totalDuration: Math.ceil(totalArea / 10), // 10m²/jour
+        title: `Devis - ${splitResult.originalMetadata.title || uploadedFile.name}`,
+        phases: [
+          {
+            name: 'Gros œuvre',
+            description: `Construction structure pour ${totalArea}m² avec ${roomCount} pièces`,
+            totalCost: estimatedTotal * 0.4,
+            duration: Math.ceil(totalArea / 15)
+          },
+          {
+            name: 'Second œuvre',
+            description: 'Menuiseries, électricité, plomberie',
+            totalCost: estimatedTotal * 0.35,
+            duration: Math.ceil(totalArea / 20)
+          },
+          {
+            name: 'Finitions',
+            description: 'Revêtements, peinture, aménagements',
+            totalCost: estimatedTotal * 0.25,
+            duration: Math.ceil(totalArea / 25)
+          }
+        ]
+      };
+      
+      setGeneratedQuote(generatedQuote);
       updateStepStatus('quote', 'completed', 100);
+      
+      console.log('🎉 Analyse complète terminée avec succès!');
 
     } catch (err) {
-      console.error('Analysis failed:', err);
-      setError('Erreur lors de l\'analyse du plan. Veuillez réessayer.');
+      console.error('❌ Analysis failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+      setError(`Erreur lors de l'analyse: ${errorMessage}`);
       
       // Mark current step as error
       const currentStep = analysisSteps.find(step => step.status === 'processing');
@@ -313,10 +377,10 @@ Limite maximale: 20 MB.
                       ou cliquez pour sélectionner un fichier
                     </p>
                     <p className="text-base text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 px-6 py-3 rounded-lg inline-block">
-                      📁 Formats supportés: JPG, PNG, BMP, TIFF, WebP, PDF (max 10MB)
+                      📁 Format supporté: PDF uniquement
                     </p>
-                    <p className="text-sm text-blue-600 dark:text-blue-400 mt-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg inline-block">
-                      ℹ️ Les PDFs sont automatiquement convertis en images pour l'analyse OCR.
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-2 bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-lg inline-block">
+                      ✨ Qualité 100% préservée - Aucune compression - Analyse page par page
                     </p>
                   </div>
                 </div>
@@ -334,11 +398,9 @@ Limite maximale: 20 MB.
                   </p>
                   <p className="text-base text-green-600 dark:text-green-400">
                     📊 Taille: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                    {uploadedFile.size > 5 * 1024 * 1024 && uploadedFile.type === 'application/pdf' && (
-                      <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                        🔄 Conversion image automatique
-                      </span>
-                    )}
+                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                      ✨ Qualité originale préservée
+                    </span>
                   </p>
                 </div>
               </div>
