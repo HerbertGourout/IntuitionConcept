@@ -26,6 +26,8 @@ import EmailTestPage from './components/Email/EmailTestPage';
 import AnomalyDetectionDashboard from './components/AI/AnomalyDetectionDashboard';
 import CountryPricing from './pages/CountryPricing';
 import ArchitecturalPlanAnalyzer from './components/AI/ArchitecturalPlanAnalyzer';
+import SiteReports from './pages/SiteReports';
+import ProjectPlanGeneratorPage from './pages/ProjectPlanGenerator';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
 import { useToast } from './hooks/useToast';
 import { Result } from 'antd';
@@ -291,6 +293,10 @@ const AppContent: React.FC = () => {
         return React.createElement(React.lazy(() => import('./components/Business/BusinessModelSimulator')));
       case 'country-pricing':
         return <CountryPricing />;
+      case 'site-reports':
+        return <SiteReports />;
+      case 'project-plan-generator':
+        return <ProjectPlanGeneratorPage />;
       default:
         return <div>Section non trouvée</div>;
     }

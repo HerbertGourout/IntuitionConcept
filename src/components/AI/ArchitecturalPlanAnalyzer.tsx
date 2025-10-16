@@ -1,22 +1,41 @@
 import React, { useState, useCallback } from 'react';
-import { 
-  Upload, 
-  FileImage, 
-  Zap, 
-  DollarSign,
-  Home,
-  Building,
+import {
+  Upload,
   CheckCircle,
+  DollarSign,
   AlertTriangle,
   Download,
   Play,
   RefreshCw,
   Loader2,
-  X
+  Edit2,
+  FileImage,
+  Zap,
+  Home,
+  Building
 } from 'lucide-react';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { ClaudeServiceDirect, initializeClaudeServiceDirect } from '../../services/ai/claudeServiceDirect';
 import { PDFSplitter, extractPDFMetadata, getPDFFileStats } from '../../utils/pdfSplitter';
+import { convertClaudeQuoteToAppQuote, extractPlanMetadata } from '../../utils/claudeQuoteConverter';
+import { generateArticlesForPhase } from '../../utils/quoteArticlesGenerator';
+import { BTP_STANDARD_PHASES } from '../../constants/btpPhases';
+import QuoteCreatorSimple from '../Quotes/QuoteCreatorSimple';
+import type { Quote } from '../../services/quotesService';
+import jsPDF from 'jspdf';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import autoTable from 'jspdf-autotable'; // Étend automatiquement jsPDF avec la méthode autoTable
+
+// Extension des types jsPDF pour jspdf-autotable
+// Note: jspdf-autotable n'a pas de types TypeScript complets
+type jsPDFWithAutoTable = jsPDF & {
+  autoTable: (options: any) => jsPDF; // eslint-disable-line @typescript-eslint/no-explicit-any
+  lastAutoTable: {
+    finalY: number;
+  };
+};
+
+// import { qwenService } from '../../services/ai/qwenService'; // Désactivé - Claude fait tout le travail
 
 // Types pour l'analyse architecturale
 interface Wall {
@@ -28,6 +47,8 @@ interface Room {
   name: string;
   area?: number;
   dimensions?: string | { length: number; width: number; height?: number };
+  floor?: number;
+  purpose?: string;
 }
 
 interface AnalysisStep {
@@ -49,6 +70,29 @@ interface ArchitecturalPlanAnalysis {
   planType?: string;
 }
 
+interface ClaudeQuoteItem {
+  designation?: string;
+  description?: string;  // Alias pour designation
+  unit?: string;
+  quantity?: number;
+  unitPrice?: number;
+  prixUnitaire?: number;
+  totalPrice?: number;
+  prixTotal?: number;
+  note?: string;
+}
+
+interface ClaudeQuotePhase {
+  name?: string;
+  poste?: string;
+  description?: string;
+  items?: ClaudeQuoteItem[];
+}
+
+interface ClaudeDetailedQuote {
+  phases?: ClaudeQuotePhase[];
+}
+
 interface GeneratedQuote {
   totalCost?: number;
   totalDuration?: number;
@@ -58,16 +102,18 @@ interface GeneratedQuote {
     description?: string;
     totalCost?: number;
     duration?: number;
+    lignes?: ClaudeQuoteItem[];
   }>;
 }
 
 const ArchitecturalPlanAnalyzer: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<ArchitecturalPlanAnalysis | null>(null);
   const [generatedQuote, setGeneratedQuote] = useState<GeneratedQuote | null>(null);
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showQuoteEditor, setShowQuoteEditor] = useState(false);
+  const [convertedQuote, setConvertedQuote] = useState<Omit<Quote, 'id'> | null>(null);
   const { formatAmount } = useCurrency();
 
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([
@@ -196,15 +242,38 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
       console.log(`⏱️ Durée: ${(analysisResult.metadata.processingTime / 1000).toFixed(2)}s`);
       
       // Convertir au format attendu par l'interface
+      const detectedRooms = (analysisResult.architecturalData.measurements.rooms || []).map(room => {
+        const safeRoom: Room = {
+          name: room.name || 'Espace non nommé',
+          area: typeof room.area === 'number' && !Number.isNaN(room.area) ? room.area : undefined,
+          floor: typeof room.floor === 'number' && !Number.isNaN(room.floor) ? room.floor : undefined,
+          purpose: room.purpose
+        };
+
+        if (typeof room.dimensions === 'string') {
+          safeRoom.dimensions = room.dimensions;
+        } else if (room.dimensions && typeof room.dimensions === 'object') {
+          safeRoom.dimensions = {
+            length: room.dimensions.length ?? 0,
+            width: room.dimensions.width ?? 0,
+            height: room.dimensions.height
+          };
+        }
+
+        return safeRoom;
+      });
+      const totalAreaFromRooms = detectedRooms.reduce((sum, room) => sum + (room.area || 0), 0);
+      const computedTotalArea = analysisResult.architecturalData.measurements.totalArea || totalAreaFromRooms || 120;
+
       const convertedAnalysis: ArchitecturalPlanAnalysis = {
         extractedMeasurements: {
-          rooms: analysisResult.architecturalData.measurements.rooms || [],
-          totalArea: analysisResult.architecturalData.measurements.totalArea
+          rooms: detectedRooms,
+          totalArea: computedTotalArea
         },
         constructionElements: {
           walls: analysisResult.architecturalData.measurements.walls?.map(w => ({
-            type: w.type,
-            material: w.material
+            type: w.type || 'Mur',
+            material: w.material || 'Inconnu'
           })) || []
         },
         estimatedComplexity: analysisResult.architecturalData.estimatedComplexity,
@@ -214,53 +283,124 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
       setAnalysis(convertedAnalysis);
       updateStepStatus('analysis', 'completed', 100);
 
-      // Step 4: Génération du devis (basé sur l'analyse)
-      updateStepStatus('quote', 'processing', 50);
-      console.log('📝 Génération du devis depuis l\'analyse...');
+      // Step 4: Génération du devis détaillé avec IA métreur-expert
+      updateStepStatus('quote', 'processing', 30);
+      console.log('📝 Génération du devis détaillé avec IA métreur-expert...');
       
-      const totalArea = analysisResult.architecturalData.measurements.totalArea || 100;
-      const roomCount = analysisResult.architecturalData.measurements.rooms?.length || 3;
+      const totalArea = computedTotalArea;
+      const rooms = detectedRooms;
+      const roomCount = rooms.length || 3;
       const complexity = analysisResult.architecturalData.estimatedComplexity;
+
+      const floorSet = new Set<number>();
+      rooms.forEach(room => {
+        if (typeof room.floor === 'number' && !Number.isNaN(room.floor)) {
+          floorSet.add(room.floor);
+        }
+      });
+      const floorCount = Math.max(1, floorSet.size);
+
+      // Génération du devis : Utiliser les données de Claude directement
+      let generatedQuote: GeneratedQuote;
+      let usedAIQuote = false;
+
+      // NOUVEAU: Vérifier si Claude a déjà généré un devis détaillé
+      const claudeDetailedQuote = (analysisResult.architecturalData as { detailedQuote?: ClaudeDetailedQuote }).detailedQuote;
       
-      // Calcul estimatif basé sur l'analyse
-      const basePrice = totalArea * 800; // 800 FCFA/m²
-      const complexityMultiplier = {
-        'low': 1.0,
-        'moderate': 1.3,
-        'high': 1.6,
-        'very_high': 2.0
-      }[complexity] || 1.3;
-      
-      const estimatedTotal = basePrice * complexityMultiplier;
-      
-      const generatedQuote: GeneratedQuote = {
-        totalCost: estimatedTotal,
-        totalDuration: Math.ceil(totalArea / 10), // 10m²/jour
-        title: `Devis - ${splitResult.originalMetadata.title || uploadedFile.name}`,
-        phases: [
-          {
-            name: 'Gros œuvre',
-            description: `Construction structure pour ${totalArea}m² avec ${roomCount} pièces`,
-            totalCost: estimatedTotal * 0.4,
-            duration: Math.ceil(totalArea / 15)
-          },
-          {
-            name: 'Second œuvre',
-            description: 'Menuiseries, électricité, plomberie',
-            totalCost: estimatedTotal * 0.35,
-            duration: Math.ceil(totalArea / 20)
-          },
-          {
-            name: 'Finitions',
-            description: 'Revêtements, peinture, aménagements',
-            totalCost: estimatedTotal * 0.25,
-            duration: Math.ceil(totalArea / 25)
-          }
-        ]
-      };
+      if (claudeDetailedQuote && claudeDetailedQuote.phases && claudeDetailedQuote.phases.length > 0) {
+        console.log('✅ Utilisation du devis détaillé généré par Claude');
+        updateStepStatus('quote', 'processing', 70);
+        
+        // Convertir le format Claude vers GeneratedQuote
+        generatedQuote = {
+          totalCost: claudeDetailedQuote.phases.reduce((sum: number, phase: ClaudeQuotePhase) => {
+            const phaseTotal = phase.items?.reduce((itemSum: number, item: ClaudeQuoteItem) => itemSum + (item.totalPrice || item.prixTotal || 0), 0) || 0;
+            return sum + phaseTotal;
+          }, 0),
+          totalDuration: Math.ceil((totalArea * floorCount) / 12),
+          title: `Devis détaillé - ${splitResult.originalMetadata.title || uploadedFile.name}`,
+          phases: claudeDetailedQuote.phases.map((phase: ClaudeQuotePhase) => ({
+            name: phase.name || phase.poste || 'Phase',
+            description: phase.description || '',
+            totalCost: phase.items?.reduce((sum: number, item: ClaudeQuoteItem) => sum + (item.totalPrice || item.prixTotal || 0), 0) || 0,
+            duration: 0,
+            lignes: phase.items || [] // Garder les items détaillés
+          }))
+        };
+        
+        usedAIQuote = true;
+        console.log('✅ Devis Claude converti avec succès - Total:', generatedQuote.totalCost, 'FCFA');
+      } else {
+        // FALLBACK: Génération devis détaillé avec 13 phases standard BTP
+        console.log('ℹ️ Claude n\'a pas généré de devis détaillé, utilisation du fallback avec 13 phases...');
+        updateStepStatus('quote', 'processing', 60);
+        
+        // Multiplicateur de complexité pour ajuster les prix
+        const complexityMultiplier = {
+          'low': 0.85,
+          'moderate': 1.0,
+          'high': 1.25,
+          'very_high': 1.6
+        }[complexity] || 1.0;
+        
+        console.log(`📊 Complexité détectée: ${complexity} (multiplicateur: ${complexityMultiplier})`);
+        
+        // Générer les 13 phases avec articles détaillés
+        const phases = BTP_STANDARD_PHASES.map((phaseTemplate) => {
+          // Générer articles avec quantités calculées
+          const articles = generateArticlesForPhase(
+            phaseTemplate.name,
+            totalArea,
+            roomCount,
+            floorCount
+          );
+          
+          // Appliquer le multiplicateur de complexité aux prix
+          const adjustedArticles = articles.map(article => ({
+            ...article,
+            unitPrice: Math.round(article.unitPrice * complexityMultiplier),
+            totalPrice: Math.round(article.totalPrice * complexityMultiplier)
+          }));
+          
+          const phaseTotal = adjustedArticles.reduce((sum, art) => sum + art.totalPrice, 0);
+          
+          return {
+            name: phaseTemplate.name,
+            description: phaseTemplate.description,
+            totalCost: phaseTotal,
+            duration: Math.ceil(totalArea / 20), // Estimation durée par phase
+            lignes: adjustedArticles
+          };
+        });
+        
+        const totalCost = phases.reduce((sum, p) => sum + p.totalCost, 0);
+        const totalDuration = Math.ceil((totalArea * floorCount) / 12);
+        
+        generatedQuote = {
+          totalCost,
+          totalDuration,
+          title: `Devis détaillé - ${splitResult.originalMetadata.title || uploadedFile.name}`,
+          phases
+        };
+        
+        console.log(`✅ Devis détaillé généré : ${phases.length} phases, ${phases.reduce((sum, p) => sum + (p.lignes?.length || 0), 0)} articles`);
+        console.log(`💰 Total ajusté selon complexité (${complexity}): ${formatAmount(totalCost)}`);
+      }
       
       setGeneratedQuote(generatedQuote);
       updateStepStatus('quote', 'completed', 100);
+      
+      if (usedAIQuote) {
+        console.log('🎉 Devis détaillé IA généré avec succès (métreur-expert)!');
+      } else {
+        console.log('🎉 Devis estimatif standard généré avec succès!');
+      }
+      
+      // Convertir le devis au format de l'application
+      const planMetadata = extractPlanMetadata(analysisResult);
+      const appQuote = convertClaudeQuoteToAppQuote(analysisResult.architecturalData, planMetadata);
+      setConvertedQuote(appQuote);
+      console.log('✅ Devis converti au format de l\'application');
       
       console.log('🎉 Analyse complète terminée avec succès!');
 
@@ -290,17 +430,145 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
   const downloadQuote = () => {
     if (!generatedQuote) return;
     
-    // Create and download quote as JSON
-    const quoteData = JSON.stringify(generatedQuote, null, 2);
-    const blob = new Blob([quoteData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `devis-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      // Générer un PDF professionnel avec jsPDF
+      const doc = new jsPDF() as jsPDFWithAutoTable;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPosition = 20;
+      
+      // En-tête du document
+      doc.setFillColor(139, 92, 246); // Purple
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DEVIS DÉTAILLÉ', pageWidth / 2, 20, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(generatedQuote.title || 'Analyse Plan Architectural', pageWidth / 2, 30, { align: 'center' });
+      
+      yPosition = 50;
+      
+      // Informations générales
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 14, yPosition);
+      doc.text(`Fichier: ${uploadedFile?.name || 'Plan architectural'}`, 14, yPosition + 6);
+      
+      yPosition += 20;
+      
+      // Résumé
+      doc.setFillColor(243, 244, 246);
+      doc.rect(14, yPosition, pageWidth - 28, 30, 'F');
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RÉSUMÉ', 20, yPosition + 10);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`Montant Total: ${formatAmount(generatedQuote.totalCost ?? 0)}`, 20, yPosition + 18);
+      doc.text(`Durée Estimée: ${generatedQuote.totalDuration ?? 0} jours`, 20, yPosition + 24);
+      doc.text(`Nombre de Phases: ${generatedQuote.phases?.length ?? 0}`, pageWidth / 2 + 10, yPosition + 18);
+      
+      yPosition += 40;
+      
+      // Détail des phases
+      generatedQuote.phases?.forEach((phase) => {
+        // Vérifier si on a besoin d'une nouvelle page
+        if (yPosition > pageHeight - 60) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        // En-tête phase
+        doc.setFillColor(237, 233, 254);
+        doc.rect(14, yPosition, pageWidth - 28, 12, 'F');
+        
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(109, 40, 217);
+        doc.text(`${phase.name ?? ''}`, 20, yPosition + 8);
+        doc.text(`${formatAmount(phase.totalCost ?? 0)}`, pageWidth - 20, yPosition + 8, { align: 'right' });
+        
+        yPosition += 14;
+        
+        // Description
+        if (phase.description) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(100, 100, 100);
+          doc.text(phase.description, 20, yPosition);
+          yPosition += 6;
+        }
+        
+        // Tableau des articles
+        if (phase.lignes && phase.lignes.length > 0) {
+          const tableData = phase.lignes.map((item: ClaudeQuoteItem) => [
+            item.designation || item.description || '',
+            item.unit || 'u',
+            (item.quantity || 0).toString(),
+            formatAmount(item.unitPrice || item.prixUnitaire || 0),
+            formatAmount(item.totalPrice || item.prixTotal || 0)
+          ]);
+          
+          doc.autoTable({
+            startY: yPosition,
+            head: [['Désignation', 'Unité', 'Qté', 'P.U.', 'Total']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: {
+              fillColor: [139, 92, 246],
+              textColor: 255,
+              fontSize: 9,
+              fontStyle: 'bold'
+            },
+            bodyStyles: {
+              fontSize: 8,
+              textColor: 50
+            },
+            columnStyles: {
+              0: { cellWidth: 'auto' },
+              1: { cellWidth: 20, halign: 'center' },
+              2: { cellWidth: 20, halign: 'right' },
+              3: { cellWidth: 35, halign: 'right' },
+              4: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
+            },
+            margin: { left: 14, right: 14 }
+          });
+          
+          yPosition = doc.lastAutoTable.finalY + 10;
+        } else {
+          yPosition += 4;
+        }
+      });
+      
+      // Pied de page sur toutes les pages
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+          `IntuitionConcept BTP Platform - Page ${i}/${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+      }
+      
+      // Télécharger le PDF
+      const filename = `devis_${uploadedFile?.name.replace('.pdf', '') || 'plan'}_${Date.now()}.pdf`;
+      doc.save(filename);
+      
+      console.log('✅ PDF exporté avec succès:', filename);
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'export PDF:', error);
+      alert('Erreur lors de la génération du PDF. Vérifiez que jsPDF est installé.');
+    }
   };
 
   const getPlanTypeLabel = (type: string) => {
@@ -396,11 +664,8 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
                   <p className="text-lg font-medium text-green-800 dark:text-green-200">
                     ✅ Fichier téléchargé: {uploadedFile.name}
                   </p>
-                  <p className="text-base text-green-600 dark:text-green-400">
-                    📊 Taille: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                      ✨ Qualité originale préservée
-                    </span>
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    Taille: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB — Analyse requise
                   </p>
                 </div>
               </div>
@@ -425,9 +690,9 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
           </div>
         )}
           </div>
-        </div>
+      </div>
 
-        {/* Analysis Steps */}
+      {/* Analysis Steps */}
       {isAnalyzing && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
           <div className="flex items-center space-x-4 mb-8">
@@ -550,7 +815,7 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
                     <span>Pièces Détectées</span>
                   </h3>
                   <div className="space-y-2">
-                    {analysis.extractedMeasurements.rooms?.map((room: Room, index: number) => (
+                    {analysis.extractedMeasurements.rooms?.map((room, index) => (
                       <div key={index} className="flex justify-between items-center p-3 bg-white dark:bg-gray-600 rounded-lg">
                         <span className="font-medium text-gray-900 dark:text-white">{room.name}</span>
                         <span className="text-sm text-gray-600 dark:text-gray-300">{room.area || 0} m²</span>
@@ -596,13 +861,24 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
                     <p className="text-yellow-100 text-sm">Estimation automatique des coûts</p>
                   </div>
                 </div>
-                <button
-                  onClick={downloadQuote}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors duration-200 flex items-center space-x-2"
-                >
-                  <Download className="w-5 h-5" />
-                  <span>Télécharger</span>
-                </button>
+                <div className="flex gap-2">
+                  {convertedQuote && (
+                    <button
+                      onClick={() => setShowQuoteEditor(true)}
+                      className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors duration-200 flex items-center space-x-2"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                      <span>Éditer</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={downloadQuote}
+                    className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    <Download className="w-5 h-5" />
+                    <span>Télécharger</span>
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -626,82 +902,103 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Détail des Phases</h3>
-                <div className="space-y-4">
-                  {generatedQuote?.phases?.map((phase: {name?: string; description?: string; totalCost?: number}, index: number) => (
-                    <div key={index} className="bg-white dark:bg-gray-600 rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-medium text-gray-900 dark:text-white">{phase?.name || 'Phase sans nom'}</h4>
-                        <span className="font-bold text-gray-900 dark:text-white">
-                          {formatAmount(phase?.totalCost || 0)}
-                        </span>
+              {/* Détail des phases avec articles */}
+              <div className="space-y-6">
+                {generatedQuote?.phases?.map((phase, phaseIndex) => (
+                  <div key={phaseIndex} className="border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
+                    {/* En-tête phase */}
+                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900 dark:text-white">{phase?.name || 'Phase sans nom'}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{phase?.description || 'Aucune description'}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Total Phase</div>
+                          <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                            {formatAmount(phase?.totalCost || 0)}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{phase?.description || 'Aucune description'}</p>
                     </div>
-                  )) || (
-                    <div className="text-center p-4 text-gray-500 dark:text-gray-400">
-                      Aucune phase disponible
-                    </div>
-                  )}
-                </div>
+                    
+                    {/* Tableau articles */}
+                    {phase?.lignes && phase.lignes.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 dark:bg-gray-900">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Désignation
+                              </th>
+                              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Unité
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Quantité
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Prix Unit.
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Prix Total
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {phase.lignes.map((item, itemIndex) => (
+                              <tr key={itemIndex} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                  {item.designation || item.description || 'Article sans nom'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-center text-gray-600 dark:text-gray-400">
+                                  {item.unit || 'u'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-gray-100">
+                                  {item.quantity || 0}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-gray-100">
+                                  {formatAmount(item.unitPrice || item.prixUnitaire || 0)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">
+                                  {formatAmount(item.totalPrice || item.prixTotal || 0)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="p-6 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
+                        <p className="text-sm">Aucun article détaillé pour cette phase</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {(!generatedQuote?.phases || generatedQuote.phases.length === 0) && (
+                  <div className="text-center p-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                    <p>Aucune phase disponible</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Modal de devis détaillé */}
-        {showQuoteModal && generatedQuote && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Devis Détaillé</h2>
-                <button
-                  onClick={() => setShowQuoteModal(false)}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-colors duration-200"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              <div className="p-6">
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-600 dark:text-gray-400">Titre:</span>
-                      <span className="ml-2 text-gray-900 dark:text-white">{generatedQuote.title}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600 dark:text-gray-400">Date:</span>
-                      <span className="ml-2 text-gray-900 dark:text-white">{new Date().toLocaleDateString()}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600 dark:text-gray-400">Validité:</span>
-                      <span className="ml-2 text-gray-900 dark:text-white">30 jours</span>
-                    </div>
-                  </div>
 
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-8 text-xl">Phases du Projet</h3>
-                    <div className="space-y-8">
-                      {generatedQuote.phases?.map((phase: {name?: string; description?: string; totalCost?: number; duration?: number}, index: number) => (
-                        <div key={index} className="border-l-4 border-blue-500 pl-8 py-6 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/20 rounded-r-lg">
-                          <div className="flex justify-between items-start mb-6">
-                            <h4 className="font-semibold text-gray-900 dark:text-white text-lg">{phase.name}</h4>
-                            <span className="font-bold text-blue-600 dark:text-blue-400 text-xl bg-blue-100 dark:bg-blue-900/30 px-4 py-2 rounded-lg">
-                              {formatAmount(phase.totalCost || 0)}
-                            </span>
-                          </div>
-                          <p className="text-base text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">{phase.description}</p>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg inline-block">
-                            ⏱️ Durée estimée: {phase.duration || 'À définir'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* Modal d'édition du devis avec QuoteCreatorSimple */}
+        {showQuoteEditor && convertedQuote && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
+              <QuoteCreatorSimple
+                onClose={() => setShowQuoteEditor(false)}
+                editQuote={convertedQuote as Quote}
+                onQuoteCreated={() => {
+                  setShowQuoteEditor(false);
+                  console.log('✅ Devis sauvegardé avec succès !');
+                }}
+              />
             </div>
           </div>
         )}
