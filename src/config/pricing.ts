@@ -361,9 +361,9 @@ export const PLANS: Plan[] = [
   {
     id: 'starter',
     name: 'Starter',
-    description: 'Parfait pour artisans - Multi-projets + IA basique',
+    description: 'Gestion BTP de base - ⚠️ IA limitée',
     color: 'blue',
-    popular: true,
+    popular: false,
     features: PLAN_FEATURES.filter(f => 
       f.category === 'core'
     ),
@@ -373,21 +373,21 @@ export const PLANS: Plan[] = [
       storage: '5GB'
     },
     usersIncluded: 3,
-    pricePerExtraUser: 1500,
-    aiCreditsIncluded: 5000,
+    pricePerExtraUser: 2000,
+    aiCreditsIncluded: 3000, // Réduit pour pousser vers Pro
     aiOverage: {
-      llmPer100Calls: 2000,
-      ocrPerPage: 200,
-      planReaderPerPlan: 1200
+      llmPer100Calls: 3000, // Plus cher pour inciter à upgrader
+      ocrPerPage: 300,
+      planReaderPerPlan: 1500
     },
     trialDays: 14
   },
   {
     id: 'pro',
-    name: 'Pro BTP',
-    description: 'PME BTP - Finances + Facturation + IA LLM complète',
+    name: '⭐ Pro BTP + IA',
+    description: '🤖 Toute la puissance de l\'IA : Devis auto, OCR, Plans, Anomalies',
     color: 'green',
-    popular: false,
+    popular: true, // Le plus populaire maintenant
     features: PLAN_FEATURES.filter(f => 
       f.category === 'core' || f.category === 'advanced'
     ),
@@ -396,34 +396,35 @@ export const PLANS: Plan[] = [
       users: 25,
       storage: '50GB'
     },
-    usersIncluded: 8,
-    pricePerExtraUser: 2500,
-    aiCreditsIncluded: 25000,
+    usersIncluded: 10,
+    pricePerExtraUser: 3000,
+    aiCreditsIncluded: 30000, // Généreux pour montrer la valeur
     aiOverage: {
-      llmPer100Calls: 1500,
-      ocrPerPage: 150,
-      planReaderPerPlan: 900
-    }
+      llmPer100Calls: 1200,
+      ocrPerPage: 120,
+      planReaderPerPlan: 700
+    },
+    trialDays: 7 // Essai pour tester l'IA
   },
   {
     id: 'enterprise',
-    name: 'Enterprise',
-    description: 'Grandes structures - IA Avancée + Analytics + Support Premium',
+    name: '🚀 Enterprise IA Premium',
+    description: '🤖 IA Avancée : Vocal, Analytics Prédictifs, Rapports Auto + API',
     color: 'purple',
     popular: false,
     features: PLAN_FEATURES,
     limits: {
       projects: 'unlimited',
       users: 'unlimited',
-      storage: '500GB'
+      storage: '1TB' // Augmenté
     },
     usersIncluded: 50,
-    pricePerExtraUser: 1500,
-    aiCreditsIncluded: 100000,
+    pricePerExtraUser: 2000,
+    aiCreditsIncluded: 150000, // Très généreux
     aiOverage: {
-      llmPer100Calls: 1000,
-      ocrPerPage: 100,
-      planReaderPerPlan: 600
+      llmPer100Calls: 800,
+      ocrPerPage: 80,
+      planReaderPerPlan: 500
     }
   }
 ];
@@ -459,10 +460,10 @@ export const getPlanIncrementalFeatures = (planId: PlanId): PlanFeature[] => {
   }
 };
 
-// Tarification par devise (prix mensuel) - Ultra abordable et rentable
+// Tarification par devise (prix mensuel) - Stratégie aimant IA
 export const PRICING: Record<Currency, Record<PlanId, number>> = {
-  XOF: { starter: 9000, pro: 24400, enterprise: 61500 },
-  XAF: { starter: 9000, pro: 24400, enterprise: 61500 },
+  XOF: { starter: 12000, pro: 35000, enterprise: 95000 }, // +33% Starter, +43% Pro, +54% Enterprise
+  XAF: { starter: 12000, pro: 35000, enterprise: 95000 },
   MAD: { starter: 50, pro: 200, enterprise: 800 },
   DZD: { starter: 650, pro: 2600, enterprise: 10500 },
   TND: { starter: 10, pro: 40, enterprise: 160 },

@@ -29,8 +29,8 @@ const AppRouter: React.FC = () => {
         <Router>
           <Routes>
             {/* Pages publiques */}
-            <Route path="/" element={<ModernHomePage />} />
-            <Route path="/ultra-home" element={<UltraModernHomePage />} />
+            <Route path="/" element={<UltraModernHomePage />} />
+            <Route path="/classic-home" element={<ModernHomePage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/auth-test" element={<AuthTestPage />} />

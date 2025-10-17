@@ -12,7 +12,8 @@ import {
   FileImage,
   Zap,
   Home,
-  Building
+  Building,
+  Sparkles
 } from 'lucide-react';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { ClaudeServiceDirect, initializeClaudeServiceDirect } from '../../services/ai/claudeServiceDirect';
@@ -22,6 +23,7 @@ import { generateArticlesForPhase } from '../../utils/quoteArticlesGenerator';
 import { BTP_STANDARD_PHASES } from '../../constants/btpPhases';
 import QuoteCreatorSimple from '../Quotes/QuoteCreatorSimple';
 import type { Quote } from '../../services/quotesService';
+import Render3DGenerator from './Render3DGenerator';
 import jsPDF from 'jspdf';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import autoTable from 'jspdf-autotable'; // Étend automatiquement jsPDF avec la méthode autoTable
@@ -114,6 +116,8 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showQuoteEditor, setShowQuoteEditor] = useState(false);
   const [convertedQuote, setConvertedQuote] = useState<Omit<Quote, 'id'> | null>(null);
+  const [show3DGenerator, setShow3DGenerator] = useState(false);
+  const [planImageBase64, setPlanImageBase64] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
 
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([
@@ -878,6 +882,22 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
                     <Download className="w-5 h-5" />
                     <span>Télécharger</span>
                   </button>
+                  <button
+                    onClick={async () => {
+                      if (uploadedFile) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          setPlanImageBase64(e.target?.result as string);
+                          setShow3DGenerator(true);
+                        };
+                        reader.readAsDataURL(uploadedFile);
+                      }
+                    }}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-200 flex items-center space-x-2 shadow-lg"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    <span>Rendu 3D IA</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1001,6 +1021,14 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
               />
             </div>
           </div>
+        )}
+
+        {/* Modal de génération de rendu 3D */}
+        {show3DGenerator && planImageBase64 && (
+          <Render3DGenerator
+            planImage={planImageBase64}
+            onClose={() => setShow3DGenerator(false)}
+          />
         )}
     </div>
   );
