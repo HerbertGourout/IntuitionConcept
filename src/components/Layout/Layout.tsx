@@ -38,6 +38,7 @@ const Layout: React.FC<LayoutProps> = ({
     'documents': 'Documents',
     'quotes': 'Devis',
     'quote-creator': 'Création de Devis',
+    'tender-response': 'Réponse Appels d\'Offres IA',
     'reports': 'Rapports',
     'team': 'Équipe',
     'purchase-orders': 'Bons d\'Achat',
@@ -71,7 +72,7 @@ const Layout: React.FC<LayoutProps> = ({
       <div className="flex flex-1 pt-20">
         <Sidebar
           collapsed={sidebarCollapsed}
-          onCollapse={(collapsed) => {
+          onCollapse={(collapsed: boolean) => {
             setSidebarCollapsed(collapsed);
             if (window.innerWidth < 1024 && !collapsed) {
               setSidebarCollapsed(true);

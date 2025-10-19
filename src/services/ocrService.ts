@@ -1,4 +1,5 @@
 import { createWorker, Worker } from 'tesseract.js';
+import { pdfConverter } from './pdfConverter';
 
 export interface OCRResult {
   text: string;
@@ -29,89 +30,24 @@ class OCRService {
 
   async initialize(): Promise<void> {
     if (!this.worker) {
-      this.worker = await createWorker('fra+eng');
-    }
-  }
-
-  // Convertir PDF en image pour l'OCR
-  private async convertPdfToImage(file: File): Promise<File> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const arrayBuffer = e.target?.result as ArrayBuffer;
-          
-          // Créer un objet URL pour le PDF
-          const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-          const url = URL.createObjectURL(blob);
-          
-          // Créer un iframe caché pour rendre le PDF
-          const iframe = document.createElement('iframe');
-          iframe.style.display = 'none';
-          iframe.src = url;
-          document.body.appendChild(iframe);
-          
-          // Attendre le chargement et convertir en image
-          iframe.onload = () => {
-            try {
-              // Créer un canvas pour capturer le PDF
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              // Définir une taille standard
-              canvas.width = 1200;
-              canvas.height = 1600;
-              
-              // Remplir le canvas avec du blanc
-              if (ctx) {
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Ajouter du texte indiquant que c'est un PDF converti
-                ctx.fillStyle = 'black';
-                ctx.font = '20px Arial';
-                ctx.fillText('PDF converti - Veuillez utiliser une image pour de meilleurs résultats', 50, 50);
-              }
-              
-              // Convertir le canvas en blob
-              canvas.toBlob((blob) => {
-                if (blob) {
-                  const imageFile = new File([blob], file.name.replace('.pdf', '.png'), {
-                    type: 'image/png',
-                    lastModified: Date.now()
-                  });
-                  
-                  // Nettoyer
-                  document.body.removeChild(iframe);
-                  URL.revokeObjectURL(url);
-                  
-                  resolve(imageFile);
-                } else {
-                  reject(new Error('Impossible de convertir le PDF en image'));
-                }
-              }, 'image/png');
-              
-            } catch (error) {
-              document.body.removeChild(iframe);
-              URL.revokeObjectURL(url);
-              reject(error);
-            }
-          };
-          
-          iframe.onerror = () => {
-            document.body.removeChild(iframe);
-            URL.revokeObjectURL(url);
-            reject(new Error('Erreur lors du chargement du PDF'));
-          };
-          
-        } catch (error) {
-          reject(error);
+      this.worker = await createWorker('fra+eng', 1, {
+        // Options pour améliorer la précision
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+          }
         }
-      };
+      });
       
-      reader.onerror = () => reject(new Error('Erreur lors de la lecture du fichier PDF'));
-      reader.readAsArrayBuffer(file);
-    });
+      // Paramètres Tesseract optimisés pour documents PDF/texte structuré
+      await this.worker.setParameters({
+        preserve_interword_spaces: '1', // Préserver les espaces entre mots
+        // Whitelist étendue pour le français avec accents et symboles financiers
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸàâäçéèêëîïôöùûüÿ0123456789.,;:!?€$%()[]{}/-+*= \n\t',
+      });
+      
+      console.log('✅ Tesseract initialisé avec paramètres optimisés pour français');
+    }
   }
 
   async processImage(file: File): Promise<OCRResult> {
@@ -132,16 +68,24 @@ class OCRService {
     }
 
     try {
-      let fileToProcess = file;
-      
-      // Si c'est un PDF, le convertir en image d'abord
+      // Si c'est un PDF, utiliser l'extraction native de texte (plus précis que OCR)
       if (file.type === 'application/pdf') {
-        console.log('🔄 Conversion PDF en image pour OCR...');
-        fileToProcess = await this.convertPdfToImage(file);
-        console.log('✅ PDF converti en image');
+        console.log('📄 PDF détecté - Utilisation de l\'extraction native de texte...');
+        const pdfResult = await pdfConverter.extractTextFromPDF(file);
+        
+        console.log(`✅ Texte extrait du PDF: ${pdfResult.text.length} caractères, confiance: ${pdfResult.confidence}%`);
+        
+        // Retourner au format OCRResult
+        return {
+          text: pdfResult.text,
+          confidence: pdfResult.confidence,
+          lines: pdfResult.text.split('\n'),
+          words: [] // Pas de détection de mots pour l'extraction native
+        };
       }
 
-      const { data } = await this.worker!.recognize(fileToProcess);
+      // Pour les images, utiliser Tesseract OCR
+      const { data } = await this.worker!.recognize(file);
       
       if (!data.text || data.text.trim().length === 0) {
         throw new Error('Aucun texte détecté dans l\'image. Vérifiez la qualité de l\'image.');

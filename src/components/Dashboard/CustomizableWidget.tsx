@@ -6,9 +6,7 @@ import {
   Eye, 
   EyeOff, 
   Maximize2, 
-  Minimize2, 
-  X,
-  MoreVertical 
+  X
 } from 'lucide-react';
 import { useWidgets, Widget, WidgetSize } from '../../contexts/WidgetContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -51,7 +49,7 @@ const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
     setIsDragging(true);
   };
 
-  const handleDragEnd = (event: any, info: PanInfo) => {
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     setIsDragging(false);
     
     // Calculer la nouvelle position basée sur le déplacement

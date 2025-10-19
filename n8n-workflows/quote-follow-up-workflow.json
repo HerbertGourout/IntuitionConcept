@@ -1,0 +1,406 @@
+{
+  "name": "Relances Devis Automatiques - IntuitionConcept",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-cron",
+      "name": "Déclencheur Quotidien",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Exécution tous les jours à 9h"
+    },
+    {
+      "parameters": {
+        "url": "={{$env.VITE_API_BASE_URL}}/api/quotes/follow-up/pending",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "get-quotes",
+      "name": "Récupérer Devis à Relancer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "1",
+          "name": "IntuitionConcept API"
+        }
+      },
+      "notes": "Appel API pour récupérer les devis nécessitant une relance"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.quotes.length}}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "check-quotes",
+      "name": "Vérifier si Devis",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notes": "Continuer seulement s'il y a des devis"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "quotes",
+        "options": {}
+      },
+      "id": "split-quotes",
+      "name": "Séparer Devis",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [850, 200],
+      "notes": "Traiter chaque devis individuellement"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Générer le contenu de l'email de relance\nconst quote = $input.item.json;\nconst followUpNumber = (quote.followUpCount || 0) + 1;\n\n// Calculer jours restants avant expiration\nlet daysLeft = null;\nif (quote.expiresAt) {\n  const expiry = new Date(quote.expiresAt);\n  const now = new Date();\n  daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));\n}\n\n// Définir le sujet selon le numéro de relance\nlet subject, urgency;\nif (followUpNumber === 1) {\n  subject = `Rappel : Votre devis pour ${quote.projectName}`;\n  urgency = 'Nous espérons que vous avez eu le temps de consulter notre proposition.';\n} else if (followUpNumber === 2) {\n  subject = `2ème rappel : Devis ${quote.projectName} - Besoin d'informations ?`;\n  urgency = 'Nous souhaitons nous assurer que vous avez toutes les informations nécessaires.';\n} else {\n  subject = `Dernière chance : Devis ${quote.projectName}`;\n  urgency = 'C\\'est votre dernière opportunité de bénéficier de cette offre.';\n}\n\n// Texte d'expiration\nconst expiryText = daysLeft \n  ? `<p><strong>⚠️ Attention :</strong> Ce devis expire dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}.</p>`\n  : '';\n\n// Générer le corps HTML\nconst body = `\n<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }\n        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }\n        .quote-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }\n        .amount { font-size: 32px; font-weight: bold; color: #667eea; }\n        .cta-button { display: inline-block; background: #667eea; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }\n        .urgency { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }\n        .footer { text-align: center; color: #666; font-size: 12px; margin-top: 30px; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h1>🏗️ IntuitionConcept</h1>\n            <p>Votre partenaire BTP de confiance</p>\n        </div>\n        \n        <div class=\"content\">\n            <h2>Bonjour ${quote.clientName},</h2>\n            \n            <p>${urgency}</p>\n            \n            <div class=\"quote-details\">\n                <h3>📋 Détails du devis</h3>\n                <p><strong>Projet :</strong> ${quote.projectName}</p>\n                <p><strong>Montant :</strong> <span class=\"amount\">${quote.amount.toLocaleString('fr-FR')} FCFA</span></p>\n                ${quote.sentAt ? `<p><strong>Envoyé le :</strong> ${new Date(quote.sentAt).toLocaleDateString('fr-FR')}</p>` : ''}\n                ${quote.viewedAt ? `<p>✅ <em>Vous avez consulté ce devis le ${new Date(quote.viewedAt).toLocaleDateString('fr-FR')}</em></p>` : ''}\n            </div>\n            \n            ${expiryText}\n            \n            <div class=\"urgency\">\n                <strong>💡 Besoin d'aide ?</strong><br>\n                Notre équipe est à votre disposition pour répondre à toutes vos questions :\n                <ul>\n                    <li>📞 Appelez-nous au +221 XX XXX XX XX</li>\n                    <li>📧 Répondez à cet email</li>\n                    <li>💬 Contactez-nous via WhatsApp</li>\n                </ul>\n            </div>\n            \n            <div style=\"text-align: center;\">\n                <a href=\"https://intuitionconcept.com/quotes/${quote.id}\" class=\"cta-button\">\n                    📄 Consulter mon devis\n                </a>\n            </div>\n            \n            <p style=\"margin-top: 30px;\">\n                Nous serions ravis de collaborer avec vous sur ce projet !\n            </p>\n            \n            <p>\n                Cordialement,<br>\n                <strong>L'équipe IntuitionConcept</strong>\n            </p>\n        </div>\n        \n        <div class=\"footer\">\n            <p>IntuitionConcept - Plateforme de Gestion BTP Intelligente</p>\n            <p>Dakar, Sénégal | www.intuitionconcept.com</p>\n        </div>\n    </div>\n</body>\n</html>\n`;\n\nreturn {\n  quoteId: quote.id,\n  clientEmail: quote.clientEmail,\n  clientName: quote.clientName,\n  subject: subject,\n  body: body,\n  followUpNumber: followUpNumber,\n  shouldSendSMS: followUpNumber >= 3 || (daysLeft && daysLeft <= 2)\n};"
+      },
+      "id": "generate-email",
+      "name": "Générer Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 200],
+      "notes": "Génère le contenu personnalisé de l'email"
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@intuitionconcept.com",
+        "toEmail": "={{$json.clientEmail}}",
+        "subject": "={{$json.subject}}",
+        "emailType": "html",
+        "message": "={{$json.body}}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Envoyer Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 200],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "SendGrid SMTP"
+        }
+      },
+      "notes": "Envoi de l'email via SMTP"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.shouldSendSMS}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-sms",
+      "name": "Vérifier SMS",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1450, 200],
+      "notes": "Envoyer SMS seulement si urgent"
+    },
+    {
+      "parameters": {
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{$env.TWILIO_ACCOUNT_SID}}/Messages.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "To",
+              "value": "={{$json.clientPhone}}"
+            },
+            {
+              "name": "From",
+              "value": "={{$env.TWILIO_PHONE_NUMBER}}"
+            },
+            {
+              "name": "Body",
+              "value": "⚠️ URGENT ${$json.clientName} ! Votre devis \"${$json.projectName}\" expire bientôt. Consultez-le : https://intuitionconcept.com/quotes/${$json.quoteId}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-sms",
+      "name": "Envoyer SMS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1650, 100],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "3",
+          "name": "Twilio API"
+        }
+      },
+      "notes": "Envoi SMS via Twilio"
+    },
+    {
+      "parameters": {
+        "url": "={{$env.VITE_API_BASE_URL}}/api/quotes/{{$json.quoteId}}/mark-followed-up",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "followUpNumber",
+              "value": "={{$json.followUpNumber}}"
+            },
+            {
+              "name": "emailSent",
+              "value": true
+            },
+            {
+              "name": "smsSent",
+              "value": "={{$json.shouldSendSMS}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-quote",
+      "name": "Mettre à Jour Devis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1850, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "1",
+          "name": "IntuitionConcept API"
+        }
+      },
+      "notes": "Marquer le devis comme relancé"
+    },
+    {
+      "parameters": {},
+      "id": "loop-back",
+      "name": "Retour Boucle",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2050, 200],
+      "notes": "Retour pour traiter le devis suivant"
+    },
+    {
+      "parameters": {
+        "url": "={{$env.VITE_API_BASE_URL}}/api/automation/log",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "workflowName",
+              "value": "quote-follow-up"
+            },
+            {
+              "name": "status",
+              "value": "completed"
+            },
+            {
+              "name": "quotesProcessed",
+              "value": "={{$json.quotes.length}}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{new Date().toISOString()}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-completion",
+      "name": "Logger Exécution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "1",
+          "name": "IntuitionConcept API"
+        }
+      },
+      "notes": "Enregistrer les statistiques d'exécution"
+    }
+  ],
+  "connections": {
+    "Déclencheur Quotidien": {
+      "main": [
+        [
+          {
+            "node": "Récupérer Devis à Relancer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupérer Devis à Relancer": {
+      "main": [
+        [
+          {
+            "node": "Vérifier si Devis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier si Devis": {
+      "main": [
+        [
+          {
+            "node": "Séparer Devis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Logger Exécution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Séparer Devis": {
+      "main": [
+        [
+          {
+            "node": "Générer Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Générer Email": {
+      "main": [
+        [
+          {
+            "node": "Envoyer Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envoyer Email": {
+      "main": [
+        [
+          {
+            "node": "Vérifier SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier SMS": {
+      "main": [
+        [
+          {
+            "node": "Envoyer SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mettre à Jour Devis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envoyer SMS": {
+      "main": [
+        [
+          {
+            "node": "Mettre à Jour Devis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mettre à Jour Devis": {
+      "main": [
+        [
+          {
+            "node": "Retour Boucle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retour Boucle": {
+      "main": [
+        [
+          {
+            "node": "Séparer Devis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "quote-follow-up-workflow",
+  "meta": {
+    "instanceId": "intuitionconcept-production"
+  },
+  "tags": [
+    {
+      "createdAt": "2025-01-18T00:00:00.000Z",
+      "updatedAt": "2025-01-18T00:00:00.000Z",
+      "id": "1",
+      "name": "BTP"
+    },
+    {
+      "createdAt": "2025-01-18T00:00:00.000Z",
+      "updatedAt": "2025-01-18T00:00:00.000Z",
+      "id": "2",
+      "name": "Automatisation"
+    },
+    {
+      "createdAt": "2025-01-18T00:00:00.000Z",
+      "updatedAt": "2025-01-18T00:00:00.000Z",
+      "id": "3",
+      "name": "Devis"
+    }
+  ]
+}

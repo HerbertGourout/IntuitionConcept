@@ -1,0 +1,232 @@
+{
+  "name": "Facturation Automatique",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 18 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger - 18h quotidien",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.VITE_API_BASE_URL}}/api/auto-invoice/projects-needing-invoice",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "API - Récupérer Projets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.VITE_API_BASE_URL}}/api/auto-invoice/generate",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "projectId",
+              "value": "={{$json.id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "API - Générer Facture",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const invoice = $input.item.json;\n\nreturn {\n  json: {\n    invoiceNumber: invoice.invoiceNumber,\n    clientName: invoice.clientName,\n    totalAmount: invoice.totalAmount,\n    pdfHtml: invoice.pdfHtml\n  }\n};"
+      },
+      "name": "Code - Préparer PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "factures@intuitionconcept.com",
+        "toEmail": "={{$json.clientEmail}}",
+        "subject": "Facture {{$json.invoiceNumber}} - {{$json.projectName}}",
+        "emailType": "html",
+        "message": "={{$json.emailBody}}",
+        "attachments": "pdfHtml",
+        "options": {
+          "ccEmail": "comptabilite@intuitionconcept.com"
+        }
+      },
+      "name": "Email - Envoyer Facture",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SendGrid SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{$env.VITE_API_BASE_URL}}/api/invoices/{{$json.invoiceId}}",
+        "method": "PATCH",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "sent"
+            },
+            {
+              "name": "sentAt",
+              "value": "={{new Date().toISOString()}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Firebase - Mettre à Jour Statut",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "amount": 7,
+        "unit": "days"
+      },
+      "name": "Wait 7 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1650, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "factures@intuitionconcept.com",
+        "toEmail": "={{$json.clientEmail}}",
+        "subject": "Rappel - Facture {{$json.invoiceNumber}}",
+        "emailType": "html",
+        "message": "<p>Bonjour {{$json.clientName}},</p><p>Nous vous rappelons que la facture {{$json.invoiceNumber}} d'un montant de {{$json.totalAmount}} FCFA est en attente de paiement.</p><p>Échéance : {{$json.dueDate}}</p>",
+        "options": {}
+      },
+      "name": "Email - Relance J+7",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1850, 200],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SendGrid SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "collection": "audit_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "action",
+              "fieldValue": "invoice_workflow_executed"
+            },
+            {
+              "fieldId": "invoiceId",
+              "fieldValue": "={{$json.invoiceId}}"
+            },
+            {
+              "fieldId": "timestamp",
+              "fieldValue": "={{new Date().toISOString()}}"
+            }
+          ]
+        }
+      },
+      "name": "Logger - Enregistrer Exécution",
+      "type": "n8n-nodes-base.firestore",
+      "typeVersion": 1,
+      "position": [1650, 400],
+      "credentials": {
+        "firestoreApi": {
+          "id": "1",
+          "name": "Firebase Firestore"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - 18h quotidien": {
+      "main": [[{"node": "API - Récupérer Projets", "type": "main", "index": 0}]]
+    },
+    "API - Récupérer Projets": {
+      "main": [[{"node": "Split In Batches", "type": "main", "index": 0}]]
+    },
+    "Split In Batches": {
+      "main": [[{"node": "API - Générer Facture", "type": "main", "index": 0}]]
+    },
+    "API - Générer Facture": {
+      "main": [[{"node": "Code - Préparer PDF", "type": "main", "index": 0}]]
+    },
+    "Code - Préparer PDF": {
+      "main": [[{"node": "Email - Envoyer Facture", "type": "main", "index": 0}]]
+    },
+    "Email - Envoyer Facture": {
+      "main": [[{"node": "Firebase - Mettre à Jour Statut", "type": "main", "index": 0}]]
+    },
+    "Firebase - Mettre à Jour Statut": {
+      "main": [
+        [
+          {"node": "Wait 7 Days", "type": "main", "index": 0},
+          {"node": "Logger - Enregistrer Exécution", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Wait 7 Days": {
+      "main": [[{"node": "Email - Relance J+7", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Facturation",
+      "id": "1"
+    },
+    {
+      "name": "Automatisation",
+      "id": "2"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1"
+}

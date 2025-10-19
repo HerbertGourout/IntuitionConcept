@@ -84,27 +84,33 @@ class IntelligentOCRService {
         suggestions,
         aiAnalysis
       };
-    } catch {
+    } catch (error) {
       // Erreur traitement intelligent OCR
+      console.error('❌ Erreur traitement intelligent OCR:', error);
       
       // Fallback vers OCR basique
-      const ocrResult = await ocrService.processImage(file);
-      const extractedData = ocrService.extractData(ocrResult.text);
-      
-      return {
-        ...extractedData,
-        text: ocrResult.text,
-        documentType: 'unknown',
-        confidence: ocrResult.confidence,
-        structuredData: {},
-        suggestions: { autoFillFields: {} },
-        aiAnalysis: {
-          summary: 'Analyse IA non disponible',
-          keyInsights: [],
-          potentialIssues: [],
-          recommendations: []
-        }
-      };
+      try {
+        const ocrResult = await ocrService.processImage(file);
+        const extractedData = ocrService.extractData(ocrResult.text);
+        
+        return {
+          ...extractedData,
+          text: ocrResult.text,
+          documentType: 'unknown',
+          confidence: ocrResult.confidence,
+          structuredData: {},
+          suggestions: { autoFillFields: {} },
+          aiAnalysis: {
+            summary: 'Analyse IA non disponible - Mode basique',
+            keyInsights: [],
+            potentialIssues: [],
+            recommendations: []
+          }
+        };
+      } catch (fallbackError) {
+        console.error('❌ Erreur fallback OCR:', fallbackError);
+        throw new Error(`Erreur lors du traitement OCR: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      }
     }
   }
 
@@ -196,13 +202,16 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
 
     // Extraction du fournisseur
     result.supplier = this.extractSupplierInfo(lines);
+    console.log('📊 Fournisseur extrait:', result.supplier);
 
     // Extraction du client
     result.client = this.extractClientInfo(lines);
+    console.log('📊 Client extrait:', result.client);
 
     // Extraction des articles selon le type de document
     if (['invoice', 'quote', 'delivery_note'].includes(documentType)) {
       result.items = this.extractItems(text);
+      console.log('📊 Articles extraits:', result.items?.length || 0);
     }
 
     // Extraction des taxes
@@ -213,6 +222,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
       result.payment = this.extractPaymentInfo(text);
     }
 
+    console.log('📊 Données structurées complètes:', result);
     return result;
   }
 
@@ -220,25 +230,56 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
   private extractSupplierInfo(lines: string[]): IntelligentOCRResult['structuredData']['supplier'] {
     const supplierPartial: { name?: string; address?: string; phone?: string; email?: string; siret?: string } = {};
 
-    // Nom (généralement dans les premières lignes)
-    if (lines.length > 0 && lines[0].trim()) {
-      supplierPartial.name = lines[0].trim();
+    // Trouver le nom du fournisseur (première ligne non vide significative)
+    for (let i = 0; i < Math.min(10, lines.length); i++) {
+      const line = lines[i].trim();
+      // Ignorer les lignes trop courtes ou qui sont clairement des labels
+      if (line.length > 3 && 
+          !line.match(/^(devis|facture|invoice|quote|date|n°|numero)/i) &&
+          !line.match(/^[\d\s/\-.]+$/) && // Ignorer les dates/numéros seuls
+          !supplierPartial.name) {
+        supplierPartial.name = line;
+        break;
+      }
     }
 
-    // Adresse (lignes suivantes)
-    const addressLines = lines.slice(1, 4).filter(line => 
-      !line.match(/^(tel|phone|email|siret)/i) && 
-      line.length > 5
-    );
+    // Adresse (chercher après le nom, avant les contacts)
+    const addressLines: string[] = [];
+    let foundName = false;
+    for (const line of lines) {
+      if (supplierPartial.name && line.includes(supplierPartial.name)) {
+        foundName = true;
+        continue;
+      }
+      if (foundName && addressLines.length < 3) {
+        // Arrêter si on trouve un contact ou un label de section
+        if (line.match(/^(tel|phone|email|siret|client|facture|devis)/i)) break;
+        if (line.match(/([+\d\s.-]{10,})/)) break; // Numéro de téléphone
+        if (line.match(/@/)) break; // Email
+        if (line.length > 10 && line.length < 100) {
+          addressLines.push(line);
+        }
+      }
+    }
     if (addressLines.length > 0) {
       supplierPartial.address = addressLines.join(', ');
     }
 
-    // Téléphone
-    const phoneMatch = lines.find(line => line.match(/(?:tel|phone)[\s:]*([+\d\s.-]+)/i));
-    if (phoneMatch) {
-      const match = phoneMatch.match(/([+\d\s.-]+)/);
-      if (match) supplierPartial.phone = match[1].trim();
+    // Téléphone - patterns améliorés
+    const phonePatterns = [
+      /(?:tel|phone|tél|telephone)[\s:]*([+\d\s().-]{10,})/i,
+      /([+]\d{1,3}[\s.-]?\d{2,3}[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2})/,
+      /(\d{2,3}[\s.-]?\d{2,3}[\s.-]?\d{2}[\s.-]?\d{2}[\s.-]?\d{2})/
+    ];
+    for (const pattern of phonePatterns) {
+      const phoneMatch = lines.find(line => line.match(pattern));
+      if (phoneMatch) {
+        const match = phoneMatch.match(pattern);
+        if (match) {
+          supplierPartial.phone = match[1].trim();
+          break;
+        }
+      }
     }
 
     // Email
@@ -248,10 +289,10 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
       if (match) supplierPartial.email = match[1];
     }
 
-    // SIRET
-    const siretMatch = lines.find(line => line.match(/siret[\s:]*(\d{14})/i));
+    // SIRET/SIREN
+    const siretMatch = lines.find(line => line.match(/(?:siret|siren)[\s:]*(\d{9,14})/i));
     if (siretMatch) {
-      const match = siretMatch.match(/(\d{14})/);
+      const match = siretMatch.match(/(\d{9,14})/);
       if (match) supplierPartial.siret = match[1];
     }
     

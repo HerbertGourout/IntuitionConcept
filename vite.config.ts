@@ -6,8 +6,18 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      target: 'esnext', // Support pour top-level await (requis par pdfjs-dist)
+    },
     optimizeDeps: {
       exclude: ['lucide-react'],
+      esbuildOptions: {
+        target: 'esnext', // Support pour top-level await dans les dépendances
+      },
+      include: ['pdfjs-dist'], // Inclure pdfjs-dist pour optimisation
+    },
+    worker: {
+      format: 'es', // Format ES modules pour les workers
     },
     server: {
       proxy: {

@@ -11,6 +11,7 @@ import {
   UserOutlined
 } from '@ant-design/icons';
 import { intelligentOcrService, IntelligentOCRResult } from '../../services/ai/intelligentOcrService';
+import { OCRStrategyResult } from '../../services/smartOcrStrategy';
 import PageContainer from '../Layout/PageContainer';
 import SectionHeader from '../UI/SectionHeader';
 
@@ -20,42 +21,43 @@ const IntelligentOCRScanner: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<IntelligentOCRResult | null>(null);
   const [rawText, setRawText] = useState('');
+  const [strategyResult, setStrategyResult] = useState<OCRStrategyResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (file: File) => {
     setLoading(true);
     setResult(null);
     setRawText('');
+    setStrategyResult(null);
 
     try {
+      console.log('🎯 Démarrage analyse OCR...');
+      
+      // Traiter le document
       const ocrResult = await intelligentOcrService.processDocumentIntelligently(file);
       setResult(ocrResult);
+      setRawText(ocrResult.text);
       
-      // Simuler le texte brut pour la démo
-      setRawText(`ENTREPRISE CONSTRUCTION SARL
-123 Avenue de la Paix, Dakar
-Tel: +221 33 123 45 67
-SIRET: 12345678901234
-
-FACTURE N° FAC-2024-001
-
-Client: VILLA MODERNE SARL
-Adresse: 456 Rue des Palmiers, Dakar
-
-Date: 15/03/2024
-Échéance: 15/04/2024
-
-DÉTAIL:
-Béton dosé 350kg/m³     10 m³    85,000    850,000
-Parpaings 20x20x40      500 u    400       200,000
-Acier HA 12mm           2,000 kg  650      1,300,000
-
-Sous-total HT:                            2,350,000
-TVA 18%:                                    423,000
-TOTAL TTC:                               2,773,000 FCFA
-
-Conditions: Net à 30 jours
-Mode de paiement: Virement bancaire`);
+      // Créer un résultat de stratégie simulé pour l'affichage
+      const mockStrategyResult: OCRStrategyResult = {
+        text: ocrResult.text,
+        confidence: ocrResult.confidence,
+        provider: file.type === 'application/pdf' ? 'native_pdf' : 'tesseract',
+        cost: 0,
+        processingTime: 500,
+        quality: 'high',
+        recommendation: file.type === 'application/pdf' 
+          ? '✅ PDF natif détecté - Extraction gratuite avec haute confiance'
+          : '✅ Image traitée avec Tesseract gratuit'
+      };
+      
+      setStrategyResult(mockStrategyResult);
+      
+      console.log('✅ Analyse terminée:', {
+        provider: mockStrategyResult.provider,
+        confidence: ocrResult.confidence,
+        textLength: ocrResult.text.length
+      });
     } catch (error) {
       console.error('Erreur OCR intelligent:', error);
     } finally {
@@ -158,6 +160,55 @@ Mode de paiement: Virement bancaire`);
         </Card>
       )}
 
+      {/* Informations de stratégie OCR */}
+      {strategyResult && (
+        <Card className="glass-card" title="📊 Stratégie OCR Utilisée">
+          <Row gutter={16}>
+            <Col span={6}>
+              <Statistic
+                title="Provider"
+                value={strategyResult.provider}
+                prefix={strategyResult.provider === 'native_pdf' ? '🆓' : strategyResult.cost === 0 ? '🆓' : '💰'}
+              />
+            </Col>
+            <Col span={6}>
+              <Statistic
+                title="Confiance"
+                value={strategyResult.confidence}
+                suffix="%"
+                valueStyle={{ color: strategyResult.confidence >= 85 ? '#3f8600' : '#cf1322' }}
+              />
+            </Col>
+            <Col span={6}>
+              <Statistic
+                title="Coût"
+                value={strategyResult.cost}
+                suffix="FCFA"
+                precision={2}
+                valueStyle={{ color: strategyResult.cost === 0 ? '#3f8600' : '#1890ff' }}
+              />
+            </Col>
+            <Col span={6}>
+              <Statistic
+                title="Temps"
+                value={strategyResult.processingTime}
+                suffix="ms"
+              />
+            </Col>
+          </Row>
+          
+          {strategyResult.recommendation && (
+            <Alert
+              message="Recommandation"
+              description={strategyResult.recommendation}
+              type="info"
+              showIcon
+              className="mt-4"
+            />
+          )}
+        </Card>
+      )}
+
       {result && (
         <Card className="glass-card">
           <Tabs defaultActiveKey="overview">
@@ -220,16 +271,24 @@ Mode de paiement: Virement bancaire`);
                   {result.structuredData.supplier && (
                     <Col span={12}>
                       <Card size="small" title={<><UserOutlined /> Fournisseur</>} className="glass-card">
-                        <Space direction="vertical" size="small">
-                          <div><strong>{result.structuredData.supplier.name}</strong></div>
-                          {result.structuredData.supplier.address && (
-                            <div className="text-xs">{result.structuredData.supplier.address}</div>
-                          )}
-                          {result.structuredData.supplier.phone && (
-                            <div className="text-xs">📞 {result.structuredData.supplier.phone}</div>
-                          )}
-                          {result.structuredData.supplier.email && (
-                            <div className="text-xs">✉️ {result.structuredData.supplier.email}</div>
+                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                          {typeof result.structuredData.supplier === 'string' ? (
+                            <div><strong>{result.structuredData.supplier}</strong></div>
+                          ) : (
+                            <>
+                              {result.structuredData.supplier.name && (
+                                <div><strong>{result.structuredData.supplier.name}</strong></div>
+                              )}
+                              {result.structuredData.supplier.address && (
+                                <div className="text-xs text-gray-600">{result.structuredData.supplier.address}</div>
+                              )}
+                              {result.structuredData.supplier.phone && (
+                                <div className="text-xs text-gray-600">📞 {result.structuredData.supplier.phone}</div>
+                              )}
+                              {result.structuredData.supplier.email && (
+                                <div className="text-xs text-gray-600">✉️ {result.structuredData.supplier.email}</div>
+                              )}
+                            </>
                           )}
                         </Space>
                       </Card>
@@ -239,10 +298,20 @@ Mode de paiement: Virement bancaire`);
                   {result.structuredData.client && (
                     <Col span={12}>
                       <Card size="small" title={<><UserOutlined /> Client</>} className="glass-card">
-                        <div><strong>{result.structuredData.client.name}</strong></div>
-                        {result.structuredData.client.address && (
-                          <div className="text-xs">{result.structuredData.client.address}</div>
-                        )}
+                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                          {typeof result.structuredData.client === 'string' ? (
+                            <div><strong>{result.structuredData.client}</strong></div>
+                          ) : (
+                            <>
+                              {result.structuredData.client.name && (
+                                <div><strong>{result.structuredData.client.name}</strong></div>
+                              )}
+                              {result.structuredData.client.address && (
+                                <div className="text-xs text-gray-600">{result.structuredData.client.address}</div>
+                              )}
+                            </>
+                          )}
+                        </Space>
                       </Card>
                     </Col>
                   )}
@@ -374,15 +443,41 @@ Mode de paiement: Virement bancaire`);
               tab={
                 <span>
                   <FileTextOutlined />
-                  Texte brut
+                  Texte extrait ({rawText.length} caractères)
                 </span>
               } 
               key="raw"
             >
-              <Card size="small" className="glass-card">
-                <pre className="whitespace-pre-wrap text-xs max-h-[400px] overflow-auto bg-gray-100 p-3 rounded">
-                  {rawText}
-                </pre>
+              <Card 
+                size="small" 
+                className="glass-card"
+                title={
+                  <Space>
+                    <FileTextOutlined />
+                    <span>Texte extrait du document</span>
+                    <Tag color="blue">{rawText.split('\n').filter(l => l.trim()).length} lignes</Tag>
+                  </Space>
+                }
+              >
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed max-h-[600px] overflow-auto">
+                    {rawText}
+                  </pre>
+                </div>
+                
+                <div className="mt-4 flex justify-end">
+                  <Space>
+                    <Button 
+                      icon={<FileTextOutlined />}
+                      onClick={() => {
+                        navigator.clipboard.writeText(rawText);
+                        alert('Texte copié dans le presse-papiers !');
+                      }}
+                    >
+                      Copier le texte
+                    </Button>
+                  </Space>
+                </div>
               </Card>
             </TabPane>
           </Tabs>

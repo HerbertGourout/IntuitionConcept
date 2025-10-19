@@ -1,10 +1,7 @@
 // Widget de monitoring IA simplifié
 import React from 'react';
 import { Card, Badge, Statistic, Row, Col, Alert } from 'antd';
-import { 
-  CheckCircleOutlined, 
-  ApiOutlined
-} from '@ant-design/icons';
+import { ApiOutlined } from '@ant-design/icons';
 
 export const HybridAIMonitoringWidget = () => {
   // Données simulées pour éviter les erreurs

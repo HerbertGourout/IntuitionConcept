@@ -15,7 +15,8 @@ const defaultExpense: Omit<FinancialRecord, 'id'> = {
   description: '',
   date: new Date().toISOString().slice(0, 10),
   projectId: '',
-  approved: false
+  approved: false,
+  status: 'planned'
 };
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmit, onCancel, projectId }) => {
@@ -28,7 +29,8 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
       amount: initialValues.amount,
       description: initialValues.description,
       date: initialValues.date,
-      approved: initialValues.approved
+      approved: initialValues.approved,
+      status: initialValues.status
     } : {})
   });
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
     try {
       await onSubmit(form);
     } catch (error) {
+      console.error('Erreur lors de l\'enregistrement de la dépense:', error);
       setError('Erreur lors de l\'enregistrement. Veuillez réessayer.');
     }
   };

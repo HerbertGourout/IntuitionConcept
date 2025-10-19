@@ -8,7 +8,6 @@ import {
   Building,
   Crown,
   AlertCircle,
-  CheckCircle,
   BarChart3,
   PieChart,
   Target
@@ -57,10 +56,26 @@ interface CostStructure {
   };
 }
 
+interface MonthlyResult {
+  month: number;
+  customers: {
+    starter: number;
+    pro: number;
+    enterprise: number;
+  };
+  totalCustomers: number;
+  newCustomers: number;
+  churnLoss: number;
+  revenue: number;
+  costs: number;
+  netProfit: number;
+  cumulativeProfit: number;
+}
+
 const BusinessModelSimulator: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<string>('conservative');
   const [timeHorizon, setTimeHorizon] = useState<number>(12); // mois
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<MonthlyResult[] | null>(null);
 
   // Prix des plans (FCFA)
   const pricing = {
@@ -128,11 +143,11 @@ const BusinessModelSimulator: React.FC = () => {
     }
   };
 
-  const calculateBusinessModel = () => {
+  const calculateBusinessModel = (): MonthlyResult[] => {
     const scenario = scenarios[selectedScenario];
-    const monthlyResults = [];
+    const monthlyResults: MonthlyResult[] = [];
     
-    let currentCustomers = { ...scenario.customers };
+    const currentCustomers = { ...scenario.customers };
     
     for (let month = 1; month <= timeHorizon; month++) {
       // Calcul des revenus
@@ -142,8 +157,8 @@ const BusinessModelSimulator: React.FC = () => {
         (currentCustomers.enterprise * pricing.enterprise);
 
       // Calcul des coûts totaux
-      const totalCosts = Object.values(costs).reduce((total, category) => {
-        return total + Object.values(category).reduce((sum, cost) => sum + cost, 0);
+      const totalCosts = Object.values(costs).reduce((total: number, category) => {
+        return total + Object.values(category as Record<string, number>).reduce((sum: number, cost: number) => sum + cost, 0);
       }, 0);
 
       // Coûts d'acquisition pour nouveaux clients
@@ -200,9 +215,9 @@ const BusinessModelSimulator: React.FC = () => {
   };
 
   const lastMonth = results?.[results.length - 1];
-  const totalRevenue = results?.reduce((sum: number, month: any) => sum + month.revenue, 0) || 0;
-  const totalCosts = results?.reduce((sum: number, month: any) => sum + month.costs, 0) || 0;
-  const totalProfit = results?.reduce((sum: number, month: any) => sum + month.netProfit, 0) || 0;
+  const totalRevenue = results?.reduce((sum: number, month: MonthlyResult) => sum + month.revenue, 0) || 0;
+  const totalCosts = results?.reduce((sum: number, month: MonthlyResult) => sum + month.costs, 0) || 0;
+  const totalProfit = results?.reduce((sum: number, month: MonthlyResult) => sum + month.netProfit, 0) || 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-6">
@@ -343,8 +358,8 @@ const BusinessModelSimulator: React.FC = () => {
               Structure des Coûts Mensuels
             </h3>
             <div className="space-y-3">
-              {Object.entries(costs).map(([category, categorycosts]) => {
-                const total = Object.values(categoryCosts).reduce((sum, cost) => sum + cost, 0);
+              {Object.entries(costs).map(([category, categoryCosts]) => {
+                const total = Object.values(categoryCosts as Record<string, number>).reduce((sum: number, cost: number) => sum + cost, 0);
                 return (
                   <div key={category} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <span className="font-medium capitalize text-gray-700 dark:text-gray-300">

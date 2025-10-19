@@ -1,0 +1,246 @@
+{
+  "name": "Communication Client Automatisée",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger - 9h quotidien",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.VITE_API_BASE_URL}}/api/projects?status=active",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "API - Récupérer Projets Actifs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.progress - $json.lastProgressUpdate}}",
+              "operation": "largerEqual",
+              "value2": 10
+            }
+          ]
+        }
+      },
+      "name": "IF - Avancement ≥ 10%",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.VITE_API_BASE_URL}}/api/projects/{{$json.id}}/photos?latest=true",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "API - Récupérer Photos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const project = $input.item.json;\nconst photos = $input.item.json.photos || [];\n\nconst message = `Nous sommes heureux de vous informer que votre projet \"${project.name}\" progresse bien !\\n\\nAvancement actuel : ${project.progress}%\\n\\nProchaine étape : ${project.nextPhase || 'À définir'}`;\n\nreturn {\n  json: {\n    projectId: project.id,\n    projectName: project.name,\n    clientName: project.clientName,\n    clientEmail: project.clientEmail,\n    clientPhone: project.clientPhone,\n    progress: project.progress,\n    message: message,\n    photos: photos,\n    updateType: 'progress'\n  }\n};"
+      },
+      "name": "Code - Générer Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "projets@intuitionconcept.com",
+        "toEmail": "={{$json.clientEmail}}",
+        "subject": "Avancement {{$json.projectName}} - {{$json.progress}}%",
+        "emailType": "html",
+        "message": "<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px;text-align:center;border-radius:10px 10px 0 0}.content{background:#f9f9f9;padding:30px;border-radius:0 0 10px 10px}.progress-bar{background:linear-gradient(90deg,#667eea {{$json.progress}}%,#e0e0e0 {{$json.progress}}%);height:30px;border-radius:15px;position:relative;margin:20px 0}.progress-text{position:absolute;width:100%;text-align:center;line-height:30px;font-weight:bold;color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.5)}.photos{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:20px 0}.photos img{width:100%;border-radius:8px}.cta-button{display:inline-block;background:#667eea;color:white;padding:15px 40px;text-decoration:none;border-radius:8px;font-weight:bold;margin:20px 0}.footer{text-align:center;color:#666;font-size:12px;margin-top:30px}</style></head><body><div class='container'><div class='header'><h1>🏗️ IntuitionConcept</h1><p>Mise à jour de votre projet</p></div><div class='content'><p>Bonjour {{$json.clientName}},</p><p>{{$json.message}}</p><div class='progress-bar'><div class='progress-text'>{{$json.progress}}% complété</div></div>{{#if $json.photos.length}}<h3>📸 Photos du chantier</h3><div class='photos'>{{#each $json.photos}}<img src='{{this}}' alt='Photo chantier'/>{{/each}}</div>{{/if}}<div style='text-align:center'><a href='https://intuitionconcept.com/projects/{{$json.projectId}}' class='cta-button'>📊 Voir le Projet</a></div><p style='margin-top:30px'>Pour toute question :<br>📞 +221 XX XXX XX XX<br>📧 contact@intuitionconcept.com</p><p>Cordialement,<br><strong>L'équipe IntuitionConcept</strong></p></div><div class='footer'><p>IntuitionConcept - Plateforme de Gestion BTP Intelligente</p><p>Dakar, Sénégal | www.intuitionconcept.com</p></div></div></body></html>",
+        "options": {}
+      },
+      "name": "Email - Envoyer Mise à Jour",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1450, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SendGrid SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.clientPhone !== undefined && $json.clientPhone !== ''}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "IF - Client a téléphone",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "fromNumber": "+221XXXXXXXXX",
+        "toNumber": "={{$json.clientPhone}}",
+        "message": "{{$json.clientName}}, votre projet \"{{$json.projectName}}\" est à {{$json.progress}}% ! Consultez les détails : https://intuitionconcept.com/projects/{{$json.projectId}}",
+        "options": {}
+      },
+      "name": "SMS - Notification",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1850, 200],
+      "credentials": {
+        "twilioApi": {
+          "id": "1",
+          "name": "Twilio"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{$env.VITE_API_BASE_URL}}/api/projects/{{$json.projectId}}",
+        "method": "PATCH",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "lastProgressUpdate",
+              "value": "={{$json.progress}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Firebase - Mettre à Jour lastProgressUpdate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1850, 400]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "collection": "audit_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "action",
+              "fieldValue": "client_communication_sent"
+            },
+            {
+              "fieldId": "projectId",
+              "fieldValue": "={{$json.projectId}}"
+            },
+            {
+              "fieldId": "updateType",
+              "fieldValue": "={{$json.updateType}}"
+            },
+            {
+              "fieldId": "timestamp",
+              "fieldValue": "={{new Date().toISOString()}}"
+            }
+          ]
+        }
+      },
+      "name": "Logger - Enregistrer Communication",
+      "type": "n8n-nodes-base.firestore",
+      "typeVersion": 1,
+      "position": [2050, 300],
+      "credentials": {
+        "firestoreApi": {
+          "id": "1",
+          "name": "Firebase Firestore"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - 9h quotidien": {
+      "main": [[{"node": "API - Récupérer Projets Actifs", "type": "main", "index": 0}]]
+    },
+    "API - Récupérer Projets Actifs": {
+      "main": [[{"node": "IF - Avancement ≥ 10%", "type": "main", "index": 0}]]
+    },
+    "IF - Avancement ≥ 10%": {
+      "main": [[{"node": "Split In Batches", "type": "main", "index": 0}]]
+    },
+    "Split In Batches": {
+      "main": [[{"node": "API - Récupérer Photos", "type": "main", "index": 0}]]
+    },
+    "API - Récupérer Photos": {
+      "main": [[{"node": "Code - Générer Message", "type": "main", "index": 0}]]
+    },
+    "Code - Générer Message": {
+      "main": [[{"node": "Email - Envoyer Mise à Jour", "type": "main", "index": 0}]]
+    },
+    "Email - Envoyer Mise à Jour": {
+      "main": [[{"node": "IF - Client a téléphone", "type": "main", "index": 0}]]
+    },
+    "IF - Client a téléphone": {
+      "main": [
+        [
+          {"node": "SMS - Notification", "type": "main", "index": 0},
+          {"node": "Firebase - Mettre à Jour lastProgressUpdate", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "SMS - Notification": {
+      "main": [[{"node": "Logger - Enregistrer Communication", "type": "main", "index": 0}]]
+    },
+    "Firebase - Mettre à Jour lastProgressUpdate": {
+      "main": [[{"node": "Logger - Enregistrer Communication", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Communication",
+      "id": "1"
+    },
+    {
+      "name": "Automatisation",
+      "id": "2"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1"
+}

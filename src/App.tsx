@@ -28,6 +28,7 @@ import CountryPricing from './pages/CountryPricing';
 import ArchitecturalPlanAnalyzer from './components/AI/ArchitecturalPlanAnalyzer';
 import SiteReports from './pages/SiteReports';
 import ProjectPlanGeneratorPage from './pages/ProjectPlanGenerator';
+import TenderResponse from './pages/TenderResponse';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
 import { useToast } from './hooks/useToast';
 import { Result } from 'antd';
@@ -297,6 +298,8 @@ const AppContent: React.FC = () => {
         return <SiteReports />;
       case 'project-plan-generator':
         return <ProjectPlanGeneratorPage />;
+      case 'tender-response':
+        return <TenderResponse />;
       default:
         return <div>Section non trouvée</div>;
     }

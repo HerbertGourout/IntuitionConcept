@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, TrendingUp, DollarSign, Users, RefreshCw, X, ChevronRight } from 'lucide-react';
 import { FinancialAnomaly, anomalyDetectionService } from '../../services/ai/anomalyDetectionService';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface AnomalyDetectionWidgetProps {
   onAnomalyClick?: (anomaly: FinancialAnomaly) => void;
@@ -48,89 +51,108 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [dismissedAnomalies, setDismissedAnomalies] = useState<Set<string>>(new Set());
+  const { currentUser } = useAuth();
   const loadAnomalies = async () => {
     setIsLoading(true);
     try {
-      // Simuler des données pour la démo
-      const mockProjects = [
-        {
-          id: 'proj_1',
-          name: 'Rénovation Villa Yaoundé',
-          budget: 5000000,
-          spent: 5750000,
-          currency: 'XAF',
-          startDate: '2024-01-15',
-          status: 'active'
-        },
-        {
-          id: 'proj_2',
-          name: 'Construction Immeuble Douala',
-          budget: 15000000,
-          spent: 14200000,
-          currency: 'XAF',
-          startDate: '2024-02-01',
-          status: 'active'
-        }
-      ];
+      if (!currentUser) {
+        setAnomalies([]);
+        return;
+      }
 
-      const mockTransactions = [
-        {
-          id: 'trans_1',
-          amount: 850000,
-          currency: 'XAF',
-          description: 'Matériaux de construction premium',
-          vendorName: 'BTP Supplies Cameroun',
-          projectId: 'proj_1',
-          date: '2024-03-15',
-          category: 'materials'
-        },
-        {
-          id: 'trans_2',
-          amount: 850000,
-          currency: 'XAF',
-          description: 'Matériaux de construction premium',
-          vendorName: 'BTP Supplies Cameroun',
-          projectId: 'proj_1',
-          date: '2024-03-15',
-          category: 'materials'
-        }
-      ];
+      // 1. Récupérer tous les projets de l'utilisateur
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('userId', '==', currentUser.uid),
+        where('status', 'in', ['active', 'in_progress'])
+      );
+      
+      const projectsSnap = await getDocs(projectsQuery);
+      const projects = projectsSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
 
-      const mockHistorical = [
-        {
-          id: 'hist_1',
-          amount: 300000,
-          currency: 'XAF',
-          description: 'Matériaux standard',
-          vendorName: 'BTP Supplies Cameroun',
-          date: '2024-01-15',
-          category: 'materials'
-        }
-      ];
+      if (projects.length === 0) {
+        setAnomalies([]);
+        setLastUpdate(new Date());
+        return;
+      }
 
+      // 2. Récupérer toutes les transactions
+      const transactionsQuery = query(
+        collection(db, 'transactions'),
+        where('userId', '==', currentUser.uid)
+      );
+      const transactionsSnap = await getDocs(transactionsQuery);
+      const transactions = transactionsSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // 3. Récupérer l'historique (transactions des 90 derniers jours)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      
+      const historicalQuery = query(
+        collection(db, 'transactions'),
+        where('userId', '==', currentUser.uid)
+      );
+      const historicalSnap = await getDocs(historicalQuery);
+      const historical = historicalSnap.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter(t => {
+          const transactionDate = t.date?.toDate ? t.date.toDate() : new Date(t.date);
+          return transactionDate >= ninetyDaysAgo;
+        });
+
+      // 4. Détecter les anomalies financières
       const detectedAnomalies = await anomalyDetectionService.detectAnomalies(
-        mockProjects,
-        mockTransactions,
-        mockHistorical
+        projects,
+        transactions,
+        historical
       );
 
-      // Filtrer les anomalies rejetées
-      const activeAnomalies = detectedAnomalies.filter(
-        anomaly => !dismissedAnomalies.has(anomaly.id)
+      // 5. Analyser chaque projet pour les anomalies de règles
+      const allAnomalies: FinancialAnomaly[] = [...detectedAnomalies];
+      for (const project of projects) {
+        const projectAnomalies = await anomalyDetectionService.analyzeProject(project.id);
+        // Convertir Anomaly en FinancialAnomaly
+        const financialAnomalies = projectAnomalies.map(a => ({
+          ...a,
+          currency: project.currency || 'XAF',
+          amount: a.impact.financial,
+          confidence: 85
+        })) as FinancialAnomaly[];
+        allAnomalies.push(...financialAnomalies);
+      }
+
+      // 6. Filtrer les anomalies rejetées et dédupliquer
+      const uniqueAnomalies = allAnomalies.filter(
+        (anomaly, index, self) => 
+          !dismissedAnomalies.has(anomaly.id || '') &&
+          index === self.findIndex(a => a.id === anomaly.id)
       );
 
-      setAnomalies(activeAnomalies);
+      setAnomalies(uniqueAnomalies);
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Erreur lors du chargement des anomalies:', error);
+      setAnomalies([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAnomalies();
-  }, [loadAnomalies]); 
+    if (currentUser) {
+      loadAnomalies();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]); 
 
   useEffect(() => {
     // Actualiser toutes les 5 minutes
@@ -138,9 +160,18 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
     return () => clearInterval(interval);
   }, [dismissedAnomalies]);
 
-  const handleDismissAnomaly = (anomalyId: string, event: React.MouseEvent) => {
+  const handleDismissAnomaly = async (anomalyId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     setDismissedAnomalies(prev => new Set([...prev, anomalyId]));
+    
+    // Ignorer l'anomalie dans Firebase
+    if (currentUser && anomalyId) {
+      try {
+        await anomalyDetectionService.ignoreAnomaly(anomalyId, currentUser.uid, 'Rejetée par l\'utilisateur');
+      } catch (error) {
+        console.error('Erreur lors du rejet de l\'anomalie:', error);
+      }
+    }
   };
 
   const formatCurrency = (amount: number, currency: string) => {

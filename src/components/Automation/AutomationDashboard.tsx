@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { automationService, WorkflowExecution } from '../../services/automationService';
 import ProgressBar from '../UI/ProgressBar';
-import { AUTOMATION_SUMMARY } from '../../config/automationWorkflows';
 
 interface AutomationStats {
   totalWorkflows: number;
@@ -118,9 +117,8 @@ export const AutomationDashboard: React.FC = () => {
           <h3 className="font-semibold text-gray-900 dark:text-white">Taux de Réussite</h3>
           <div className="mt-2">
             <ProgressBar 
-              percentage={stats.successRate} 
-              color="bg-purple-500"
-              height="h-2"
+              value={stats.successRate} 
+              tone="purple"
             />
           </div>
         </div>

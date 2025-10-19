@@ -1,7 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Upload, Camera, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { ocrService, OCRResult, ExtractedData } from '../../services/ocrService';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Upload, Camera, FileText, CheckCircle, AlertCircle, Loader2, Settings } from 'lucide-react';
+import { ExtractedData } from '../../services/ocrService';
 import { ocrEnhancer, EnhancedOCRData } from '../../services/ai/ocrEnhancer';
+import { unifiedOcrService } from '../../services/unifiedOcrService';
+import { OCRProvider } from '../../types/ocr';
+import OCRProviderSelector from './OCRProviderSelector';
 
 interface OCRScannerProps {
   isOpen: boolean;
@@ -18,13 +21,49 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
+  const [ocrResult, setOcrResult] = useState<{ text: string; confidence: number; provider: OCRProvider } | null>(null);
   const [enhancedData, setEnhancedData] = useState<EnhancedOCRData | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<OCRProvider>('auto');
+  const [googleVisionApiKey, setGoogleVisionApiKey] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Charger la configuration sauvegardée
+  useEffect(() => {
+    const savedProvider = localStorage.getItem('ocr_provider') as OCRProvider;
+    const savedApiKey = localStorage.getItem('google_vision_api_key');
+    
+    if (savedProvider) {
+      setSelectedProvider(savedProvider);
+      unifiedOcrService.configure({ provider: savedProvider });
+    }
+    
+    if (savedApiKey) {
+      setGoogleVisionApiKey(savedApiKey);
+      unifiedOcrService.configure({ apiKey: savedApiKey });
+    }
+  }, []);
+
+  // Sauvegarder la configuration
+  const handleProviderChange = (provider: OCRProvider) => {
+    setSelectedProvider(provider);
+    localStorage.setItem('ocr_provider', provider);
+    unifiedOcrService.configure({ provider });
+  };
+
+  const handleApiKeyChange = (apiKey: string) => {
+    setGoogleVisionApiKey(apiKey);
+    if (apiKey) {
+      localStorage.setItem('google_vision_api_key', apiKey);
+      unifiedOcrService.configure({ apiKey });
+    } else {
+      localStorage.removeItem('google_vision_api_key');
+    }
+  };
 
   const handleFileSelect = useCallback(async (file: File) => {
     if (!file) return;
@@ -41,16 +80,13 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
       };
       reader.readAsDataURL(file);
 
-      // Traiter avec OCR
+      // Traiter avec OCR unifié
       setProgress(25);
-      const result = await ocrService.processImage(file);
-      setProgress(75);
-
-      const data = ocrService.extractData(result.text);
-      setProgress(75);
+      const result = await unifiedOcrService.processImage(file);
+      setProgress(50);
 
       // Enrichissement IA des données OCR
-      const enhanced = await ocrEnhancer.enhanceOCRData(data, result.text);
+      const enhanced = await ocrEnhancer.enhanceOCRData(result.extractedData, result.text);
       setProgress(100);
 
       setOcrResult(result);
@@ -116,19 +152,39 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
                   <p className="text-blue-100 text-sm">Scanner et analyser vos documents avec l'IA</p>
                 </div>
               </div>
-              <button
-                onClick={handleClose}
-                className="p-2 hover:bg-white/20 rounded-xl transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                  title="Paramètres OCR"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="p-4">
       <div className="space-y-4">
+        {/* Sélecteur de provider */}
+        {showSettings && (
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <OCRProviderSelector
+              selectedProvider={selectedProvider}
+              onProviderChange={handleProviderChange}
+              googleVisionApiKey={googleVisionApiKey}
+              onApiKeyChange={handleApiKeyChange}
+            />
+          </div>
+        )}
         {/* Zone de téléchargement moderne */}
         {!isProcessing && !ocrResult && (
           <div className="relative">
@@ -358,10 +414,10 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
                 <span>Scanner un autre document</span>
               </button>
               <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-sm text-gray-600 dark:text-gray-300">
-                    Confiance OCR : {Math.round(ocrResult.confidence)}%
+                    {ocrResult.provider === 'google_vision' ? '🔍' : '🔤'} {ocrResult.provider === 'google_vision' ? 'Google Vision' : 'Tesseract'} - Confiance : {Math.round(ocrResult.confidence)}%
                   </span>
                 </div>
               </div>

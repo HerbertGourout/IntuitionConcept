@@ -1,0 +1,301 @@
+{
+  "name": "Qualification Automatique Prospects",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-qualification",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook - Nouveau Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "lead-qualification-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $input.item.json;\n\n// Critères de scoring\nconst budgetWeight = 30;\nconst timelineWeight = 20;\nconst projectTypeWeight = 20;\nconst companyWeight = 15;\nconst sourceWeight = 15;\n\nlet score = 0;\n\n// Score Budget\nif (lead.budget >= 5000000) score += budgetWeight;\nelse if (lead.budget >= 1000000) score += budgetWeight * 0.7;\nelse if (lead.budget >= 500000) score += budgetWeight * 0.4;\nelse score += budgetWeight * 0.2;\n\n// Score Timeline\nif (lead.timeline === 'urgent') score += timelineWeight;\nelse if (lead.timeline === '1-3 mois') score += timelineWeight * 0.8;\nelse if (lead.timeline === '3-6 mois') score += timelineWeight * 0.5;\nelse score += timelineWeight * 0.3;\n\n// Score Type de Projet\nconst highValueProjects = ['construction', 'renovation_complete', 'infrastructure'];\nif (highValueProjects.includes(lead.projectType)) {\n  score += projectTypeWeight;\n} else {\n  score += projectTypeWeight * 0.5;\n}\n\n// Score Entreprise\nif (lead.company) score += companyWeight;\n\n// Score Source\nconst sourceScores = {\n  'referral': 1.0,\n  'website': 0.8,\n  'social': 0.6,\n  'email': 0.5,\n  'phone': 0.7\n};\nscore += sourceWeight * (sourceScores[lead.source] || 0.5);\n\nreturn {\n  json: {\n    ...lead,\n    score: Math.min(Math.round(score), 100)\n  }\n};"
+      },
+      "name": "Code - Calculer Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.clearbit.com/v2/companies/find?domain={{$json.email.split('@')[1]}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "ignoreResponseCode": true
+        }
+      },
+      "name": "HTTP - Enrichir Données (Clearbit)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $input.item.json;\nconst enrichedData = $input.item.json.enrichedData || {};\n\nconst brief = `\n📋 BRIEF PROSPECT - ${lead.name}\n\n🎯 Score de Qualification : ${lead.score}/100\n${lead.score >= 60 ? '✅ QUALIFIÉ' : '⚠️ À QUALIFIER'}\n\n👤 INFORMATIONS CONTACT\nNom : ${lead.name}\nEmail : ${lead.email}\nTéléphone : ${lead.phone || 'Non renseigné'}\nEntreprise : ${lead.company || 'Particulier'}\n\n🏗️ PROJET\nType : ${lead.projectType}\nBudget : ${lead.budget ? lead.budget.toLocaleString('fr-FR') + ' FCFA' : 'Non renseigné'}\nTimeline : ${lead.timeline || 'Non renseigné'}\nSource : ${lead.source}\n\n${enrichedData.name ? `\n🏢 INFORMATIONS ENTREPRISE\nSecteur : ${enrichedData.category?.industry || 'N/A'}\nTaille : ${enrichedData.metrics?.employees || 'N/A'} employés\nSite web : ${enrichedData.domain || 'N/A'}\n` : ''}\n\n💡 RECOMMANDATIONS\n${lead.score >= 80 ? '🔥 PROSPECT CHAUD - Contacter sous 2h' : ''}\n${lead.score >= 60 ? '⭐ Bon prospect - Contacter sous 24h' : ''}\n${lead.score < 60 ? '📧 Envoyer email de qualification d\\'abord' : ''}\n\n${lead.budget && lead.budget >= 5000000 ? '💰 Budget élevé - Proposer RDV en personne' : ''}\n${lead.timeline === 'urgent' ? '⚡ Timeline urgente - Prioriser' : ''}\n\n📝 PROCHAINES ACTIONS\n1. ${lead.score >= 80 ? 'Appel téléphonique immédiat' : 'Email de prise de contact'}\n2. ${lead.budget ? 'Préparer devis préliminaire' : 'Qualifier le budget'}\n3. ${lead.company ? 'Rechercher projets similaires' : 'Comprendre les besoins'}\n4. Planifier RDV dans les ${lead.score >= 80 ? '48h' : '7 jours'}\n`;\n\nreturn {\n  json: {\n    ...lead,\n    brief: brief,\n    enrichedData: enrichedData\n  }\n};"
+      },
+      "name": "Code - Générer Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.score}}",
+              "operation": "largerEqual",
+              "value2": 60
+            }
+          ]
+        }
+      },
+      "name": "IF - Score ≥ 60",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "collection": "leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{$json.name}}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{$json.email}}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{$json.phone}}"
+            },
+            {
+              "fieldId": "company",
+              "fieldValue": "={{$json.company}}"
+            },
+            {
+              "fieldId": "projectType",
+              "fieldValue": "={{$json.projectType}}"
+            },
+            {
+              "fieldId": "budget",
+              "fieldValue": "={{$json.budget}}"
+            },
+            {
+              "fieldId": "timeline",
+              "fieldValue": "={{$json.timeline}}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "={{$json.source}}"
+            },
+            {
+              "fieldId": "score",
+              "fieldValue": "={{$json.score}}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "qualified"
+            },
+            {
+              "fieldId": "notes",
+              "fieldValue": "={{$json.brief}}"
+            },
+            {
+              "fieldId": "createdAt",
+              "fieldValue": "={{new Date().toISOString()}}"
+            },
+            {
+              "fieldId": "qualifiedAt",
+              "fieldValue": "={{new Date().toISOString()}}"
+            }
+          ]
+        }
+      },
+      "name": "Firebase - Sauvegarder Lead",
+      "type": "n8n-nodes-base.firestore",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "credentials": {
+        "firestoreApi": {
+          "id": "1",
+          "name": "Firebase Firestore"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $input.item.json;\n\n// Logique d'assignation\nlet assignedTo;\n\nif (lead.score >= 80) {\n  assignedTo = 'senior_rep@intuitionconcept.com';\n} else if (lead.score >= 60) {\n  // Round-robin entre commerciaux standards\n  const reps = ['rep1@intuitionconcept.com', 'rep2@intuitionconcept.com', 'rep3@intuitionconcept.com'];\n  assignedTo = reps[Math.floor(Math.random() * reps.length)];\n} else {\n  assignedTo = 'junior_rep@intuitionconcept.com';\n}\n\nreturn {\n  json: {\n    ...lead,\n    assignedTo: assignedTo\n  }\n};"
+      },
+      "name": "Code - Assigner Commercial",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "leads@intuitionconcept.com",
+        "toEmail": "={{$json.assignedTo}}",
+        "subject": "🎯 Nouveau Lead Qualifié - {{$json.name}} (Score: {{$json.score}})",
+        "emailType": "text",
+        "message": "={{$json.brief}}",
+        "options": {}
+      },
+      "name": "Email - Notifier Commercial",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1650, 200],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SendGrid SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 24,
+        "unit": "hours"
+      },
+      "name": "Wait 24h",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1850, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "contact@intuitionconcept.com",
+        "toEmail": "={{$json.email}}",
+        "subject": "{{$json.name}}, parlons de votre projet {{$json.projectType}}",
+        "emailType": "html",
+        "message": "<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px;text-align:center;border-radius:10px 10px 0 0}.content{background:#f9f9f9;padding:30px;border-radius:0 0 10px 10px}.cta-button{display:inline-block;background:#667eea;color:white;padding:15px 40px;text-decoration:none;border-radius:8px;font-weight:bold;margin:20px 0}.benefits{background:white;padding:20px;border-radius:8px;margin:20px 0}.benefits li{margin:10px 0}</style></head><body><div class='container'><div class='header'><h1>🏗️ IntuitionConcept</h1><p>Concrétisons votre projet ensemble</p></div><div class='content'><h2>Bonjour {{$json.name}},</h2><p>Merci de l'intérêt que vous portez à IntuitionConcept pour votre projet de <strong>{{$json.projectType}}</strong>.</p><div class='benefits'><h3>🎯 Pourquoi choisir IntuitionConcept ?</h3><ul><li>✅ <strong>Expertise BTP</strong> : 10+ ans d'expérience</li><li>✅ <strong>Technologie IA</strong> : Devis en 1h</li><li>✅ <strong>Transparence</strong> : Suivi temps réel</li><li>✅ <strong>Prix compétitifs</strong> : Optimisation garantie</li></ul></div><div style='text-align:center'><a href='https://intuitionconcept.com/schedule?lead={{$json.id}}' class='cta-button'>📅 Planifier un appel</a></div><p>Au plaisir d'échanger avec vous,<br><strong>L'équipe IntuitionConcept</strong></p></div></div></body></html>",
+        "options": {}
+      },
+      "name": "Email - Premier Contact Lead",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2050, 200],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SendGrid SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "collection": "audit_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "action",
+              "fieldValue": "lead_qualified"
+            },
+            {
+              "fieldId": "leadId",
+              "fieldValue": "={{$json.id}}"
+            },
+            {
+              "fieldId": "score",
+              "fieldValue": "={{$json.score}}"
+            },
+            {
+              "fieldId": "assignedTo",
+              "fieldValue": "={{$json.assignedTo}}"
+            },
+            {
+              "fieldId": "timestamp",
+              "fieldValue": "={{new Date().toISOString()}}"
+            }
+          ]
+        }
+      },
+      "name": "Logger - Enregistrer Qualification",
+      "type": "n8n-nodes-base.firestore",
+      "typeVersion": 1,
+      "position": [2250, 200],
+      "credentials": {
+        "firestoreApi": {
+          "id": "1",
+          "name": "Firebase Firestore"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true, \"leadId\": \"{{$json.id}}\", \"score\": {{$json.score}}, \"status\": \"qualified\"}",
+        "options": {}
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2450, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Nouveau Lead": {
+      "main": [[{"node": "Code - Calculer Score", "type": "main", "index": 0}]]
+    },
+    "Code - Calculer Score": {
+      "main": [[{"node": "HTTP - Enrichir Données (Clearbit)", "type": "main", "index": 0}]]
+    },
+    "HTTP - Enrichir Données (Clearbit)": {
+      "main": [[{"node": "Code - Générer Brief", "type": "main", "index": 0}]]
+    },
+    "Code - Générer Brief": {
+      "main": [[{"node": "IF - Score ≥ 60", "type": "main", "index": 0}]]
+    },
+    "IF - Score ≥ 60": {
+      "main": [[{"node": "Firebase - Sauvegarder Lead", "type": "main", "index": 0}]]
+    },
+    "Firebase - Sauvegarder Lead": {
+      "main": [[{"node": "Code - Assigner Commercial", "type": "main", "index": 0}]]
+    },
+    "Code - Assigner Commercial": {
+      "main": [[{"node": "Email - Notifier Commercial", "type": "main", "index": 0}]]
+    },
+    "Email - Notifier Commercial": {
+      "main": [[{"node": "Wait 24h", "type": "main", "index": 0}]]
+    },
+    "Wait 24h": {
+      "main": [[{"node": "Email - Premier Contact Lead", "type": "main", "index": 0}]]
+    },
+    "Email - Premier Contact Lead": {
+      "main": [[{"node": "Logger - Enregistrer Qualification", "type": "main", "index": 0}]]
+    },
+    "Logger - Enregistrer Qualification": {
+      "main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Qualification",
+      "id": "1"
+    },
+    {
+      "name": "Automatisation",
+      "id": "2"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1"
+}

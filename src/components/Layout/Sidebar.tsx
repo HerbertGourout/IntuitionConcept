@@ -146,6 +146,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       description: 'Création et gestion des devis'
     },
     { 
+      id: 'tender-response', 
+      label: 'Appels d\'Offres IA', 
+      icon: FileText, 
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10',
+      description: 'Réponse automatique aux appels d\'offres',
+      badge: 'IA'
+    },
+    { 
       id: 'reports', 
       label: 'Rapports', 
       icon: BarChart3, 

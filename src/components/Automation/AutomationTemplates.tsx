@@ -259,11 +259,16 @@ export const AutomationTemplates: React.FC = () => {
       await automationService.createWorkflow({
         name: template.name,
         description: template.description,
-        trigger: template.trigger,
-        actions: template.actions,
+        trigger: {
+          ...template.trigger,
+          id: `trigger-${Date.now()}`
+        },
+        actions: template.actions.map((action, index) => ({
+          ...action,
+          id: `action-${Date.now()}-${index}`
+        })),
         isActive: false, // Créé inactif par défaut
-        createdBy: 'system',
-        tags: [template.category.toLowerCase(), 'template']
+        createdBy: 'system'
       });
 
       alert(`✅ Workflow "${template.name}" créé avec succès!\n\nVous pouvez maintenant l'activer depuis la gestion des workflows.`);

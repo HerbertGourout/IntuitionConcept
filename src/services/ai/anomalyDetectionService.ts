@@ -1,9 +1,9 @@
-import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, getDocs, getDoc, doc, query, where, orderBy, limit, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 export interface Anomaly {
   id?: string;
-  type: 'budget_overrun' | 'timeline_delay' | 'cost_spike' | 'resource_conflict' | 'quality_issue' | 'weather_impact';
+  type: 'budget_overrun' | 'timeline_delay' | 'cost_spike' | 'resource_conflict' | 'quality_issue' | 'weather_impact' | 'duplicate_transaction' | 'price_spike' | 'unusual_expense' | 'vendor_anomaly';
   severity: 'low' | 'medium' | 'high' | 'critical';
   projectId: string;
   phaseId?: string;
@@ -24,7 +24,20 @@ export interface Anomaly {
   status: 'active' | 'acknowledged' | 'resolved' | 'ignored';
   resolvedAt?: Date;
   resolvedBy?: string;
+  acknowledgedAt?: Date;
+  acknowledgedBy?: string;
+  ignoredAt?: Date;
+  ignoredBy?: string;
+  ignoreReason?: string;
+  resolution?: string;
   metadata?: Record<string, unknown>;
+}
+
+// Type étendu pour les anomalies financières avec informations supplémentaires
+export interface FinancialAnomaly extends Anomaly {
+  currency: string;
+  amount: number;
+  confidence: number;
 }
 
 export interface AnomalyRule {
@@ -280,6 +293,30 @@ class AnomalyDetectionService {
         'Adapter le planning aux conditions météorologiques',
         'Prévoir des activités alternatives en intérieur',
         'Protéger les matériaux et équipements'
+      ],
+      duplicate_transaction: [
+        'Vérifier les factures pour confirmer le doublon',
+        'Contacter le fournisseur pour clarification',
+        'Supprimer la transaction en double',
+        'Mettre en place un système de détection automatique'
+      ],
+      price_spike: [
+        'Comparer avec d\'autres fournisseurs',
+        'Vérifier la facture pour détecter des erreurs',
+        'Négocier le prix avec le fournisseur',
+        'Analyser les causes de l\'augmentation'
+      ],
+      unusual_expense: [
+        'Vérifier la légitimité de la dépense',
+        'Demander des justificatifs supplémentaires',
+        'Analyser l\'impact sur le budget global',
+        'Mettre en place des contrôles préventifs'
+      ],
+      vendor_anomaly: [
+        'Évaluer la fiabilité du fournisseur',
+        'Vérifier l\'historique des transactions',
+        'Considérer des fournisseurs alternatifs',
+        'Renforcer les contrôles sur ce fournisseur'
       ]
     };
 
@@ -305,10 +342,14 @@ class AnomalyDetectionService {
       cost_spike: `Pic de coût: ${Math.round(actual)}% au-dessus de la moyenne`,
       resource_conflict: `Conflit de ressources détecté`,
       quality_issue: `Chute qualité: ${Math.round(actual)}% vs ${Math.round(expected)}% requis`,
-      weather_impact: `Impact météorologique sur le planning`
+      weather_impact: `Impact météorologique sur le planning`,
+      duplicate_transaction: `Transaction dupliquée détectée`,
+      price_spike: `Pic de prix: +${Math.round(actual)}%`,
+      unusual_expense: `Dépense inhabituelle: ${Math.round(actual)}`,
+      vendor_anomaly: `Anomalie fournisseur détectée`
     };
 
-    return titles[type];
+    return titles[type] || 'Anomalie détectée';
   }
 
   // Générer la description de l'anomalie
@@ -321,38 +362,198 @@ class AnomalyDetectionService {
            `Écart de ${Math.round(deviation * 100) / 100} (${direction} à la normale).`;
   }
 
-  // Obtenir les métriques d'un projet (simulation)
+  // Obtenir les métriques d'un projet depuis Firebase
   private async getProjectMetrics(projectId: string): Promise<ProjectMetrics | null> {
-    // En production, ceci récupérerait les vraies métriques depuis Firebase
-    // Pour la démo, on simule des métriques
-    return {
-      projectId,
-      timestamp: new Date(),
-      budgetSpent: 1850000, // 1.85M XOF dépensés
-      budgetAllocated: 1500000, // 1.5M XOF alloués (dépassement!)
-      tasksCompleted: 12,
-      tasksTotal: 20,
-      daysElapsed: 45,
-      daysPlanned: 40, // Retard de 5 jours
-      averageCostPerDay: 41111, // 1.85M / 45 jours
-      resourceUtilization: 85,
-      qualityScore: 65 // Score qualité faible
-    };
+    try {
+      // 1. Récupérer le projet
+      const projectDoc = await getDoc(doc(db, 'projects', projectId));
+      if (!projectDoc.exists()) {
+        console.warn(`Projet ${projectId} non trouvé`);
+        return null;
+      }
+      
+      const project = projectDoc.data();
+      
+      // 2. Récupérer les transactions pour calculer le budget dépensé
+      const transactionsQuery = query(
+        collection(db, 'transactions'),
+        where('projectId', '==', projectId)
+      );
+      const transactionsSnap = await getDocs(transactionsQuery);
+      const transactions = transactionsSnap.docs.map(d => d.data());
+      
+      const budgetSpent = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+      const budgetAllocated = project.budget || 0;
+      
+      // 3. Récupérer les tâches
+      const tasksQuery = query(
+        collection(db, 'tasks'),
+        where('projectId', '==', projectId)
+      );
+      const tasksSnap = await getDocs(tasksQuery);
+      const tasks = tasksSnap.docs.map(d => d.data());
+      
+      const tasksCompleted = tasks.filter(t => t.status === 'completed').length;
+      const tasksTotal = tasks.length;
+      
+      // 4. Calculer les jours écoulés et planifiés
+      const startDate = project.startDate?.toDate ? project.startDate.toDate() : new Date(project.startDate);
+      const endDate = project.endDate?.toDate ? project.endDate.toDate() : new Date(project.endDate);
+      const today = new Date();
+      
+      const daysElapsed = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+      const daysPlanned = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+      
+      const averageCostPerDay = daysElapsed > 0 ? budgetSpent / daysElapsed : 0;
+      
+      // 5. Calculer le score qualité
+      const qualityScore = this.calculateQualityScore(project, tasks);
+      
+      // 6. Calculer l'utilisation des ressources
+      const resourceUtilization = this.calculateResourceUtilization(project, tasks);
+      
+      return {
+        projectId,
+        timestamp: new Date(),
+        budgetSpent,
+        budgetAllocated,
+        tasksCompleted,
+        tasksTotal,
+        daysElapsed,
+        daysPlanned,
+        averageCostPerDay,
+        resourceUtilization,
+        qualityScore
+      };
+    } catch (error) {
+      console.error('Erreur récupération métriques projet:', error);
+      return null;
+    }
   }
 
-  // Obtenir la moyenne historique d'une métrique
-  private async getHistoricalAverage(metric: string, _projectId: string): Promise<number> {
-    // prevent unused parameter lint warning
-    void _projectId;
-    // Simulation - en production, calculer depuis l'historique
-    const averages: Record<string, number> = {
-      'budget_deviation_percentage': 5, // 5% de dépassement moyen
-      'timeline_deviation_percentage': 8, // 8% de retard moyen
-      'daily_cost_deviation_percentage': 15, // 15% de variation quotidienne
-      'quality_score': 85, // Score qualité moyen de 85%
-      'resource_utilization': 75 // Utilisation moyenne de 75%
-    };
+  // Calculer le score qualité d'un projet
+  private calculateQualityScore(project: any, tasks: any[]): number {
+    let score = 100;
+    
+    // 1. Pénalité pour tâches en retard
+    const today = new Date();
+    const lateTasks = tasks.filter(t => {
+      if (t.status === 'completed') return false;
+      if (!t.dueDate) return false;
+      const dueDate = t.dueDate?.toDate ? t.dueDate.toDate() : new Date(t.dueDate);
+      return dueDate < today;
+    });
+    score -= lateTasks.length * 5; // -5 points par tâche en retard
+    
+    // 2. Pénalité pour dépassement budgétaire
+    if (project.spent && project.budget && project.spent > project.budget) {
+      const overrun = ((project.spent - project.budget) / project.budget) * 100;
+      score -= Math.min(overrun, 30); // Max -30 points
+    }
+    
+    // 3. Bonus pour progression dans les temps
+    if (project.progress > 0) {
+      const expectedProgress = this.calculateExpectedProgress(project);
+      if (project.progress >= expectedProgress) {
+        score += 10; // +10 points si dans les temps
+      } else {
+        score -= Math.min((expectedProgress - project.progress) / 2, 20); // Pénalité si retard
+      }
+    }
+    
+    // 4. Pénalité pour incidents
+    const incidents = project.incidents || 0;
+    score -= incidents * 3; // -3 points par incident
+    
+    return Math.max(0, Math.min(100, score));
+  }
 
+  // Calculer la progression attendue d'un projet
+  private calculateExpectedProgress(project: any): number {
+    try {
+      const startDate = project.startDate?.toDate ? project.startDate.toDate() : new Date(project.startDate);
+      const endDate = project.endDate?.toDate ? project.endDate.toDate() : new Date(project.endDate);
+      const today = new Date();
+      
+      const totalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+      const elapsedDays = (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+      
+      if (totalDays <= 0) return 0;
+      return Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
+    } catch {
+      return 0;
+    }
+  }
+
+  // Calculer l'utilisation des ressources
+  private calculateResourceUtilization(project: any, tasks: any[]): number {
+    if (tasks.length === 0) return 0;
+    
+    // Calculer le nombre de ressources uniques assignées
+    const assignedResources = new Set(
+      tasks.flatMap(t => t.assignedTo || [])
+    ).size;
+    
+    // Utiliser la taille de l'équipe du projet ou le nombre de ressources assignées
+    const totalResources = project.teamSize || assignedResources || 1;
+    
+    if (totalResources === 0) return 0;
+    
+    const utilization = (assignedResources / totalResources) * 100;
+    
+    return Math.min(100, utilization);
+  }
+
+  // Obtenir la moyenne historique d'une métrique depuis Firebase
+  private async getHistoricalAverage(metric: string, projectId: string): Promise<number> {
+    try {
+      // Récupérer les métriques des 30 derniers jours
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const metricsQuery = query(
+        collection(db, 'project_metrics'),
+        where('projectId', '==', projectId),
+        where('timestamp', '>=', Timestamp.fromDate(thirtyDaysAgo)),
+        orderBy('timestamp', 'desc'),
+        limit(30)
+      );
+      
+      const metricsSnap = await getDocs(metricsQuery);
+      
+      if (metricsSnap.empty) {
+        // Fallback : moyennes de l'industrie BTP
+        return this.getIndustryAverage(metric);
+      }
+      
+      const metrics = metricsSnap.docs.map(d => d.data() as ProjectMetrics);
+      
+      // Calculer la moyenne
+      const values = metrics
+        .map(m => this.extractMetricValue(metric, m))
+        .filter(v => v !== null) as number[];
+      
+      if (values.length === 0) {
+        return this.getIndustryAverage(metric);
+      }
+      
+      const average = values.reduce((sum, v) => sum + v, 0) / values.length;
+      return average;
+    } catch (error) {
+      console.error('Erreur calcul moyenne historique:', error);
+      return this.getIndustryAverage(metric);
+    }
+  }
+
+  // Obtenir les moyennes de l'industrie (fallback)
+  private getIndustryAverage(metric: string): number {
+    const averages: Record<string, number> = {
+      'budget_deviation_percentage': 5,
+      'timeline_deviation_percentage': 8,
+      'daily_cost_deviation_percentage': 15,
+      'quality_score': 85,
+      'resource_utilization': 75
+    };
     return averages[metric] || 0;
   }
 
@@ -424,20 +625,32 @@ class AnomalyDetectionService {
     }
   }
 
-  // Analyser tous les projets actifs
+  // Analyser tous les projets actifs depuis Firebase
   async analyzeAllActiveProjects(): Promise<{ projectId: string; anomalies: Anomaly[] }[]> {
-    // Simulation - en production, récupérer tous les projets actifs
-    const activeProjects = ['project_1', 'project_2', 'project_3'];
-    
-    const results = [];
-    for (const projectId of activeProjects) {
-      const anomalies = await this.analyzeProject(projectId);
-      if (anomalies.length > 0) {
-        results.push({ projectId, anomalies });
+    try {
+      // Récupérer tous les projets actifs
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('status', 'in', ['active', 'in_progress', 'on_hold'])
+      );
+      
+      const projectsSnap = await getDocs(projectsQuery);
+      const activeProjects = projectsSnap.docs.map(d => d.id);
+      
+      // Analyser chaque projet
+      const results = [];
+      for (const projectId of activeProjects) {
+        const anomalies = await this.analyzeProject(projectId);
+        if (anomalies.length > 0) {
+          results.push({ projectId, anomalies });
+        }
       }
+      
+      return results;
+    } catch (error) {
+      console.error('Erreur analyse projets actifs:', error);
+      return [];
     }
-
-    return results;
   }
 
   // Obtenir les règles de détection
@@ -450,6 +663,216 @@ class AnomalyDetectionService {
     const ruleIndex = this.rules.findIndex(r => r.id === ruleId);
     if (ruleIndex >= 0) {
       this.rules[ruleIndex] = { ...this.rules[ruleIndex], ...updates };
+    }
+  }
+
+  // Détecter les anomalies financières (transactions, duplicatas, pics de prix)
+  async detectAnomalies(
+    projects: any[],
+    transactions: any[],
+    historical: any[]
+  ): Promise<FinancialAnomaly[]> {
+    const anomalies: FinancialAnomaly[] = [];
+    
+    for (const project of projects) {
+      // 1. Détecter dépassements budgétaires
+      if (project.spent > project.budget * 1.2) {
+        const deviation = project.spent - project.budget;
+        const deviationPercentage = (deviation / project.budget) * 100;
+        
+        anomalies.push({
+          id: `budget_${project.id}_${Date.now()}`,
+          type: 'budget_overrun',
+          severity: deviationPercentage > 50 ? 'critical' : deviationPercentage > 30 ? 'high' : 'medium',
+          projectId: project.id,
+          title: `Dépassement budgétaire : +${deviationPercentage.toFixed(1)}%`,
+          description: `Le projet "${project.name}" a dépassé son budget de ${deviationPercentage.toFixed(1)}%`,
+          detectedAt: new Date(),
+          expectedValue: project.budget,
+          actualValue: project.spent,
+          deviation,
+          deviationPercentage,
+          impact: {
+            financial: deviation,
+            timeline: Math.floor(deviationPercentage / 10),
+            quality: 0
+          },
+          recommendations: [
+            'Réviser le budget prévisionnel',
+            'Identifier les postes de dépassement',
+            'Négocier avec les fournisseurs'
+          ],
+          status: 'active',
+          currency: project.currency || 'XAF',
+          amount: deviation,
+          confidence: 95
+        });
+      }
+      
+      // 2. Détecter transactions dupliquées
+      const projectTransactions = transactions.filter(t => t.projectId === project.id);
+      for (let i = 0; i < projectTransactions.length; i++) {
+        for (let j = i + 1; j < projectTransactions.length; j++) {
+          const t1 = projectTransactions[i];
+          const t2 = projectTransactions[j];
+          
+          if (t1.amount === t2.amount &&
+              t1.vendorName === t2.vendorName &&
+              t1.date === t2.date &&
+              t1.description === t2.description) {
+            anomalies.push({
+              id: `duplicate_${t1.id}_${t2.id}`,
+              type: 'duplicate_transaction',
+              severity: 'medium',
+              projectId: project.id,
+              title: 'Transaction dupliquée détectée',
+              description: `Transaction identique trouvée : ${t1.description}`,
+              detectedAt: new Date(),
+              expectedValue: t1.amount,
+              actualValue: t1.amount * 2,
+              deviation: t1.amount,
+              deviationPercentage: 100,
+              impact: {
+                financial: t1.amount,
+                timeline: 0,
+                quality: 0
+              },
+              recommendations: [
+                'Vérifier les factures',
+                'Contacter le fournisseur',
+                'Supprimer le doublon'
+              ],
+              status: 'active',
+              currency: t1.currency || 'XAF',
+              amount: t1.amount,
+              confidence: 90
+            });
+          }
+        }
+      }
+      
+      // 3. Détecter pics de prix
+      for (const transaction of projectTransactions) {
+        const similarHistorical = historical.filter(h => 
+          h.vendorName === transaction.vendorName &&
+          h.category === transaction.category
+        );
+        
+        if (similarHistorical.length > 0) {
+          const avgHistorical = similarHistorical.reduce((sum, h) => sum + h.amount, 0) / similarHistorical.length;
+          const deviation = transaction.amount - avgHistorical;
+          const deviationPercentage = (deviation / avgHistorical) * 100;
+          
+          if (deviationPercentage > 50) {
+            anomalies.push({
+              id: `price_spike_${transaction.id}`,
+              type: 'price_spike',
+              severity: deviationPercentage > 100 ? 'high' : 'medium',
+              projectId: project.id,
+              title: `Pic de prix : +${deviationPercentage.toFixed(0)}%`,
+              description: `Le prix de "${transaction.description}" est ${deviationPercentage.toFixed(0)}% plus élevé que la moyenne historique`,
+              detectedAt: new Date(),
+              expectedValue: avgHistorical,
+              actualValue: transaction.amount,
+              deviation,
+              deviationPercentage,
+              impact: {
+                financial: deviation,
+                timeline: 0,
+                quality: 0
+              },
+              recommendations: [
+                'Vérifier la facture',
+                'Comparer avec d\'autres fournisseurs',
+                'Négocier le prix'
+              ],
+              status: 'active',
+              currency: transaction.currency || 'XAF',
+              amount: deviation,
+              confidence: 85
+            });
+          }
+        }
+      }
+    }
+    
+    return anomalies;
+  }
+
+  // Reconnaître une anomalie
+  async acknowledgeAnomaly(anomalyId: string, userId: string): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'anomalies', anomalyId), {
+        status: 'acknowledged',
+        acknowledgedBy: userId,
+        acknowledgedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Erreur reconnaissance anomalie:', error);
+      throw error;
+    }
+  }
+
+  // Résoudre une anomalie
+  async resolveAnomaly(anomalyId: string, userId: string, resolution: string): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'anomalies', anomalyId), {
+        status: 'resolved',
+        resolvedBy: userId,
+        resolvedAt: Timestamp.now(),
+        resolution
+      });
+    } catch (error) {
+      console.error('Erreur résolution anomalie:', error);
+      throw error;
+    }
+  }
+
+  // Ignorer une anomalie
+  async ignoreAnomaly(anomalyId: string, userId: string, reason: string): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'anomalies', anomalyId), {
+        status: 'ignored',
+        ignoredBy: userId,
+        ignoredAt: Timestamp.now(),
+        ignoreReason: reason
+      });
+    } catch (error) {
+      console.error('Erreur ignorance anomalie:', error);
+      throw error;
+    }
+  }
+
+  // Sauvegarder les métriques d'un projet pour l'historique
+  async saveProjectMetrics(projectId: string): Promise<void> {
+    try {
+      const metrics = await this.getProjectMetrics(projectId);
+      if (!metrics) return;
+      
+      await addDoc(collection(db, 'project_metrics'), {
+        ...metrics,
+        timestamp: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Erreur sauvegarde métriques:', error);
+    }
+  }
+
+  // Sauvegarder les métriques de tous les projets actifs
+  async saveAllProjectMetrics(): Promise<void> {
+    try {
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('status', 'in', ['active', 'in_progress'])
+      );
+      
+      const projectsSnap = await getDocs(projectsQuery);
+      
+      for (const doc of projectsSnap.docs) {
+        await this.saveProjectMetrics(doc.id);
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde toutes métriques:', error);
     }
   }
 }
