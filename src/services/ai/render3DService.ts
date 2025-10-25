@@ -3,7 +3,7 @@
  * Utilise Replicate API avec Stable Diffusion + ControlNet
  */
 
-import Replicate from 'replicate';
+// import Replicate from 'replicate'; // Désactivé - utilisation du proxy Vite à la place
 
 // Types
 export interface Render3DRequest {
@@ -20,6 +20,7 @@ export interface Render3DRequest {
   quality?: 'draft' | 'standard' | 'hd';
   numVariations?: number; // 1-4
   precisionMode?: 'standard' | 'precise'; // 🆕 Mode de précision
+  model?: 'sdxl' | 'flux-pro' | 'flux-1.1-pro' | 'seedream-4' | 'imagen-4'; // 🆕 Modèle Replicate
 }
 
 export interface Render3DResult {
@@ -42,16 +43,135 @@ export interface RenderProgress {
 }
 
 class Render3DService {
-  private replicate: Replicate;
   private readonly REPLICATE_MODEL = 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b';
-  private readonly CONTROLNET_MODEL = 'jagilley/controlnet-canny:aff48af9c68d162388d230a2ab003f68d2638d88307bdaf1c2f1ac95079c9613';
+  // Modèle précis privilégié (remplace l'ancien ControlNet)
+  private readonly FLUX_11_PRO_MODEL = 'black-forest-labs/flux-1.1-pro';
+  private readonly PROXY_BASE_URL = '/api/replicate'; // Proxy Vite pour contourner CORS
+  // Nouveaux modèles performants
+  private readonly FLUX_PRO_MODEL = 'black-forest-labs/flux-pro';
+  private readonly SEEDREAM_MODEL = 'bytedance/seedream-4';
+  private readonly IMAGEN4_MODEL = 'google/imagen-4';
   
   constructor() {
     const apiKey = import.meta.env.VITE_REPLICATE_API_KEY;
     if (!apiKey) {
-      throw new Error('VITE_REPLICATE_API_KEY non configurée');
+      console.warn('⚠️ VITE_REPLICATE_API_KEY non configurée - Le service 3D ne fonctionnera pas');
+    } else {
+      console.log('✅ Service Render3D initialisé avec proxy Vite');
     }
-    this.replicate = new Replicate({ auth: apiKey });
+  }
+
+  /**
+   * Génération via un modèle Replicate spécifique (Flux Pro, Seedream-4, Imagen-4)
+   */
+  private async generateWithSpecificModel(
+    request: Render3DRequest,
+    onProgress?: (progress: RenderProgress) => void
+  ): Promise<Render3DResult[]> {
+    if (!this.isConfigured()) {
+      throw new Error('❌ Service 3D non configuré. Ajoutez VITE_REPLICATE_API_KEY dans votre fichier .env.local');
+    }
+
+    const startTime = Date.now();
+
+    const modelId =
+      request.model === 'flux-pro' ? this.FLUX_PRO_MODEL :
+      request.model === 'seedream-4' ? this.SEEDREAM_MODEL :
+      request.model === 'imagen-4' ? this.IMAGEN4_MODEL :
+      this.REPLICATE_MODEL.split(':')[0];
+
+    try {
+      onProgress?.({ status: 'queued', progress: 0, message: 'Préparation de la génération (modèle avancé)...', estimatedTime: 70 });
+
+      const prompt = this.buildPrompt(request);
+      const negativePrompt = this.buildNegativePrompt();
+
+      // Paramètres génériques compatibles image-to-image sur Replicate
+      const input = {
+        prompt,
+        negative_prompt: negativePrompt,
+        image: request.planImage,
+        num_outputs: request.numVariations || 1,
+        num_inference_steps: this.getInferenceSteps(request.quality),
+        guidance_scale: 7.5,
+        width: this.getWidth(request.quality),
+        height: this.getHeight(request.quality)
+      };
+
+      onProgress?.({ status: 'processing', progress: 25, message: 'Génération en cours (modèle avancé)...', estimatedTime: 55 });
+
+      const prediction = await this.replicateRequest('/v1/predictions', 'POST', {
+        model: modelId,
+        input
+      });
+
+      let predictionData = prediction;
+      while (predictionData.status === 'starting' || predictionData.status === 'processing') {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const progress = Math.min(90, 25 + (elapsed / 75) * 65);
+        onProgress?.({ status: 'processing', progress, message: 'Génération en cours (modèle avancé)...', estimatedTime: Math.max(5, 75 - elapsed) });
+        await new Promise(r => setTimeout(r, 2000));
+        predictionData = await this.replicateRequest(`/v1/predictions/${predictionData.id}`, 'GET');
+      }
+
+      if (predictionData.status !== 'succeeded') {
+        throw new Error(`Génération échouée: ${predictionData.error || 'Erreur inconnue'}`);
+      }
+
+      onProgress?.({ status: 'completed', progress: 100, message: 'Rendu généré avec succès !', estimatedTime: 0 });
+      const output: string[] = predictionData.output as string[];
+      const processingTime = (Date.now() - startTime) / 1000;
+      return output.map((imageUrl, index) => ({
+        id: `render-adv-${Date.now()}-${index}`,
+        imageUrl,
+        prompt,
+        style: request.style,
+        viewAngle: request.viewAngle,
+        generatedAt: new Date().toISOString(),
+        processingTime,
+        cost: this.estimateCost(request) * 1.8 // estimation plus élevée
+      }));
+    } catch (error) {
+      onProgress?.({ status: 'failed', progress: 0, message: `Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}` });
+      throw error;
+    }
+  }
+  
+
+  /**
+   * Vérifie si le service est correctement configuré
+   */
+  private isConfigured(): boolean {
+    return import.meta.env.VITE_REPLICATE_API_KEY !== undefined;
+  }
+
+  /**
+   * Appel API Replicate via le proxy Vite
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async replicateRequest(endpoint: string, method: string = 'GET', body?: any): Promise<any> {
+    const url = `${this.PROXY_BASE_URL}${endpoint}`;
+    console.log(`🔗 Appel Replicate via proxy: ${method} ${url}`);
+    
+    const options: RequestInit = {
+      method,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+    
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Replicate API error (${response.status}): ${errorText}`);
+    }
+    
+    return response.json();
   }
 
   /**
@@ -59,6 +179,10 @@ class Render3DService {
    * Utilise SDXL standard (bonne qualité, rapide)
    */
   async generate3DRender(request: Render3DRequest): Promise<Render3DResult[]> {
+    if (!this.isConfigured()) {
+      throw new Error('❌ Service 3D non configuré. Ajoutez VITE_REPLICATE_API_KEY dans votre fichier .env.local');
+    }
+    
     const startTime = Date.now();
     
     try {
@@ -81,8 +205,27 @@ class Render3DService {
 
       console.log('🎨 Génération rendu 3D avec SDXL...', { prompt, input });
 
-      // 3. Lancer la génération
-      const output = await this.replicate.run(this.REPLICATE_MODEL, { input }) as string[];
+      // 3. Lancer la génération via le proxy
+      const prediction = await this.replicateRequest('/v1/predictions', 'POST', {
+        model: this.REPLICATE_MODEL.split(':')[0],
+        version: this.REPLICATE_MODEL.split(':')[1],
+        input
+      });
+      
+      // 4. Attendre la complétion
+      let output: string[] = [];
+      let predictionData = prediction;
+      
+      while (predictionData.status === 'starting' || predictionData.status === 'processing') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        predictionData = await this.replicateRequest(`/v1/predictions/${predictionData.id}`, 'GET');
+      }
+      
+      if (predictionData.status === 'succeeded') {
+        output = predictionData.output as string[];
+      } else {
+        throw new Error(`Génération échouée: ${predictionData.error || 'Erreur inconnue'}`);
+      }
 
       // 4. Formater les résultats
       const processingTime = (Date.now() - startTime) / 1000;
@@ -112,6 +255,10 @@ class Render3DService {
    * 🆕 NOUVEAU : Précision maximale !
    */
   async generate3DRenderPrecise(request: Render3DRequest): Promise<Render3DResult[]> {
+    if (!this.isConfigured()) {
+      throw new Error('❌ Service 3D non configuré. Ajoutez VITE_REPLICATE_API_KEY dans votre fichier .env.local');
+    }
+    
     const startTime = Date.now();
     
     try {
@@ -119,38 +266,57 @@ class Render3DService {
       const prompt = this.buildPrompt(request);
       const negativePrompt = this.buildNegativePrompt();
       
-      // 2. Préparer les paramètres ControlNet
+      // 2. Préparer les paramètres pour Flux 1.1 Pro (génériques image-to-image)
+      const width = this.getWidth(request.quality);
+      const height = this.getHeight(request.quality);
       const input = {
         prompt,
         negative_prompt: negativePrompt,
         image: request.planImage,
         num_outputs: request.numVariations || 1,
         num_inference_steps: this.getInferenceSteps(request.quality),
-        guidance_scale: 9.0, // Plus élevé pour ControlNet = plus de fidélité
-        controlnet_conditioning_scale: 1.0, // Force maximale du contrôle
-        detection_resolution: 512,
-        image_resolution: this.getWidth(request.quality),
+        guidance_scale: 8.0,
+        width,
+        height,
       };
 
-      console.log('🎯 Génération rendu 3D PRÉCIS avec ControlNet...', { prompt, input });
+      console.log('🎯 Génération rendu 3D PRÉCIS avec Flux 1.1 Pro...', { prompt, input });
 
-      // 3. Lancer la génération avec ControlNet
-      const output = await this.replicate.run(this.CONTROLNET_MODEL, { input }) as string[];
+      // 3. Lancer la génération avec Flux 1.1 Pro via le proxy
+      const prediction = await this.replicateRequest('/v1/predictions', 'POST', {
+        model: this.FLUX_11_PRO_MODEL,
+        input
+      });
+      
+      // 4. Attendre la complétion
+      let output: string[] = [];
+      let predictionData = prediction;
+      
+      while (predictionData.status === 'starting' || predictionData.status === 'processing') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        predictionData = await this.replicateRequest(`/v1/predictions/${predictionData.id}`, 'GET');
+      }
+      
+      if (predictionData.status === 'succeeded') {
+        output = predictionData.output as string[];
+      } else {
+        throw new Error(`Génération échouée: ${predictionData.error || 'Erreur inconnue'}`);
+      }
 
       // 4. Formater les résultats
       const processingTime = (Date.now() - startTime) / 1000;
       const results: Render3DResult[] = output.map((imageUrl, index) => ({
         id: `render-precise-${Date.now()}-${index}`,
         imageUrl,
-        prompt: `${prompt} [ControlNet - Précision 95%]`,
+        prompt: `${prompt} [Flux 1.1 Pro - Précision élevée]`,
         style: request.style,
         viewAngle: request.viewAngle,
         generatedAt: new Date().toISOString(),
         processingTime,
-        cost: this.estimateCost(request) * 1.5 // ControlNet légèrement plus cher
+        cost: this.estimateCost(request) * 1.6 // estimation plus élevée
       }));
 
-      console.log('✅ Rendus 3D PRÉCIS générés avec succès', { count: results.length, processingTime });
+      console.log('✅ Rendus 3D PRÉCIS (Flux 1.1 Pro) générés avec succès', { count: results.length, processingTime });
       return results;
 
     } catch (error) {
@@ -160,63 +326,68 @@ class Render3DService {
   }
 
   /**
-   * Génère un rendu PRÉCIS avec suivi de progression (ControlNet)
+   * Génère un rendu PRÉCIS avec suivi de progression (Flux 1.1 Pro)
    */
   private async generate3DRenderPreciseWithProgress(
     request: Render3DRequest,
     onProgress?: (progress: RenderProgress) => void
   ): Promise<Render3DResult[]> {
+    if (!this.isConfigured()) {
+      throw new Error('❌ Service 3D non configuré. Ajoutez VITE_REPLICATE_API_KEY dans votre fichier .env.local');
+    }
+    
     const startTime = Date.now();
     
     try {
-      onProgress?.({
-        status: 'queued',
-        progress: 0,
-        message: 'Préparation du rendu PRÉCIS (ControlNet)...',
-        estimatedTime: 70
-      });
+      onProgress?.({ status: 'queued', progress: 0, message: 'Préparation du rendu PRÉCIS (Flux 1.1 Pro)...', estimatedTime: 70 });
 
       const prompt = this.buildPrompt(request);
       const negativePrompt = this.buildNegativePrompt();
       
+      const width = this.getWidth(request.quality);
+      const height = this.getHeight(request.quality);
       const input = {
         prompt,
         negative_prompt: negativePrompt,
         image: request.planImage,
         num_outputs: request.numVariations || 1,
         num_inference_steps: this.getInferenceSteps(request.quality),
-        guidance_scale: 9.0,
-        controlnet_conditioning_scale: 1.0,
-        detection_resolution: 512,
-        image_resolution: this.getWidth(request.quality),
+        guidance_scale: 8.0,
+        width,
+        height,
       };
 
-      onProgress?.({
-        status: 'processing',
-        progress: 30,
-        message: 'Génération PRÉCISE en cours (fidélité 95%)...',
-        estimatedTime: 50
-      });
+      onProgress?.({ status: 'processing', progress: 30, message: 'Génération PRÉCISE en cours (Flux 1.1 Pro)...', estimatedTime: 50 });
 
-      const progressInterval = setInterval(() => {
+      // Lancer la génération via le proxy (Flux 1.1 Pro)
+      const prediction = await this.replicateRequest('/v1/predictions', 'POST', {
+        model: this.FLUX_11_PRO_MODEL,
+        input
+      });
+      
+      // Polling avec progression
+      let predictionData = prediction;
+      
+      while (predictionData.status === 'starting' || predictionData.status === 'processing') {
         const elapsed = (Date.now() - startTime) / 1000;
         const progress = Math.min(90, 30 + (elapsed / 70) * 60);
-        onProgress?.({
-          status: 'processing',
-          progress,
-          message: 'Génération PRÉCISE en cours (fidélité 95%)...',
-          estimatedTime: Math.max(5, 70 - elapsed)
-        });
-      }, 2000);
-
-      const output = await this.replicate.run(this.CONTROLNET_MODEL, { input }) as string[];
+        onProgress?.({ status: 'processing', progress, message: 'Génération PRÉCISE en cours (Flux 1.1 Pro)...', estimatedTime: Math.max(5, 70 - elapsed) });
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        predictionData = await this.replicateRequest(`/v1/predictions/${predictionData.id}`, 'GET');
+      }
       
-      clearInterval(progressInterval);
+      let output: string[] = [];
+      if (predictionData.status === 'succeeded') {
+        output = predictionData.output as string[];
+      } else {
+        throw new Error(`Génération échouée: ${predictionData.error || 'Erreur inconnue'}`);
+      }
 
       onProgress?.({
         status: 'completed',
         progress: 100,
-        message: 'Rendu 3D PRÉCIS généré avec succès !',
+        message: 'Rendu 3D PRÉCIS (Flux 1.1 Pro) généré avec succès !',
         estimatedTime: 0
       });
 
@@ -224,12 +395,12 @@ class Render3DService {
       return output.map((imageUrl, index) => ({
         id: `render-precise-${Date.now()}-${index}`,
         imageUrl,
-        prompt: `${prompt} [ControlNet - Précision 95%]`,
+        prompt: `${prompt} [Flux 1.1 Pro - Précision élevée]`,
         style: request.style,
         viewAngle: request.viewAngle,
         generatedAt: new Date().toISOString(),
         processingTime,
-        cost: this.estimateCost(request) * 1.5
+        cost: this.estimateCost(request) * 1.6
       }));
 
     } catch (error) {
@@ -250,13 +421,16 @@ class Render3DService {
     request: Render3DRequest,
     onProgress?: (progress: RenderProgress) => void
   ): Promise<Render3DResult[]> {
-    // Déléguer à la méthode appropriée selon le mode de précision
-    const usePreciseMode = request.precisionMode === 'precise';
-    
+    // Si l'utilisateur force le modèle précis Flux 1.1 Pro (via precisionMode ou model)
+    const usePreciseMode = request.precisionMode === 'precise' || request.model === 'flux-1.1-pro';
     if (usePreciseMode) {
       return this.generate3DRenderPreciseWithProgress(request, onProgress);
     }
-    
+    // Si un modèle spécifique est choisi (flux-pro, seedream-4, imagen-4), l'utiliser
+    if (request.model && request.model !== 'sdxl' && request.model !== 'flux-1.1-pro') {
+      return this.generateWithSpecificModel(request, onProgress);
+    }
+
     const startTime = Date.now();
     
     try {
@@ -291,8 +465,16 @@ class Render3DService {
         estimatedTime: 45
       });
 
-      // Simulation de progression (Replicate ne fournit pas de progression en temps réel)
-      const progressInterval = setInterval(() => {
+      // Lancer la génération via le proxy
+      const prediction = await this.replicateRequest('/v1/predictions', 'POST', {
+        version: this.REPLICATE_MODEL.split(':')[1],
+        input
+      });
+      
+      // Polling avec progression
+      let predictionData = prediction;
+      
+      while (predictionData.status === 'starting' || predictionData.status === 'processing') {
         const elapsed = (Date.now() - startTime) / 1000;
         const progress = Math.min(90, 30 + (elapsed / 60) * 60);
         onProgress?.({
@@ -301,11 +483,17 @@ class Render3DService {
           message: 'Génération du rendu 3D en cours...',
           estimatedTime: Math.max(5, 60 - elapsed)
         });
-      }, 2000);
-
-      const output = await this.replicate.run(this.REPLICATE_MODEL, { input }) as string[];
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        predictionData = await this.replicateRequest(`/v1/predictions/${predictionData.id}`, 'GET');
+      }
       
-      clearInterval(progressInterval);
+      let output: string[] = [];
+      if (predictionData.status === 'succeeded') {
+        output = predictionData.output as string[];
+      } else {
+        throw new Error(`Génération échouée: ${predictionData.error || 'Erreur inconnue'}`);
+      }
 
       // Notification fin
       onProgress?.({

@@ -3,6 +3,7 @@
  */
 
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { 
   Sparkles, 
   Download, 
@@ -32,6 +33,7 @@ const Render3DGenerator: React.FC<Render3DGeneratorProps> = ({ planImage, onClos
   const [quality, setQuality] = useState<'draft' | 'standard' | 'hd'>('standard');
   const [numVariations, setNumVariations] = useState(1);
   const [precisionMode, setPrecisionMode] = useState<'standard' | 'precise'>('standard'); // 🆕 Mode de précision
+  const [model, setModel] = useState<'sdxl' | 'flux-pro' | 'flux-1.1-pro' | 'seedream-4' | 'imagen-4'>('flux-pro'); // 🆕 Modèle IA
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<RenderProgress | null>(null);
@@ -68,7 +70,9 @@ const Render3DGenerator: React.FC<Render3DGeneratorProps> = ({ planImage, onClos
    */
   const handleGenerate = async () => {
     if (!planImage) {
-      setError('Aucun plan chargé');
+      const errorMsg = 'Aucun plan chargé';
+      setError(errorMsg);
+      toast.error(errorMsg, { duration: 4000 });
       return;
     }
 
@@ -84,7 +88,8 @@ const Render3DGenerator: React.FC<Render3DGeneratorProps> = ({ planImage, onClos
         timeOfDay: selectedTime,
         quality,
         numVariations,
-        precisionMode // 🆕 Ajout du mode de précision
+        precisionMode,
+        model // 🆕 modèle sélectionné
       };
 
       const results = await render3DService.generate3DRenderWithProgress(
@@ -95,11 +100,14 @@ const Render3DGenerator: React.FC<Render3DGeneratorProps> = ({ planImage, onClos
       setGeneratedRenders(results);
       if (results.length > 0) {
         setSelectedRender(results[0]);
+        toast.success(`✨ ${results.length} rendu(s) 3D généré(s) avec succès !`, { duration: 4000 });
       }
 
     } catch (err) {
       console.error('Erreur génération:', err);
-      setError(err instanceof Error ? err.message : 'Erreur lors de la génération');
+      const errorMsg = err instanceof Error ? err.message : 'Erreur lors de la génération';
+      setError(errorMsg);
+      toast.error(`❌ ${errorMsg}`, { duration: 5000 });
     } finally {
       setIsGenerating(false);
     }
@@ -112,42 +120,70 @@ const Render3DGenerator: React.FC<Render3DGeneratorProps> = ({ planImage, onClos
     try {
       const filename = `rendu-3d-${render.style}-${Date.now()}.png`;
       await render3DService.downloadImage(render.imageUrl, filename);
+      toast.success(`📄 Rendu téléchargé : ${filename}`, { duration: 3000 });
     } catch (err) {
       console.error('Erreur téléchargement:', err);
-      setError('Erreur lors du téléchargement');
+      const errorMsg = 'Erreur lors du téléchargement';
+      setError(errorMsg);
+      toast.error(`❌ ${errorMsg}`, { duration: 4000 });
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-7xl w-full my-4 overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700">
         
-        {/* En-tête */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
-          <div className="flex items-center justify-between">
+        {/* En-tête amélioré */}
+        <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 p-4 sm:p-6 text-white relative overflow-hidden">
+          {/* Effet de fond animé */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-pink-400/20 animate-pulse"></div>
+          
+          <div className="relative flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Sparkles className="w-8 h-8" />
+              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 animate-pulse" />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold">Générateur de Rendus 3D IA</h2>
-                <p className="text-purple-100 text-sm">Transformez votre plan en visualisation photoréaliste</p>
+                <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                  Générateur de Rendus 3D IA
+                  <span className="text-xs bg-white/20 px-2 py-1 rounded-full">BETA</span>
+                </h2>
+                <p className="text-purple-100 text-xs sm:text-sm mt-1">Transformez votre plan en visualisation photoréaliste</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/20 rounded-xl transition-all hover:scale-110 active:scale-95"
+              aria-label="Fermer"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 bg-gray-50 dark:bg-gray-800/50">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             
             {/* Panneau de configuration */}
-            <div className="lg:col-span-1 space-y-6">
+            <div className="lg:col-span-1 space-y-4 sm:space-y-6 bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-200 dark:border-gray-700 max-h-[calc(90vh-200px)] overflow-y-auto">
+              {/* Modèle IA */}
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Modèle IA</h3>
+                <select
+                  value={model}
+                  onChange={(e) => setModel(e.target.value as typeof model)}
+                  className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="flux-pro">black-forest-labs/flux-pro (qualité élevée)</option>
+                  <option value="flux-1.1-pro">black-forest-labs/flux-1.1-pro (précision élevée)</option>
+                  <option value="seedream-4">bytedance/seedream-4 (réalisme)</option>
+                  <option value="imagen-4">google/imagen-4 (photorealiste)</option>
+                  <option value="sdxl">stability-ai/sdxl (standard)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Choisissez le moteur de rendu. Flux 1.1 Pro offre une très haute fidélité géométrique.</p>
+              </div>
               
               {/* Style architectural */}
               <div>
@@ -234,11 +270,11 @@ const Render3DGenerator: React.FC<Render3DGeneratorProps> = ({ planImage, onClos
                   className="w-full p-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="standard">Standard (70-85% fidélité)</option>
-                  <option value="precise">🆕 Précis - ControlNet (95% fidélité)</option>
+                  <option value="precise">🆕 Précis - Flux 1.1 Pro (95% fidélité)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   {precisionMode === 'precise' 
-                    ? '✨ Mode PRÉCIS : Respecte exactement les contours du plan (+50% coût)'
+                    ? '✨ Mode PRÉCIS (Flux 1.1 Pro) : Respecte au mieux la géométrie du plan (+60% coût)'
                     : 'Mode standard : Bon équilibre qualité/vitesse'}
                 </p>
               </div>
@@ -271,16 +307,19 @@ const Render3DGenerator: React.FC<Render3DGeneratorProps> = ({ planImage, onClos
                 <p className="text-xs text-gray-500 mt-1">1 à 4 rendus différents</p>
               </div>
 
-              {/* Bouton génération */}
+              {/* Bouton génération amélioré */}
               <button
                 onClick={handleGenerate}
                 disabled={isGenerating || !planImage}
-                className={`w-full py-4 rounded-lg font-semibold text-white transition-all flex items-center justify-center space-x-2 ${
+                className={`w-full py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center space-x-2 relative overflow-hidden group ${
                   isGenerating || !planImage
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl'
+                    ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                    : 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95'
                 }`}
               >
+                {!isGenerating && !planImage && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
+                )}
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -288,11 +327,19 @@ const Render3DGenerator: React.FC<Render3DGeneratorProps> = ({ planImage, onClos
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-5 h-5" />
+                    <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
                     <span>Générer Rendu 3D</span>
                   </>
                 )}
               </button>
+              
+              {!planImage && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                  <p className="text-xs text-yellow-800 dark:text-yellow-200 text-center">
+                    ⚠️ Veuillez d'abord analyser un plan architectural
+                  </p>
+                </div>
+              )}
 
               {/* Progression */}
               {progress && (
@@ -328,58 +375,78 @@ const Render3DGenerator: React.FC<Render3DGeneratorProps> = ({ planImage, onClos
               
               {/* Rendu principal */}
               {selectedRender ? (
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-6 shadow-xl border border-gray-200 dark:border-gray-700">
                   <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none"></div>
                     <img
                       src={selectedRender.imageUrl}
                       alt="Rendu 3D"
-                      className="w-full rounded-lg shadow-lg"
+                      className="w-full rounded-xl shadow-2xl transition-transform group-hover:scale-[1.02]"
                     />
-                    <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
                       <button
                         onClick={() => handleDownload(selectedRender)}
-                        className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-2xl hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white transition-all transform hover:scale-110 active:scale-95"
                         title="Télécharger"
                       >
-                        <Download className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                        <Download className="w-5 h-5" />
                       </button>
+                    </div>
+                    <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-xl shadow-lg">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {styles.find(s => s.id === selectedRender.style)?.label} - {views.find(v => v.id === selectedRender.viewAngle)?.label}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   
                   {/* Informations */}
-                  <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Style:</span>
-                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-xl border border-purple-200 dark:border-purple-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Style</p>
+                      <p className="font-bold text-gray-900 dark:text-white">
                         {styles.find(s => s.id === selectedRender.style)?.label}
-                      </span>
+                      </p>
                     </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Vue:</span>
-                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Vue</p>
+                      <p className="font-bold text-gray-900 dark:text-white">
                         {views.find(v => v.id === selectedRender.viewAngle)?.label}
-                      </span>
+                      </p>
                     </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Temps de génération:</span>
-                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl border border-green-200 dark:border-green-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Temps</p>
+                      <p className="font-bold text-gray-900 dark:text-white">
                         {selectedRender.processingTime.toFixed(1)}s
-                      </span>
+                      </p>
                     </div>
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Coût:</span>
-                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                    <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Coût</p>
+                      <p className="font-bold text-gray-900 dark:text-white">
                         ${selectedRender.cost.toFixed(4)}
-                      </span>
+                      </p>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-12 text-center">
-                  <ImageIcon className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Configurez les options et cliquez sur "Générer Rendu 3D"
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl p-12 sm:p-16 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
+                  <div className="relative inline-block">
+                    <ImageIcon className="w-20 h-20 mx-auto text-gray-400 mb-4" />
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center animate-bounce">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Prêt à générer votre rendu 3D ?
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">
+                    Configurez les options à gauche et cliquez sur "Générer Rendu 3D"
                   </p>
+                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-400">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                    <span>IA prête</span>
+                  </div>
                 </div>
               )}
 

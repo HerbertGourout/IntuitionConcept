@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Upload,
   CheckCircle,
@@ -8,14 +8,17 @@ import {
   Play,
   RefreshCw,
   Loader2,
-  Edit2,
   FileImage,
   Zap,
   Home,
   Building,
-  Sparkles
+  Sparkles,
+  FileText,
+  Eye
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { useProjectContext } from '../../contexts/ProjectContext';
 import { ClaudeServiceDirect, initializeClaudeServiceDirect } from '../../services/ai/claudeServiceDirect';
 import { PDFSplitter, extractPDFMetadata, getPDFFileStats } from '../../utils/pdfSplitter';
 import { convertClaudeQuoteToAppQuote, extractPlanMetadata } from '../../utils/claudeQuoteConverter';
@@ -23,15 +26,66 @@ import { generateArticlesForPhase } from '../../utils/quoteArticlesGenerator';
 import { BTP_STANDARD_PHASES } from '../../constants/btpPhases';
 import QuoteCreatorSimple from '../Quotes/QuoteCreatorSimple';
 import type { Quote } from '../../services/quotesService';
+import QuotesService from '../../services/quotesService';
+import { convertSimpleQuoteToStructured } from '../../utils/quoteFormatConverter';
 import Render3DGenerator from './Render3DGenerator';
 import jsPDF from 'jspdf';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import autoTable from 'jspdf-autotable'; // Étend automatiquement jsPDF avec la méthode autoTable
+import autoTable from 'jspdf-autotable';
 
 // Extension des types jsPDF pour jspdf-autotable
 // Note: jspdf-autotable n'a pas de types TypeScript complets
 type jsPDFWithAutoTable = jsPDF & {
-  autoTable: (options: any) => jsPDF; // eslint-disable-line @typescript-eslint/no-explicit-any
+  autoTable: (options: {
+    head: string[][];
+    body: string[][];
+    columns: { header: string; dataKey: string }[];
+    foot: string[][];
+    tableWidth: 'auto' | 'wrap' | number;
+    tableLayout: 'fixed' | 'auto';
+    x: number;
+    y: number;
+    margin: { top: number; bottom: number; left: number; right: number };
+    styles: {
+      fontSize: number;
+      font: string;
+      valign: 'top' | 'middle' | 'bottom';
+      halign: 'left' | 'center' | 'right';
+      fillColor: number[];
+      textColor: number[];
+      lineWidth: number;
+      lineColor: number[];
+    };
+    headerStyles: {
+      fontSize: number;
+      font: string;
+      valign: 'top' | 'middle' | 'bottom';
+      halign: 'left' | 'center' | 'right';
+      fillColor: number[];
+      textColor: number[];
+      lineWidth: number;
+      lineColor: number[];
+    };
+    bodyStyles: {
+      fontSize: number;
+      font: string;
+      valign: 'top' | 'middle' | 'bottom';
+      halign: 'left' | 'center' | 'right';
+      fillColor: number[];
+      textColor: number[];
+      lineWidth: number;
+      lineColor: number[];
+    };
+    footStyles: {
+      fontSize: number;
+      font: string;
+      valign: 'top' | 'middle' | 'bottom';
+      halign: 'left' | 'center' | 'right';
+      fillColor: number[];
+      textColor: number[];
+      lineWidth: number;
+      lineColor: number[];
+    };
+  }) => jsPDF;
   lastAutoTable: {
     finalY: number;
   };
@@ -110,15 +164,33 @@ interface GeneratedQuote {
 
 const ArchitecturalPlanAnalyzer: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [planPreview, setPlanPreview] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState(false);
   const [analysis, setAnalysis] = useState<ArchitecturalPlanAnalysis | null>(null);
   const [generatedQuote, setGeneratedQuote] = useState<GeneratedQuote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showQuoteEditor, setShowQuoteEditor] = useState(false);
   const [convertedQuote, setConvertedQuote] = useState<Omit<Quote, 'id'> | null>(null);
+  const [editQuote, setEditQuote] = useState<Quote | null>(null);
+  const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [projectType, setProjectType] = useState('construction');
+  const [projectId, setProjectId] = useState('project-default');
+  const [isSavingQuote, setIsSavingQuote] = useState(false);
   const [show3DGenerator, setShow3DGenerator] = useState(false);
   const [planImageBase64, setPlanImageBase64] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
+  const { currentProject } = useProjectContext();
+
+  // Synchroniser projectId avec le projet actif
+  useEffect(() => {
+    if (currentProject?.id) {
+      setProjectId(currentProject.id);
+    }
+  }, [currentProject?.id]);
 
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([
     {
@@ -155,7 +227,9 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
     
     // Validation du fichier
     if (!file.type.includes('pdf')) {
-      setError('⚠️ Seuls les fichiers PDF sont supportés pour une analyse sans perte de qualité.');
+      const errorMsg = '⚠️ Seuls les fichiers PDF sont supportés pour une analyse sans perte de qualité.';
+      setError(errorMsg);
+      toast.error(errorMsg, { duration: 5000 });
       return;
     }
 
@@ -168,6 +242,24 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
       const stats = await getPDFFileStats(file);
       console.log('📈 Statistiques PDF:', stats);
       
+      // Générer preview du plan
+      console.log('🔍 Début génération preview pour:', file.name);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        console.log('✅ Preview généré avec succès!');
+        console.log('   - Type:', result ? result.substring(0, 30) : 'null');
+        console.log('   - Longueur:', result ? result.length : 0);
+        setPlanPreview(result);
+        setPreviewError(false);
+      };
+      reader.onerror = (error) => {
+        console.error('❌ Erreur lecture fichier:', error);
+        setPreviewError(true);
+      };
+      reader.readAsDataURL(file);
+      console.log('📸 FileReader.readAsDataURL() appelé');
+      
       setUploadedFile(file);
       setError(null);
       setAnalysis(null);
@@ -176,11 +268,14 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
       // Reset analysis steps
       setAnalysisSteps(prev => prev.map(step => ({ ...step, status: 'waiting', progress: 0 })));
       
+      toast.success(`✅ Fichier chargé : ${stats.pageCount} page(s), qualité 100%`, { duration: 3000 });
       console.log(`✅ Fichier prêt pour analyse (${stats.pageCount} pages, qualité préservée à 100%)`);
       
     } catch (err) {
       console.error('❌ Erreur validation PDF:', err);
-      setError('Erreur lors de la validation du PDF. Assurez-vous que le fichier est valide.');
+      const errorMsg = 'Erreur lors de la validation du PDF. Assurez-vous que le fichier est valide.';
+      setError(errorMsg);
+      toast.error(errorMsg, { duration: 5000 });
     }
     
     return false; // Prevent default upload
@@ -404,6 +499,8 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
       const planMetadata = extractPlanMetadata(analysisResult);
       const appQuote = convertClaudeQuoteToAppQuote(analysisResult.architecturalData, planMetadata);
       setConvertedQuote(appQuote);
+      if (!clientName) setClientName(appQuote.clientName || '');
+      if (!projectType) setProjectType(appQuote.projectType || 'construction');
       console.log('✅ Devis converti au format de l\'application');
       
       console.log('🎉 Analyse complète terminée avec succès!');
@@ -429,6 +526,135 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
     setGeneratedQuote(null);
     setError(null);
     setAnalysisSteps(prev => prev.map(step => ({ ...step, status: 'waiting', progress: 0 })));
+    setConvertedQuote(null);
+    setEditQuote(null);
+    setClientName('');
+    setClientEmail('');
+    setClientPhone('');
+    setCompanyName('');
+    setProjectType('construction');
+    setProjectId('project-default');
+  };
+
+  const persistQuote = async (openEditor: boolean = false) => {
+    console.log('🔄 [PERSIST_QUOTE] Début de la sauvegarde du devis', { openEditor });
+    console.log('📦 [PERSIST_QUOTE] État des devis:', {
+      hasGeneratedQuote: !!generatedQuote,
+      hasConvertedQuote: !!convertedQuote,
+      generatedQuotePhasesCount: generatedQuote?.phases?.length || 0,
+      convertedQuotePhasesCount: convertedQuote?.phases?.length || 0
+    });
+    
+    if (!generatedQuote && !convertedQuote) {
+      console.error('❌ [PERSIST_QUOTE] Aucun devis disponible');
+      toast.error('❌ Aucun devis à enregistrer', { duration: 4000 });
+      return;
+    }
+    
+    try {
+      setIsSavingQuote(true);
+      console.log('📊 [PERSIST_QUOTE] Préparation du payload...');
+      
+      // Toujours utiliser generatedQuote qui contient les bonnes données
+      let payload: Omit<Quote, 'id'> | null = null;
+      
+      if (generatedQuote) {
+        console.log('🔄 [PERSIST_QUOTE] Conversion du devis généré vers format structuré...');
+        payload = convertSimpleQuoteToStructured(
+          {
+            totalCost: generatedQuote.totalCost,
+            totalDuration: generatedQuote.totalDuration,
+            title: generatedQuote.title,
+            phases: (generatedQuote.phases || []).map(p => ({
+              name: p.name,
+              description: p.description,
+              totalCost: p.totalCost,
+              duration: p.duration,
+              lignes: p.lignes?.map(it => ({
+                designation: it.designation || it.description || '',
+                unite: it.unit || 'u',
+                quantite: it.quantity || 1,
+                prixUnitaire: it.unitPrice || 0,
+                prixTotal: it.totalPrice || 0
+              }))
+            }))
+          },
+          {
+            clientName: clientName || 'Client',
+            clientEmail: clientEmail || '',
+            clientPhone: clientPhone || '',
+            companyName: companyName || '',
+            projectType: projectType || 'construction'
+          },
+          projectId || 'project-default'
+        );
+        console.log('✅ [PERSIST_QUOTE] Conversion réussie');
+      }
+      
+      if (!payload) {
+        console.error('❌ [PERSIST_QUOTE] Payload null après conversion');
+        throw new Error('Aucun devis à enregistrer');
+      }
+      
+      // Mise à jour des informations client
+      payload.projectId = projectId || 'project-default';
+      payload.clientName = clientName || payload.clientName || 'Client';
+      payload.clientEmail = clientEmail || payload.clientEmail || '';
+      payload.clientPhone = clientPhone || payload.clientPhone || '';
+      payload.companyName = companyName || payload.companyName || '';
+      payload.projectType = projectType || payload.projectType || 'construction';
+      
+      console.log('💾 [PERSIST_QUOTE] Sauvegarde dans Firebase...', {
+        projectId: payload.projectId,
+        clientName: payload.clientName,
+        totalAmount: payload.totalAmount,
+        phasesCount: payload.phases?.length
+      });
+
+      const newId = await QuotesService.createQuote(payload);
+      console.log('✅ [PERSIST_QUOTE] Devis créé avec ID:', newId);
+      
+      const saved = await QuotesService.getQuoteById(newId);
+      console.log('📥 [PERSIST_QUOTE] Devis récupéré:', saved ? 'Succès' : 'Échec');
+      
+      if (saved) {
+        toast.success(`✅ Devis enregistré avec succès pour ${clientName}`, { duration: 4000 });
+        
+        if (openEditor) {
+          console.log('📝 [PERSIST_QUOTE] Ouverture de l\'\u00e9diteur...');
+          console.log('📊 [PERSIST_QUOTE] Données du devis à charger:', {
+            id: saved.id,
+            reference: saved.reference,
+            clientName: saved.clientName,
+            totalAmount: saved.totalAmount,
+            phasesCount: saved.phases?.length,
+            phases: saved.phases?.map(p => ({
+              name: p.name,
+              tasksCount: p.tasks?.length
+            }))
+          });
+          
+          // Le devis sauvegardé est déjà au format structuré complet
+          setEditQuote(saved);
+          setShowQuoteEditor(true);
+          
+          console.log('✅ [PERSIST_QUOTE] Éditeur ouvert avec succès');
+          console.log('📝 [PERSIST_QUOTE] État editQuote mis à jour');
+          console.log('🎯 [PERSIST_QUOTE] État showQuoteEditor:', true);
+        } else {
+          console.log('ℹ️ [PERSIST_QUOTE] Sauvegarde sans ouverture de l\'\u00e9diteur');
+        }
+      } else {
+        console.error('❌ [PERSIST_QUOTE] Impossible de récupérer le devis sauvegardé');
+      }
+    } catch (e) {
+      console.error('❌ [PERSIST_QUOTE] Erreur lors de la sauvegarde:', e);
+      const errorMsg = e instanceof Error ? e.message : 'Erreur lors de la sauvegarde du devis';
+      toast.error(`❌ ${errorMsg}`, { duration: 5000 });
+    } finally {
+      setIsSavingQuote(false);
+      console.log('🏁 [PERSIST_QUOTE] Fin du processus');
+    }
   };
 
   const downloadQuote = () => {
@@ -456,13 +682,34 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
       
       yPosition = 50;
       
-      // Informations générales
+      // Informations client et projet
       doc.setTextColor(0, 0, 0);
-      doc.setFontSize(10);
-      doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 14, yPosition);
-      doc.text(`Fichier: ${uploadedFile?.name || 'Plan architectural'}`, 14, yPosition + 6);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('INFORMATIONS CLIENT', 14, yPosition);
       
-      yPosition += 20;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      yPosition += 8;
+      
+      if (clientName) {
+        doc.text(`Client: ${clientName}`, 14, yPosition);
+        yPosition += 6;
+      }
+      if (clientEmail) {
+        doc.text(`Email: ${clientEmail}`, 14, yPosition);
+        yPosition += 6;
+      }
+      if (clientPhone) {
+        doc.text(`Téléphone: ${clientPhone}`, 14, yPosition);
+        yPosition += 6;
+      }
+      
+      doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`Projet: ${uploadedFile?.name || 'Plan architectural'}`, 14, yPosition);
+      
+      yPosition += 15;
       
       // Résumé
       doc.setFillColor(243, 244, 246);
@@ -501,12 +748,14 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
         yPosition += 14;
         
         // Description
+        doc.setTextColor(0, 0, 0);
         if (phase.description) {
           doc.setFontSize(9);
           doc.setFont('helvetica', 'italic');
           doc.setTextColor(100, 100, 100);
-          doc.text(phase.description, 20, yPosition);
-          yPosition += 6;
+          const descLines = doc.splitTextToSize(phase.description, pageWidth - 40);
+          doc.text(descLines, 20, yPosition);
+          yPosition += (descLines.length * 5) + 2;
         }
         
         // Tableau des articles
@@ -519,7 +768,7 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
             formatAmount(item.totalPrice || item.prixTotal || 0)
           ]);
           
-          doc.autoTable({
+          autoTable(doc, {
             startY: yPosition,
             head: [['Désignation', 'Unité', 'Qté', 'P.U.', 'Total']],
             body: tableData,
@@ -544,11 +793,47 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
             margin: { left: 14, right: 14 }
           });
           
-          yPosition = doc.lastAutoTable.finalY + 10;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          yPosition = (doc as any).lastAutoTable.finalY + 10;
         } else {
           yPosition += 4;
         }
       });
+      
+      // Total général
+      if (yPosition > pageHeight - 50) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      yPosition += 10;
+      doc.setFillColor(139, 92, 246);
+      doc.rect(14, yPosition, pageWidth - 28, 15, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL GÉNÉRAL', 20, yPosition + 10);
+      doc.text(formatAmount(generatedQuote.totalCost ?? 0), pageWidth - 20, yPosition + 10, { align: 'right' });
+      
+      yPosition += 20;
+      
+      // Conditions de paiement
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CONDITIONS DE PAIEMENT', 14, yPosition);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      yPosition += 6;
+      doc.text('- Acompte de 30% à la commande', 20, yPosition);
+      yPosition += 5;
+      doc.text('- 40% à mi-parcours', 20, yPosition);
+      yPosition += 5;
+      doc.text('- Solde de 30% à la livraison', 20, yPosition);
+      yPosition += 8;
+      doc.text(`Durée estimée des travaux: ${generatedQuote.totalDuration ?? 0} jours`, 20, yPosition);
       
       // Pied de page sur toutes les pages
       const pageCount = doc.getNumberOfPages();
@@ -557,7 +842,7 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text(
-          `IntuitionConcept BTP Platform - Page ${i}/${pageCount}`,
+          `Page ${i} sur ${pageCount} - Généré le ${new Date().toLocaleDateString('fr-FR')}`,
           pageWidth / 2,
           pageHeight - 10,
           { align: 'center' }
@@ -568,10 +853,11 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
       const filename = `devis_${uploadedFile?.name.replace('.pdf', '') || 'plan'}_${Date.now()}.pdf`;
       doc.save(filename);
       
+      toast.success(`📄 PDF téléchargé : ${filename}`, { duration: 4000 });
       console.log('✅ PDF exporté avec succès:', filename);
     } catch (error) {
       console.error('❌ Erreur lors de l\'export PDF:', error);
-      alert('Erreur lors de la génération du PDF. Vérifiez que jsPDF est installé.');
+      toast.error('❌ Erreur lors de la génération du PDF. Vérifiez que jsPDF est installé.', { duration: 5000 });
     }
   };
 
@@ -660,35 +946,95 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
             </div>
             
             {uploadedFile && (
-          <div className="mt-8 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
-                <div className="space-y-2">
-                  <p className="text-lg font-medium text-green-800 dark:text-green-200">
-                    ✅ Fichier téléchargé: {uploadedFile.name}
-                  </p>
-                  <p className="text-sm text-green-600 dark:text-green-400">
-                    Taille: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB — Analyse requise
-                  </p>
+          <div className="mt-8 space-y-4">
+            {/* Card principale avec fichier + aperçu */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-lg">
+              {/* Header avec info fichier */}
+              <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-b border-green-200 dark:border-green-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                    <div className="space-y-1">
+                      <p className="text-lg font-semibold text-green-800 dark:text-green-200">
+                        ✅ {uploadedFile.name}
+                      </p>
+                      <p className="text-sm text-green-600 dark:text-green-400">
+                        📊 {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • 📅 {new Date(uploadedFile.lastModified).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={startAnalysis}
+                      disabled={isAnalyzing}
+                      className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2 shadow-md hover:shadow-lg"
+                    >
+                      <Play className="w-5 h-5" />
+                      <span>Analyser</span>
+                    </button>
+                    <button
+                      onClick={resetAnalysis}
+                      disabled={isAnalyzing}
+                      className="px-4 py-3 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      title="Réinitialiser"
+                    >
+                      <RefreshCw className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={startAnalysis}
-                  disabled={isAnalyzing}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
-                >
-                  <Play className="w-5 h-5" />
-                  <span>Analyser</span>
-                </button>
-                <button
-                  onClick={resetAnalysis}
-                  disabled={isAnalyzing}
-                  className="px-4 py-3 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                </button>
+              
+              {/* Aperçu du plan */}
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Aperçu du plan</h3>
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {planPreview ? `✅ Preview chargé (${(planPreview.length / 1024).toFixed(0)} KB)` : '⏳ Chargement...'}
+                  </span>
+                </div>
+                
+                {planPreview && !previewError ? (
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border-2 border-dashed border-gray-300 dark:border-gray-600">
+                    <iframe 
+                      src={planPreview} 
+                      title="Aperçu du plan PDF"
+                      className="w-full h-96 rounded border-0"
+                      style={{ minHeight: '400px' }}
+                      onError={() => {
+                        console.log('❌ Erreur chargement iframe');
+                        setPreviewError(true);
+                      }}
+                      onLoad={() => console.log('✅ Iframe chargée')}
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-8 border-2 border-dashed border-blue-300 dark:border-blue-700">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="p-4 bg-blue-100 dark:bg-blue-800/30 rounded-full">
+                        <FileText className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                          📄 Fichier PDF chargé
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          L'aperçu n'est pas disponible dans ce navigateur
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-lg">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Fichier prêt pour l'analyse</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
+                  ✅ PDF validé - Cliquez sur "Analyser" pour commencer l'analyse IA
+                </p>
               </div>
             </div>
           </div>
@@ -734,6 +1080,12 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
                       style={{ width: `${step.progress}%` }}
                     />
                   </div>
+                  {step.status === 'processing' && (
+                    <div className="space-y-2 animate-pulse">
+                      <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -866,31 +1218,82 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {convertedQuote && (
-                    <button
-                      onClick={() => setShowQuoteEditor(true)}
-                      className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors duration-200 flex items-center space-x-2"
-                    >
-                      <Edit2 className="w-5 h-5" />
-                      <span>Éditer</span>
-                    </button>
-                  )}
                   <button
                     onClick={downloadQuote}
                     className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors duration-200 flex items-center space-x-2"
                   >
                     <Download className="w-5 h-5" />
-                    <span>Télécharger</span>
+                    <span>Télécharger PDF</span>
                   </button>
                   <button
                     onClick={async () => {
                       if (uploadedFile) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                          setPlanImageBase64(e.target?.result as string);
+                        toast.loading('Conversion du PDF en image...', { id: 'pdf-convert' });
+                        try {
+                          // Convertir le PDF en image PNG pour l'API Replicate
+                          const arrayBuffer = await uploadedFile.arrayBuffer();
+                          
+                          // Charger le PDF avec pdfjs-dist
+                          const pdfjsLib = await import('pdfjs-dist');
+                          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                          const pdf = await loadingTask.promise;
+                          const page = await pdf.getPage(1); // Première page
+                          
+                          // Créer un canvas pour rendre la page
+                          // Scale 3-4 pour vraiment haute résolution (meilleure pour l'IA)
+                          const scale = 3.5; // Très haute résolution pour capture détails
+                          const viewport = page.getViewport({ scale });
+                          const canvas = document.createElement('canvas');
+                          const context = canvas.getContext('2d');
+                          
+                          if (!context) {
+                            throw new Error('Impossible de créer le contexte canvas');
+                          }
+                          
+                          canvas.height = viewport.height;
+                          canvas.width = viewport.width;
+                          
+                          // Rendre la page PDF sur le canvas
+                          await page.render({
+                            canvasContext: context,
+                            viewport: viewport
+                          }).promise;
+                          
+                          // 🆕 Prétraitement de l'image pour améliorer la qualité
+                          console.log('🎨 Prétraitement de l\'image...');
+                          
+                          // 1. Améliorer le contraste et la netteté
+                          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                          const data = imageData.data;
+                          
+                          // Augmenter le contraste (simple algorithme)
+                          const contrastFactor = 1.2; // 20% plus de contraste
+                          for (let i = 0; i < data.length; i += 4) {
+                            // Appliquer le contraste sur RGB
+                            data[i] = Math.min(255, Math.max(0, (data[i] - 128) * contrastFactor + 128));     // R
+                            data[i + 1] = Math.min(255, Math.max(0, (data[i + 1] - 128) * contrastFactor + 128)); // G
+                            data[i + 2] = Math.min(255, Math.max(0, (data[i + 2] - 128) * contrastFactor + 128)); // B
+                          }
+                          
+                          context.putImageData(imageData, 0, 0);
+                          console.log('✅ Contraste amélioré');
+                          
+                          // Convertir le canvas en Data URL PNG avec qualité optimale
+                          const imageDataURL = canvas.toDataURL('image/png', 1.0); // Qualité maximale
+                          setPlanImageBase64(imageDataURL);
                           setShow3DGenerator(true);
-                        };
-                        reader.readAsDataURL(uploadedFile);
+                          
+                          console.log('📊 Image finale:', {
+                            width: canvas.width,
+                            height: canvas.height,
+                            size: `${(imageDataURL.length / 1024 / 1024).toFixed(2)} MB`
+                          });
+                          
+                          toast.success('PDF converti en image !', { id: 'pdf-convert' });
+                        } catch (error) {
+                          console.error('Erreur conversion PDF:', error);
+                          toast.error('Erreur lors de la conversion du PDF', { id: 'pdf-convert' });
+                        }
                       }
                     }}
                     className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-200 flex items-center space-x-2 shadow-lg"
@@ -1007,13 +1410,117 @@ const ArchitecturalPlanAnalyzer: React.FC = () => {
         )}
 
 
+        {/* Synchronisation avec module Devis */}
+        {generatedQuote && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 text-white">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-xl">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold">5. Synchroniser avec la section Devis</h2>
+                  <p className="text-indigo-100 text-sm">Complétez les informations client et enregistrez dans le module Devis</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="client-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nom du client</label>
+                  <input 
+                    id="client-name"
+                    value={clientName} 
+                    onChange={(e)=>setClientName(e.target.value)} 
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400" 
+                    placeholder="Ex: Société ABC / M. Dupont" 
+                  />
+                </div>
+                <div>
+                  <label htmlFor="client-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                  <input 
+                    id="client-email"
+                    type="email" 
+                    value={clientEmail} 
+                    onChange={(e)=>setClientEmail(e.target.value)} 
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400" 
+                    placeholder="email@exemple.com" 
+                  />
+                </div>
+                <div>
+                  <label htmlFor="client-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Téléphone</label>
+                  <input 
+                    id="client-phone"
+                    value={clientPhone} 
+                    onChange={(e)=>setClientPhone(e.target.value)} 
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400" 
+                    placeholder="+225 07 12 34 56 78" 
+                  />
+                </div>
+                <div>
+                  <label htmlFor="company-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Entreprise</label>
+                  <input 
+                    id="company-name"
+                    value={companyName} 
+                    onChange={(e)=>setCompanyName(e.target.value)} 
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400" 
+                    placeholder="Raison sociale (optionnel)" 
+                  />
+                </div>
+                <div>
+                  <label htmlFor="project-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type de projet</label>
+                  <select 
+                    id="project-type"
+                    value={projectType} 
+                    onChange={(e)=>setProjectType(e.target.value)} 
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                  >
+                    <option value="construction">Construction</option>
+                    <option value="renovation">Rénovation</option>
+                    <option value="extension">Extension</option>
+                    <option value="maintenance">Maintenance</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="project-id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Projet (ID)</label>
+                  <input 
+                    id="project-id"
+                    value={projectId} 
+                    onChange={(e)=>setProjectId(e.target.value)} 
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400" 
+                    placeholder="project-default" 
+                    readOnly
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button 
+                  onClick={() => persistQuote(false)} 
+                  disabled={isSavingQuote} 
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  {isSavingQuote ? 'Enregistrement…' : 'Enregistrer dans Devis'}
+                </button>
+                <button 
+                  onClick={() => persistQuote(true)} 
+                  disabled={isSavingQuote} 
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  {isSavingQuote ? 'Ouverture éditeur…' : "Enregistrer et ouvrir l'éditeur"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Modal d'édition du devis avec QuoteCreatorSimple */}
-        {showQuoteEditor && convertedQuote && (
+        {showQuoteEditor && editQuote && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
               <QuoteCreatorSimple
                 onClose={() => setShowQuoteEditor(false)}
-                editQuote={convertedQuote as Quote}
+                editQuote={editQuote as Quote}
                 onQuoteCreated={() => {
                   setShowQuoteEditor(false);
                   console.log('✅ Devis sauvegardé avec succès !');

@@ -25,6 +25,8 @@ import AuthTestPage from './components/Auth/AuthTestPage';
 import EmailTestPage from './components/Email/EmailTestPage';
 import AnomalyDetectionDashboard from './components/AI/AnomalyDetectionDashboard';
 import CountryPricing from './pages/CountryPricing';
+import AnalysePlan from './pages/AnalysePlan';
+import Rendu3D from './pages/Rendu3D';
 import ArchitecturalPlanAnalyzer from './components/AI/ArchitecturalPlanAnalyzer';
 import SiteReports from './pages/SiteReports';
 import ProjectPlanGeneratorPage from './pages/ProjectPlanGenerator';
@@ -300,6 +302,10 @@ const AppContent: React.FC = () => {
         return <ProjectPlanGeneratorPage />;
       case 'tender-response':
         return <TenderResponse />;
+      case 'analyse':
+        return <AnalysePlan />;
+      case 'rendu-3d':
+        return <Rendu3D />;
       default:
         return <div>Section non trouvée</div>;
     }

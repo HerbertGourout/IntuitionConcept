@@ -12,14 +12,14 @@ interface TenderUploadProps {
 }
 
 const TenderUpload: React.FC<TenderUploadProps> = ({ onTenderAnalyzed }) => {
-  const { currentUser } = useAuth();
+  const { firebaseUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (file: File) => {
-    if (!currentUser) {
+    if (!firebaseUser) {
       setError('Vous devez être connecté pour utiliser cette fonctionnalité');
       return;
     }
@@ -42,7 +42,7 @@ const TenderUpload: React.FC<TenderUploadProps> = ({ onTenderAnalyzed }) => {
 
       console.log('📄 Analyse de l\'appel d\'offres:', file.name);
       
-      const result = await tenderAnalyzer.analyzeTender(file, currentUser.uid);
+      const result = await tenderAnalyzer.analyzeTender(file, firebaseUser.uid);
       
       clearInterval(progressInterval);
       setProgress(100);

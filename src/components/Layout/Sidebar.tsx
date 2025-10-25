@@ -229,6 +229,22 @@ const Sidebar: React.FC<SidebarProps> = ({
       description: 'Analyse IA de plans architecturaux'
     },
     { 
+      id: 'analyse',
+      label: 'Analyse de Plan (Page)',
+      icon: FileImage,
+      color: 'text-indigo-400',
+      bgColor: 'bg-indigo-400/10',
+      description: 'Page dédiée: analyse + devis (Claude)'
+    },
+    { 
+      id: 'rendu-3d',
+      label: 'Rendu 3D (Page)',
+      icon: Zap,
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-400/10',
+      description: 'Page dédiée: génération d\'images 3D (Replicate)'
+    },
+    { 
       id: 'automation-hub', 
       label: 'Automatisations & Workflows', 
       icon: Zap, 

@@ -19,7 +19,7 @@ interface GenerationResult {
 
 class TenderResponseGeneratorService {
   private apiKey: string;
-  private baseUrl = 'https://api.anthropic.com/v1';
+  private baseUrl: string;
   
   // Coûts par token (en FCFA)
   private readonly PRICING = {
@@ -35,6 +35,10 @@ class TenderResponseGeneratorService {
 
   constructor() {
     this.apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
+    // Utiliser le proxy Vite en développement pour éviter CORS
+    this.baseUrl = import.meta.env.DEV
+      ? '/api/anthropic/v1'
+      : 'https://api.anthropic.com/v1';
   }
 
   /**
@@ -549,13 +553,20 @@ Réponds en JSON avec cette structure:
       ? 'claude-3-haiku-20240307'
       : 'claude-3-sonnet-20240229';
 
+    // En développement, le proxy Vite gère les headers automatiquement
+    const headers: HeadersInit = {
+      'content-type': 'application/json'
+    };
+
+    // En production, ajouter les headers d'authentification
+    if (!import.meta.env.DEV) {
+      headers['x-api-key'] = this.apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+    }
+
     const response = await fetch(`${this.baseUrl}/messages`, {
       method: 'POST',
-      headers: {
-        'x-api-key': this.apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({
         model: modelName,
         max_tokens: 4096,
@@ -567,7 +578,9 @@ Réponds en JSON avec cette structure:
     });
 
     if (!response.ok) {
-      throw new Error(`Erreur API Claude: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ Erreur API Claude (ResponseGenerator):', response.status, errorText);
+      throw new Error(`Erreur API Claude: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
