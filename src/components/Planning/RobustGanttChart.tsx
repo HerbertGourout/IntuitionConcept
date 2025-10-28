@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { BarChart3, ChevronLeft, ChevronRight, Target } from 'lucide-react';
-import { ProjectTask } from '../../contexts/projectTypes';
+import { ProjectTask, ProjectPhase } from '../../contexts/projectTypes';
 import { TeamMember } from '../../types/team';
 import SectionHeader from '../UI/SectionHeader';
 
 // Interface robuste avec validation
 interface RobustGanttChartProps {
   tasks: ProjectTask[];
+  phases?: ProjectPhase[];
   teamMembers: TeamMember[];
   visibleStartDate: Date;
   setVisibleStartDate: (date: Date) => void;
@@ -170,6 +171,7 @@ class BarCalculator {
 
 const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
   tasks,
+  phases = [],
   teamMembers,
   visibleStartDate,
   setVisibleStartDate,
@@ -177,6 +179,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
 }) => {
   // Debug mode removed for production
   const rowHeight = 44; // Hauteur de ligne compacte
+  const phaseRowHeight = 50; // Hauteur pour les barres de phases
 
   const processedTasks = useMemo(() => {
     return tasks.map(task => {
@@ -188,6 +191,25 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
       };
     }).filter(task => task.validation.isValid);
   }, [tasks]);
+
+  // Traiter les phases pour affichage
+  const processedPhases = useMemo(() => {
+    return phases.map(phase => {
+      const startDate = DateUtils.parseDate(phase.startDate);
+      const endDate = DateUtils.parseDate(phase.endDate);
+      const isValid = startDate !== null && endDate !== null && endDate >= startDate;
+      
+      return {
+        ...phase,
+        validation: {
+          isValid,
+          startDate,
+          endDate,
+          duration: isValid && startDate && endDate ? DateUtils.daysBetween(startDate, endDate) + 1 : 0
+        }
+      };
+    }).filter(phase => phase.validation.isValid);
+  }, [phases]);
 
   const visibleEndDate = useMemo(() => {
     return DateUtils.addDays(visibleStartDate, daysToShow - 1);
@@ -302,7 +324,10 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
       
       {/* Informations de debug */}
       <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
+          <div>
+            <strong>Phases valides:</strong> {processedPhases.length}/{phases.length}
+          </div>
           <div>
             <strong>Tâches valides:</strong> {processedTasks.length}/{tasks.length}
           </div>
@@ -310,7 +335,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
             <strong>Période visible:</strong> {DateUtils.formatDate(visibleStartDate)} - {DateUtils.formatDate(visibleEndDate)}
           </div>
           <div>
-            <strong>Barres affichées:</strong> {taskBars.length}
+            <strong>Barres affichées:</strong> {processedPhases.length + taskBars.length}
           </div>
         </div>
         {/* Debug mode removed for production */}
@@ -334,14 +359,72 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
                 </div>
               ))}
             </div>
-            {/* Barres de tâches - conteneur scrollable */}
+            {/* Barres de phases et tâches - conteneur scrollable */}
             <div
               className="relative bg-white w-full max-h-[480px] overflow-y-auto"
-              style={{ height: Math.max(processedTasks.length * rowHeight + 24, 120) }}
+              style={{ height: Math.max((processedPhases.length * phaseRowHeight) + (processedTasks.length * rowHeight) + 24, 120) }}
             >
-              {processedTasks.length === 0 ? (
+              {/* Affichage des phases */}
+              {processedPhases.map((phase, phaseIdx) => {
+                // Convertir la phase en format compatible avec BarCalculator
+                const phaseAsTask: ProjectTask = { 
+                  ...phase, 
+                  name: phase.name,
+                  assignedTo: [],
+                  status: phase.status,
+                  startDate: phase.startDate,
+                  endDate: phase.endDate
+                } as ProjectTask;
+                
+                const phaseBar = BarCalculator.calculateBar(
+                  phaseAsTask,
+                  visibleStartDate,
+                  visibleEndDate,
+                  daysToShow
+                );
+                
+                if (!phaseBar) return null;
+                
+                return (
+                  <div key={phase.id} className="relative">
+                    {/* Barre de phase */}
+                    <div
+                      className="absolute h-12 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 flex items-center text-white text-sm font-bold px-4 shadow-lg border-2 border-white/30 overflow-hidden"
+                      style={{
+                        left: `${phaseBar.leftPercent}%`,
+                        width: `${phaseBar.widthPercent}%`,
+                        top: phaseIdx * phaseRowHeight + 10,
+                        zIndex: 15
+                      }}
+                      title={`Phase: ${phase.name} | ${phase.validation.duration} jours | ${phase.tasks?.length || 0} tâche(s)`}
+                    >
+                      {phaseBar.startsBeforeWindow && (
+                        <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-r from-black/40 to-transparent" />
+                      )}
+                      {phaseBar.endsAfterWindow && (
+                        <div className="absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-l from-black/40 to-transparent" />
+                      )}
+                      <Target className="w-4 h-4 mr-2" />
+                      <span className="truncate">{phase.name}</span>
+                      <span className="ml-auto text-xs opacity-90">({phase.tasks?.length || 0})</span>
+                    </div>
+                    {/* Ligne de fond pour la phase */}
+                    <div
+                      className="absolute h-12 bg-purple-50 border-2 border-purple-200 rounded-md w-full"
+                      style={{
+                        left: 0,
+                        top: phaseIdx * phaseRowHeight + 10,
+                        zIndex: 5
+                      }}
+                    />
+                  </div>
+                );
+              })}
+              
+              {/* Affichage des tâches */}
+              {processedTasks.length === 0 && processedPhases.length === 0 ? (
                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-                  Aucune tâche valide à afficher
+                  Aucune phase ou tâche valide à afficher
                 </div>
               ) : (
                 taskBars.map(({ task, bar }, idx) => (
@@ -352,7 +435,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
                       style={{
                         left: `${bar!.leftPercent}%`,
                         width: `${bar!.widthPercent}%`,
-                        top: idx * rowHeight + 10,
+                        top: (processedPhases.length * phaseRowHeight) + (idx * rowHeight) + 10,
                         zIndex: 10
                       }}
                       title={`${task.name} | ${getAssignedMemberNames(task.assignedTo)} | ${task.validation.duration} jours`}
@@ -379,7 +462,7 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
                       className="absolute h-9 bg-gray-50 border border-gray-200 rounded-md w-full"
                       style={{
                         left: 0,
-                        top: idx * rowHeight + 10,
+                        top: (processedPhases.length * phaseRowHeight) + (idx * rowHeight) + 10,
                         zIndex: 1
                       }}
                     />

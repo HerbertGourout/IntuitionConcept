@@ -14,10 +14,29 @@ export interface MaintenanceEvent {
   operator?: string;
 }
 // Utilise maintenant l'interface Equipment globale du dossier types
-import type { Equipment as EquipmentBase } from '../types';
+
+export interface FinancialRecord {
+  id: string;
+  type: 'income' | 'expense';
+  category: 'materials' | 'labor' | 'equipment' | 'permits' | 'other';
+  amount: number;
+  description: string;
+  date: string;
+  approved: boolean;
+  invoiceNumber?: string;
+  supplier?: string;
+  status: 'planned' | 'actual' | 'pending';
+  phaseId?: string;
+  taskId?: string;
+  purchaseOrderId?: string;
+  deliveryNoteId?: string;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 // Extension locale de Equipment pour ajouter maintenanceHistory
-export interface Equipment extends EquipmentBase {
+export interface ExtendedEquipment {
   maintenanceHistory?: MaintenanceEvent[];
 }
 
@@ -41,7 +60,7 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   history?: ProjectHistoryEntry[];
-  equipment?: Equipment[]; // <-- Utilise maintenant l'interface Equipment globale
+  equipment?: ExtendedEquipment[]; // <-- Utilise maintenant l'interface Equipment globale
   type?: string; // Type de projet (ex: 'Construction', 'Rénovation', etc.)
   financialRecords?: FinancialRecord[]; // Ajout des enregistrements financiers
 }
@@ -117,7 +136,6 @@ export interface CostItem {
   notes?: string;
 }
 
-import type { FinancialRecord } from '../types';
 
 export interface ProjectContextType {
   projects: Project[];
@@ -133,7 +151,7 @@ export interface ProjectContextType {
   ) => void;
   deleteProject: (id: string) => Promise<void>;
   archiveProject: (id: string) => Promise<void>;
-  addPhase: (projectId: string, phase: Omit<ProjectPhase, 'id' | 'tasks'>) => void;
+  addPhase: (projectId: string, phase: Omit<ProjectPhase, 'id' | 'tasks'>) => Promise<ProjectPhase | null>;
   updatePhase: (projectId: string, phaseId: string, updates: Partial<ProjectPhase>) => void;
   deletePhase: (projectId: string, phaseId: string) => Promise<void>;
   addTask: (projectId: string, phaseId: string, task: Omit<ProjectTask, 'id'>, parentTaskId?: string) => void;

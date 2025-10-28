@@ -13,75 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export interface ProjectPhase {
-  id: string;
-  name: string;
-  description?: string;
-  startDate: string;
-  endDate: string;
-  status: 'planned' | 'in_progress' | 'completed' | 'on_hold';
-  progress: number;
-  budget?: number;
-  actualCost?: number;
-  tasks: ProjectTask[];
-}
-
-export interface ProjectTask {
-  id: string;
-  name: string;
-  description?: string;
-  status: 'todo' | 'in_progress' | 'done';
-  priority: 'low' | 'medium' | 'high';
-  assignedTo?: string[];
-  dueDate?: string;
-  startDate?: string;
-  estimatedHours?: number;
-  actualHours?: number;
-  spent?: number;
-  phaseId?: string;
-  updatedAt?: Date;
-}
-
-export interface FinancialRecord {
-  id: string;
-  type: 'income' | 'expense';
-  category: 'materials' | 'labor' | 'equipment' | 'permits' | 'other';
-  amount: number;
-  description: string;
-  date: string;
-  approved: boolean;
-  invoiceNumber?: string;
-  supplier?: string;
-  status: 'planned' | 'actual' | 'pending';
-  // Propriétés pour l'intégration budgétaire avancée
-  phaseId?: string;
-  taskId?: string;
-  purchaseOrderId?: string;
-  deliveryNoteId?: string;
-  tags?: string[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  description: string;
-  client: string;
-  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
-  startDate: string;
-  endDate: string;
-  budget: number;
-  actualCost: number;
-  progress: number;
-  location: string;
-  phases: ProjectPhase[];
-  tasks: ProjectTask[];
-  team: string[];
-  financialRecords: FinancialRecord[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Project, ProjectPhase, ProjectTask, FinancialRecord } from '../contexts/projectTypes';
 
 const COLLECTION_NAME = 'projects';
 
@@ -105,7 +37,7 @@ export class ProjectService {
             ? data.updatedAt.toDate() 
             : new Date(data.updatedAt || Date.now())
         };
-      }) as Project[];
+      }) as unknown as Project[];
     } catch (error) {
       console.error('Erreur lors de la récupération des projets:', error);
       throw error;
@@ -126,16 +58,18 @@ export class ProjectService {
       
       const doc = querySnapshot.docs[0];
       const data = doc.data();
+      const rawData = { ...data };
+      delete (rawData as Partial<Project>).id;
       return {
         id: doc.id,
-        ...data,
-        createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
-          ? data.createdAt.toDate() 
-          : new Date(data.createdAt || Date.now()),
-        updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' 
-          ? data.updatedAt.toDate() 
-          : new Date(data.updatedAt || Date.now())
-      } as Project;
+        ...rawData,
+        createdAt: rawData.createdAt && typeof (rawData.createdAt as unknown as Timestamp).toDate === 'function' 
+          ? (rawData.createdAt as unknown as Timestamp).toDate() 
+          : new Date((rawData.createdAt as string | undefined) || Date.now()),
+        updatedAt: rawData.updatedAt && typeof (rawData.updatedAt as unknown as Timestamp).toDate === 'function' 
+          ? (rawData.updatedAt as unknown as Timestamp).toDate() 
+          : new Date((rawData.updatedAt as string | undefined) || Date.now())
+      } as unknown as Project;
     } catch (error) {
       console.error('Erreur lors de la récupération du projet:', error);
       throw error;
@@ -155,17 +89,19 @@ export class ProjectService {
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => {
         const data = doc.data();
+        const rawData = { ...data };
+        delete (rawData as Partial<Project>).id;
         return {
           id: doc.id,
-          ...data,
-          createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
-            ? data.createdAt.toDate() 
-            : new Date(data.createdAt || Date.now()),
-          updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' 
-            ? data.updatedAt.toDate() 
-            : new Date(data.updatedAt || Date.now())
+          ...rawData,
+          createdAt: rawData.createdAt && typeof (rawData.createdAt as unknown as Timestamp).toDate === 'function' 
+            ? (rawData.createdAt as unknown as Timestamp).toDate()
+            : new Date((rawData.createdAt as string | undefined) || Date.now()),
+          updatedAt: rawData.updatedAt && typeof (rawData.updatedAt as unknown as Timestamp).toDate === 'function' 
+            ? (rawData.updatedAt as unknown as Timestamp).toDate()
+            : new Date((rawData.updatedAt as string | undefined) || Date.now())
         };
-      }) as Project[];
+      }) as unknown as Project[];
     } catch (error) {
       console.error('Erreur lors de la récupération des projets par statut:', error);
       throw error;
@@ -194,7 +130,7 @@ export class ProjectService {
   /**
    * Mettre à jour un projet
    */
-  static async updateProject(id: string, updates: Partial<Omit<Project, 'id' | 'createdAt'>>): Promise<void> {
+  static async updateProject(id: string, updates: Partial<Project>): Promise<void> {
     try {
       const projectRef = doc(db, COLLECTION_NAME, id);
       await updateDoc(projectRef, {
@@ -264,27 +200,12 @@ export class ProjectService {
 
   /**
    * Ajouter une tâche à un projet
+   * @deprecated Cette fonction est obsolète. Les tâches doivent être ajoutées à une phase spécifique.
+   * Utilisez ProjectContext.addTask(projectId, phaseId, task) à la place.
    */
-  static async addTaskToProject(projectId: string, task: Omit<ProjectTask, 'id'>): Promise<void> {
-    try {
-      const project = await this.getProjectById(projectId);
-      if (!project) {
-        throw new Error('Projet non trouvé');
-      }
-
-      const newTask: ProjectTask = {
-        ...task,
-        id: `task-${Date.now()}`,
-        updatedAt: new Date()
-      };
-
-      const updatedTasks = [...project.tasks, newTask];
-      await this.updateProject(projectId, { tasks: updatedTasks });
-      console.log('Tâche ajoutée au projet:', projectId);
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout de la tâche:', error);
-      throw error;
-    }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  static async addTaskToProject(_projectId: string, _task: Omit<ProjectTask, 'id'>): Promise<void> {
+    throw new Error('Cette fonction est obsolète. Les tâches doivent être ajoutées à une phase spécifique via ProjectContext.addTask()');
   }
 
   /**
@@ -302,7 +223,7 @@ export class ProjectService {
         id: `fin-${Date.now()}`
       };
 
-      const updatedRecords = [...project.financialRecords, newRecord];
+      const updatedRecords = [...(project.financialRecords || []), newRecord];
       
       // Recalculer le coût actuel
       const newActualCost = updatedRecords
@@ -312,7 +233,7 @@ export class ProjectService {
       await this.updateProject(projectId, { 
         financialRecords: updatedRecords,
         actualCost: newActualCost
-      });
+      } as Partial<Project>);
       console.log('Enregistrement financier ajouté au projet:', projectId);
     } catch (error) {
       console.error('Erreur lors de l\'ajout de l\'enregistrement financier:', error);
@@ -331,13 +252,15 @@ export class ProjectService {
         try {
           const projects = querySnapshot.docs.map(doc => {
             const data = doc.data();
+            const rawData = { ...data } as Record<string, unknown>;
+            delete rawData.id;
             return {
               id: doc.id,
-              ...data,
-              createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-              updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
-            };
-          }) as Project[];
+              ...rawData,
+              createdAt: (rawData.createdAt as Timestamp | undefined)?.toDate?.()?.toISOString() || rawData.createdAt,
+              updatedAt: (rawData.updatedAt as Timestamp | undefined)?.toDate?.()?.toISOString() || rawData.updatedAt
+            } as unknown as Project;
+          });
           
           callback(projects);
         } catch (processingError) {
@@ -372,14 +295,17 @@ export class ProjectService {
         name: 'Résidence Les Jardins',
         description: 'Construction d\'une résidence de 12 logements avec espaces verts',
         client: 'SCI Les Jardins',
-        status: 'active',
+        status: 'in_progress',
         startDate: '2024-01-15',
         endDate: '2024-06-30',
         budget: 850000,
-        actualCost: 245000,
+        spent: 245000,
         progress: 35,
         location: 'Lyon, France',
+        manager: 'Pierre Leroy',
+        priority: 'high',
         team: ['Pierre Leroy', 'Marie Martin', 'Jean Dupont', 'Sophie Leroy'],
+        history: [],
         phases: [
           {
             id: 'phase-1',
@@ -388,9 +314,7 @@ export class ProjectService {
             startDate: '2024-01-15',
             endDate: '2024-03-15',
             status: 'in_progress',
-            progress: 75,
-            budget: 250000,
-            actualCost: 185000,
+            estimatedBudget: 250000,
             tasks: []
           },
           {
@@ -400,9 +324,7 @@ export class ProjectService {
             startDate: '2024-03-01',
             endDate: '2024-04-15',
             status: 'planned',
-            progress: 0,
-            budget: 200000,
-            actualCost: 0,
+            estimatedBudget: 200000,
             tasks: []
           },
           {
@@ -412,9 +334,7 @@ export class ProjectService {
             startDate: '2024-04-01',
             endDate: '2024-05-30',
             status: 'planned',
-            progress: 0,
-            budget: 250000,
-            actualCost: 0,
+            estimatedBudget: 250000,
             tasks: []
           },
           {
@@ -424,42 +344,8 @@ export class ProjectService {
             startDate: '2024-05-15',
             endDate: '2024-06-30',
             status: 'planned',
-            progress: 0,
-            budget: 150000,
-            actualCost: 0,
+            estimatedBudget: 150000,
             tasks: []
-          }
-        ],
-        tasks: [
-          {
-            id: 'task-1',
-            name: 'Préparation du terrain',
-            description: 'Nettoyage et préparation du terrain',
-            status: 'done',
-            priority: 'high',
-            assignedTo: ['Pierre Leroy', 'Marie Martin'],
-            dueDate: '2024-02-15',
-            startDate: '2024-01-15',
-            estimatedHours: 40,
-            actualHours: 38,
-            spent: 15000,
-            phaseId: 'phase-1',
-            updatedAt: new Date()
-          },
-          {
-            id: 'task-2',
-            name: 'Coulage des fondations',
-            description: 'Réalisation des fondations en béton',
-            status: 'in_progress',
-            priority: 'high',
-            assignedTo: ['Jean Dupont', 'Sophie Leroy'],
-            dueDate: '2024-03-01',
-            startDate: '2024-02-15',
-            estimatedHours: 60,
-            actualHours: 35,
-            spent: 45000,
-            phaseId: 'phase-1',
-            updatedAt: new Date()
           }
         ],
         financialRecords: [

@@ -27,6 +27,20 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [loadingProjects, setLoadingProjects] = useState<boolean>(true);
 
+  // Synchroniser currentProjectId avec les IDs Firebase réels
+  useEffect(() => {
+    if (currentProjectId && currentProjectId.startsWith('project-')) {
+      console.log('⚠️ [ProjectContext] currentProjectId est un ID temporaire:', currentProjectId);
+      // Chercher le projet dans l'état local pour voir s'il a été mis à jour
+      const project = projects.find(p => p.id === currentProjectId);
+      if (!project && projects.length > 0) {
+        // Le projet n'existe plus avec cet ID, probablement remplacé par un ID Firebase
+        console.log('🔄 [ProjectContext] Projet introuvable, réinitialisation de currentProjectId');
+        setCurrentProjectId(null);
+      }
+    }
+  }, [currentProjectId, projects]);
+
   // Charger les projets depuis Firebase
   useEffect(() => {
     const loadProjects = async (): Promise<void> => {
@@ -39,26 +53,34 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         console.log('📊 ProjectContext - Données brutes:', firebaseProjects);
         
         // Convertir les projets Firebase vers le format du contexte
-        const convertedProjects: Project[] = firebaseProjects.map((fbProject: FirebaseProjectData) => ({
-          id: fbProject.id,
-          name: fbProject.name,
-          location: fbProject.location,
-          description: fbProject.description,
-          startDate: fbProject.startDate,
-          endDate: fbProject.endDate,
-          status: (fbProject.status === 'active' ? 'in_progress' : fbProject.status) as Project['status'],
-          budget: fbProject.budget,
-          spent: fbProject.spent || aggregateProjectSpent((fbProject.phases as ProjectPhase[]) || []),
-          phases: (fbProject.phases as ProjectPhase[]) || [],
-          manager: fbProject.manager || 'Non assigné',
-          client: fbProject.client,
-          progress: fbProject.progress,
-          priority: fbProject.priority || 'medium',
-          team: fbProject.team || [],
-          createdAt: fbProject.createdAt instanceof Date ? fbProject.createdAt.toISOString() : (fbProject.createdAt || new Date().toISOString()),
-          updatedAt: fbProject.updatedAt instanceof Date ? fbProject.updatedAt.toISOString() : (fbProject.updatedAt || new Date().toISOString()),
-          history: cleanHistory((fbProject.history as Array<{date?: string, action?: string, user?: string, details?: string}>) || [])
-        }));
+        const convertedProjects: Project[] = firebaseProjects.map((fbProject: FirebaseProjectData) => {
+          const rawData = { ...fbProject } as Record<string, unknown>;
+          delete rawData.id;
+          
+          const phases = (rawData.phases as ProjectPhase[]) || [];
+          console.log(`📋 Projet "${rawData.name}" - Phases chargées:`, phases.length, phases.map(p => ({ id: p.id, name: p.name })));
+          
+          return {
+            id: fbProject.id,
+            name: rawData.name as string,
+            location: rawData.location as string,
+            description: rawData.description as string,
+            startDate: rawData.startDate as string,
+            endDate: rawData.endDate as string,
+            status: ((rawData.status === 'active' ? 'in_progress' : rawData.status) || 'planning') as Project['status'],
+            budget: (rawData.budget as number) ?? 0,
+            spent: (rawData.spent as number) || aggregateProjectSpent(phases),
+            phases: phases,
+            manager: (rawData.manager as string) || 'Non assigné',
+            client: rawData.client as string,
+            progress: (rawData.progress as number) ?? 0,
+            priority: (rawData.priority as Project['priority']) || 'medium',
+            team: (rawData.team as string[]) || [],
+            createdAt: rawData.createdAt instanceof Date ? rawData.createdAt.toISOString() : ((rawData.createdAt as string) || new Date().toISOString()),
+            updatedAt: rawData.updatedAt instanceof Date ? rawData.updatedAt.toISOString() : ((rawData.updatedAt as string) || new Date().toISOString()),
+            history: cleanHistory((rawData.history as Array<{date?: string, action?: string, user?: string, details?: string}>) || [])
+          };
+        });
         
         console.log('✅ ProjectContext - Projets convertis:', convertedProjects.length);
         console.log('✅ ProjectContext - Projets convertis détail:', convertedProjects);
@@ -78,26 +100,30 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     // Écouter les changements en temps réel
     const unsubscribe = ProjectService.subscribeToProjects((firebaseProjects: FirebaseProjectData[]) => {
-      const convertedProjects: Project[] = firebaseProjects.map((fbProject: FirebaseProjectData) => ({
-        id: fbProject.id,
-        name: fbProject.name,
-        location: fbProject.location,
-        description: fbProject.description,
-        startDate: fbProject.startDate,
-        endDate: fbProject.endDate,
-        status: (fbProject.status === 'active' ? 'in_progress' : fbProject.status) as Project['status'],
-        budget: fbProject.budget,
-        spent: fbProject.spent || aggregateProjectSpent((fbProject.phases as ProjectPhase[]) || []),
-        phases: (fbProject.phases as ProjectPhase[]) || [],
-        manager: fbProject.manager || 'Non assigné',
-        client: fbProject.client,
-        progress: fbProject.progress,
-        priority: fbProject.priority || 'medium',
-        team: fbProject.team || [],
-        createdAt: fbProject.createdAt instanceof Date ? fbProject.createdAt.toISOString() : (fbProject.createdAt || new Date().toISOString()),
-        updatedAt: fbProject.updatedAt instanceof Date ? fbProject.updatedAt.toISOString() : (fbProject.updatedAt || new Date().toISOString()),
-        history: cleanHistory((fbProject.history as Array<{date?: string, action?: string, user?: string, details?: string}>) || [])
-      }));
+      const convertedProjects: Project[] = firebaseProjects.map((fbProject: FirebaseProjectData) => {
+        const rawData = { ...fbProject } as Record<string, unknown>;
+        delete rawData.id;
+        return {
+          id: fbProject.id,
+          name: rawData.name as string,
+          location: rawData.location as string,
+          description: rawData.description as string,
+          startDate: rawData.startDate as string,
+          endDate: rawData.endDate as string,
+          status: ((rawData.status === 'active' ? 'in_progress' : rawData.status) || 'planning') as Project['status'],
+          budget: (rawData.budget as number) ?? 0,
+          spent: (rawData.spent as number) || aggregateProjectSpent((rawData.phases as ProjectPhase[]) || []),
+          phases: (rawData.phases as ProjectPhase[]) || [],
+          manager: (rawData.manager as string) || 'Non assigné',
+          client: rawData.client as string,
+          progress: (rawData.progress as number) ?? 0,
+          priority: (rawData.priority as Project['priority']) || 'medium',
+          team: (rawData.team as string[]) || [],
+          createdAt: rawData.createdAt instanceof Date ? rawData.createdAt.toISOString() : ((rawData.createdAt as string) || new Date().toISOString()),
+          updatedAt: rawData.updatedAt instanceof Date ? rawData.updatedAt.toISOString() : ((rawData.updatedAt as string) || new Date().toISOString()),
+          history: cleanHistory((rawData.history as Array<{date?: string, action?: string, user?: string, details?: string}>) || [])
+        };
+      });
       
       setProjects(convertedProjects);
     });
@@ -353,38 +379,148 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const addPhase = async (projectId: string, phase: Omit<ProjectPhase, 'id' | 'tasks'>) => {
-    const projectRef = doc(db, 'projects', projectId);
-    const projectSnap = await getDoc(projectRef);
-    if (!projectSnap.exists()) return;
-    const projectData = projectSnap.data() as Project;
-    const newPhase: ProjectPhase = {
-      ...phase,
-      id: `phase-${Date.now()}`,
-      tasks: []
-    };
-    await updateDoc(projectRef, {
-      phases: [...(projectData.phases || []), newPhase]
-    });
+    try {
+      console.log('🔵 [addPhase] Tentative d\'ajout de phase au projet:', projectId);
+      console.log('🔍 [addPhase] ID du projet:', projectId);
+      console.log('🔍 [addPhase] Commence par "project-" ?', projectId.startsWith('project-'));
+      
+      // Vérifier d'abord si le document existe dans Firestore
+      const projectRef = doc(db, 'projects', projectId);
+      const projectSnap = await getDoc(projectRef);
+      
+      if (!projectSnap.exists()) {
+        console.error('❌ [addPhase] Le projet n\'existe pas dans Firestore:', projectId);
+        console.log('💡 [addPhase] Ce projet a probablement un ID temporaire qui n\'a jamais été synchronisé.');
+        console.log('🔍 [addPhase] Projets dans l\'état local:', projects.map(p => ({ id: p.id, name: p.name })));
+        
+        // Chercher le projet dans l'état local
+        const stateProject = projects.find(p => p.id === projectId);
+        if (stateProject) {
+          console.log('🔍 [addPhase] Projet trouvé dans l\'état local, tentative de sauvegarde dans Firestore...');
+          
+          // Sauvegarder le projet dans Firestore pour obtenir un vrai ID
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id: _tempId, ...projectWithoutId } = stateProject;
+          const docRef = await addDoc(collection(db, 'projects'), {
+            ...projectWithoutId,
+            phases: stateProject.phases || []
+          });
+          
+          console.log('✅ [addPhase] Projet sauvegardé avec le nouvel ID:', docRef.id);
+          
+          // Mettre à jour l'ID dans l'état local
+          setProjects(prev => prev.map(p => 
+            p.id === projectId ? { ...p, id: docRef.id } : p
+          ));
+          
+          // Mettre à jour currentProjectId si nécessaire
+          if (currentProjectId === projectId) {
+            setCurrentProjectId(docRef.id);
+          }
+          
+          // Maintenant ajouter la phase avec le bon ID
+          const newPhase: ProjectPhase = {
+            ...phase,
+            id: `phase-${Date.now()}`,
+            tasks: []
+          };
+          
+          const phasesSnapshot = [...(stateProject.phases || []), newPhase];
+          
+          const newProjectRef = doc(db, 'projects', docRef.id);
+          await updateDoc(newProjectRef, {
+            phases: phasesSnapshot
+          });
+          
+          setProjects(prev => prev.map(project =>
+            project.id === docRef.id
+              ? { ...project, phases: phasesSnapshot }
+              : project
+          ));
+          
+          console.log('✅ [addPhase] Phase ajoutée avec succès au projet:', docRef.id);
+          return newPhase;
+        } else {
+          console.error('❌ [addPhase] Projet introuvable dans l\'état local');
+          return null;
+        }
+      }
+
+      // Le projet existe dans Firestore, procéder normalement
+      const projectData = projectSnap.data() as Project;
+      
+      const newPhase: ProjectPhase = {
+        ...phase,
+        id: `phase-${Date.now()}`,
+        tasks: []
+      };
+
+      const phasesSnapshot = [...(projectData.phases || []), newPhase];
+
+      console.log('💾 [addPhase] Sauvegarde dans Firestore:', {
+        projectId,
+        phasesCount: phasesSnapshot.length,
+        phases: phasesSnapshot.map(p => ({ id: p.id, name: p.name }))
+      });
+
+      await updateDoc(projectRef, {
+        phases: phasesSnapshot
+      });
+
+      console.log('✅ [addPhase] Phases sauvegardées dans Firestore');
+
+      setProjects(prev => prev.map(project =>
+        project.id === projectId
+          ? { ...project, phases: phasesSnapshot }
+          : project
+      ));
+
+      console.log('✅ [addPhase] Phase ajoutée avec succès - Total phases:', phasesSnapshot.length);
+      return newPhase;
+    } catch (error) {
+      console.error('❌ [addPhase] Erreur lors de l\'ajout de la phase:', error);
+      return null;
+    }
   };
 
   const updatePhase = async (projectId: string, phaseId: string, updates: Partial<ProjectPhase>) => {
-    const projectRef = doc(db, 'projects', projectId);
-    const projectSnap = await getDoc(projectRef);
-    if (!projectSnap.exists()) return;
-    const projectData = projectSnap.data() as Project;
-    const updatedPhases = (projectData.phases || []).map(phase =>
-      phase.id === phaseId ? { ...phase, ...updates } : phase
-    );
-    await updateDoc(projectRef, { phases: updatedPhases });
+    try {
+      const projectRef = doc(db, 'projects', projectId);
+      const projectSnap = await getDoc(projectRef);
+      if (!projectSnap.exists()) return;
+
+      const projectData = projectSnap.data() as Project;
+      const updatedPhases = (projectData.phases || []).map(phase =>
+        phase.id === phaseId ? { ...phase, ...updates } : phase
+      );
+
+      await updateDoc(projectRef, { phases: updatedPhases });
+
+      setProjects(prev => prev.map(project =>
+        project.id === projectId ? { ...project, phases: updatedPhases } : project
+      ));
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la phase:', error);
+    }
   };
 
   const deletePhase = async (projectId: string, phaseId: string) => {
-    const projectRef = doc(db, 'projects', projectId);
-    const projectSnap = await getDoc(projectRef);
-    if (!projectSnap.exists()) return;
-    const projectData = projectSnap.data() as Project;
-    const updatedPhases = (projectData.phases || []).filter(phase => phase.id !== phaseId);
-    await updateDoc(projectRef, { phases: updatedPhases });
+    try {
+      const projectRef = doc(db, 'projects', projectId);
+      const projectSnap = await getDoc(projectRef);
+      if (!projectSnap.exists()) return;
+
+      const projectData = projectSnap.data() as Project;
+      const updatedPhases = (projectData.phases || []).filter(phase => phase.id !== phaseId);
+
+      await updateDoc(projectRef, { phases: updatedPhases });
+
+      setProjects(prev => prev.map(project =>
+        project.id === projectId ? { ...project, phases: updatedPhases } : project
+      ));
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la phase:', error);
+    }
   };
 
   const addTask = async (
@@ -445,6 +581,11 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
     
     await updateDoc(projectRef, { phases: updatedPhases });
+
+    // Mettre à jour l'état local immédiatement pour une réactivité instantanée
+    setProjects(prev => prev.map(project =>
+      project.id === projectId ? { ...project, phases: updatedPhases } : project
+    ));
   };
 
   const updateTask = async (
@@ -502,6 +643,11 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
     
     await updateDoc(projectRef, { phases: updatedPhases });
+
+    // Mettre à jour l'état local immédiatement pour une réactivité instantanée
+    setProjects(prev => prev.map(project =>
+      project.id === projectId ? { ...project, phases: updatedPhases } : project
+    ));
   };
 
   const removeTask = async (projectId: string, phaseId: string, taskId: string) => {
@@ -519,6 +665,11 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       return phase;
     });
     await updateDoc(projectRef, { phases: updatedPhases });
+
+    // Mettre à jour l'état local immédiatement pour une réactivité instantanée
+    setProjects(prev => prev.map(project =>
+      project.id === projectId ? { ...project, phases: updatedPhases } : project
+    ));
   };
 
   const reorderTasks = async (projectId: string, phaseId: string, taskId: string, newIndex: number) => {

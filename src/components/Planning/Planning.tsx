@@ -478,7 +478,8 @@ export const Planning: React.FC = () => {
         <div className="bg-white/50 rounded-xl">
           {viewType === 'gantt' && (
             <RobustGanttChart 
-              tasks={tasks} 
+              tasks={tasks}
+              phases={projectContext.currentProject?.phases || []}
               teamMembers={teamMembers}
               visibleStartDate={visibleStartDate}
               setVisibleStartDate={setVisibleStartDate}

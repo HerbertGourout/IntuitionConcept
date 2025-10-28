@@ -1,11 +1,4 @@
-  const handleGoToFinances = () => {
-    info('Finances', 'Ouverture du module Finances');
-    // petite attente pour laisser apparaître le toast si nécessaire
-    setTimeout(() => navigate('/app/finances'), 100);
-  };
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '../../hooks/useToast';
 import { ChevronDown, ChevronUp, Plus, CheckCircle, Clock, AlertTriangle, Users, Calendar, Target, Filter, Grid3X3, DollarSign, TrendingUp } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ProjectTask } from '../../contexts/projectTypes';
@@ -13,7 +6,6 @@ import TeamService from '../../services/teamService';
 import { TeamMember } from '../../types/team';
 import { transactionService } from '../../services/transactionService';
 import TaskModal from './TaskModal';
-// import FinancialDashboard from '../Financial/FinancialDashboard';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import Badge, { statusToBadge } from '../UI/Badge';
 import ProgressBar from '../UI/ProgressBar';
@@ -21,8 +13,6 @@ import PageContainer from '../Layout/PageContainer';
 import SectionHeader from '../UI/SectionHeader';
 
 const Tasks: React.FC = () => {
-  const navigate = useNavigate();
-  const { info } = useToast();
   const projectContext = useProjectContext();
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -140,13 +130,14 @@ const Tasks: React.FC = () => {
     return names.join(', ');
   };
 
-  // Charger les tâches quand le projet change
+  // Charger les tâches quand le projet ou ses phases changent
   useEffect(() => {
     if (project) {
       console.log('🔄 Projet changé, rechargement des tâches...');
       loadTasksFromProject();
     }
-  }, [project, loadTasksFromProject]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.phases]); // Dépendre uniquement de project.phases pour détecter les changements de tâches
 
   // Charger les membres d'équipe au montage
   useEffect(() => {
@@ -528,27 +519,17 @@ return (
         )}
         subtitle="Gérez et suivez toutes vos tâches de projet"
         actions={(
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleGoToFinances}
-              title={'Aller aux Finances'}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full border transition-all duration-200 shadow-sm bg-white/90 text-gray-700 border-gray-200 hover:bg-white`}
-            >
-              <DollarSign className="w-5 h-5" />
-              <span className="hidden sm:inline">Finances</span>
-            </button>
-            <button
-              title="Créer une nouvelle tâche"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 shadow-lg ring-1 ring-blue-500/30"
-              onClick={() => {
-                setCurrentTask(null);
-                setIsModalVisible(true);
-              }}
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Nouvelle Tâche</span>
-            </button>
-          </div>
+          <button
+            title="Créer une nouvelle tâche"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 shadow-lg ring-1 ring-blue-500/30"
+            onClick={() => {
+              setCurrentTask(null);
+              setIsModalVisible(true);
+            }}
+          >
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">Nouvelle Tâche</span>
+          </button>
         )}
       />
     </div>
@@ -592,23 +573,13 @@ return (
             <p className="text-gray-600 mb-4">
               Commencez par créer une nouvelle tâche pour organiser votre travail.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                onClick={handleCreateTask}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Créer une tâche
-              </button>
-              <button
-                onClick={handleGoToFinances}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white/90 hover:bg-white transition-all duration-200 shadow-sm"
-                title="Voir les Finances"
-              >
-                <DollarSign className="w-4 h-4" />
-                Finances
-              </button>
-            </div>
+            <button
+              onClick={handleCreateTask}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Créer une tâche
+            </button>
           </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
