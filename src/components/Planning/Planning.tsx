@@ -52,7 +52,9 @@ export const Planning: React.FC = () => {
         return;
       }
       const members = await TeamService.getMembersByProject(projectContext.currentProject.id);
-      const unique = members.filter((m, i, self) => i === self.findIndex(x => x.id === m.id || x.email === m.email));
+      const unique = members.filter((m: TeamMember, i: number, self: TeamMember[]) => 
+        i === self.findIndex((x: TeamMember) => x.id === m.id || x.email === m.email)
+      );
       setTeamMembers(unique);
     } catch (error) {
       console.error('Erreur lors du chargement des membres d\'équipe :', error);
@@ -131,7 +133,7 @@ export const Planning: React.FC = () => {
   // Phases à afficher dans le Gantt, synchronisées avec le filtre
   const phasesToShow = React.useMemo(() => {
     const phases = projectContext.currentProject?.phases || [];
-    return selectedPhaseId ? phases.filter(p => p.id === selectedPhaseId) : phases;
+    return selectedPhaseId ? phases.filter((p: ProjectPhase) => p.id === selectedPhaseId) : phases;
   }, [projectContext.currentProject, selectedPhaseId]);
 
   // Générer un ID unique de manière sécurisée
@@ -313,7 +315,7 @@ export const Planning: React.FC = () => {
             </button>
           </GlassCard>
         ) : (
-          projectContext.currentProject.phases?.map((phase) => (
+          projectContext.currentProject.phases?.map((phase: ProjectPhase) => (
             <GlassCard key={phase.id} className="relative p-5 flex flex-col gap-2 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
@@ -440,7 +442,7 @@ export const Planning: React.FC = () => {
             className="px-4 py-2 bg-white/70 backdrop-blur-sm border-2 border-white/30 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 min-w-[200px]"
           >
             <option value="">Toutes les phases</option>
-            {projectContext.currentProject?.phases?.map((phase) => (
+            {projectContext.currentProject?.phases?.map((phase: ProjectPhase) => (
               <option key={phase.id} value={phase.id}>
                 {phase.name} ({phase.tasks?.length || 0} tâche{(phase.tasks?.length || 0) !== 1 ? 's' : ''})
               </option>
@@ -484,7 +486,7 @@ export const Planning: React.FC = () => {
               <span className="font-medium">Nouvelle Phase</span>
             </button>
             <div className="flex items-center gap-2">
-              {(['gantt', 'kanban', 'studies'] as const).map((view) => (
+              {(['gantt', 'kanban', 'studies'] as const).map((view: ViewType) => (
                 <button
                   key={view}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
