@@ -12,7 +12,7 @@ import {
     MessageCircle
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { useGeolocation } from '../../../contexts/GeolocationContext';
+import { useGeolocation } from '../../../contexts/geolocation/useGeolocation';
 import TeamTrackingMap from '../../Geolocation/TeamTrackingMap';
 
 interface TeamTrackingWidgetProps {

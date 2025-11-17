@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
   Users, 
@@ -21,7 +21,15 @@ import {
   Scan, 
   AlertTriangle, 
   FileImage,
-  Zap
+  Zap,
+  TrendingUp,
+  CheckCircle,
+  UserCheck,
+  DollarSign,
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  FolderOpen
 } from 'lucide-react';
 
 interface Project {
@@ -48,6 +56,30 @@ const Sidebar: React.FC<SidebarProps> = ({
   projects,
   onProjectSelect
 }) => {
+  // État des sections collapsibles (sauvegardé dans localStorage)
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('sidebar-expanded-sections');
+    return saved ? JSON.parse(saved) : {
+      'project': true,
+      'finance': true,
+      'quotes': true,
+      'docs': true,
+      'team': false,
+      'ai': false
+    };
+  });
+
+  // Sauvegarder les préférences
+  useEffect(() => {
+    localStorage.setItem('sidebar-expanded-sections', JSON.stringify(expandedSections));
+  }, [expandedSections]);
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
   
   // Données simulées pour les mini-aperçus
   const getProjectStats = (projectId: string | null) => {
@@ -60,15 +92,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     };
   };
 
-  const menuItems = [
-    { 
-      id: 'dashboard', 
-      label: 'Tableau de Bord', 
-      icon: HardHat, 
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
-      description: 'Vue d\'ensemble du projet'
-    },
+  // Structure organisée en sections collapsibles
+  const menuSections = [
+    {
+      id: 'project',
+      title: 'GESTION PROJET',
+      icon: Building,
+      items: [
+        { 
+          id: 'dashboard', 
+          label: 'Tableau de Bord', 
+          icon: HardHat, 
+          color: 'text-orange-500',
+          bgColor: 'bg-orange-500/10',
+          description: 'Vue d\'ensemble du projet'
+        },
     { 
       id: 'projects', 
       label: 'Projets', 
@@ -144,6 +182,38 @@ const Sidebar: React.FC<SidebarProps> = ({
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
       description: 'Création et gestion des devis'
+    },
+    { 
+      id: 'quote-comparisons', 
+      label: 'Comparaisons Devis', 
+      icon: TrendingUp, 
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10',
+      description: 'Comparer devis estimatifs et définitifs'
+    },
+    { 
+      id: 'approval-workflows', 
+      label: 'Workflows Approbation', 
+      icon: CheckCircle, 
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10',
+      description: 'Gérer les approbations de devis'
+    },
+    { 
+      id: 'external-engineers', 
+      label: 'Ingénieurs Externes', 
+      icon: UserCheck, 
+      color: 'text-cyan-500',
+      bgColor: 'bg-cyan-500/10',
+      description: 'Réseau d\'ingénieurs partenaires'
+    },
+    { 
+      id: 'study-costs', 
+      label: 'Coûts Études', 
+      icon: DollarSign, 
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/10',
+      description: 'Suivi rentabilité des études'
     },
     { 
       id: 'tender-response', 

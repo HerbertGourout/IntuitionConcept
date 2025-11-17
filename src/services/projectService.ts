@@ -226,13 +226,14 @@ export class ProjectService {
       const updatedRecords = [...(project.financialRecords || []), newRecord];
       
       // Recalculer le coût actuel
-      const newActualCost = updatedRecords
+      const newSpent = updatedRecords
         .filter(r => r.type === 'expense')
         .reduce((sum, r) => sum + r.amount, 0);
 
       await this.updateProject(projectId, { 
         financialRecords: updatedRecords,
-        actualCost: newActualCost
+        // Synchroniser avec le modèle courant: utiliser 'spent' pour le total dépensé du projet
+        spent: newSpent
       } as Partial<Project>);
       console.log('Enregistrement financier ajouté au projet:', projectId);
     } catch (error) {

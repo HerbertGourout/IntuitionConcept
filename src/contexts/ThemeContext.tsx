@@ -25,11 +25,7 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    // Récupérer le thème sauvegardé ou utiliser 'auto' par défaut
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    return savedTheme || 'auto';
-  });
+  const [theme, setTheme] = useState<Theme>('auto');
 
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light');
 
@@ -64,8 +60,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       metaThemeColor.setAttribute('content', effectiveTheme === 'dark' ? '#1f2937' : '#ffffff');
     }
 
-    // Sauvegarder le thème
-    localStorage.setItem('theme', theme);
   }, [theme]);
 
   // Écouter les changements de préférence système

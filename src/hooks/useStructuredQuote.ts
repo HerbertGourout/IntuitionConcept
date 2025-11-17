@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StructuredQuote, Phase, Task, Article, QuoteTemplate } from '../types/StructuredQuote';
-import { useGeolocation } from '../contexts/GeolocationContext';
+import { StructuredQuote, Phase, Task, Article, QuoteTemplate, StructuralStudyStatus } from '../types/StructuredQuote';
+import { useGeolocation } from '../contexts/geolocation/useGeolocation';
 import { useOfflineReports } from './useOfflineData';
 import { QuotesService, Quote as FirebaseQuote } from '../services/quotesService';
+import StructuralStudyService from '../services/structuralStudyService';
 
 export const useStructuredQuote = (initialQuote?: Partial<StructuredQuote>) => {
     const { currentLocation } = useGeolocation();
@@ -34,6 +35,12 @@ export const useStructuredQuote = (initialQuote?: Partial<StructuredQuote>) => {
             longitude: currentLocation.longitude,
             address: currentLocation.address
         } : undefined,
+        // Structural study defaults
+        quoteType: 'preliminary',
+        structuralStudy: {
+            status: 'none'
+        },
+        uncertaintyMargin: StructuralStudyService.calculateRecommendedMargin('construction', 'none'),
         ...initialQuote
     });
 

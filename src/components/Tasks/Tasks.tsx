@@ -76,16 +76,21 @@ const Tasks: React.FC = () => {
     }
   }, [project]);
 
-  // Charger les membres d'équipe
+  // Charger les membres d'équipe (scopés par projet)
   const loadTeamMembers = useCallback(async () => {
     try {
-      const members = await TeamService.getAllMembers();
-      setTeamMembers(members);
+      if (!project?.id) {
+        setTeamMembers([]);
+        return;
+      }
+      const members = await TeamService.getMembersByProject(project.id);
+      const unique = members.filter((m, i, self) => i === self.findIndex(x => x.id === m.id || x.email === m.email));
+      setTeamMembers(unique);
     } catch (error) {
       console.error('❌ Erreur lors du chargement des membres d\'équipe:', error);
       setTeamMembers([]);
     }
-  }, []);
+  }, [project?.id]);
 
   // Fonction utilitaire robuste pour convertir les IDs en noms
   const getTeamMemberNames = (memberIds: string[] = [], members: TeamMember[] = []): string => {
@@ -139,7 +144,7 @@ const Tasks: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.phases]); // Dépendre uniquement de project.phases pour détecter les changements de tâches
 
-  // Charger les membres d'équipe au montage
+  // Charger les membres d'équipe quand le projet change
   useEffect(() => {
     loadTeamMembers();
   }, [loadTeamMembers]);
@@ -610,11 +615,7 @@ return (
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
           task={currentTask}
-          teamMembers={teamMembers.length > 0 ? teamMembers : (project?.team?.map((member, index) => ({
-            id: `member-${index}`,
-            name: member,
-            role: 'Membre'
-          })) || [])}
+          teamMembers={teamMembers}
         />
       )}
     </PageContainer>

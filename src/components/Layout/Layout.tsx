@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Sidebar from './Sidebar';
+import SidebarCollapsible from './SidebarCollapsible';
 import ModernHeader from './ModernHeader';
 import ModernFooterCompact from './ModernFooterCompact';
 import AppSubheader from './AppSubheader';
@@ -38,6 +38,10 @@ const Layout: React.FC<LayoutProps> = ({
     'documents': 'Documents',
     'quotes': 'Devis',
     'quote-creator': 'Création de Devis',
+    'quote-comparisons': 'Comparaisons de Devis',
+    'approval-workflows': 'Workflows d\'Approbation',
+    'external-engineers': 'Ingénieurs Externes',
+    'study-costs': 'Gestion des Coûts d\'Études',
     'tender-response': 'Réponse Appels d\'Offres IA',
     'reports': 'Rapports',
     'team': 'Équipe',
@@ -70,7 +74,7 @@ const Layout: React.FC<LayoutProps> = ({
 
       {/* Rangée principale: Sidebar + Contenu (décalée sous le header fixe de 80px) */}
       <div className="flex flex-1 pt-20">
-        <Sidebar
+        <SidebarCollapsible
           collapsed={sidebarCollapsed}
           onCollapse={(collapsed: boolean) => {
             setSidebarCollapsed(collapsed);

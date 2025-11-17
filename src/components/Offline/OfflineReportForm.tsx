@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOfflineReports } from '../../hooks/useOfflineData';
-import { useGeolocation } from '../../contexts/GeolocationContext';
+import { useGeolocation } from '../../contexts/geolocation/useGeolocation';
 
 interface ReportData {
     title: string;

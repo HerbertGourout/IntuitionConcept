@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, User, Clock, AlertTriangle, Flag } from 'lucide-react';
 import Modal from '../UI/Modal';
-import { ProjectTask } from '../../contexts/projectTypes';
-import { TaskStatus } from '../../contexts/projectTypes';
+import { ProjectTask, TaskStatus } from '../../contexts/projectTypes';
+import { TeamMember } from '../../types/team';
+import { TeamService } from '../../services/teamService';
 
 interface TaskFormData {
   name: string;
   description: string;
   assignedTo: string[];
-  priority: 'low' | 'medium' | 'high';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   status: TaskStatus;
   startDate: string;
   dueDate: string;
@@ -54,14 +55,33 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onTaskCreate, on
     { value: 'done', label: 'Terminé' }
   ];
 
-  const teamMembers = [
-    'Jean Martin',
-    'Marie Leroy',
-    'Paul Durand',
-    'Anne Petit',
-    'Luc Moreau',
-    'Sophie Bernard'
-  ];
+  // Charger les membres d'équipe depuis Firebase (scopés par projet)
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loadingTeam, setLoadingTeam] = useState(true);
+
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      try {
+        if (!isOpen) return;
+        setLoadingTeam(true);
+        if (!projectId) {
+          console.warn('👥 Planning/TaskModal - projectId manquant, aucun membre chargé');
+          setTeamMembers([]);
+          return;
+        }
+        const members = await TeamService.getMembersByProject(projectId);
+        console.log(`📊 Planning/TaskModal - Membres chargés pour projet ${projectId}:`, members.length);
+        setTeamMembers(members);
+      } catch (error) {
+        console.error('❌ Erreur chargement membres:', error);
+        setTeamMembers([]); // Fallback vers tableau vide
+      } finally {
+        setLoadingTeam(false);
+      }
+    };
+
+    loadTeamMembers();
+  }, [isOpen, projectId]);
 
   useEffect(() => {
     if (selectedTask) {
@@ -216,15 +236,26 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onTaskCreate, on
               Assigné à *
             </label>
             <select
-              value={formData.assignedTo}
-              onChange={(e) => handleInputChange('assignedTo', e.target.value)}
+              value={formData.assignedTo[0] || ''}
+              onChange={(e) => {
+                const newValue = e.target.value ? [e.target.value] : [];
+                setFormData(prev => ({ ...prev, assignedTo: newValue }));
+                if (errors.assignedTo) {
+                  setErrors(prev => ({ ...prev, assignedTo: '' }));
+                }
+              }}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
                 errors.assignedTo ? 'border-red-500' : 'border-gray-300'
               }`}
+              disabled={loadingTeam}
             >
-              <option value="">Sélectionner une personne</option>
+              <option value="">
+                {loadingTeam ? 'Chargement...' : teamMembers.length === 0 ? 'Aucun membre disponible' : 'Sélectionner une personne'}
+              </option>
               {teamMembers.map(member => (
-                <option key={member} value={member}>{member}</option>
+                <option key={member.id} value={member.id}>
+                  {member.name} - {member.role}
+                </option>
               ))}
             </select>
             {errors.assignedTo && (

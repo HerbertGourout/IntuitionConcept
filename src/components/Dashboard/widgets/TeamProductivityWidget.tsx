@@ -90,7 +90,10 @@ const TeamProductivityWidget: React.FC = () => {
 
       try {
         // 1) Charger les membres internes (teamMembers) pour mapping id/email/nom
-        const teamMembers = await TeamService.getAllMembers();
+        if (!currentProject?.id) {
+          return;
+        }
+        const teamMembers = await TeamService.getMembersByProject(currentProject.id);
         teamMembers.forEach(tm => {
           const display = (tm.name && tm.name.trim()) ? tm.name : (tm.email || tm.id);
           teamNameById.set(tm.id, { name: display, role: tm.role, email: tm.email });

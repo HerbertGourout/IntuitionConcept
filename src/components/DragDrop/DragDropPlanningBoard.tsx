@@ -13,6 +13,8 @@ import dayjs from 'dayjs';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import type { ProjectTask } from '../../contexts/projectTypes';
 import SectionHeader from '../UI/SectionHeader';
+import TeamService from '../../services/teamService';
+import { TeamMember } from '../../types/team';
 
 const { Option } = Select;
 
@@ -23,6 +25,7 @@ interface Task {
   assignee?: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'todo' | 'in_progress' | 'review' | 'done';
+  startDate?: string;
   dueDate?: string;
   estimatedHours?: number;
   tags?: string[];
@@ -102,6 +105,16 @@ const DraggableTask: React.FC<{
           {task.description && (
             <div style={{ fontSize: '12px', color: '#666', marginBottom: 8 }}>
               {task.description}
+            </div>
+          )}
+          {(task.startDate || task.dueDate) && (
+            <div style={{ fontSize: '11px', color: '#555', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ClockCircleOutlined />
+              <span>
+                {task.startDate ? dayjs(task.startDate).format('DD/MM/YYYY') : ''}
+                {task.startDate && task.dueDate ? ' → ' : ''}
+                {task.dueDate ? dayjs(task.dueDate).format('DD/MM/YYYY') : ''}
+              </span>
             </div>
           )}
         </div>
@@ -277,6 +290,7 @@ const DragDropPlanningBoard: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newTaskStatus, setNewTaskStatus] = useState<Task['status']>('todo');
   const [form] = Form.useForm();
+  const [projectMembers, setProjectMembers] = useState<TeamMember[]>([]);
   
   // États pour l'optimisation d'affichage
   const [searchTerm, setSearchTerm] = useState('');
@@ -341,13 +355,34 @@ const DragDropPlanningBoard: React.FC = () => {
 
   // Charger les tâches réelles depuis le projet actuel
   useEffect(() => {
-    if (currentProject && currentProject.phases) {
+    console.log('🔄 Kanban - Rechargement des tâches depuis currentProject');
+    console.log('📊 Kanban - Projet actuel:', currentProject?.name);
+    console.log('📊 Kanban - currentProject existe?', !!currentProject);
+    console.log('📊 Kanban - Nombre de phases:', currentProject?.phases?.length || 0);
+    
+    if (currentProject && currentProject.phases && currentProject.phases.length > 0) {
       // Extraire toutes les tâches de toutes les phases
       const allTasks: Task[] = [];
       
-      currentProject.phases.forEach(phase => {
-        if (phase.tasks) {
-          phase.tasks.forEach(task => {
+      currentProject.phases.forEach((phase, phaseIndex) => {
+        console.log(`📋 Kanban - Phase ${phaseIndex + 1}: "${phase.name}" - ${phase.tasks?.length || 0} tâches`);
+        
+        // Debug: Afficher la structure complète de la première phase
+        if (phaseIndex === 0) {
+          console.log('🔍 DEBUG - Structure de la phase 1:', {
+            id: phase.id,
+            name: phase.name,
+            tasks: phase.tasks,
+            hasTasksProperty: 'tasks' in phase,
+            tasksType: typeof phase.tasks,
+            tasksIsArray: Array.isArray(phase.tasks)
+          });
+        }
+        
+        if (phase.tasks && phase.tasks.length > 0) {
+          phase.tasks.forEach((task, taskIndex) => {
+            console.log(`  ✓ Tâche ${taskIndex + 1}: "${task.name}" - Statut: ${task.status}`);
+            
             // Mapper les tâches du projet vers le format du drag & drop
             const mappedTask: Task = {
               id: task.id,
@@ -356,6 +391,7 @@ const DragDropPlanningBoard: React.FC = () => {
               assignee: task.assignedTo?.[0] || undefined,
               priority: task.priority || 'medium',
               status: mapTaskStatus(task.status),
+              startDate: task.startDate,
               dueDate: task.endDate || task.dueDate,
               estimatedHours: task.budget ? Math.round(task.budget / 50) : undefined,
               tags: [phase.name],
@@ -366,6 +402,13 @@ const DragDropPlanningBoard: React.FC = () => {
           });
         }
       });
+
+      console.log('✅ Kanban - Total tâches extraites:', allTasks.length);
+      console.log('📊 Kanban - Répartition par statut:');
+      console.log('  - todo:', allTasks.filter(t => t.status === 'todo').length);
+      console.log('  - in_progress:', allTasks.filter(t => t.status === 'in_progress').length);
+      console.log('  - review:', allTasks.filter(t => t.status === 'review').length);
+      console.log('  - done:', allTasks.filter(t => t.status === 'done').length);
 
       // Organiser les tâches par colonnes
       const initialColumns: Column[] = [
@@ -401,99 +444,62 @@ const DragDropPlanningBoard: React.FC = () => {
 
       setColumns(initialColumns);
     } else {
-      // Si aucun projet ou aucune tâche, créer des tâches d'exemple
-      const mockTasks: Task[] = [
-      {
-        id: 'task_1',
-        title: 'Préparation du terrain',
-        description: 'Nettoyage et nivellement du terrain avant construction',
-        assignee: 'Jean Dupont',
-        priority: 'high',
-        status: 'todo',
-        dueDate: '2024-03-20',
-        estimatedHours: 16,
-        tags: ['terrassement', 'préparation']
-      },
-      {
-        id: 'task_2', 
-        title: 'Coulage des fondations',
-        description: 'Coulage du béton pour les fondations principales',
-        assignee: 'Marie Martin',
-        priority: 'urgent',
-        status: 'todo',
-        dueDate: '2024-03-25',
-        estimatedHours: 24,
-        tags: ['gros-oeuvre', 'béton']
-      },
-      {
-        id: 'task_3',
-        title: 'Montage des murs',
-        description: 'Construction des murs porteurs en parpaings',
-        assignee: 'Pierre Dubois',
-        priority: 'medium',
-        status: 'in_progress',
-        dueDate: '2024-04-05',
-        estimatedHours: 40,
-        tags: ['maçonnerie', 'murs']
-      },
-      {
-        id: 'task_4',
-        title: 'Installation électrique',
-        description: 'Passage des câbles et installation des prises',
-        assignee: 'Paul Électricien',
-        priority: 'medium',
-        status: 'review',
-        dueDate: '2024-04-10',
-        estimatedHours: 20,
-        tags: ['électricité', 'second-oeuvre']
-      },
-      {
-        id: 'task_5',
-        title: 'Étude de sol',
-        description: 'Analyse géotechnique du terrain terminée',
-        assignee: 'Bureau d\'études',
-        priority: 'low',
-        status: 'done',
-        dueDate: '2024-03-15',
-        estimatedHours: 8,
-        tags: ['étude', 'géotechnique']
-      }
-    ];
-
-    const initialColumns: Column[] = [
-      {
-        id: 'todo',
-        title: 'À faire',
-        status: 'todo',
-        color: '#faad14',
-        tasks: mockTasks.filter(t => t.status === 'todo')
-      },
-      {
-        id: 'in_progress',
-        title: 'En cours',
-        status: 'in_progress', 
-        color: '#1890ff',
-        tasks: mockTasks.filter(t => t.status === 'in_progress')
-      },
-      {
-        id: 'review',
-        title: 'En révision',
-        status: 'review',
-        color: '#722ed1',
-        tasks: mockTasks.filter(t => t.status === 'review')
-      },
-      {
-        id: 'done',
-        title: 'Terminé',
-        status: 'done',
-        color: '#52c41a',
-        tasks: mockTasks.filter(t => t.status === 'done')
-      }
-    ];
-
-      setColumns(initialColumns);
+      console.log('⚠️ Kanban - Aucun projet ou aucune phase, utilisation des colonnes vides');
+      
+      // Créer des colonnes vides si pas de projet
+      const emptyColumns: Column[] = [
+        {
+          id: 'todo',
+          title: 'À faire',
+          status: 'todo',
+          color: '#faad14',
+          tasks: []
+        },
+        {
+          id: 'in_progress',
+          title: 'En cours',
+          status: 'in_progress', 
+          color: '#1890ff',
+          tasks: []
+        },
+        {
+          id: 'review',
+          title: 'En révision',
+          status: 'review',
+          color: '#722ed1',
+          tasks: []
+        },
+        {
+          id: 'done',
+          title: 'Terminé',
+          status: 'done',
+          color: '#52c41a',
+          tasks: []
+        }
+      ];
+      
+      setColumns(emptyColumns);
     }
-  }, [currentProject, projects]);
+  }, [currentProject, currentProject?.phases, projects]); // ✅ Ajout de currentProject.phases dans les dépendances
+
+  // Charger les membres du projet pour alimenter le Select d'assignation
+  useEffect(() => {
+    const loadMembers = async () => {
+      try {
+        if (!currentProject?.id) {
+          setProjectMembers([]);
+          return;
+        }
+        const members = await TeamService.getMembersByProject(currentProject.id);
+        const unique = members.filter((m, i, self) => i === self.findIndex(x => x.id === m.id || x.email === m.email));
+        setProjectMembers(unique);
+      } catch (e) {
+        console.error('Kanban - Erreur chargement membres projet:', e);
+        setProjectMembers([]);
+      }
+    };
+    loadMembers();
+  }, [currentProject?.id]);
 
   const handleTaskDrop = (taskId: string, newStatus: Task['status']) => {
     setColumns(prevColumns => {
@@ -763,11 +769,10 @@ const DragDropPlanningBoard: React.FC = () => {
                 name="assignee"
                 label="Assigné à"
               >
-                <Select placeholder="Sélectionner une personne">
-                  <Option value="Jean Dupont">Jean Dupont</Option>
-                  <Option value="Marie Martin">Marie Martin</Option>
-                  <Option value="Pierre Dubois">Pierre Dubois</Option>
-                  <Option value="Paul Électricien">Paul Électricien</Option>
+                <Select placeholder="Sélectionner une personne" allowClear>
+                  {projectMembers.map(m => (
+                    <Option key={m.id} value={m.name}>{m.name}</Option>
+                  ))}
                 </Select>
               </Form.Item>
 

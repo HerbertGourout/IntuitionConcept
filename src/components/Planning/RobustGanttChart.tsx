@@ -247,11 +247,15 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
   };
 
   const fitToTasks = () => {
-    if (processedTasks.length === 0) return;
+    if (processedTasks.length === 0 && processedPhases.length === 0) {
+      console.log('⚠️ Aucune tâche ou phase à ajuster');
+      return;
+    }
     
     let earliestStart: Date | null = null;
     let latestEnd: Date | null = null;
     
+    // Prendre en compte les tâches
     processedTasks.forEach(task => {
       if (task.validation.startDate && task.validation.endDate) {
         if (!earliestStart || task.validation.startDate < earliestStart) {
@@ -263,7 +267,30 @@ const RobustGanttChart: React.FC<RobustGanttChartProps> = ({
       }
     });
     
-    if (earliestStart) {
+    // Prendre en compte les phases
+    processedPhases.forEach(phase => {
+      if (phase.validation.startDate && phase.validation.endDate) {
+        if (!earliestStart || phase.validation.startDate < earliestStart) {
+          earliestStart = phase.validation.startDate;
+        }
+        if (!latestEnd || phase.validation.endDate > latestEnd) {
+          latestEnd = phase.validation.endDate;
+        }
+      }
+    });
+    
+    // Calculer la période complète et ajuster la vue
+    if (earliestStart && latestEnd) {
+      const daysDiff = Math.ceil((latestEnd.getTime() - earliestStart.getTime()) / (1000 * 60 * 60 * 24));
+      const newDaysToShow = Math.max(daysDiff + 4, 30); // Minimum 30 jours, +4 pour les marges
+      
+      console.log(`✅ Ajustement: ${DateUtils.formatDate(earliestStart)} → ${DateUtils.formatDate(latestEnd)} (${daysDiff} jours)`);
+      console.log(`📊 Affichage: ${newDaysToShow} jours`);
+      
+      setVisibleStartDate(DateUtils.addDays(earliestStart, -2));
+      setDaysToShow(newDaysToShow);
+    } else if (earliestStart) {
+      // Fallback si pas de latestEnd
       setVisibleStartDate(DateUtils.addDays(earliestStart, -2));
     }
   };

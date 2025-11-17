@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react'
 import { Sparkles, X, Plus, ChevronDown, ChevronUp, Save, LayoutTemplate, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Quote } from '../../services/quotesService';
-import { Phase, Task, Article } from '../../types/StructuredQuote';
+import { Phase, Task, Article, QuoteType, StructuralStudy } from '../../types/StructuredQuote';
 import toast from 'react-hot-toast';
 import { quoteGenerator, QuoteGenerationRequest } from '../../services/ai/quoteGenerator';
 import { AIQuoteGenerator } from './AIQuoteGenerator';
@@ -10,6 +10,8 @@ import QuoteTemplates from './QuoteTemplates';
 import { useBranding } from '../../contexts/BrandingContext';
 import QuotesService from '../../services/quotesService';
 import { generateQuotePdf } from '../../services/pdf/quotePdf';
+import StructuralStudyManager from './StructuralStudyManager';
+import StructuralStudyService from '../../services/structuralStudyService';
 
 interface QuoteCreatorSimpleProps {
   onClose: () => void;
@@ -52,6 +54,13 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
   const [showTemplates, setShowTemplates] = useState(false);
   const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
+
+  // États pour l'étude structurale
+  const [quoteType, setQuoteType] = useState<QuoteType>('preliminary');
+  const [structuralStudy, setStructuralStudy] = useState<StructuralStudy>({
+    status: 'none'
+  });
+  const [uncertaintyMargin, setUncertaintyMargin] = useState(35);
 
   // Fonctions utilitaires
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -172,6 +181,17 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
       setNotes(editQuote.notes || '');
       setPaymentTerms(editQuote.paymentTerms || 'Paiement à 30 jours');
       setTaxRate(editQuote.taxRate || 18);
+      
+      // Charger les données d'étude structurale
+      const quoteAny = editQuote as any;
+      setQuoteType(quoteAny.quoteType || 'preliminary');
+      setStructuralStudy(quoteAny.structuralStudy || { status: 'none' });
+      const margin = quoteAny.uncertaintyMargin || StructuralStudyService.calculateRecommendedMargin(
+        editQuote.projectType || 'construction',
+        quoteAny.structuralStudy?.status || 'none'
+      );
+      setUncertaintyMargin(margin);
+      
       // Marquer comme initialisé APRÈS l'hydratation
       setIsInitialized(true);
     } else if (editQuote === null) {
@@ -186,6 +206,9 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
       setNotes('');
       setPaymentTerms('Paiement à 30 jours');
       setTaxRate(18);
+      setQuoteType('preliminary');
+      setStructuralStudy({ status: 'none' });
+      setUncertaintyMargin(35);
       setIsInitialized(true);
     }
   }, [editQuote]);
@@ -731,6 +754,28 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Section Étude Structurale */}
+            {editQuote?.id && (
+              <StructuralStudyManager
+                quoteId={editQuote.id}
+                quoteType={quoteType}
+                structuralStudy={structuralStudy}
+                uncertaintyMargin={uncertaintyMargin}
+                onUpdate={() => {
+                  // Recharger le devis après mise à jour
+                  if (editQuote?.id) {
+                    QuotesService.getQuoteById(editQuote.id).then(updated => {
+                      if (updated) {
+                        setQuoteType((updated as any).quoteType || 'preliminary');
+                        setStructuralStudy((updated as any).structuralStudy || { status: 'none' });
+                        setUncertaintyMargin((updated as any).uncertaintyMargin || 35);
+                      }
+                    });
+                  }
+                }}
+              />
+            )}
 
             {/* Section contenu du devis */}
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">

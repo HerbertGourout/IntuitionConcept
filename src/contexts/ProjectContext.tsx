@@ -41,68 +41,23 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   }, [currentProjectId, projects]);
 
-  // Charger les projets depuis Firebase
+  // Charger les projets depuis Firebase avec abonnement temps réel uniquement
   useEffect(() => {
-    const loadProjects = async (): Promise<void> => {
-      try {
-        console.log('🔄 ProjectContext - Début du chargement des projets...');
-        setLoadingProjects(true);
-        const firebaseProjects = await ProjectService.getAllProjects();
-        
-        console.log('📊 ProjectContext - Projets récupérés depuis Firebase:', firebaseProjects.length);
-        console.log('📊 ProjectContext - Données brutes:', firebaseProjects);
-        
-        // Convertir les projets Firebase vers le format du contexte
-        const convertedProjects: Project[] = firebaseProjects.map((fbProject: FirebaseProjectData) => {
-          const rawData = { ...fbProject } as Record<string, unknown>;
-          delete rawData.id;
-          
-          const phases = (rawData.phases as ProjectPhase[]) || [];
-          console.log(`📋 Projet "${rawData.name}" - Phases chargées:`, phases.length, phases.map(p => ({ id: p.id, name: p.name })));
-          
-          return {
-            id: fbProject.id,
-            name: rawData.name as string,
-            location: rawData.location as string,
-            description: rawData.description as string,
-            startDate: rawData.startDate as string,
-            endDate: rawData.endDate as string,
-            status: ((rawData.status === 'active' ? 'in_progress' : rawData.status) || 'planning') as Project['status'],
-            budget: (rawData.budget as number) ?? 0,
-            spent: (rawData.spent as number) || aggregateProjectSpent(phases),
-            phases: phases,
-            manager: (rawData.manager as string) || 'Non assigné',
-            client: rawData.client as string,
-            progress: (rawData.progress as number) ?? 0,
-            priority: (rawData.priority as Project['priority']) || 'medium',
-            team: (rawData.team as string[]) || [],
-            createdAt: rawData.createdAt instanceof Date ? rawData.createdAt.toISOString() : ((rawData.createdAt as string) || new Date().toISOString()),
-            updatedAt: rawData.updatedAt instanceof Date ? rawData.updatedAt.toISOString() : ((rawData.updatedAt as string) || new Date().toISOString()),
-            history: cleanHistory((rawData.history as Array<{date?: string, action?: string, user?: string, details?: string}>) || [])
-          };
-        });
-        
-        console.log('✅ ProjectContext - Projets convertis:', convertedProjects.length);
-        console.log('✅ ProjectContext - Projets convertis détail:', convertedProjects);
-        
-        setProjects(convertedProjects);
-        console.log('🎯 ProjectContext - Projets définis dans l\'état');
-      } catch (error) {
-        console.error('❌ ProjectContext - Erreur lors du chargement des projets:', error);
-        console.error('❌ ProjectContext - Stack trace:', error);
-      } finally {
-        setLoadingProjects(false);
-        console.log('🏁 ProjectContext - Chargement terminé');
-      }
-    };
+    console.log('🔄 ProjectContext - Initialisation de l\'abonnement temps réel...');
+    setLoadingProjects(true);
 
-    loadProjects();
-
-    // Écouter les changements en temps réel
+    // Écouter les changements en temps réel (charge aussi les données initiales)
     const unsubscribe = ProjectService.subscribeToProjects((firebaseProjects: FirebaseProjectData[]) => {
+      console.log('📊 ProjectContext - Projets reçus via abonnement:', firebaseProjects.length);
       const convertedProjects: Project[] = firebaseProjects.map((fbProject: FirebaseProjectData) => {
         const rawData = { ...fbProject } as Record<string, unknown>;
         delete rawData.id;
+        // Calcul Option B pour subscribe: tâches + dépenses financières
+        const phases = (rawData.phases as ProjectPhase[]) || [];
+        const financialExpenses = ((rawData.financialRecords as FinancialRecord[] | undefined) || [])
+          .filter(r => r.type === 'expense')
+          .reduce((sum, r) => sum + (r.amount || 0), 0);
+
         return {
           id: fbProject.id,
           name: rawData.name as string,
@@ -112,8 +67,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           endDate: rawData.endDate as string,
           status: ((rawData.status === 'active' ? 'in_progress' : rawData.status) || 'planning') as Project['status'],
           budget: (rawData.budget as number) ?? 0,
-          spent: (rawData.spent as number) || aggregateProjectSpent((rawData.phases as ProjectPhase[]) || []),
-          phases: (rawData.phases as ProjectPhase[]) || [],
+          spent: (rawData.spent as number) ?? (aggregateProjectSpent(phases) + financialExpenses),
+          phases: phases,
           manager: (rawData.manager as string) || 'Non assigné',
           client: rawData.client as string,
           progress: (rawData.progress as number) ?? 0,
@@ -125,10 +80,15 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         };
       });
       
+      console.log('✅ ProjectContext - Projets convertis:', convertedProjects.length);
       setProjects(convertedProjects);
+      setLoadingProjects(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('🔌 ProjectContext - Déconnexion de l\'abonnement temps réel');
+      unsubscribe();
+    };
   }, []);
 
   // Gestion des dépenses via ProjectService
@@ -199,60 +159,32 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       console.log('💾 [ProjectContext] addProject appelé avec:', project);
       
-      // Si le projet a déjà un ID (temporaire), on l'ajoute d'abord localement
-      if ('id' in project && project.id) {
-        console.log('🔄 [ProjectContext] Projet avec ID temporaire, ajout local d\'abord');
-        
-        // Ajouter temporairement au state local pour une réactivité immédiate
-        const tempProject = {
-          ...project,
-          phases: project.phases || [],
-          spent: project.spent || 0
-        };
-        
-        console.log('📝 [ProjectContext] Ajout temporaire au state:', tempProject);
-        setProjects(prev => {
-          console.log('📊 [ProjectContext] Projets avant ajout:', prev.length);
-          const newProjects = [...prev, tempProject];
-          console.log('📊 [ProjectContext] Projets après ajout:', newProjects.length);
-          return newProjects;
-        });
-        
-        // Puis sauvegarder dans Firebase (Firebase générera un nouvel ID)
-        console.log('🔥 [ProjectContext] Sauvegarde dans Firebase...');
-        const docRef = await addDoc(collection(db, 'projects'), {
-          ...project,
-          phases: project.phases || [],
-          spent: project.spent || 0
-        });
-        
-        console.log('✅ [ProjectContext] Sauvegarde Firebase réussie, nouvel ID:', docRef.id);
-        
-        // Mettre à jour l'ID temporaire avec l'ID Firebase
-        setProjects(prev => prev.map(p => 
-          p.id === project.id ? { ...p, id: docRef.id } : p
-        ));
-        
-        // Mettre à jour l'ID du projet actuel si c'est celui-ci
-        if (currentProjectId === project.id) {
-          console.log('🎯 [ProjectContext] Mise à jour currentProjectId:', project.id, '->', docRef.id);
-          setCurrentProjectId(docRef.id);
-        }
-      } else {
-        console.log('🔥 [ProjectContext] Projet sans ID, sauvegarde directe dans Firebase');
-        // Projet sans ID, comportement normal
-        await addDoc(collection(db, 'projects'), {
-          ...project,
-          phases: [],
-          spent: 0
-        });
+      // Retirer l'ID temporaire s'il existe pour éviter les conflits
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _tempId, ...projectWithoutId } = ('id' in project ? project : { id: undefined, ...project });
+      
+      // Sauvegarder directement dans Firebase
+      // L'abonnement temps réel se chargera d'ajouter le projet au state
+      console.log('🔥 [ProjectContext] Sauvegarde dans Firebase...');
+      const docRef = await addDoc(collection(db, 'projects'), {
+        ...projectWithoutId,
+        phases: ('phases' in projectWithoutId ? projectWithoutId.phases : undefined) || [],
+        spent: ('spent' in projectWithoutId ? projectWithoutId.spent : undefined) || 0
+      });
+      
+      console.log('✅ [ProjectContext] Projet créé avec ID:', docRef.id);
+      
+      // Mettre à jour l'ID du projet actuel pour pointer vers le nouveau projet
+      if ('id' in project && currentProjectId === project.id) {
+        console.log('🎯 [ProjectContext] Mise à jour currentProjectId:', project.id, '->', docRef.id);
+        setCurrentProjectId(docRef.id);
       }
+      
+      // Retourner le nouvel ID pour que l'appelant puisse l'utiliser
+      return docRef.id;
     } catch (error) {
       console.error('❌ [ProjectContext] Erreur lors de l\'ajout du projet:', error);
-      // En cas d'erreur, retirer le projet temporaire
-      if ('id' in project && project.id) {
-        setProjects(prev => prev.filter(p => p.id !== project.id));
-      }
+      throw error;
     }
   };
 
@@ -334,7 +266,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         endDate: fbProject.endDate,
         status: (fbProject.status === 'active' ? 'in_progress' : fbProject.status) as Project['status'],
         budget: fbProject.budget,
-        spent: fbProject.spent || aggregateProjectSpent((fbProject.phases as ProjectPhase[]) || []),
+        // Option B: somme tâches + dépenses financières
+        spent: (fbProject.spent as number) ?? (aggregateProjectSpent((fbProject.phases as ProjectPhase[]) || []) + (((fbProject as unknown as Record<string, unknown>).financialRecords as FinancialRecord[] | undefined) || []).filter(r => r.type === 'expense').reduce((s, r) => s + (r.amount || 0), 0)),
         phases: (fbProject.phases as ProjectPhase[]) || [],
         manager: fbProject.manager || 'Non assigné',
         client: fbProject.client,
@@ -580,11 +513,16 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       return phase;
     });
     
-    await updateDoc(projectRef, { phases: updatedPhases });
+    // Recalculer le dépensé projet et persister
+    const finExpensesAfterAdd = ((projectData.financialRecords as FinancialRecord[] | undefined) || [])
+      .filter(r => r.type === 'expense')
+      .reduce((sum, r) => sum + (r.amount || 0), 0);
+    const newSpentAfterAdd = aggregateProjectSpent(updatedPhases) + finExpensesAfterAdd;
+    await updateDoc(projectRef, { phases: updatedPhases, spent: newSpentAfterAdd });
 
     // Mettre à jour l'état local immédiatement pour une réactivité instantanée
     setProjects(prev => prev.map(project =>
-      project.id === projectId ? { ...project, phases: updatedPhases } : project
+      project.id === projectId ? { ...project, phases: updatedPhases, spent: newSpentAfterAdd } : project
     ));
   };
 
@@ -642,11 +580,16 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       return phase;
     });
     
-    await updateDoc(projectRef, { phases: updatedPhases });
+    // Recalculer le dépensé projet et persister
+    const finExpensesAfterUpdate = ((projectData.financialRecords as FinancialRecord[] | undefined) || [])
+      .filter(r => r.type === 'expense')
+      .reduce((sum, r) => sum + (r.amount || 0), 0);
+    const newSpentAfterUpdate = aggregateProjectSpent(updatedPhases) + finExpensesAfterUpdate;
+    await updateDoc(projectRef, { phases: updatedPhases, spent: newSpentAfterUpdate });
 
     // Mettre à jour l'état local immédiatement pour une réactivité instantanée
     setProjects(prev => prev.map(project =>
-      project.id === projectId ? { ...project, phases: updatedPhases } : project
+      project.id === projectId ? { ...project, phases: updatedPhases, spent: newSpentAfterUpdate } : project
     ));
   };
 
@@ -664,11 +607,16 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
       return phase;
     });
-    await updateDoc(projectRef, { phases: updatedPhases });
+    // Recalculer le dépensé projet et persister
+    const finExpensesAfterRemove = ((projectData.financialRecords as FinancialRecord[] | undefined) || [])
+      .filter(r => r.type === 'expense')
+      .reduce((sum, r) => sum + (r.amount || 0), 0);
+    const newSpentAfterRemove = aggregateProjectSpent(updatedPhases) + finExpensesAfterRemove;
+    await updateDoc(projectRef, { phases: updatedPhases, spent: newSpentAfterRemove });
 
     // Mettre à jour l'état local immédiatement pour une réactivité instantanée
     setProjects(prev => prev.map(project =>
-      project.id === projectId ? { ...project, phases: updatedPhases } : project
+      project.id === projectId ? { ...project, phases: updatedPhases, spent: newSpentAfterRemove } : project
     ));
   };
 

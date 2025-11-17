@@ -33,6 +33,27 @@ export type PhaseTemplate = Omit<Phase, 'id' | 'totalPrice' | 'expanded' | 'task
     tasks: TaskTemplate[];
 };
 
+export type StructuralStudyStatus = 'none' | 'pending' | 'in_progress' | 'completed';
+export type QuoteType = 'preliminary' | 'definitive';
+
+export interface StructuralProvisions {
+    foundations: number;
+    structure: number;
+    reinforcement: number;
+    disclaimer: string;
+    estimatedCompletionDate?: string;
+}
+
+export interface StructuralStudy {
+    status: StructuralStudyStatus;
+    startDate?: string;
+    completionDate?: string;
+    engineerName?: string;
+    engineerContact?: string;
+    documentUrl?: string;
+    notes?: string;
+}
+
 export interface StructuredQuote {
     id: string;
     reference?: string;
@@ -59,6 +80,11 @@ export interface StructuredQuote {
         longitude: number;
         address?: string;
     };
+    // Structural study tracking
+    quoteType: QuoteType;
+    structuralStudy: StructuralStudy;
+    uncertaintyMargin: number; // percentage
+    structuralProvisions?: StructuralProvisions;
 }
 
 export interface QuoteTemplate {

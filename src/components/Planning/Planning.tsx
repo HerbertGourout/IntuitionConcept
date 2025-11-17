@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Calendar,
   Filter,
@@ -22,10 +22,11 @@ import SectionHeader from '../UI/SectionHeader';
 import ProgressBar from '../UI/ProgressBar';
 import Badge from '../UI/Badge';
 import DragDropPlanningBoard from '../DragDrop/DragDropPlanningBoard';
+import StudyGanttChart from './StudyGanttChart';
 
 export const Planning: React.FC = () => {
   const projectContext = useProjectContext();
-  type ViewType = 'gantt' | 'kanban';
+  type ViewType = 'gantt' | 'kanban' | 'studies';
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
@@ -43,25 +44,33 @@ export const Planning: React.FC = () => {
   });
   const daysToShow = 14;
 
-  // Charger les membres d'équipe
+  // Charger les membres d'équipe (scopés par projet)
   const loadTeamMembers = useCallback(async () => {
     try {
-      const members = await TeamService.getAllMembers();
-      setTeamMembers(members);
+      if (!projectContext.currentProject?.id) {
+        setTeamMembers([]);
+        return;
+      }
+      const members = await TeamService.getMembersByProject(projectContext.currentProject.id);
+      const unique = members.filter((m, i, self) => i === self.findIndex(x => x.id === m.id || x.email === m.email));
+      setTeamMembers(unique);
     } catch (error) {
-      console.error('Erreur lors du chargement des membres d’équipe :', error);
+      console.error('Erreur lors du chargement des membres d\'équipe :', error);
+      setTeamMembers([]);
     }
-  }, []);
+  }, [projectContext.currentProject?.id]);
 
   useEffect(() => {
     loadTeamMembers();
   }, [loadTeamMembers]);
 
-  // Sélectionner automatiquement la première phase si aucune sélection
+  // Sélectionner automatiquement la première phase une seule fois (au chargement initial)
+  const hasAutoSelectedRef = useRef(false);
   useEffect(() => {
     const phases = projectContext.currentProject?.phases || [];
-    if (phases.length > 0 && !selectedPhaseId) {
+    if (!hasAutoSelectedRef.current && phases.length > 0 && !selectedPhaseId) {
       setSelectedPhaseId(phases[0].id);
+      hasAutoSelectedRef.current = true; // Empêche de réappliquer après interaction utilisateur
     }
   }, [projectContext.currentProject, selectedPhaseId]);
 
@@ -118,6 +127,12 @@ export const Planning: React.FC = () => {
       setVisibleStartDate(start);
     }
   }, [selectedPhaseId, tasks]);
+
+  // Phases à afficher dans le Gantt, synchronisées avec le filtre
+  const phasesToShow = React.useMemo(() => {
+    const phases = projectContext.currentProject?.phases || [];
+    return selectedPhaseId ? phases.filter(p => p.id === selectedPhaseId) : phases;
+  }, [projectContext.currentProject, selectedPhaseId]);
 
   // Générer un ID unique de manière sécurisée
   const generateId = () => {
@@ -306,6 +321,14 @@ export const Planning: React.FC = () => {
                     <Target className="w-5 h-5 text-orange-400" />
                     {phase.name}
                   </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
+                    <Calendar className="w-4 h-4 text-blue-500" />
+                    <span>
+                      {new Date(phase.startDate as unknown as string).toLocaleDateString('fr-FR')} 
+                      &nbsp;→&nbsp; 
+                      {new Date(phase.endDate as unknown as string).toLocaleDateString('fr-FR')}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2 mb-1">
                     <div className="text-xs text-gray-600">
                       {(phase.tasks?.length || 0)} tâche{(phase.tasks?.length || 0) > 1 ? 's' : ''}
@@ -461,7 +484,7 @@ export const Planning: React.FC = () => {
               <span className="font-medium">Nouvelle Phase</span>
             </button>
             <div className="flex items-center gap-2">
-              {(['gantt', 'kanban'] as const).map((view) => (
+              {(['gantt', 'kanban', 'studies'] as const).map((view) => (
                 <button
                   key={view}
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -469,7 +492,7 @@ export const Planning: React.FC = () => {
                   }`}
                   onClick={() => setViewType(view)}
                 >
-                  {view === 'gantt' ? 'Gantt' : 'Kanban'}
+                  {view === 'gantt' ? 'Gantt' : view === 'kanban' ? 'Kanban' : 'Études'}
                 </button>
               ))}
             </div>
@@ -479,7 +502,7 @@ export const Planning: React.FC = () => {
           {viewType === 'gantt' && (
             <RobustGanttChart 
               tasks={tasks}
-              phases={projectContext.currentProject?.phases || []}
+              phases={phasesToShow}
               teamMembers={teamMembers}
               visibleStartDate={visibleStartDate}
               setVisibleStartDate={setVisibleStartDate}
@@ -489,6 +512,11 @@ export const Planning: React.FC = () => {
           {viewType === 'kanban' && (
             <div className="p-4">
               <DragDropPlanningBoard />
+            </div>
+          )}
+          {viewType === 'studies' && (
+            <div className="p-4">
+              <StudyGanttChart />
             </div>
           )}
         </div>

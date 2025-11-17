@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
 import { Quote } from '../quotesService';
 import type { Phase, Task, Article } from '../../types/StructuredQuote';
+import { LegalClausesService } from '../legalClausesService';
 
 // Blue model palette (classic business blue)
 const colors = {
@@ -362,9 +363,73 @@ export const generateQuotePdf = (
   type AutoTableCapable = jsPDF & { lastAutoTable?: { finalY: number } };
   const lastY = (doc as AutoTableCapable).lastAutoTable?.finalY ?? 0;
   const tableEnd = Math.max(lastY, latestFinalY);
+  
+  // Add legal clauses section before totals
+  let clausesEndY = tableEnd + 24;
+  try {
+    const quoteType = (quote as any).quoteType || 'preliminary';
+    const structuralStudy = (quote as any).structuralStudy;
+    
+    const clauses = LegalClausesService.generateAllClauses(
+      quoteType,
+      20, // Default uncertainty margin for preliminary quotes
+      structuralStudy?.status || 'none',
+      structuralStudy?.engineerName,
+      structuralStudy?.completionDate,
+      'fixed' // Default price revision type
+    );
+    
+    if (clauses.length > 0) {
+      // Clauses header
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+      doc.text('📋 Clauses Contractuelles', marginX, tableEnd + 24);
+      
+      let currentY = tableEnd + 44;
+      
+      clauses.forEach((clause, index) => {
+        // Check if we need a new page
+        if (currentY > 750) {
+          doc.addPage();
+          currentY = 60;
+        }
+        
+        // Clause title
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(colors.slate[700][0], colors.slate[700][1], colors.slate[700][2]);
+        doc.text(`${index + 1}. ${clause.title}`, marginX, currentY);
+        currentY += 16;
+        
+        // Clause content
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(colors.slate[600][0], colors.slate[600][1], colors.slate[600][2]);
+        
+        const contentLines = doc.splitTextToSize(clause.content, pageWidth - 2 * marginX);
+        contentLines.forEach((line: string) => {
+          if (currentY > 750) {
+            doc.addPage();
+            currentY = 60;
+          }
+          doc.text(line, marginX, currentY);
+          currentY += 12;
+        });
+        
+        currentY += 8; // Space between clauses
+      });
+      
+      clausesEndY = currentY + 16;
+    }
+  } catch (error) {
+    console.error('Error adding legal clauses to PDF:', error);
+    // Continue without clauses if there's an error
+  }
+  
   // Sous-total HT boxed section
   const subTotal = totalGeneral;
-  const boxY = tableEnd + 24;
+  const boxY = clausesEndY;
   const boxW = 250;
   const boxH = 24;
   doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);

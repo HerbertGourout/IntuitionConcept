@@ -3,6 +3,7 @@ import { Plus, Search, Grid, List, Building2, Filter, TrendingUp } from 'lucide-
 import ProjectCard from './ProjectCard';
 import { useProjects } from '../../hooks/useProjects';
 import CreateProjectModal from './CreateProjectModal';
+import CleanDuplicatesButton from '../Admin/CleanDuplicatesButton';
 
 import { useToast } from '../../hooks/useToast';
 import type { Project } from '../../contexts/projectTypes';
@@ -29,9 +30,9 @@ const Projects: React.FC = () => {
       manager: projectData.manager || 'Développeur',
       team: projectData.team || []
     };
-    await addProject(newProject);
+    const newProjectId = await addProject(newProject);
     // Sélectionner automatiquement le nouveau projet créé
-    setCurrentProject(newProject.id);
+    setCurrentProject(newProjectId);
     success('Projet créé', 'Le nouveau projet a été créé avec succès');
     setIsCreateModalOpen(false);
   };
@@ -208,6 +209,9 @@ const Projects: React.FC = () => {
           onCreate={handleCreateProject}
           isOpen={isCreateModalOpen}
         />
+        
+        {/* Bouton de nettoyage des doublons (temporaire) */}
+        <CleanDuplicatesButton />
     </PageContainer>
   );
 };

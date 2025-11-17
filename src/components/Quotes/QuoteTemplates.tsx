@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import {
     FileText,
     Plus,
@@ -7,8 +7,6 @@ import {
     Trash2,
     Copy,
     Search,
-    Filter,
-    Save,
     X,
     Building,
     Hammer,
@@ -16,7 +14,10 @@ import {
     Home
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { Phase, Task, Article } from '../../types/StructuredQuote';
+import { Phase } from '../../types/StructuredQuote';
+import { useProjectContext } from '../../contexts/ProjectContext';
+import { db } from '../../firebase';
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
 interface QuoteTemplate {
     id: string;
@@ -37,14 +38,23 @@ interface QuoteTemplatesProps {
 }
 
 const QuoteTemplates: React.FC<QuoteTemplatesProps> = ({ onClose, onSelectTemplate }) => {
+    const { currentProject } = useProjectContext();
     const [templates, setTemplates] = useState<QuoteTemplate[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [editingTemplate, setEditingTemplate] = useState<QuoteTemplate | null>(null);
+    const [showEditor, setShowEditor] = useState(false);
+    const [editing, setEditing] = useState<QuoteTemplate | null>(null);
+    const [form, setForm] = useState<Pick<QuoteTemplate, 'name'|'description'|'category'|'estimatedDuration'|'basePrice'|'phases'>>({
+        name: '',
+        description: '',
+        category: 'construction',
+        estimatedDuration: 0,
+        basePrice: 0,
+        phases: []
+    });
 
-    // Templates par défaut pour le BTP
-    const defaultTemplates: QuoteTemplate[] = [
+    // Templates par défaut pour le BTP (mémoïsé pour éviter les changements de référence)
+    const defaultTemplates = useMemo<QuoteTemplate[]>(() => ([
         {
             id: 'template-1',
             name: 'Construction Maison Individuelle',
@@ -170,23 +180,36 @@ const QuoteTemplates: React.FC<QuoteTemplatesProps> = ({ onClose, onSelectTempla
                 }
             ]
         }
-    ];
+    ]), []);
 
     useEffect(() => {
-        // Charger les templates depuis le localStorage ou utiliser les templates par défaut
-        const savedTemplates = localStorage.getItem('quoteTemplates');
-        if (savedTemplates) {
-            setTemplates(JSON.parse(savedTemplates));
-        } else {
+        // Si pas de projet sélectionné, fallback aux templates par défaut
+        if (!currentProject?.id) {
             setTemplates(defaultTemplates);
-            localStorage.setItem('quoteTemplates', JSON.stringify(defaultTemplates));
+            return;
         }
-    }, []);
 
-    const saveTemplates = (newTemplates: QuoteTemplate[]) => {
-        setTemplates(newTemplates);
-        localStorage.setItem('quoteTemplates', JSON.stringify(newTemplates));
-    };
+        // Abonnement Firestore aux templates du projet courant
+        const q = query(
+            collection(db, 'quoteTemplates'),
+            where('projectId', '==', currentProject.id)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const items = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as Omit<QuoteTemplate, 'id'>) }));
+            if (items.length === 0) {
+                // Fallback: afficher les templates par défaut en mémoire
+                setTemplates(defaultTemplates);
+            } else {
+                setTemplates(items as QuoteTemplate[]);
+            }
+        }, (error) => {
+            console.error('Erreur chargement templates devis:', error);
+            setTemplates(defaultTemplates);
+        });
+
+        return () => unsubscribe();
+    }, [currentProject?.id, defaultTemplates]);
 
     const getCategoryIcon = (category: string) => {
         switch (category) {
@@ -215,32 +238,50 @@ const QuoteTemplates: React.FC<QuoteTemplatesProps> = ({ onClose, onSelectTempla
         return matchesSearch && matchesCategory;
     });
 
-    const handleDuplicateTemplate = (template: QuoteTemplate) => {
-        const newTemplate: QuoteTemplate = {
-            ...template,
-            id: `template-${Date.now()}`,
-            name: `${template.name} (Copie)`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            isDefault: false
-        };
-        
-        const newTemplates = [...templates, newTemplate];
-        saveTemplates(newTemplates);
-        toast.success('Template dupliqué avec succès');
+    const handleDuplicateTemplate = async (template: QuoteTemplate) => {
+        try {
+            if (!currentProject?.id) {
+                toast.error('Aucun projet sélectionné');
+                return;
+            }
+            const payload = {
+                name: `${template.name} (Copie)`,
+                description: template.description,
+                category: template.category,
+                phases: template.phases,
+                estimatedDuration: template.estimatedDuration,
+                basePrice: template.basePrice,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                isDefault: false,
+                projectId: currentProject.id,
+            };
+            await addDoc(collection(db, 'quoteTemplates'), payload);
+            toast.success('Template dupliqué avec succès');
+        } catch (e) {
+            console.error('Erreur duplication template:', e);
+            toast.error('Erreur lors de la duplication');
+        }
     };
 
-    const handleDeleteTemplate = (templateId: string) => {
+    const handleDeleteTemplate = async (templateId: string) => {
         const template = templates.find(t => t.id === templateId);
         if (template?.isDefault) {
             toast.error('Impossible de supprimer un template par défaut');
             return;
         }
-
+        if (!currentProject?.id) {
+            toast.error('Aucun projet sélectionné');
+            return;
+        }
         if (window.confirm('Êtes-vous sûr de vouloir supprimer ce template ?')) {
-            const newTemplates = templates.filter(t => t.id !== templateId);
-            saveTemplates(newTemplates);
-            toast.success('Template supprimé');
+            try {
+                await deleteDoc(doc(db, 'quoteTemplates', templateId));
+                toast.success('Template supprimé');
+            } catch (e) {
+                console.error('Erreur suppression template:', e);
+                toast.error('Erreur lors de la suppression');
+            }
         }
     };
 
@@ -310,7 +351,11 @@ const QuoteTemplates: React.FC<QuoteTemplatesProps> = ({ onClose, onSelectTempla
                                 <option value="infrastructure">Infrastructure</option>
                             </select>
                             <button
-                                onClick={() => setShowCreateModal(true)}
+                                onClick={() => {
+                                    setEditing(null);
+                                    setForm({ name: '', description: '', category: 'construction', estimatedDuration: 0, basePrice: 0, phases: [] });
+                                    setShowEditor(true);
+                                }}
                                 className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl"
                             >
                                 <Plus className="w-4 h-4" />
@@ -403,7 +448,18 @@ const QuoteTemplates: React.FC<QuoteTemplatesProps> = ({ onClose, onSelectTempla
                                         {!template.isDefault && (
                                             <>
                                                 <button
-                                                    onClick={() => setEditingTemplate(template)}
+                                                    onClick={() => {
+                                                        setEditing(template);
+                                                        setForm({
+                                                            name: template.name,
+                                                            description: template.description,
+                                                            category: template.category,
+                                                            estimatedDuration: template.estimatedDuration,
+                                                            basePrice: template.basePrice,
+                                                            phases: template.phases
+                                                        });
+                                                        setShowEditor(true);
+                                                    }}
                                                     className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                                                     title="Modifier"
                                                 >
@@ -424,9 +480,81 @@ const QuoteTemplates: React.FC<QuoteTemplatesProps> = ({ onClose, onSelectTempla
                         </div>
                     )}
                 </div>
+                {/* Editeur simple de template */}
+                {showEditor && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-4">
+                        <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold">{editing ? 'Modifier le template' : 'Nouveau template'}</h3>
+                                <button onClick={() => setShowEditor(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="space-y-3">
+                                <input value={form.name} onChange={e=>setForm(f=>({...f, name:e.target.value}))} placeholder="Nom" className="w-full px-3 py-2 border rounded-lg" />
+                                <textarea value={form.description} onChange={e=>setForm(f=>({...f, description:e.target.value}))} placeholder="Description" className="w-full px-3 py-2 border rounded-lg" rows={3} />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <select value={form.category} onChange={e=>setForm(f=>({...f, category:e.target.value as QuoteTemplate['category']}))} className="px-3 py-2 border rounded-lg">
+                                        <option value="construction">Construction</option>
+                                        <option value="renovation">Rénovation</option>
+                                        <option value="extension">Extension</option>
+                                        <option value="infrastructure">Infrastructure</option>
+                                    </select>
+                                    <input type="number" value={form.estimatedDuration} onChange={e=>setForm(f=>({...f, estimatedDuration:Number(e.target.value)}))} placeholder="Durée (jours)" className="px-3 py-2 border rounded-lg" />
+                                    <input type="number" value={form.basePrice} onChange={e=>setForm(f=>({...f, basePrice:Number(e.target.value)}))} placeholder="Prix de base" className="px-3 py-2 border rounded-lg" />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2 mt-5">
+                                <button onClick={()=>setShowEditor(false)} className="px-4 py-2 border rounded-lg">Annuler</button>
+                                <button
+                                  onClick={async ()=>{
+                                    try{
+                                      if(!currentProject?.id){ toast.error('Aucun projet sélectionné'); return; }
+                                      if(!form.name.trim()){ toast.error('Nom requis'); return; }
+                                      if(editing){
+                                        const ref = doc(db,'quoteTemplates', editing.id);
+                                        await updateDoc(ref, { 
+                                          name: form.name,
+                                          description: form.description,
+                                          category: form.category,
+                                          estimatedDuration: form.estimatedDuration,
+                                          basePrice: form.basePrice,
+                                          phases: form.phases,
+                                          updatedAt: serverTimestamp()
+                                        });
+                                        toast.success('Template mis à jour');
+                                      } else {
+                                        await addDoc(collection(db,'quoteTemplates'), {
+                                          name: form.name,
+                                          description: form.description,
+                                          category: form.category,
+                                          estimatedDuration: form.estimatedDuration,
+                                          basePrice: form.basePrice,
+                                          phases: form.phases,
+                                          projectId: currentProject.id,
+                                          createdAt: serverTimestamp(),
+                                          updatedAt: serverTimestamp(),
+                                          isDefault: false
+                                        });
+                                        toast.success('Template créé');
+                                      }
+                                      setShowEditor(false);
+                                    }catch(e){
+                                      console.error(e);
+                                      toast.error('Erreur lors de l\'enregistrement');
+                                    }
+                                  }}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                                >
+                                  Enregistrer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </motion.div>
         </div>
     );
-};
+}
 
 export default QuoteTemplates;

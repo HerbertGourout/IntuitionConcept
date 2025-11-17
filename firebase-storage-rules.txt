@@ -1,0 +1,73 @@
+// ========================================
+// RÈGLES DE SÉCURITÉ FIREBASE STORAGE
+// ========================================
+// À copier dans Firebase Console → Storage → Rules
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Documents d'étude structurale
+    match /quotes/{quoteId}/structural-docs/{document} {
+      // Lecture: utilisateurs authentifiés uniquement
+      allow read: if request.auth != null;
+      
+      // Écriture: utilisateurs authentifiés + taille max 10MB
+      allow write: if request.auth != null 
+                   && request.resource.size < 10 * 1024 * 1024;
+      
+      // Suppression: utilisateurs authentifiés uniquement
+      allow delete: if request.auth != null;
+    }
+    
+    // Autres fichiers (logos, etc.)
+    match /{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}
+
+// ========================================
+// INSTRUCTIONS D'INSTALLATION
+// ========================================
+
+1. Ouvrir Firebase Console: https://console.firebase.google.com/
+2. Sélectionner votre projet
+3. Menu latéral → Storage
+4. Si pas encore activé, cliquer "Get Started"
+5. Choisir les règles de sécurité (mode production)
+6. Onglet "Rules" en haut
+7. Copier-coller les règles ci-dessus
+8. Cliquer "Publish"
+
+// ========================================
+// VÉRIFICATION
+// ========================================
+
+Après publication, vous devriez voir:
+- Bucket créé (gs://votre-projet.appspot.com)
+- Règles actives
+- Prêt à recevoir des uploads
+
+// ========================================
+// STRUCTURE DES FICHIERS
+// ========================================
+
+Vos documents seront organisés ainsi:
+quotes/
+  └── DEVIS-123456/
+      └── structural-docs/
+          ├── 1730745600000_plan-structure.pdf
+          ├── 1730745601000_note-calcul.pdf
+          └── 1730745602000_rapport-geo.pdf
+
+// ========================================
+// TESTER L'UPLOAD
+// ========================================
+
+1. Éditer un devis existant
+2. Section "Étude Structurale" → "Documents d'étude"
+3. Drag & drop un fichier PDF
+4. Vérifier dans Firebase Console → Storage
+5. Le fichier doit apparaître dans le bon dossier

@@ -141,7 +141,7 @@ export interface ProjectContextType {
   projects: Project[];
   currentProject: Project | null;
   setCurrentProject: (projectId: string) => void;
-  addProject: (project: Omit<Project, 'id' | 'phases'> | Omit<Project, 'id'> | Project) => Promise<void>;
+  addProject: (project: Omit<Project, 'id' | 'phases'> | Omit<Project, 'id'> | Project) => Promise<string>;
   updateProject: (
     id: string,
     updates: Partial<Project>,

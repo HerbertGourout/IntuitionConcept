@@ -32,36 +32,24 @@ const OCRScanner: React.FC<OCRScannerProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  // Charger la configuration sauvegardée
+  // Plus de chargement depuis localStorage: conserver en mémoire uniquement
   useEffect(() => {
-    const savedProvider = localStorage.getItem('ocr_provider') as OCRProvider;
-    const savedApiKey = localStorage.getItem('google_vision_api_key');
-    
-    if (savedProvider) {
-      setSelectedProvider(savedProvider);
-      unifiedOcrService.configure({ provider: savedProvider });
+    unifiedOcrService.configure({ provider: selectedProvider });
+    if (googleVisionApiKey) {
+      unifiedOcrService.configure({ apiKey: googleVisionApiKey });
     }
-    
-    if (savedApiKey) {
-      setGoogleVisionApiKey(savedApiKey);
-      unifiedOcrService.configure({ apiKey: savedApiKey });
-    }
-  }, []);
+  }, [selectedProvider, googleVisionApiKey]);
 
-  // Sauvegarder la configuration
+  // Mettre à jour la configuration (sans persistance localStorage)
   const handleProviderChange = (provider: OCRProvider) => {
     setSelectedProvider(provider);
-    localStorage.setItem('ocr_provider', provider);
     unifiedOcrService.configure({ provider });
   };
 
   const handleApiKeyChange = (apiKey: string) => {
     setGoogleVisionApiKey(apiKey);
     if (apiKey) {
-      localStorage.setItem('google_vision_api_key', apiKey);
       unifiedOcrService.configure({ apiKey });
-    } else {
-      localStorage.removeItem('google_vision_api_key');
     }
   };
 

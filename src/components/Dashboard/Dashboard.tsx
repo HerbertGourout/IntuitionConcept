@@ -17,6 +17,7 @@ import EquipmentMaintenanceWidget from './widgets/EquipmentMaintenanceWidget';
 import EquipmentScannerWidget from './widgets/EquipmentScannerWidget';
 import WeatherWidget from './widgets/WeatherWidget';
 import OfflineStatusWidget from './widgets/OfflineStatusWidget';
+import StructuralStudyAnalyticsWidget from './widgets/StructuralStudyAnalyticsWidget';
 
 // Import des widgets IA uniques (pas de doublons avec sidebar)
 import HybridAIMonitoringWidget from './HybridAIMonitoringWidget';
@@ -348,6 +349,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             }
           })}
         </div>
+
+        {/* Widget Études Structurales */}
+        <StructuralStudyAnalyticsWidget />
 
         {/* Troisième rangée */}
         {prefs.showCircularProgress && (

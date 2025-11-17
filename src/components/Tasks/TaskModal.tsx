@@ -62,27 +62,31 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
   const [isSubTask, setIsSubTask] = useState<boolean>(!!task?.parentId);
   const [parentTaskId, setParentTaskId] = useState<string | undefined>(task?.parentId);
 
-  // Charger les membres d'équipe depuis Firebase
+  // Charger les membres d'équipe depuis Firebase, filtrés par projet courant
   useEffect(() => {
     const loadTeamMembers = async () => {
       try {
-        const members = await TeamService.getAllMembers();
-        // Dédupliquer les membres par ID et email pour éviter les clés dupliquées
-        const uniqueMembers = members.filter((member, index, self) => 
+        if (!isOpen) return;
+        if (!currentProject?.id) {
+          console.warn('👥 TaskModal - Aucun projet sélectionné, pas de membres chargés');
+          setFirebaseTeamMembers([]);
+          return;
+        }
+        const members = await TeamService.getMembersByProject(currentProject.id);
+        console.log(`👥 TaskModal - Membres chargés pour projet ${currentProject.id}:`, members.length);
+        // Dédupliquer par id/email
+        const uniqueMembers = members.filter((member, index, self) =>
           index === self.findIndex(m => m.id === member.id || m.email === member.email)
         );
         setFirebaseTeamMembers(uniqueMembers);
       } catch (error) {
         console.error('Erreur lors du chargement des membres:', error);
-        // Fallback vers les membres passés en prop si Firebase échoue
         setFirebaseTeamMembers([]);
       }
     };
 
-    if (isOpen) {
-      loadTeamMembers();
-    }
-  }, [isOpen]);
+    loadTeamMembers();
+  }, [isOpen, currentProject?.id]);
 
   useEffect(() => {
     if (task) {

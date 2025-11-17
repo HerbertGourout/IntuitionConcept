@@ -9,7 +9,8 @@ import {
   Phone,
   MessageCircle
 } from 'lucide-react';
-import { useGeolocation, TeamMember, GeofenceZone } from '../../contexts/GeolocationContext';
+import { useGeolocation } from '../../contexts/geolocation/useGeolocation';
+import { GeofenceZone, GeolocationTeamMember } from '../../contexts/geolocation/GeolocationContextBase';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface TeamTrackingMapProps {
@@ -36,7 +37,7 @@ const TeamTrackingMap: React.FC<TeamTrackingMapProps> = ({
   const { resolvedTheme } = useTheme();
   
   const [mapCenter, setMapCenter] = useState({ lat: 14.6928, lng: -17.4467 }); // Dakar par défaut
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [selectedMember, setSelectedMember] = useState<GeolocationTeamMember | null>(null);
   const [selectedZone, setSelectedZone] = useState<GeofenceZone | null>(null);
   const [showMemberDetails, setShowMemberDetails] = useState(false);
   const [filterOnline, setFilterOnline] = useState(false);
@@ -71,7 +72,7 @@ const TeamTrackingMap: React.FC<TeamTrackingMapProps> = ({
     ? teamMembers.filter(member => member.isOnline)
     : teamMembers;
 
-  const getStatusColor = (member: TeamMember) => {
+  const getStatusColor = (member: GeolocationTeamMember) => {
     if (!member.isOnline) return 'bg-gray-400';
     
     const now = new Date();
@@ -341,7 +342,7 @@ const TeamTrackingMap: React.FC<TeamTrackingMapProps> = ({
       <AnimatePresence>
         {showMemberDetails && selectedMember && (
           <motion.div
-            className="absolute inset-0 bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -349,7 +350,7 @@ const TeamTrackingMap: React.FC<TeamTrackingMapProps> = ({
           >
             <motion.div
               className={`
-                p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4
+                p-6 rounded-xl shadow-2xl max-w-7xl w-full mx-4
                 ${resolvedTheme === 'dark'
                   ? 'bg-gray-800 text-gray-200'
                   : 'bg-white text-gray-700'

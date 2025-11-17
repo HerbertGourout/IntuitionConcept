@@ -24,6 +24,7 @@ import IntelligentOCRScanner from './components/OCR/IntelligentOCRScanner';
 import AuthTestPage from './components/Auth/AuthTestPage';
 import EmailTestPage from './components/Email/EmailTestPage';
 import AnomalyDetectionDashboard from './components/AI/AnomalyDetectionDashboard';
+import CleanupPage from './components/Admin/CleanupPage';
 import CountryPricing from './pages/CountryPricing';
 import AnalysePlan from './pages/AnalysePlan';
 import Rendu3D from './pages/Rendu3D';
@@ -31,6 +32,10 @@ import ArchitecturalPlanAnalyzer from './components/AI/ArchitecturalPlanAnalyzer
 import SiteReports from './pages/SiteReports';
 import ProjectPlanGeneratorPage from './pages/ProjectPlanGenerator';
 import TenderResponse from './pages/TenderResponse';
+import QuoteComparisons from './pages/QuoteComparisons';
+import ApprovalWorkflows from './pages/ApprovalWorkflows';
+import ExternalEngineers from './pages/ExternalEngineers';
+import StudyCosts from './pages/StudyCosts';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
 import { useToast } from './hooks/useToast';
 import { Result } from 'antd';
@@ -186,12 +191,12 @@ const AppContent: React.FC = () => {
     
     console.log('📝 Nouveau projet avec manager/team:', newProject);
     
-    await addProject(newProject);
-    console.log('✅ Projet ajouté, sélection en cours...');
+    const newProjectId = await addProject(newProject);
+    console.log('✅ Projet ajouté avec ID:', newProjectId);
     
     // Sélectionner automatiquement le nouveau projet créé
-    setCurrentProject(newProject.id);
-    console.log('🎯 Projet sélectionné:', newProject.id);
+    setCurrentProject(newProjectId);
+    console.log('🎯 Projet sélectionné:', newProjectId);
     
     success('Projet créé', 'Le nouveau projet a été créé avec succès');
     setIsCreateProjectOpen(false);
@@ -274,6 +279,8 @@ const AppContent: React.FC = () => {
         return <NotificationCenter />;
       case 'settings':
         return <Settings />;
+      case 'cleanup':
+        return <CleanupPage />;
       case 'support':
         return <SupportCenter />;
       case 'support-agent':
@@ -306,6 +313,14 @@ const AppContent: React.FC = () => {
         return <AnalysePlan />;
       case 'rendu-3d':
         return <Rendu3D />;
+      case 'quote-comparisons':
+        return <QuoteComparisons />;
+      case 'approval-workflows':
+        return <ApprovalWorkflows />;
+      case 'external-engineers':
+        return <ExternalEngineers />;
+      case 'study-costs':
+        return <StudyCosts />;
       default:
         return <div>Section non trouvée</div>;
     }

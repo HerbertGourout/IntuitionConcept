@@ -1,92 +1,32 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useProjectContext } from './ProjectContext';
+import TeamService from '../services/teamService';
+import { db } from '../firebase';
+import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { GeolocationContext, GeolocationContextType, LocationData, GeofenceZone, LocationEvent, GeolocationTeamMember } from './geolocation/GeolocationContextBase';
 
-export interface LocationData {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-  timestamp: Date;
-  address?: string;
-}
-
-export interface TeamMember {
-  id: string;
+// Types Firestore pour supprimer les any
+type FirestoreGeofenceZoneDoc = {
+  projectId: string;
   name: string;
-  role: string;
-  avatar?: string;
-  isOnline: boolean;
-  lastSeen: Date;
-  currentLocation?: LocationData;
-  assignedSite?: string;
-}
-
-export interface GeofenceZone {
-  id: string;
-  name: string;
-  type: 'site' | 'office' | 'warehouse' | 'restricted';
+  type: GeofenceZone['type'];
   center: { lat: number; lng: number };
-  radius: number; // en mètres
+  radius: number;
   isActive: boolean;
-  notifications: {
-    onEnter: boolean;
-    onExit: boolean;
-    onLongStay: boolean;
-  };
+  notifications: GeofenceZone['notifications'];
   allowedMembers?: string[];
-}
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+};
 
-export interface LocationEvent {
-  id: string;
+type FirestoreLocationEventDoc = {
+  projectId: string;
   memberId: string;
-  type: 'enter' | 'exit' | 'arrival' | 'departure' | 'alert';
+  type: 'enter' | 'exit' | 'alert' | 'arrival' | 'departure';
   zoneId?: string;
-  location: LocationData;
-  timestamp: Date;
+  location: { latitude: number; longitude: number; accuracy?: number; timestamp?: number; address?: string };
+  timestamp: Timestamp;
   message: string;
-}
-
-interface GeolocationContextType {
-  // État de géolocalisation
-  isLocationEnabled: boolean;
-  currentLocation: LocationData | null;
-  locationError: string | null;
-  isTracking: boolean;
-  
-  // Équipe et suivi
-  teamMembers: TeamMember[];
-  geofenceZones: GeofenceZone[];
-  locationEvents: LocationEvent[];
-  
-  // Actions de géolocalisation
-  enableLocation: () => Promise<boolean>;
-  disableLocation: () => void;
-  startTracking: () => void;
-  stopTracking: () => void;
-  getCurrentPosition: () => Promise<LocationData | null>;
-  
-  // Gestion des équipes
-  updateMemberLocation: (memberId: string, location: LocationData) => void;
-  setMemberOnline: (memberId: string, isOnline: boolean) => void;
-  
-  // Gestion des géofences
-  addGeofenceZone: (zone: Omit<GeofenceZone, 'id'>) => void;
-  updateGeofenceZone: (zoneId: string, updates: Partial<GeofenceZone>) => void;
-  removeGeofenceZone: (zoneId: string) => void;
-  checkGeofenceViolations: (memberId: string, location: LocationData) => void;
-  
-  // Utilitaires
-  calculateDistance: (point1: LocationData, point2: LocationData) => number;
-  getAddressFromCoordinates: (lat: number, lng: number) => Promise<string>;
-  getNearbyMembers: (location: LocationData, radiusKm: number) => TeamMember[];
-}
-
-const GeolocationContext = createContext<GeolocationContextType | undefined>(undefined);
-
-export const useGeolocation = () => {
-  const context = useContext(GeolocationContext);
-  if (!context) {
-    throw new Error('useGeolocation must be used within a GeolocationProvider');
-  }
-  return context;
 };
 
 interface GeolocationProviderProps {
@@ -98,10 +38,11 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isTracking, setIsTracking] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamMembers, setTeamMembers] = useState<GeolocationTeamMember[]>([]);
   const [geofenceZones, setGeofenceZones] = useState<GeofenceZone[]>([]);
   const [locationEvents, setLocationEvents] = useState<LocationEvent[]>([]);
   const [watchId, setWatchId] = useState<number | null>(null);
+  const { currentProject } = useProjectContext();
 
   // Vérifier la disponibilité de la géolocalisation
   useEffect(() => {
@@ -110,56 +51,102 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
     }
   }, []);
 
-  // Charger les données depuis localStorage
+  // Charger les membres en temps réel depuis Firebase par projet (plus de localStorage)
   useEffect(() => {
-    const savedZones = localStorage.getItem('geofence-zones');
-    const savedMembers = localStorage.getItem('team-members');
-    const savedEvents = localStorage.getItem('location-events');
-
-    if (savedZones) {
-      try {
-        setGeofenceZones(JSON.parse(savedZones));
-      } catch {
-        // Erreur lors du chargement des zones
-      }
+    // Clear when no project
+    if (!currentProject?.id) {
+      setTeamMembers([]);
+      return;
     }
-
-    if (savedMembers) {
-      try {
-        setTeamMembers(JSON.parse(savedMembers));
-      } catch {
-        // Erreur lors du chargement des membres
+    const unsubscribe = TeamService.subscribeToProjectMembers(
+      currentProject.id,
+      (members) => {
+        // Mapper les membres Firebase (BaseTeamMember) vers GeolocationTeamMember avec valeurs par défaut
+        const mapped = members.map(m => ({
+          ...m,
+          isOnline: false,
+          lastSeen: new Date(0),
+        })) as GeolocationTeamMember[];
+        setTeamMembers(mapped);
+      },
+      (error) => {
+        console.error('GeolocationContext - subscribeToProjectMembers error:', error);
+        setTeamMembers([]);
       }
-    }
-
-    if (savedEvents) {
-      try {
-        const events = JSON.parse(savedEvents);
-        // Garder seulement les événements des 7 derniers jours
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        const recentEvents = events.filter((event: LocationEvent) => 
-          new Date(event.timestamp) > weekAgo
-        );
-        setLocationEvents(recentEvents);
-      } catch {
-        // Erreur lors du chargement des événements
+    );
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
       }
+    };
+  }, [currentProject?.id]);
+
+  useEffect(() => {
+    if (!currentProject?.id) {
+      setGeofenceZones([]);
+      return;
     }
-  }, []);
+    const q = query(
+      collection(db, 'geofenceZones'),
+      where('projectId', '==', currentProject.id),
+      orderBy('createdAt', 'desc')
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs.map(d => {
+        const data = d.data() as FirestoreGeofenceZoneDoc;
+        return {
+          id: d.id,
+          name: data.name,
+          type: data.type,
+          center: data.center,
+          radius: data.radius,
+          isActive: data.isActive,
+          notifications: data.notifications,
+          allowedMembers: data.allowedMembers,
+        } as GeofenceZone;
+      });
+      setGeofenceZones(items);
+    }, () => {
+      setGeofenceZones([]);
+    });
+    return () => unsub();
+  }, [currentProject?.id]);
 
-  // Sauvegarder les données dans localStorage
   useEffect(() => {
-    localStorage.setItem('geofence-zones', JSON.stringify(geofenceZones));
-  }, [geofenceZones]);
-
-  useEffect(() => {
-    localStorage.setItem('team-members', JSON.stringify(teamMembers));
-  }, [teamMembers]);
-
-  useEffect(() => {
-    localStorage.setItem('location-events', JSON.stringify(locationEvents));
-  }, [locationEvents]);
+    if (!currentProject?.id) {
+      setLocationEvents([]);
+      return;
+    }
+    const q = query(
+      collection(db, 'locationEvents'),
+      where('projectId', '==', currentProject.id),
+      orderBy('timestamp', 'desc')
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs.map(d => {
+        const data = d.data() as FirestoreLocationEventDoc;
+        return {
+          id: d.id,
+          memberId: data.memberId,
+          type: data.type,
+          zoneId: data.zoneId,
+          location: {
+            latitude: data.location?.latitude,
+            longitude: data.location?.longitude,
+            accuracy: data.location?.accuracy ?? 0,
+            timestamp: data.location?.timestamp ? new Date(data.location.timestamp) : new Date(),
+            address: data.location?.address,
+          },
+          timestamp: data.timestamp.toDate(),
+          message: data.message,
+        } as LocationEvent;
+      });
+      setLocationEvents(items.slice(0, 100));
+    }, () => {
+      setLocationEvents([]);
+    });
+    return () => unsub();
+  }, [currentProject?.id]);
 
   const enableLocation = useCallback(async (): Promise<boolean> => {
     if (!navigator.geolocation) {
@@ -220,38 +207,7 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
     setCurrentLocation(null);
   }, [watchId]);
 
-  const startTracking = useCallback(() => {
-    if (!isLocationEnabled) return;
-
-    const id = navigator.geolocation.watchPosition(
-      (position) => {
-        const location: LocationData = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: new Date(),
-        };
-        
-        setCurrentLocation(location);
-        
-        // Vérifier les violations de géofence pour l'utilisateur actuel
-        // (assumons que l'utilisateur actuel a l'ID 'current-user')
-        checkGeofenceViolations('current-user', location);
-      },
-      () => {
-        // Erreur de suivi
-        setLocationError('Erreur lors du suivi de position');
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 30000,
-        maximumAge: 10000,
-      }
-    );
-
-    setWatchId(id);
-    setIsTracking(true);
-  }, [isLocationEnabled]);
+  
 
   const stopTracking = useCallback(() => {
     if (watchId) {
@@ -285,16 +241,7 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
     }
   }, []);
 
-  const updateMemberLocation = useCallback((memberId: string, location: LocationData) => {
-    setTeamMembers(prev => prev.map(member => 
-      member.id === memberId
-        ? { ...member, currentLocation: location, lastSeen: new Date() }
-        : member
-    ));
-    
-    // Vérifier les violations de géofence
-    checkGeofenceViolations(memberId, location);
-  }, []);
+  
 
   const setMemberOnline = useCallback((memberId: string, isOnline: boolean) => {
     setTeamMembers(prev => prev.map(member => 
@@ -304,22 +251,37 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
     ));
   }, []);
 
-  const addGeofenceZone = useCallback((zone: Omit<GeofenceZone, 'id'>) => {
-    const newZone: GeofenceZone = {
-      ...zone,
-      id: `zone-${Date.now()}`,
-    };
-    setGeofenceZones(prev => [...prev, newZone]);
+  const addGeofenceZone = useCallback(async (zone: Omit<GeofenceZone, 'id'>) => {
+    if (!currentProject?.id) return;
+    await addDoc(collection(db, 'geofenceZones'), {
+      name: zone.name,
+      type: zone.type,
+      center: zone.center,
+      radius: zone.radius,
+      isActive: zone.isActive,
+      notifications: zone.notifications,
+      allowedMembers: zone.allowedMembers ?? [],
+      projectId: currentProject.id,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  }, [currentProject?.id]);
+
+  const updateGeofenceZone = useCallback(async (zoneId: string, updates: Partial<GeofenceZone>) => {
+    await updateDoc(doc(db, 'geofenceZones', zoneId), {
+      ...('name' in updates ? { name: updates.name } : {}),
+      ...('type' in updates ? { type: updates.type } : {}),
+      ...('center' in updates ? { center: updates.center } : {}),
+      ...('radius' in updates ? { radius: updates.radius } : {}),
+      ...('isActive' in updates ? { isActive: updates.isActive } : {}),
+      ...('notifications' in updates ? { notifications: updates.notifications } : {}),
+      ...('allowedMembers' in updates ? { allowedMembers: updates.allowedMembers } : {}),
+      updatedAt: serverTimestamp(),
+    });
   }, []);
 
-  const updateGeofenceZone = useCallback((zoneId: string, updates: Partial<GeofenceZone>) => {
-    setGeofenceZones(prev => prev.map(zone => 
-      zone.id === zoneId ? { ...zone, ...updates } : zone
-    ));
-  }, []);
-
-  const removeGeofenceZone = useCallback((zoneId: string) => {
-    setGeofenceZones(prev => prev.filter(zone => zone.id !== zoneId));
+  const removeGeofenceZone = useCallback(async (zoneId: string) => {
+    await deleteDoc(doc(db, 'geofenceZones', zoneId));
   }, []);
 
   const calculateDistance = useCallback((point1: LocationData, point2: LocationData): number => {
@@ -351,44 +313,98 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
 
       // Générer des événements selon les transitions
       if (isInside && !wasInside && zone.notifications.onEnter) {
-        const event: LocationEvent = {
-          id: `event-${Date.now()}`,
-          memberId,
-          type: 'enter',
-          zoneId: zone.id,
-          location,
-          timestamp: new Date(),
-          message: `${member.name} est entré dans ${zone.name}`,
-        };
-        setLocationEvents(prev => [event, ...prev.slice(0, 99)]); // Garder les 100 derniers événements
+        const now = new Date();
+        setLocationEvents(prev => [{ id: `event-${now.getTime()}`, memberId, type: 'enter', zoneId: zone.id, location, timestamp: now, message: `${member.name} est entré dans ${zone.name}` }, ...prev.slice(0, 99)]);
+        if (currentProject?.id) {
+          addDoc(collection(db, 'locationEvents'), {
+            projectId: currentProject.id,
+            memberId,
+            type: 'enter',
+            zoneId: zone.id,
+            location: { latitude: location.latitude, longitude: location.longitude, accuracy: location.accuracy, timestamp: location.timestamp.getTime() },
+            timestamp: serverTimestamp(),
+            message: `${member.name} est entré dans ${zone.name}`,
+          });
+        }
       } else if (!isInside && wasInside && zone.notifications.onExit) {
-        const event: LocationEvent = {
-          id: `event-${Date.now()}`,
-          memberId,
-          type: 'exit',
-          zoneId: zone.id,
-          location,
-          timestamp: new Date(),
-          message: `${member.name} a quitté ${zone.name}`,
-        };
-        setLocationEvents(prev => [event, ...prev.slice(0, 99)]);
+        const now = new Date();
+        setLocationEvents(prev => [{ id: `event-${now.getTime()}`, memberId, type: 'exit', zoneId: zone.id, location, timestamp: now, message: `${member.name} a quitté ${zone.name}` }, ...prev.slice(0, 99)]);
+        if (currentProject?.id) {
+          addDoc(collection(db, 'locationEvents'), {
+            projectId: currentProject.id,
+            memberId,
+            type: 'exit',
+            zoneId: zone.id,
+            location: { latitude: location.latitude, longitude: location.longitude, accuracy: location.accuracy, timestamp: location.timestamp.getTime() },
+            timestamp: serverTimestamp(),
+            message: `${member.name} a quitté ${zone.name}`,
+          });
+        }
       }
 
       // Vérifier les restrictions d'accès
       if (zone.allowedMembers && !zone.allowedMembers.includes(memberId) && isInside) {
-        const event: LocationEvent = {
-          id: `event-${Date.now()}`,
-          memberId,
-          type: 'alert',
-          zoneId: zone.id,
-          location,
-          timestamp: new Date(),
-          message: `⚠️ ${member.name} dans une zone restreinte: ${zone.name}`,
-        };
-        setLocationEvents(prev => [event, ...prev.slice(0, 99)]);
+        const now = new Date();
+        setLocationEvents(prev => [{ id: `event-${now.getTime()}`, memberId, type: 'alert', zoneId: zone.id, location, timestamp: now, message: `⚠️ ${member.name} dans une zone restreinte: ${zone.name}` }, ...prev.slice(0, 99)]);
+        if (currentProject?.id) {
+          addDoc(collection(db, 'locationEvents'), {
+            projectId: currentProject.id,
+            memberId,
+            type: 'alert',
+            zoneId: zone.id,
+            location: { latitude: location.latitude, longitude: location.longitude, accuracy: location.accuracy, timestamp: location.timestamp.getTime() },
+            timestamp: serverTimestamp(),
+            message: `⚠️ ${member.name} dans une zone restreinte: ${zone.name}`,
+          });
+        }
       }
     });
-  }, [teamMembers, geofenceZones, calculateDistance]);
+  }, [teamMembers, geofenceZones, calculateDistance, currentProject?.id]);
+
+  // Définir après checkGeofenceViolations pour éviter 'used before its declaration'
+  const startTracking = useCallback(() => {
+    if (!isLocationEnabled) return;
+
+    const id = navigator.geolocation.watchPosition(
+      (position) => {
+        const location: LocationData = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date(),
+        };
+
+        setCurrentLocation(location);
+
+        // Vérifier les violations de géofence pour l'utilisateur actuel
+        // (assumons que l'utilisateur actuel a l'ID 'current-user')
+        checkGeofenceViolations('current-user', location);
+      },
+      () => {
+        // Erreur de suivi
+        setLocationError('Erreur lors du suivi de position');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 10000,
+      }
+    );
+
+    setWatchId(id);
+    setIsTracking(true);
+  }, [isLocationEnabled, checkGeofenceViolations]);
+
+  const updateMemberLocation = useCallback((memberId: string, location: LocationData) => {
+    setTeamMembers(prev => prev.map(member => 
+      member.id === memberId
+        ? { ...member, currentLocation: location, lastSeen: new Date() }
+        : member
+    ));
+
+    // Vérifier les violations de géofence
+    checkGeofenceViolations(memberId, location);
+  }, [checkGeofenceViolations]);
 
   const getAddressFromCoordinates = useCallback(async (lat: number, lng: number): Promise<string> => {
     try {
@@ -404,7 +420,7 @@ export const GeolocationProvider: React.FC<GeolocationProviderProps> = ({ childr
     }
   }, []);
 
-  const getNearbyMembers = useCallback((location: LocationData, radiusKm: number): TeamMember[] => {
+  const getNearbyMembers = useCallback((location: LocationData, radiusKm: number): GeolocationTeamMember[] => {
     return teamMembers.filter(member => {
       if (!member.currentLocation || !member.isOnline) return false;
       const distance = calculateDistance(location, member.currentLocation);

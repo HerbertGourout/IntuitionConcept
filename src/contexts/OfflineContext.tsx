@@ -64,44 +64,16 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [offlineState, setOfflineState] = useState<OfflineState>(offlineManager.getState());
 
-  // Clés de stockage local
+  // Plus de stockage local: tout reste en mémoire
   const STORAGE_KEYS = useMemo(() => ({
     OFFLINE_DATA: 'btp_offline_data',
     PENDING_ACTIONS: 'btp_pending_actions',
     LAST_SYNC: 'btp_last_sync'
   }), []);
 
-  // Initialisation du contexte offline
+  // Initialisation du contexte offline (sans chargement localStorage)
   useEffect(() => {
-    const initializeOfflineData = () => {
-      try {
-        // Charger les données mises en cache
-        const cachedData = localStorage.getItem(STORAGE_KEYS.OFFLINE_DATA);
-        if (cachedData) {
-          setOfflineData(JSON.parse(cachedData));
-        }
-
-        // Charger les actions en attente
-        const cachedActions = localStorage.getItem(STORAGE_KEYS.PENDING_ACTIONS);
-        if (cachedActions) {
-          setPendingActions(JSON.parse(cachedActions));
-        }
-
-        // Charger la dernière synchronisation
-        const lastSync = localStorage.getItem(STORAGE_KEYS.LAST_SYNC);
-        if (lastSync) {
-          setLastSyncTime(new Date(lastSync));
-        }
-
-        setIsInitialized(true);
-        // Mode offline initialisé
-      } catch {
-        // Erreur lors de l'initialisation offline
-        setIsInitialized(true);
-      }
-    };
-
-    initializeOfflineData();
+    setIsInitialized(true);
 
     // Subscribe to offline manager state changes
     const unsubscribe = offlineManager.subscribe((state) => {
@@ -142,19 +114,9 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
     };
   }, []);
 
-  // Sauvegarder les données dans le localStorage
-  const saveToStorage = useCallback((key: string, data: unknown) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-    } catch (error) {
-      // Erreur de sauvegarde locale
-      // Nettoyer le cache si l'espace est plein
-      if (error instanceof DOMException && error.code === 22) {
-        toast.error('Cache plein - Nettoyage automatique...');
-        // Pour éviter une dépendance circulaire ici, on ne référence pas directement clearCache.
-        // Le nettoyage complet peut être déclenché ailleurs par l'utilisateur.
-      }
-    }
+  // Sauvegarde locale désactivée
+  const saveToStorage = useCallback((_key: string, _data: unknown) => {
+    // no-op
   }, []);
 
   // Mettre en cache des données
@@ -289,23 +251,21 @@ export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) =>
       setOfflineData({});
       setPendingActions([]);
       setLastSyncTime(null);
-      localStorage.removeItem(STORAGE_KEYS.OFFLINE_DATA);
-      localStorage.removeItem(STORAGE_KEYS.PENDING_ACTIONS);
-      localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
       toast.success('🗑️ Tout le cache a été vidé');
     }
   }, [saveToStorage, STORAGE_KEYS]);
 
   // Calculer la taille du cache
   const getCacheSize = useCallback(() => {
+    // Estimation simple basée sur la taille JSON en mémoire
     try {
-      const dataSize = localStorage.getItem(STORAGE_KEYS.OFFLINE_DATA)?.length || 0;
-      const actionsSize = localStorage.getItem(STORAGE_KEYS.PENDING_ACTIONS)?.length || 0;
+      const dataSize = JSON.stringify(offlineData).length;
+      const actionsSize = JSON.stringify(pendingActions).length;
       return Math.round((dataSize + actionsSize) / 1024); // En KB
     } catch {
       return 0;
     }
-  }, [STORAGE_KEYS]);
+  }, [offlineData, pendingActions]);
 
   const getLastSyncTime = useCallback(() => lastSyncTime, [lastSyncTime]);
 
