@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo, FC } from 'react';
 import { 
   FileText, 
   Plus, 
@@ -25,10 +25,39 @@ import { useProjects } from '../../hooks/useProjects';
 import EmptyState from '../UI/EmptyState';
 import NoProjectSelected from '../UI/NoProjectSelected';
 
-const Quotes: React.FC = () => {
+const Quotes: FC = () => {
   const { formatAmount } = useCurrency();
   const { currentProject } = useProjects();
   const { quotes, loading, addQuote } = useProjectQuotes(currentProject?.id || null);
+  
+  // États locaux pour l'interface - DOIVENT être avant les returns conditionnels
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showQuoteCreator, setShowQuoteCreator] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  
+  // Filtrage des devis - DOIT être avant les returns conditionnels
+  const filteredQuotes = useMemo(() => {
+    return quotes.filter((quote: Quote) => {
+      const matchesSearch = quote.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           quote.clientName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || quote.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [quotes, searchTerm, statusFilter]);
+
+  // Statistiques - DOIT être avant les returns conditionnels
+  const stats = useMemo(() => {
+    const total = quotes.length;
+    const draft = quotes.filter((q: Quote) => q.status === 'draft').length;
+    const sent = quotes.filter((q: Quote) => q.status === 'sent').length;
+    const accepted = quotes.filter((q: Quote) => q.status === 'accepted').length;
+    const totalValue = quotes.reduce((sum: number, q: Quote) => sum + q.totalAmount, 0);
+    const acceptedValue = quotes.filter((q: Quote) => q.status === 'accepted').reduce((sum: number, q: Quote) => sum + q.totalAmount, 0);
+    
+    return { total, draft, sent, accepted, totalValue, acceptedValue };
+  }, [quotes]);
   
   // Si aucun projet n'est sélectionné
   if (!currentProject) {
@@ -38,12 +67,6 @@ const Quotes: React.FC = () => {
       </PageContainer>
     );
   }
-  
-  // États locaux pour l'interface
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showQuoteCreator, setShowQuoteCreator] = useState(false);
-  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
 
   // État vide pour nouveau projet
   if (quotes.length === 0 && !loading) {
@@ -73,29 +96,6 @@ const Quotes: React.FC = () => {
       </PageContainer>
     );
   }
-
-  // Filtrage des devis
-  const filteredQuotes = useMemo(() => {
-    return quotes.filter(quote => {
-      const matchesSearch = quote.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           quote.clientName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || quote.status === statusFilter;
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [quotes, searchTerm, statusFilter]);
-
-  // Statistiques
-  const stats = useMemo(() => {
-    const total = quotes.length;
-    const draft = quotes.filter(q => q.status === 'draft').length;
-    const sent = quotes.filter(q => q.status === 'sent').length;
-    const accepted = quotes.filter(q => q.status === 'accepted').length;
-    const totalValue = quotes.reduce((sum, q) => sum + q.totalAmount, 0);
-    const acceptedValue = quotes.filter(q => q.status === 'accepted').reduce((sum, q) => sum + q.totalAmount, 0);
-    
-    return { total, draft, sent, accepted, totalValue, acceptedValue };
-  }, [quotes]);
 
   // Gestionnaires d'événements
   const handleCreateQuote = () => {

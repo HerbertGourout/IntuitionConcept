@@ -1,15 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo, FC } from 'react';
 import { DollarSign, TrendingUp, AlertTriangle, CheckCircle, Plus, BarChart3, PieChart, Activity } from 'lucide-react';
 import { useProjectTransactions } from '../../hooks/useProjectData';
 import { useProjects } from '../../hooks/useProjects';
 import EmptyState from '../UI/EmptyState';
-import NoProjectSelected from '../UI/NoProjectSelected';
 import TransactionTable from './TransactionTable';
 import TransactionModal from './TransactionModal';
 import type { FinancialRecord } from '../../types';
 import PageContainer from '../Layout/PageContainer';
 
-const Finances: React.FC = () => {
+const Finances: FC = () => {
   const { currentProject } = useProjects();
   const { transactions, loading, addTransaction } = useProjectTransactions(currentProject?.id || null);
   
@@ -17,17 +16,17 @@ const Finances: React.FC = () => {
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<FinancialRecord | null>(null);
 
-  // Si aucun projet n'est sélectionné
-  if (!currentProject) {
-    return (
-      <PageContainer>
-        <NoProjectSelected />
-      </PageContainer>
-    );
-  }
-
-  // Calculer les statistiques depuis les vraies données
+  // Calculer les statistiques depuis les vraies données - DOIT être avant le return conditionnel
   const stats = useMemo(() => {
+    if (!currentProject) {
+      return {
+        totalExpenses: 0,
+        totalIncome: 0,
+        balance: 0,
+        budgetUsed: 0,
+        categories: { materials: 0, labor: 0, equipment: 0, permits: 0, other: 0 }
+      };
+    }
     const expenses = transactions.filter(t => t.type === 'expense');
     const income = transactions.filter(t => t.type === 'income');
     
@@ -54,7 +53,7 @@ const Finances: React.FC = () => {
       categories,
       pendingPayments: expenses.filter(t => t.status === 'pending').length,
     };
-  }, [transactions, currentProject.budget]);
+  }, [transactions, currentProject]);
 
   const handleAddTransaction = async (transactionData: Omit<FinancialRecord, 'id'>) => {
     try {
