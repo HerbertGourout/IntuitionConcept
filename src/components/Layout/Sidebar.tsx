@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 import { 
   BarChart3, 
   Users, 
@@ -329,6 +329,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       color: 'text-gray-500',
       bgColor: 'bg-gray-500/10',
       description: 'Configuration'
+    }
+      ]
     }
   ];
 

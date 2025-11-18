@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, FC } from 'react';
 import { getPlanIncrementalFeatures, getAllPlanFeatures, type PlanId } from '../../config/pricing';
 import { 
   Check, 
