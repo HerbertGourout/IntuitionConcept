@@ -32,7 +32,9 @@ export const MaintenanceHistorySection: React.FC<MaintenanceHistorySectionProps>
       ...equipment,
       maintenanceHistory: [...history, event],
     };
-    onUpdate && onUpdate(updated);
+    if (onUpdate) {
+      onUpdate(updated);
+    }
     setNewEvent(emptyEvent);
     setAdding(false);
   };
@@ -42,7 +44,9 @@ export const MaintenanceHistorySection: React.FC<MaintenanceHistorySectionProps>
       ...equipment,
       maintenanceHistory: history.filter(ev => ev.id !== id),
     };
-    onUpdate && onUpdate(updated);
+    if (onUpdate) {
+      onUpdate(updated);
+    }
   };
 
   return (

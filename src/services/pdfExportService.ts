@@ -193,8 +193,8 @@ export class PDFExportService {
       margin: { left: this.margin, right: this.margin }
     });
     
-    // @ts-ignore - autoTable modifie doc
-    this.currentY = this.doc.lastAutoTable.finalY + 10;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.currentY = (this.doc as any).lastAutoTable.finalY + 10;
   }
   
   /**

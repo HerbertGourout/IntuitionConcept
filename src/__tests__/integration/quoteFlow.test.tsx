@@ -4,6 +4,7 @@ import { ProjectProvider } from '../../contexts/ProjectContext';
 import { AuthProvider } from '../../contexts/AuthContext';
 import QuoteGenerator from '../../components/Quotes/QuoteGenerator';
 import { vi } from 'vitest';
+import { QuotesService } from '../../services/quotesService';
 
 // Mock Firebase
 vi.mock('../../firebase', () => ({
@@ -92,8 +93,7 @@ describe('Quote Flow Integration Tests', () => {
 
     // Verify quote was created
     await waitFor(() => {
-      const quotesService = require('../../services/quotesService').default;
-      expect(quotesService.createQuote).toHaveBeenCalledWith(
+      expect(QuotesService.createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Test Quote Title',
           clientName: 'Test Client',

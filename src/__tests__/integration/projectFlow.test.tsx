@@ -4,6 +4,7 @@ import { ProjectProvider } from '../../contexts/ProjectContext';
 import { AuthProvider } from '../../contexts/AuthContext';
 import Projects from '../../components/Projects/Projects';
 import { vi } from 'vitest';
+import projectService from '../../services/projectService';
 
 // Mock Firebase
 vi.mock('../../firebase', () => ({
@@ -160,7 +161,6 @@ describe('Project Flow Integration Tests', () => {
 
     // Verify update was called
     await waitFor(() => {
-      const projectService = require('../../services/projectService').default;
       expect(projectService.updateProject).toHaveBeenCalledWith(
         'project-1',
         expect.objectContaining({ status: 'completed' })
@@ -191,7 +191,6 @@ describe('Project Flow Integration Tests', () => {
 
     // Verify delete was called
     await waitFor(() => {
-      const projectService = require('../../services/projectService').default;
       expect(projectService.deleteProject).toHaveBeenCalledWith('project-1');
     });
 
