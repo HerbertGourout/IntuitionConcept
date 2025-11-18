@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, FC } from 'react';
 import {
   Calendar,
   Filter,
@@ -24,7 +24,7 @@ import Badge from '../UI/Badge';
 import DragDropPlanningBoard from '../DragDrop/DragDropPlanningBoard';
 import StudyGanttChart from './StudyGanttChart';
 
-export const Planning: React.FC = () => {
+export const Planning: FC = () => {
   const projectContext = useProjectContext();
   type ViewType = 'gantt' | 'kanban' | 'studies';
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
@@ -131,7 +131,7 @@ export const Planning: React.FC = () => {
   }, [selectedPhaseId, tasks]);
 
   // Phases à afficher dans le Gantt, synchronisées avec le filtre
-  const phasesToShow = React.useMemo(() => {
+  const phasesToShow = useMemo(() => {
     const phases = projectContext.currentProject?.phases || [];
     return selectedPhaseId ? phases.filter((p: ProjectPhase) => p.id === selectedPhaseId) : phases;
   }, [projectContext.currentProject, selectedPhaseId]);
