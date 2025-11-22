@@ -14,8 +14,8 @@ describe('Gemini3Client', () => {
 
   beforeEach(() => {
     client = new Gemini3Client({
-      apiKey: 'test-api-key',
-      apiVersion: 'v1alpha'
+      api_key: 'test-api-key',
+      api_version: 'v1alpha'
     });
     vi.clearAllMocks();
   });
@@ -28,12 +28,12 @@ describe('Gemini3Client', () => {
             role: 'model',
             parts: [{ text: 'Test response' }]
           },
-          finishReason: 'STOP'
+          finish_reason: 'STOP'
         }],
-        usageMetadata: {
-          promptTokenCount: 10,
-          candidatesTokenCount: 5,
-          totalTokenCount: 15
+        usage_metadata: {
+          prompt_token_count: 10,
+          candidates_token_count: 5,
+          total_token_count: 15
         }
       };
 
@@ -63,12 +63,12 @@ describe('Gemini3Client', () => {
             role: 'model',
             parts: [{ text: 'Success after retry' }]
           },
-          finishReason: 'STOP'
+          finish_reason: 'STOP'
         }],
-        usageMetadata: {
-          promptTokenCount: 10,
-          candidatesTokenCount: 5,
-          totalTokenCount: 15
+        usage_metadata: {
+          prompt_token_count: 10,
+          candidates_token_count: 5,
+          total_token_count: 15
         }
       };
 
@@ -121,12 +121,12 @@ describe('Gemini3Client', () => {
               { text: 'World' }
             ]
           },
-          finishReason: 'STOP'
+          finish_reason: 'STOP'
         }],
-        usageMetadata: {
-          promptTokenCount: 10,
-          candidatesTokenCount: 5,
-          totalTokenCount: 15
+        usage_metadata: {
+          prompt_token_count: 10,
+          candidates_token_count: 5,
+          total_token_count: 15
         }
       };
 
@@ -141,12 +141,12 @@ describe('Gemini3Client', () => {
             role: 'model',
             parts: []
           },
-          finishReason: 'STOP'
+          finish_reason: 'STOP'
         }],
-        usageMetadata: {
-          promptTokenCount: 10,
-          candidatesTokenCount: 0,
-          totalTokenCount: 10
+        usage_metadata: {
+          prompt_token_count: 10,
+          candidates_token_count: 0,
+          total_token_count: 10
         }
       };
 
@@ -165,12 +165,12 @@ describe('Gemini3Client', () => {
               { thought_signature: 'test-signature-123' }
             ]
           },
-          finishReason: 'STOP'
+          finish_reason: 'STOP'
         }],
-        usageMetadata: {
-          promptTokenCount: 10,
-          candidatesTokenCount: 5,
-          totalTokenCount: 15
+        usage_metadata: {
+          prompt_token_count: 10,
+          candidates_token_count: 5,
+          total_token_count: 15
         }
       };
 
@@ -185,12 +185,12 @@ describe('Gemini3Client', () => {
             role: 'model',
             parts: [{ text: 'No signature' }]
           },
-          finishReason: 'STOP'
+          finish_reason: 'STOP'
         }],
-        usageMetadata: {
-          promptTokenCount: 10,
-          candidatesTokenCount: 5,
-          totalTokenCount: 15
+        usage_metadata: {
+          prompt_token_count: 10,
+          candidates_token_count: 5,
+          total_token_count: 15
         }
       };
 
@@ -207,12 +207,12 @@ describe('Gemini3Client', () => {
             role: 'model',
             parts: [{ text: 'Test' }]
           },
-          finishReason: 'STOP'
+          finish_reason: 'STOP'
         }],
-        usageMetadata: {
-          promptTokenCount: 100,
-          candidatesTokenCount: 50,
-          totalTokenCount: 150
+        usage_metadata: {
+          prompt_token_count: 100,
+          candidates_token_count: 50,
+          total_token_count: 150
         }
       };
 

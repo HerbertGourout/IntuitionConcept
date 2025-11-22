@@ -10,7 +10,8 @@
 import { Gemini3Client, getDefaultClient } from './gemini3';
 import type {
   AnalysisResult,
-  GenerateContentRequest
+  GenerateContentRequest,
+  Content
 } from './gemini3';
 import type { ArchitecturalAnalysis } from '../../types/architecturalAnalysis';
 
@@ -108,12 +109,26 @@ export class QuoteGeneratorAdvanced {
     // Étape 2: Générer le devis
     const prompt = this.buildQuotePrompt(analysis, options, materialPrices);
 
+    // Préparer le contenu de base
+    const userContent: Content = {
+      role: 'user',
+      parts: [{ text: prompt }]
+    };
+
+    // Construire le tableau de contents avec signature si fournie
+    const contents: Content[] = options.previous_signature
+      ? [
+          {
+            role: 'model',
+            parts: [{ thought_signature: options.previous_signature }]
+          },
+          userContent
+        ]
+      : [userContent];
+
     const request: GenerateContentRequest = {
       model: 'gemini-3-pro-preview',
-      contents: {
-        role: 'user',
-        parts: [{ text: prompt }]
-      },
+      contents: contents,
       config: {
         thinking_level: 'high', // Précision pour calculs
         temperature: 0.1,
@@ -125,17 +140,6 @@ export class QuoteGeneratorAdvanced {
         ] : undefined
       }
     };
-
-    // Ajouter signature précédente si fournie
-    if (options.previous_signature) {
-      request.contents = [
-        {
-          role: 'model',
-          parts: [{ thought_signature: options.previous_signature }]
-        },
-        request.contents
-      ];
-    }
 
     const response = await this.client.generateContent(request);
     const text = this.client.extractText(response);
@@ -178,7 +182,7 @@ export class QuoteGeneratorAdvanced {
     console.log(`🔍 Recherche prix matériaux à ${location}...`);
 
     // Extraire les matériaux de l'analyse
-    const materials = analysis.materials?.map(m => m.type) || [];
+    const materials = analysis.project?.materials || [];
     
     if (materials.length === 0) {
       return {};
@@ -232,9 +236,9 @@ Réponds en JSON structuré.`;
 
 ## PROJET
 - Localisation: ${options.location}
-- Surface totale: ${analysis.measurements?.totalArea || 0} m²
-- Étages: ${analysis.measurements?.floors?.length || 1}
-- Pièces: ${analysis.measurements?.rooms?.length || 0}
+- Surface totale: ${analysis.technicalDetails?.totalArea_m2 || 0} m²
+- Étages: ${analysis.technicalDetails?.floors || 1}
+- Pièces: ${analysis.rooms?.length || 0}
 
 ## ANALYSE ARCHITECTURALE
 ${JSON.stringify(analysis, null, 2)}

@@ -5,12 +5,12 @@ import { getStorage, connectStorageEmulator } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAVObwoBnIAGtXbt8-3td2gwtrK4gKp7_0",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "intuitionconcept.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "intuitionconcept",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "intuitionconcept.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "4657836202",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:4657836202:web:a9b0e27f4a67847033a0d3"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "REMPLACEZ_PAR_VOTRE_API_KEY",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "votre-projet.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "votre-projet-id",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "votre-projet.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "VOTRE_SENDER_ID",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "VOTRE_APP_ID"
 };
 
 // Éviter la double initialisation lors du HMR (Hot Module Replacement)
