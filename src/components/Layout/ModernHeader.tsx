@@ -91,11 +91,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
         { name: 'Toutes les solutions', href: '/solutions', icon: FileText, description: 'Comparer les offres' },
       ]
     },
-    {
-      name: 'Fonctionnalités',
-      href: '/features',
-      hasDropdown: false
-    },
+    { name: 'Fonctionnalités', href: '/features' },
     { name: 'Tarifs', href: '/pricing' },
     {
       name: 'Ressources',
@@ -103,8 +99,11 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
       hasDropdown: true,
       dropdownItems: [
         { name: 'À propos', href: '/about', icon: Users, description: 'Notre histoire et notre équipe' },
-        { name: 'Support', href: '/support', icon: Shield, description: 'FAQ et aide' },
+        { name: 'Support & FAQ', href: '/support', icon: Shield, description: 'Aide et questions fréquentes' },
         { name: 'Contact', href: '/contact', icon: Smartphone, description: 'Nous contacter' },
+        { name: 'Confidentialité', href: '/privacy', icon: Shield, description: 'Politique RGPD' },
+        { name: 'CGU', href: '/terms', icon: FileText, description: 'Conditions d\'utilisation' },
+        { name: 'Cookies', href: '/cookies', icon: FileText, description: 'Politique cookies' },
       ]
     },
   ];
