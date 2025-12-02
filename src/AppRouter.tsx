@@ -14,6 +14,10 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AuthTestPage from './components/Auth/AuthTestPage';
 import Subscription from './pages/Subscription';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import FeaturesPage from './pages/FeaturesPage';
+import SupportPage from './pages/SupportPage';
 import InspectorDemo from './pages/ai/InspectorDemo';
 import VocalCopilotDemo from './pages/ai/VocalCopilotDemo';
 import MaterialsDemo from './pages/ai/MaterialsDemo';
@@ -37,6 +41,12 @@ const AppRouter: React.FC = () => {
             <Route path="/home" element={<ModernHomePage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/subscription" element={<Subscription />} />
+            
+            {/* Pages publiques */}
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/support" element={<SupportPage />} />
             
             {/* Démos IA */}
             <Route path="/demo/inspector" element={<InspectorDemo />} />
