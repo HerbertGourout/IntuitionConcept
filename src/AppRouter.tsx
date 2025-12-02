@@ -22,6 +22,9 @@ import SolutionsIndex from './pages/solutions/SolutionsIndex';
 import PMESolution from './pages/solutions/PMESolution';
 import ArtisanSolution from './pages/solutions/ArtisanSolution';
 import EnterpriseSolution from './pages/solutions/EnterpriseSolution';
+import PrivacyPage from './pages/legal/PrivacyPage';
+import TermsPage from './pages/legal/TermsPage';
+import CookiesPage from './pages/legal/CookiesPage';
 import InspectorDemo from './pages/ai/InspectorDemo';
 import VocalCopilotDemo from './pages/ai/VocalCopilotDemo';
 import MaterialsDemo from './pages/ai/MaterialsDemo';
@@ -57,6 +60,11 @@ const AppRouter: React.FC = () => {
             <Route path="/solutions/pme" element={<PMESolution />} />
             <Route path="/solutions/artisan" element={<ArtisanSolution />} />
             <Route path="/solutions/enterprise" element={<EnterpriseSolution />} />
+            
+            {/* Pages légales */}
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/cookies" element={<CookiesPage />} />
             
             {/* Démos IA */}
             <Route path="/demo/inspector" element={<InspectorDemo />} />
