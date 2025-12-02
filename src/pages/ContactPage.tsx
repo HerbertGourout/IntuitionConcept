@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import GlobalLayout from '../components/Layout/GlobalLayout';
+import BookingCalendar from '../components/Contact/BookingCalendar';
+import ContactFAQ from '../components/Contact/ContactFAQ';
 import { 
   Mail, 
   Phone, 
@@ -332,6 +334,11 @@ const ContactPage: React.FC = () => {
                 ))}
               </div>
 
+              {/* FAQ */}
+              <div className="mt-8">
+                <ContactFAQ />
+              </div>
+
               {/* Engagement */}
               <div className="mt-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
                 <div className="flex items-center gap-3 mb-3">
@@ -354,6 +361,20 @@ const ContactPage: React.FC = () => {
                 </ul>
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Calendrier de réservation */}
+      <section id="booking" className="py-20 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="max-w-xl mx-auto">
+            <BookingCalendar 
+              onBooking={(date, time, type) => {
+                console.log('Réservation:', { date, time, type });
+                // Ici, intégrer avec un service de calendrier
+              }}
+            />
           </div>
         </div>
       </section>

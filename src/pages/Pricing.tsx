@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { message } from 'antd';
 import GlobalLayout from '../components/Layout/GlobalLayout';
+import PricingCalculator from '../components/Pricing/PricingCalculator';
 import { Check, Smartphone, CreditCard, ShieldCheck, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PLANS, PRICING, CURRENCY_SYMBOLS, PlanId, Currency, getPlanIncrementalFeatures } from '../config/pricing';
@@ -76,6 +77,11 @@ export const Pricing: React.FC = () => {
       heroBackground="bg-gradient-to-br from-green-900 via-blue-900 to-purple-900"
     >
       <div className="mx-auto px-4 md:px-10 lg:px-14 max-w-[1920px]">
+        {/* Calculateur de prix interactif */}
+        <div className="mb-16">
+          <PricingCalculator onSelectPlan={(plan) => handleSubscribe(plan)} />
+        </div>
+
         {/* Grille des plans */}
         <div className="grid md:grid-cols-3 gap-8 mb-14">
           {Object.values(PLANS).map((plan) => (
