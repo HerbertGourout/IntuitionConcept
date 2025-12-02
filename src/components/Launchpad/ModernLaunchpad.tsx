@@ -34,7 +34,7 @@ const ModernLaunchpad: React.FC<ModernLaunchpadProps> = ({ onOpenSection }) => {
 
   // Calculer les stats
   const stats = useMemo(() => {
-    const activeProjects = projects?.filter(p => p.status === 'active' || p.status === 'in_progress').length || 0;
+    const activeProjects = projects?.filter(p => p.status === 'planning' || p.status === 'in_progress').length || 0;
     const totalBudget = projects?.reduce((sum, p) => sum + (Number(p.budget) || 0), 0) || 0;
     const totalSpent = projects?.reduce((sum, p) => sum + (Number(p.spent) || 0), 0) || 0;
     

@@ -1,0 +1,29 @@
+# Robots.txt pour IntuitionConcept
+# https://intuitionconcept.com
+
+User-agent: *
+Allow: /
+
+# Pages publiques à indexer
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /features
+Allow: /pricing
+Allow: /support
+Allow: /solutions
+Allow: /solutions/artisan
+Allow: /solutions/pme
+Allow: /solutions/enterprise
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+
+# Pages privées à ne pas indexer
+Disallow: /app/
+Disallow: /login
+Disallow: /register
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://intuitionconcept.com/sitemap.xml

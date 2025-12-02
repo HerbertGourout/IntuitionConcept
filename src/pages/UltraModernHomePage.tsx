@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GlobalLayout from '../components/Layout/GlobalLayout';
+import PageMeta from '../components/SEO/PageMeta';
 import ROICalculator from '../components/Homepage/ROICalculator';
 import UseCases from '../components/Homepage/UseCases';
 import CompetitorComparison from '../components/Homepage/CompetitorComparison';
@@ -162,6 +163,11 @@ const UltraModernHomePage: React.FC = () => {
 
   return (
     <GlobalLayout showHero={false}>
+      <PageMeta 
+        title="Gestion BTP pour l'Afrique Francophone"
+        description="IntuitionConcept - Logiciel de gestion BTP tout-en-un. Devis, factures, suivi chantier, paiements Mobile Money. Essai gratuit 14 jours."
+        keywords="BTP, gestion chantier, devis, facture, Sénégal, Afrique, construction, artisan, PME, Mobile Money"
+      />
       {/* Hero Section - Cas client */}
       <section className="relative min-h-screen overflow-hidden">
         <div className="absolute inset-0">
