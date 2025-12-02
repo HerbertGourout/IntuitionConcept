@@ -234,9 +234,6 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                     >
                       <span className="relative flex items-center gap-2">
                         <span>{item.href === '/app/country-pricing' ? "Base d'ouvrages" : item.name}</span>
-                        {item.href === '/app/country-pricing' && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">BETA</span>
-                        )}
                         <span
                           className={`absolute left-0 -bottom-1 h-0.5 rounded bg-blue-600 transition-all duration-200 ${
                             isItemActive(item) ? 'w-full opacity-100' : 'w-0 opacity-0'
@@ -509,9 +506,6 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                     >
                       <span className="inline-flex items-center gap-2">
                         <span>{item.href === '/app/country-pricing' ? "Base d'ouvrages" : item.name}</span>
-                        {item.href === '/app/country-pricing' && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">BETA</span>
-                        )}
                       </span>
                     </Link>
                   </motion.div>

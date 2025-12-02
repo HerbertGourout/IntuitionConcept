@@ -11,7 +11,7 @@ import ModernHomePage from './pages/ModernHomePage';
 import UltraModernHomePage from './pages/UltraModernHomePage';
 import Pricing from './pages/Pricing';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import RegisterPageV2 from './pages/RegisterPageV2';
 import AuthTestPage from './components/Auth/AuthTestPage';
 import Subscription from './pages/Subscription';
 import AboutPage from './pages/AboutPage';
@@ -77,7 +77,7 @@ const AppRouter: React.FC = () => {
             <Route path="/rendu-3d" element={<Navigate to="/app/rendu-3d" replace />} />
             
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/register" element={<RegisterPageV2 />} />
             
             {/* Application principale */}
             <Route path="/app/*" element={

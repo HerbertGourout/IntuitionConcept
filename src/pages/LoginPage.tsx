@@ -195,11 +195,10 @@ const LoginPage: React.FC = () => {
               )}
             </button>
 
-            {/* Mode développement */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="text-yellow-800 text-sm">
-                <strong>Mode Développement :</strong> Vous pouvez vous connecter avec n'importe quelles informations. 
-                La connexion vous redirigera automatiquement vers l'application.
+            {/* Réassurance */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="text-blue-800 text-sm text-center">
+                <strong>Connexion sécurisée</strong> • Vos données sont protégées
               </div>
             </div>
           </motion.form>
