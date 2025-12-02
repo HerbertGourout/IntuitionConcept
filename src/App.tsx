@@ -39,7 +39,7 @@ import StudyCosts from './pages/StudyCosts';
 import CreateProjectModal from './components/Projects/CreateProjectModal';
 import { useToast } from './hooks/useToast';
 import { Result } from 'antd';
-import Launchpad from './components/Launchpad/Launchpad';
+import ModernLaunchpad from './components/Launchpad/ModernLaunchpad';
 import { FocusMode } from './components/UI/InteractiveFeatures';
 import { usingEmulators } from './firebase';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -233,7 +233,7 @@ const AppContent: React.FC = () => {
     // Afficher le contenu en fonction de la section active
     switch (activeSection) {
       case 'launchpad':
-        return <Launchpad onOpenSection={(s) => handleNavigate(s)} />;
+        return <ModernLaunchpad onOpenSection={(s) => handleNavigate(s)} />;
       case 'dashboard':
         return <Dashboard onNavigate={handleNavigate} />;
       case 'projects':
