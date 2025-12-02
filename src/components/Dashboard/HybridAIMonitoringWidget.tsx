@@ -1,4 +1,4 @@
-// Widget de monitoring IA simplifié
+
 import React from 'react';
 import { Card, Badge, Statistic, Row, Col, Alert } from 'antd';
 import { ApiOutlined } from '@ant-design/icons';
@@ -7,7 +7,7 @@ export const HybridAIMonitoringWidget = () => {
   // Données simulées pour éviter les erreurs
   const mockStatus = {
     groq: true,
-    claude: true,
+    Modèle: true,
     googleVision: false
   };
 
@@ -73,8 +73,8 @@ export const HybridAIMonitoringWidget = () => {
             text="Groq AI" 
           />
           <Badge 
-            status={mockStatus.claude ? "success" : "error"} 
-            text="Claude 3.5" 
+            status={mockStatus.Modèle ? "success" : "error"} 
+            text="Modèle 3.5" 
           />
           <Badge 
             status={mockStatus.googleVision ? "success" : "error"} 

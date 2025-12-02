@@ -1,7 +1,4 @@
-/**
- * Service de génération de rendus 3D architecturaux par IA
- * Utilise Replicate API avec Stable Diffusion + ControlNet
- */
+
 
 // import Replicate from 'replicate'; // Désactivé - utilisation du proxy Vite à la place
 
@@ -203,7 +200,7 @@ class Render3DService {
         height: this.getHeight(request.quality),
       };
 
-      console.log('🎨 Génération rendu 3D avec SDXL...', { prompt, input });
+      console.log(' Génération rendu 3D avec SDXL...', { prompt, input });
 
       // 3. Lancer la génération via le proxy
       const prediction = await this.replicateRequest('/v1/predictions', 'POST', {
@@ -280,7 +277,7 @@ class Render3DService {
         height,
       };
 
-      console.log('🎯 Génération rendu 3D PRÉCIS avec Flux 1.1 Pro...', { prompt, input });
+      console.log(' Génération rendu 3D PRÉCIS avec Flux 1.1 Pro...', { prompt, input });
 
       // 3. Lancer la génération avec Flux 1.1 Pro via le proxy
       const prediction = await this.replicateRequest('/v1/predictions', 'POST', {

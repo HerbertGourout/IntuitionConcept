@@ -92,7 +92,7 @@ export const RATE_LIMITS = {
   // Upload de fichiers: 10 par heure
   UPLOAD: { maxRequests: 10, windowMs: 3600000 },
   
-  // Génération IA: 20 par heure
+  // Génération: 20 par heure
   AI_GENERATION: { maxRequests: 20, windowMs: 3600000 },
   
   // OCR: 30 par heure

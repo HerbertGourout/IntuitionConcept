@@ -1,4 +1,4 @@
-// Alternatives IA API-Only (Sans Serveur) pour SaaS
+
 export interface APIOnlyAIOption {
   id: string;
   name: string;
@@ -18,7 +18,7 @@ export interface APIOnlyAIOption {
   };
   integration: {
     complexity: 'drop_in' | 'simple' | 'medium';
-    compatibleWithOpenAI: boolean;
+    compatibleWithService: boolean;
     setupTime: string;
   };
   pros: string[];
@@ -43,32 +43,32 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
       'Code generation'
     ],
     costStructure: {
-      perRequest: 3, // 15x moins cher qu'OpenAI
+      perRequest: 3, // 15x moins cher qu'Service
       monthlyMinimum: 0,
       freeQuota: 1000, // 1000 requêtes gratuites/mois
       scaling: 'linear'
     },
     performance: {
       accuracy: 85,
-      speed: 'ultra_fast', // 10x plus rapide qu'OpenAI
+      speed: 'ultra_fast', // 10x plus rapide qu'Service
       reliability: 92
     },
     integration: {
-      complexity: 'drop_in', // Compatible OpenAI API
-      compatibleWithOpenAI: true,
+      complexity: 'drop_in', // Compatible Service API
+      compatibleWithService: true,
       setupTime: '30 minutes'
     },
     pros: [
       'Prix imbattable (15x moins cher)',
       'Vitesse exceptionnelle',
-      'API compatible OpenAI',
+      'API compatible Service',
       '1000 requêtes gratuites/mois',
       'Pas d\'infrastructure à gérer',
       'Modèles récents (Llama 3.1, Mixtral)'
     ],
     cons: [
-      'Précision légèrement moindre que GPT-4',
-      'Moins de fonctionnalités que OpenAI',
+      'Précision légèrement moindre que Modèle-4',
+      'Moins de fonctionnalités que Service',
       'Startup (risque continuité)'
     ],
     bestFor: [
@@ -86,10 +86,10 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
   },
 
   {
-    id: 'anthropic_claude_haiku',
-    name: 'Anthropic Claude Haiku',
+    id: 'anthropic_Modèle_haiku',
+    name: 'Anthropic Modèle Haiku',
     provider: 'Anthropic',
-    description: 'Modèle Claude optimisé vitesse/coût, excellent pour analyse BTP',
+    description: 'Modèle Modèle optimisé vitesse/coût, excellent pour analyse BTP',
     capabilities: [
       'Analyse documents complexes',
       'Raisonnement logique BTP',
@@ -98,7 +98,7 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
       'Résumés intelligents'
     ],
     costStructure: {
-      perRequest: 8, // 6x moins cher que GPT-4
+      perRequest: 8, // 6x moins cher que Modèle-4
       monthlyMinimum: 0,
       freeQuota: 500,
       scaling: 'linear'
@@ -110,7 +110,7 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
     },
     integration: {
       complexity: 'simple',
-      compatibleWithOpenAI: false,
+      compatibleWithService: false,
       setupTime: '2 heures'
     },
     pros: [
@@ -121,7 +121,7 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
       'Spécialisé dans le raisonnement'
     ],
     cons: [
-      'API différente d\'OpenAI',
+      'API différente d\'Service',
       'Moins créatif',
       'Disponibilité limitée géographiquement'
     ],
@@ -164,7 +164,7 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
     },
     integration: {
       complexity: 'simple',
-      compatibleWithOpenAI: false,
+      compatibleWithService: false,
       setupTime: '3 heures'
     },
     pros: [
@@ -175,7 +175,7 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
       'Modèles multilingues'
     ],
     cons: [
-      'Moins polyvalent qu\'OpenAI',
+      'Moins polyvalent qu\'Service',
       'Communauté plus petite',
       'Fonctionnalités limitées'
     ],
@@ -219,7 +219,7 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
     },
     integration: {
       complexity: 'simple',
-      compatibleWithOpenAI: false,
+      compatibleWithService: false,
       setupTime: '1 heure'
     },
     pros: [
@@ -273,12 +273,12 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
     },
     integration: {
       complexity: 'simple',
-      compatibleWithOpenAI: true, // Compatible API
+      compatibleWithService: true, // Compatible API
       setupTime: '1 heure'
     },
     pros: [
       'Modèles open source optimisés',
-      'API compatible OpenAI',
+      'API compatible Service',
       'Prix attractif',
       'Fine-tuning possible',
       'Performance solide'
@@ -289,7 +289,7 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
       'Support limité'
     ],
     bestFor: [
-      'Remplacement direct OpenAI',
+      'Remplacement direct Service',
       'Génération de contenu',
       'Personnalisation modèles',
       'Développement agile'
@@ -328,7 +328,7 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
     },
     integration: {
       complexity: 'simple',
-      compatibleWithOpenAI: false,
+      compatibleWithService: false,
       setupTime: '2 heures'
     },
     pros: [
@@ -362,10 +362,10 @@ export const API_ONLY_AI_SOLUTIONS: APIOnlyAIOption[] = [
 export const SAAS_OPTIMIZED_COMPARISON = {
   recommendedMix: {
     primary: 'groq_api', // 85% des cas d'usage
-    secondary: 'anthropic_claude_haiku', // 10% cas complexes
+    secondary: 'anthropic_Modèle_haiku', // 10% cas complexes
     specialized: 'google_vision_api', // 5% OCR critique
     
-    averageCostPerRequest: 4.2, // FCFA (vs 50 FCFA OpenAI)
+    averageCostPerRequest: 4.2, // FCFA (vs 50 FCFA Service)
     totalSavings: '92%',
     monthlyEstimate: 63000 // Pour 15000 requêtes (vs 750000)
   },
@@ -392,7 +392,7 @@ export const SAAS_OPTIMIZED_COMPARISON = {
 
   implementationStrategy: {
     week1: {
-      action: 'Intégrer Groq API comme fallback OpenAI',
+      action: 'Intégrer Groq API comme fallback Service',
       effort: 'Minimal (API compatible)',
       impact: 'Réduction 85% coûts immédiate'
     },
@@ -419,7 +419,7 @@ export const INTELLIGENT_ROUTING_CONFIG = {
     },
     {
       condition: 'complex_document_analysis',
-      provider: 'anthropic_claude_haiku',
+      provider: 'anthropic_Modèle_haiku',
       reason: 'Précision d\'analyse supérieure'
     },
     {
@@ -437,6 +437,6 @@ export const INTELLIGENT_ROUTING_CONFIG = {
   fallbackStrategy: {
     primary: 'groq_api',
     secondary: 'together_ai',
-    emergency: 'openai_gpt35' // Garde-fou
+    emergency: 'Service_Modèle35' // Garde-fou
   }
 };

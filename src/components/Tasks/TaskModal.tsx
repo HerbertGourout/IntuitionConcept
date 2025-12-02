@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 
-
 import ReactDOM from 'react-dom';
 import {
   X, Calendar, AlertTriangle,
@@ -163,8 +162,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
     }));
   };
 
-
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: { [key: string]: string } = {};
@@ -300,8 +297,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, onSave, on
         return 'Non commencé';
     }
   };
-
-
 
   return isOpen ? ReactDOM.createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">

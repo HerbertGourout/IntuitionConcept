@@ -519,7 +519,7 @@ class AICopilot {
     
     if (lowerQuery.includes('devis') || lowerQuery.includes('quote')) {
       // Analyser le contexte pour des suggestions intelligentes
-      let contextualMessage = `✨ Parfait ! Je vais vous aider à créer un nouveau devis.`;
+      let contextualMessage = ` Parfait ! Je vais vous aider à créer un nouveau devis.`;
       
       if (context.projects.length > 0) {
         const activeProjects = context.projects.filter(p => p.status === 'active');
@@ -554,7 +554,7 @@ class AICopilot {
     }
     
     if (lowerQuery.includes('projet') || lowerQuery.includes('project')) {
-      let message = `🚀 Parfait ! Je vais vous aider à créer un nouveau projet.`;
+      let message = ` Parfait ! Je vais vous aider à créer un nouveau projet.`;
       
       if (context.projects.length > 0) {
         const totalBudget = context.projects.reduce((sum, p) => sum + p.budget, 0);
@@ -581,7 +581,7 @@ class AICopilot {
     }
 
     return {
-      message: `✨ Je peux vous aider à créer des devis, projets, ou exporter des données. Que souhaitez-vous créer ?`,
+      message: ` Je peux vous aider à créer des devis, projets, ou exporter des données. Que souhaitez-vous créer ?`,
       suggestedActions: [
         {
           id: 'create_quote',
@@ -600,7 +600,7 @@ class AICopilot {
 
   private handleHelpRequest(): CopilotResponse {
     return {
-      message: `🤖 **Je suis votre assistant IA BTP !**
+      message: ` **Je suis votre Assistant BTP !**
 
 Je peux vous aider avec:
 • 📊 État et suivi de vos projets
@@ -608,7 +608,7 @@ Je peux vous aider avec:
 • 📋 Gestion des devis
 • 🏢 Analyses fournisseurs
 • 📅 Planning et délais
-• ✨ Création de nouveaux éléments
+•  Création de nouveaux éléments
 
 **Exemples de questions:**
 • "Quel est l'état de mes projets ?"

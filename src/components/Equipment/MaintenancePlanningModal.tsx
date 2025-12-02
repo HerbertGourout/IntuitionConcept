@@ -14,7 +14,7 @@ const MaintenancePlanningModal: React.FC<MaintenancePlanningModalProps> = ({ equ
     const next = new Date(nextMaintenance);
     const diffDays = Math.ceil((next.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < 0) return { label: 'En retard', color: 'text-red-600', icon: <AlertTriangle className="inline w-4 h-4" /> };
-    if (diffDays <= 7) return { label: `Dans ${diffDays} j`, color: 'text-orange-600', icon: <AlertTriangle className="inline w-4 h-4" /> };
+    if (diffDays <= 7) return { label: 'Urgent', color: 'text-orange-600', icon: <AlertTriangle className="inline w-4 h-4" /> };
     return { label: `Dans ${diffDays} j`, color: 'text-green-600', icon: <CheckCircle className="inline w-4 h-4" /> };
   };
 

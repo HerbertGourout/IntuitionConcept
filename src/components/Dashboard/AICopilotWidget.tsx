@@ -111,13 +111,13 @@ export const AICopilotWidget: React.FC<AICopilotWidgetProps> = ({
         role: 'assistant',
         content: `${getGreeting()} ${context.currentUser?.name || 'cher utilisateur'} ! 👋
 
-Je suis votre assistant IA pour la gestion BTP. Je peux vous aider avec:
+Je suis votre Assistant pour la gestion BTP. Je peux vous aider avec:
 
 • 📊 Suivi de vos ${context.projects.length} projets
 • 💰 Analyses financières et budgets  
 • 📋 Gestion de vos ${context.quotes.length} devis
 • 🏢 Analyses fournisseurs
-• ✨ Création de nouveaux éléments
+•  Création de nouveaux éléments
 
 Comment puis-je vous aider aujourd'hui ?`,
         timestamp: new Date().toISOString()
@@ -137,7 +137,7 @@ Comment puis-je vous aider aujourd'hui ?`,
       <button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105 z-50"
-        title="Ouvrir l'assistant IA"
+        title="Ouvrir l'Assistant"
       >
         <MessageCircle className="w-6 h-6" />
       </button>
@@ -155,7 +155,7 @@ Comment puis-je vous aider aujourd'hui ?`,
             <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-800">Assistant IA BTP</h3>
+            <h3 className="font-semibold text-gray-800">Assistant BTP</h3>
             {!isMinimized && (
               <p className="text-xs text-gray-600">
                 {isTyping ? 'En train d\'écrire...' : 'En ligne'}

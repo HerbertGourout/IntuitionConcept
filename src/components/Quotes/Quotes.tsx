@@ -170,37 +170,7 @@ const Quotes: FC = () => {
 
   return (
     <PageContainer className="space-y-8">
-      {/* Header */}
-      <div className="glass-card p-6">
-        <SectionHeader
-          icon={<FileText className="h-8 w-8" />}
-          title="Devis"
-          subtitle="Gestion des devis et propositions commerciales"
-          actions={(
-            <div className="flex space-x-3">
-              <button
-                onClick={handleCreateQuote}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 shadow-lg"
-              >
-                <Plus className="h-5 w-5" />
-                <span>Nouveau Devis</span>
-              </button>
-              <button
-                onClick={() => {
-                  // TODO: Ouvrir le générateur IA de devis
-                  console.log('Ouverture du générateur IA de devis');
-                }}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 shadow-lg"
-              >
-                <Sparkles className="h-5 w-5" />
-                <span>Créer avec IA</span>
-              </button>
-            </div>
-          )}
-        />
-      </div>
-
-      {/* Statistiques */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="glass-card p-6 hover:-translate-y-1 transition-all duration-300 hover:shadow-xl">
           <div className="flex items-center justify-between">

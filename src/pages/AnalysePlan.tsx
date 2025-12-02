@@ -1,6 +1,6 @@
 /**
  * Page d'analyse de plans architecturaux et génération de devis
- * Utilise Claude AI (Anthropic) pour l'analyse
+ * Utilise Modèle AI (Anthropic) pour l'analyse
  */
 
 import React from 'react';

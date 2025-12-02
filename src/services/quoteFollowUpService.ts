@@ -263,7 +263,7 @@ class QuoteFollowUpService {
             ${expiryText}
             
             <div class="urgency">
-                <strong>💡 Besoin d'aide ?</strong><br>
+                <strong> Besoin d'aide ?</strong><br>
                 Notre équipe est à votre disposition pour répondre à toutes vos questions :
                 <ul>
                     <li>📞 Appelez-nous au +221 XX XXX XX XX</li>

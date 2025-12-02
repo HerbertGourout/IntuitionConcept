@@ -155,7 +155,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ onCreateNew, onEditQuote }) => {
         }
     };
 
-    // Labels rendus via Badge.statusToBadge
+    // label Badge.statusToBadge
 
     const filteredQuotes = quotes
         .filter(quote => {

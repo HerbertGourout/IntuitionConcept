@@ -49,11 +49,11 @@ export interface IntelligentOCRResult extends ExtractedData {
 }
 
 class IntelligentOCRService {
-  private openaiApiKey: string;
-  private baseUrl = 'https://api.openai.com/v1';
+  private ServiceApiKey: string;
+  private baseUrl = 'https://api.Service.com/v1';
 
   constructor() {
-    this.openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
+    this.ServiceApiKey = import.meta.env.VITE_Service_API_KEY || '';
   }
 
   // Traitement intelligent d'un document
@@ -63,7 +63,7 @@ class IntelligentOCRService {
       const ocrResult = await ocrService.processImage(file);
       const extractedData = ocrService.extractData(ocrResult.text);
 
-      // Étape 2: Analyse IA du texte
+      
       const aiAnalysis = await this.analyzeWithAI(ocrResult.text);
 
       // Étape 3: Classification du document
@@ -114,9 +114,9 @@ class IntelligentOCRService {
     }
   }
 
-  // Analyse du texte avec IA
+  
   private async analyzeWithAI(text: string): Promise<IntelligentOCRResult['aiAnalysis']> {
-    if (!this.openaiApiKey) {
+    if (!this.ServiceApiKey) {
       return this.getFallbackAnalysis(text);
     }
 
@@ -141,11 +141,11 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.openaiApiKey}`,
+          'Authorization': `Bearer ${this.ServiceApiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'Modèle-4o',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.3,
           max_tokens: 1000
@@ -153,7 +153,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
       });
 
       if (!response.ok) {
-        throw new Error('Erreur API OpenAI');
+        throw new Error('Erreur API Service');
       }
 
       const data = await response.json();
@@ -167,7 +167,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
       
       throw new Error('Format de réponse invalide');
     } catch {
-      // Erreur analyse IA
+      
       return this.getFallbackAnalysis(text);
     }
   }
@@ -481,7 +481,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
       }
     }
 
-    // Suggestions de projet basées sur l'analyse IA
+    
     suggestions.project = this.suggestProject(aiAnalysis);
 
     return suggestions;
@@ -531,7 +531,7 @@ Concentre-toi sur les aspects BTP: matériaux, coûts, délais, qualité, confor
     return undefined;
   }
 
-  // Analyse de fallback sans IA
+  
   private getFallbackAnalysis(text: string): IntelligentOCRResult['aiAnalysis'] {
     const wordCount = text.split(/\s+/).length;
     const hasAmounts = /\d+(?:[.,]\d{3})*[.,]\d{2}/.test(text);

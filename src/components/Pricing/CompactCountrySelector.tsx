@@ -70,7 +70,6 @@ const REGION_LABELS = {
   maghreb: 'Maghreb'
 };
 
-
 interface CompactCountrySelectorProps {
   onCountrySelect: (country: Country) => void;
   selectedCountry?: Country;

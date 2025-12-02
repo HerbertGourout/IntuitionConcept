@@ -33,7 +33,7 @@ export type Permission =
   // Support & notifications
   | 'support.view' | 'support.create'
   | 'notifications.view'
-  // Intelligence Artificielle
+  // Système automatisé
   | 'ai.anomaly' | 'ai.copilot' | 'ai.vocal' | 'ai.quotes'
   | 'ai.suggestions' | 'ai.planner' | 'ai.anomaly.advanced'
   | 'ai.quotes.advanced' | 'ai.analytics' | 'ai.reporting' | 'ai.ocr.advanced' | 'ai.plan.read'

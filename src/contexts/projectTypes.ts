@@ -40,7 +40,6 @@ export interface ExtendedEquipment {
   maintenanceHistory?: MaintenanceEvent[];
 }
 
-
 export interface Project {
   id: string;
   name: string;
@@ -136,7 +135,6 @@ export interface CostItem {
   notes?: string;
 }
 
-
 export interface ProjectContextType {
   projects: Project[];
   currentProject: Project | null;
@@ -170,5 +168,4 @@ export interface ProjectContextType {
   editExpense: (id: string, updates: Partial<FinancialRecord>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
 }
-
 

@@ -480,7 +480,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
                     : 'bg-gray-50 border border-gray-200'
                   }
                 `}>
-                  <p className="font-medium mb-2">🎯 Codes de test :</p>
+                  <p className="font-medium mb-2"> Codes de test :</p>
                   <div className="space-y-1 opacity-70">
                     <p>• QR001 - Pelleteuse CAT 320</p>
                     <p>• QR002 - Grue mobile 50T</p>

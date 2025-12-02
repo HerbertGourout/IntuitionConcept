@@ -178,7 +178,7 @@ export class QuoteComparisonService {
 
     // Recommandations
     if (gap > 15) {
-      lessons.push('💡 Recommandation: Augmenter les marges de sécurité pour les futurs devis estimatifs.');
+      lessons.push(' Recommandation: Augmenter les marges de sécurité pour les futurs devis estimatifs.');
     }
 
     if (gapByCategory.foundations.gap > 25) {

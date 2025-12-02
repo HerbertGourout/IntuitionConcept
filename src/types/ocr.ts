@@ -68,7 +68,7 @@ export const OCR_PROVIDERS: Record<OCRProvider, OCRProviderInfo> = {
     speed: 'medium',
     accuracy: 'high',
     requiresApiKey: false,
-    icon: '🤖'
+    icon: ''
   }
 };
 

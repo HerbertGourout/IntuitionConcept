@@ -61,7 +61,7 @@ export class SmartOcrStrategyAdvanced {
     // Étape 1: Détection qualité document
     const mediaResolution = await this.detectDocumentQuality(documentImage);
 
-    console.log(`🎯 Résolution adaptée: ${mediaResolution}`);
+    console.log(` Résolution adaptée: ${mediaResolution}`);
 
     // Étape 2: Extraction OCR
     const extractionPrompt = `Extrait TOUTES les informations de ce document:

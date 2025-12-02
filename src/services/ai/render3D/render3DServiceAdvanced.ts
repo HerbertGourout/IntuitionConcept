@@ -54,7 +54,7 @@ export class Render3DServiceAdvanced {
   async generateRender(request: Render3DRequest): Promise<AnalysisResult<Render3DResult>> {
     const startTime = Date.now();
 
-    console.log('🎨 Génération rendu 3D 4K avec ancrage réalité...');
+    console.log(' Génération rendu 3D 4K avec ancrage réalité...');
 
     // Construire le prompt avec contexte réel
     let prompt = `Génère un rendu 3D photoréaliste de haute qualité:

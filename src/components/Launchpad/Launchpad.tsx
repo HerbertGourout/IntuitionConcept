@@ -11,7 +11,7 @@ type Tile = { key?: string; href?: string; label: string; icon: any; color: stri
 
 const tiles: Tile[] = [
   { key: 'dashboard', label: 'Tableau de bord', icon: BarChart3, color: 'from-blue-500 to-cyan-500' },
-  { key: 'projects', label: 'Projets', icon: FolderKanban, color: 'from-violet-500 to-fuchsia-500' },
+  { key: 'projects', label: 'Projets', icon: FolderKanban, color: 'from-amber-500 to-yellow-500' },
   { key: 'planning', label: 'Planning', icon: Calendar, color: 'from-emerald-500 to-teal-500' },
   { key: 'documents', label: 'Documents', icon: FileText, color: 'from-amber-500 to-orange-500' },
   { key: 'finances', label: 'Finances', icon: Wallet, color: 'from-indigo-500 to-purple-500' },

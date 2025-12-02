@@ -65,11 +65,11 @@ export class MigrationService {
    */
   static async initializeModuleData(moduleName: string, force = false): Promise<boolean> {
     if (!force) {
-      console.log(`💡 Initialisation pour le module '${moduleName}' ignorée (force est false).`);
+      console.log(` Initialisation pour le module '${moduleName}' ignorée (force est false).`);
       return true; // Considéré comme un succès car c'est le comportement attendu
     }
     try {
-      console.log(`🚀 Initialisation des données ${moduleName}...`);
+      console.log(` Initialisation des données ${moduleName}...`);
       
       switch (moduleName.toLowerCase()) {
         case 'tasks':

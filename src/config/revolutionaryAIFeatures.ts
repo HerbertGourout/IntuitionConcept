@@ -1,4 +1,4 @@
-// Fonctionnalités IA Révolutionnaires pour IntuitionConcept BTP
+
 export interface RevolutionaryFeature {
   id: string;
   name: string;
@@ -29,7 +29,7 @@ export const REVOLUTIONARY_AI_FEATURES: RevolutionaryFeature[] = [
     implementationCost: 5000000,
     monthlyOperatingCost: 800,
     estimatedROI: '400% en 6 mois',
-    competitiveAdvantage: 'Premier au monde à offrir inspection IA pour BTP africain',
+    competitiveAdvantag pour BTP africain',
     targetMarket: ['Grandes entreprises BTP', 'Maîtres d\'ouvrage', 'Bureaux de contrôle'],
     technicalRequirements: ['Computer Vision', 'Modèles ML spécialisés BTP', 'Base de données défauts'],
     risks: ['Précision variable selon qualité photos', 'Responsabilité juridique'],
@@ -46,7 +46,7 @@ export const REVOLUTIONARY_AI_FEATURES: RevolutionaryFeature[] = [
     implementationCost: 3000000,
     monthlyOperatingCost: 500,
     estimatedROI: '300% en 8 mois',
-    competitiveAdvantage: 'Shazam des matériaux BTP - révolutionnaire pour l\'Afrique',
+    competitiveAdvantagux BTP - révolutionnaire pour l\'Afrique',
     targetMarket: ['Entrepreneurs', 'Architectes', 'Particuliers'],
     technicalRequirements: ['Vision par ordinateur', 'Base de données matériaux', 'API fournisseurs'],
     risks: ['Variabilité matériaux locaux', 'Mise à jour prix temps réel'],
@@ -63,7 +63,7 @@ export const REVOLUTIONARY_AI_FEATURES: RevolutionaryFeature[] = [
     implementationCost: 8000000,
     monthlyOperatingCost: 1200,
     estimatedROI: '500% en 12 mois',
-    competitiveAdvantage: 'Première plateforme BTP avec suivi drone IA en Afrique',
+    competitiveAdvantag en Afrique',
     targetMarket: ['Grands projets', 'Promoteurs immobiliers', 'Gouvernement'],
     technicalRequirements: ['Partenariat drone', 'IA géospatiale', 'Traitement images satellites'],
     risks: ['Réglementation drones', 'Coût équipement', 'Météo'],
@@ -81,7 +81,7 @@ export const REVOLUTIONARY_AI_FEATURES: RevolutionaryFeature[] = [
     implementationCost: 1500000,
     monthlyOperatingCost: 300,
     estimatedROI: '250% en 4 mois',
-    competitiveAdvantage: 'Crucial pour l\'Afrique avec saisons marquées',
+    competitiveAdvantagl pour l\'Afrique avec saisons marquées',
     targetMarket: ['Tous entrepreneurs BTP', 'Agriculteurs-constructeurs'],
     technicalRequirements: ['API météo', 'Modèles prédictifs', 'Base données climatiques'],
     risks: ['Fiabilité prévisions météo', 'Variations climatiques'],
@@ -100,7 +100,7 @@ export const REVOLUTIONARY_AI_FEATURES: RevolutionaryFeature[] = [
     estimatedROI: '600% en 10 mois',
     competitiveAdvantage: 'Économies énormes sur maintenance en Afrique',
     targetMarket: ['Entreprises avec parc matériel', 'Loueurs d\'équipements'],
-    technicalRequirements: ['IoT sensors', 'Machine Learning', 'Historique pannes'],
+    technicalRequirements: ['IoT sensors', 'Apprentissage automatique', 'Historique pannes'],
     risks: ['Coût capteurs', 'Résistance au changement', 'Connectivité'],
     marketingPotential: 'high'
   },
@@ -150,7 +150,7 @@ export const REVOLUTIONARY_AI_FEATURES: RevolutionaryFeature[] = [
     implementationCost: 15000000,
     monthlyOperatingCost: 1500,
     estimatedROI: '2000% en 18 mois',
-    competitiveAdvantage: 'Blockchain + IA = révolution juridique BTP',
+    competitiveAdvantag = révolution juridique BTP',
     targetMarket: ['Toute l\'industrie BTP', 'Secteur juridique'],
     technicalRequirements: ['Blockchain', 'IA juridique', 'Intégration bancaire'],
     risks: ['Cadre légal inexistant', 'Complexité technique', 'Adoption lente'],

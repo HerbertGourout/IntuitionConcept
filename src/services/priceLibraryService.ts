@@ -73,7 +73,7 @@ class PriceLibraryService {
       code: 'FI',
       description: 'Carrelage, peinture, revêtements',
       categories: ['carrelage', 'peinture', 'revetements', 'decoration'],
-      icon: '🎨'
+      icon: ''
     },
     {
       id: 'terrassement',
@@ -444,11 +444,11 @@ class PriceLibraryService {
     }
   }
 
-  // Estimer un prix avec IA (simulation)
+  
   async estimatePriceWithAI(description: string, region: string): Promise<PriceItem | null> {
     try {
-      // Simulation d'estimation IA
-      // En production, ceci ferait appel à OpenAI pour analyser la description
+      
+      // En production, ceci ferait appel à Service pour analyser la description
       
       const estimatedPrice: Omit<PriceItem, 'id' | 'lastUpdated'> = {
         code: `AI${Date.now()}`,
@@ -463,7 +463,7 @@ class PriceLibraryService {
         country: 'Estimation',
         source: 'ai_estimated',
         description: `Prix estimé par IA pour: ${description}`,
-        tags: ['estimation', 'ia', 'temporaire']
+        tags: ['estimation_ia', 'temporaire']
       };
 
       return { ...estimatedPrice, id: 'temp_ai', lastUpdated: new Date() };

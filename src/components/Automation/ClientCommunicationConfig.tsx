@@ -213,7 +213,7 @@ const ClientCommunicationConfig: React.FC = () => {
 
                                 <div className="bg-purple-100 border-l-4 border-purple-600 p-4 rounded">
                                     <p className="text-sm text-gray-700">
-                                        <strong>💡 Prochaine étape :</strong> Élévation des murs - Début prévu dans 3 jours
+                                        <strong> Prochaine étape :</strong> Élévation des murs - Début prévu dans 3 jours
                                     </p>
                                 </div>
 

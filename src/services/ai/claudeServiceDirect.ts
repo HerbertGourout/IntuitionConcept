@@ -1,5 +1,5 @@
 /**
- * Service Claude Direct - Communication directe avec l'API Anthropic
+ * Service Modèle Direct - Communication directe avec l'API Anthropic
  * 
  * Objectifs:
  * - Préserver 100% de la qualité des documents PDF
@@ -18,7 +18,7 @@ import { jsonrepair } from 'jsonrepair';
 // TYPES & INTERFACES
 // ============================================================================
 
-export interface ClaudeConfig {
+export interface ModèleConfig {
   apiKey: string;
   model?: string;
   maxTokens?: number;
@@ -58,7 +58,7 @@ export interface PDFPage {
   textContent?: string;
 }
 
-export interface ClaudeAnalysisResult {
+export interface ModèleAnalysisResult {
   content: string;
   metadata: {
     model: string;
@@ -117,36 +117,36 @@ export interface ArchitecturalPlanData {
 // SERVICE PRINCIPAL
 // ============================================================================
 
-export class ClaudeServiceDirect {
+export class ModèleServiceDirect {
   private client: Anthropic;
-  private config: Required<ClaudeConfig>;
+  private config: Required<ModèleConfig>;
   
-  // Modèles Claude disponibles (versions récentes uniquement)
+  // Modèles Modèle disponibles (versions récentes uniquement)
   private static readonly MODELS = {
-    SONNET: 'claude-sonnet-4-5-20250929', // Snapshot le plus récent recommandé
-    SONNET_4: 'claude-sonnet-4-20250514',
-    SONNET_3_7: 'claude-3-7-sonnet-20250219',
-    OPUS_4_1: 'claude-opus-4.1-20250805',
-    OPUS_4: 'claude-opus-4-20250514',
-    HAIKU_3_5: 'claude-3-5-haiku-20241022'
+    SONNET: 'Modèle-sonnet-4-5-20250929', // Snapshot le plus récent recommandé
+    SONNET_4: 'Modèle-sonnet-4-20250514',
+    SONNET_3_7: 'Modèle-3-7-sonnet-20250219',
+    OPUS_4_1: 'Modèle-opus-4.1-20250805',
+    OPUS_4: 'Modèle-opus-4-20250514',
+    HAIKU_3_5: 'Modèle-3-5-haiku-20241022'
   } as const;
 
   // Coûts par token (en FCFA, taux 1 USD = 600 FCFA)
   private static readonly COSTS = {
     // Sonnet 4.x & dérivés
-    'claude-sonnet-4-5-20250929': { input: 0.0018, output: 0.009 },
-    'claude-sonnet-4-20250514': { input: 0.0018, output: 0.009 },
-    'claude-3-7-sonnet-20250219': { input: 0.0018, output: 0.009 },
+    'Modèle-sonnet-4-5-20250929': { input: 0.0018, output: 0.009 },
+    'Modèle-sonnet-4-20250514': { input: 0.0018, output: 0.009 },
+    'Modèle-3-7-sonnet-20250219': { input: 0.0018, output: 0.009 },
 
     // Opus 4.x & legacy
-    'claude-opus-4.1-20250805': { input: 0.015, output: 0.075 },
-    'claude-opus-4-20250514': { input: 0.015, output: 0.075 },
+    'Modèle-opus-4.1-20250805': { input: 0.015, output: 0.075 },
+    'Modèle-opus-4-20250514': { input: 0.015, output: 0.075 },
 
     // Haiku 3.x
-    'claude-3-5-haiku-20241022': { input: 0.0006, output: 0.0018 }
+    'Modèle-3-5-haiku-20241022': { input: 0.0006, output: 0.0018 }
   } as const;
 
-  constructor(config: ClaudeConfig) {
+  constructor(config: ModèleConfig) {
     if (!config.apiKey) {
       throw new Error('❌ Clé API Anthropic requise');
     }
@@ -158,12 +158,12 @@ export class ClaudeServiceDirect {
 
     this.config = {
       apiKey: config.apiKey,
-      model: config.model || ClaudeServiceDirect.MODELS.SONNET,
+      model: config.model || ModèleServiceDirect.MODELS.SONNET,
       maxTokens: config.maxTokens || 16384, // Augmenté pour plans complexes (R+2, nombreuses pièces)
       temperature: config.temperature || 0.2
     };
 
-    console.log('✅ ClaudeServiceDirect initialisé avec modèle:', this.config.model);
+    console.log('✅ ModèleServiceDirect initialisé avec modèle:', this.config.model);
   }
 
   // ==========================================================================
@@ -196,10 +196,10 @@ export class ClaudeServiceDirect {
     } else {
       // R+8+ : Plans très complexes
       estimatedComplexity = 'very_complex';
-      maxTokens = 65536; // Maximum pour Claude
+      maxTokens = 65536; // Maximum pour Modèle
     }
     
-    console.log(`🎯 Complexité détectée: ${estimatedComplexity} (${pageCount} pages, ${(fileSize / 1_000_000).toFixed(1)} MB)`);
+    console.log(` Complexité détectée: ${estimatedComplexity} (${pageCount} pages, ${(fileSize / 1_000_000).toFixed(1)} MB)`);
     console.log(`⚙️ max_tokens ajusté: ${maxTokens.toLocaleString()}`);
     
     return maxTokens;
@@ -213,7 +213,7 @@ export class ClaudeServiceDirect {
   async analyzePDFArchitecturalPlan(
     pdfFile: File,
     options: Partial<PDFAnalysisOptions> = {}
-  ): Promise<ClaudeAnalysisResult & { architecturalData: ArchitecturalPlanData }> {
+  ): Promise<ModèleAnalysisResult & { architecturalData: ArchitecturalPlanData }> {
     const startTime = Date.now();
 
     // Options par défaut (qualité maximale)
@@ -242,8 +242,8 @@ export class ClaudeServiceDirect {
     const pages = await this.splitPDFByPage(pdfFile, opts);
     console.log(`📑 PDF découpé en ${pages.length} pages`);
 
-    // Étape 3: Analyser chaque page avec Claude
-    const pageAnalyses: ClaudeAnalysisResult[] = [];
+    // Étape 3: Analyser chaque page avec Modèle
+    const pageAnalyses: ModèleAnalysisResult[] = [];
     
     for (let i = 0; i < pages.length; i += opts.maxPagesPerRequest!) {
       const batch = pages.slice(i, i + opts.maxPagesPerRequest!);
@@ -348,7 +348,7 @@ export class ClaudeServiceDirect {
         objectsPerTick: Infinity
       });
 
-      // Convertir en base64 (format requis par Claude)
+      // Convertir en base64 (format requis par Modèle)
       const base64 = this.arrayBufferToBase64(pdfBytes);
 
       pages.push({
@@ -367,12 +367,12 @@ export class ClaudeServiceDirect {
   }
 
   /**
-   * Analyse un batch de pages avec Claude
+   * Analyse un batch de pages avec Modèle
    */
   private async analyzePageBatch(
     pages: PDFPage[],
     metadata: PDFMetadata
-  ): Promise<ClaudeAnalysisResult> {
+  ): Promise<ModèleAnalysisResult> {
     const prompt = this.buildArchitecturalAnalysisPrompt(metadata, pages);
 
     // Construire les messages avec documents PDF
@@ -451,8 +451,8 @@ export class ClaudeServiceDirect {
       };
 
     } catch (error) {
-      console.error('❌ Erreur analyse Claude:', error);
-      throw new Error(`Échec analyse Claude: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      console.error('❌ Erreur analyse Modèle:', error);
+      throw new Error(`Échec analyse Modèle: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     }
   }
 
@@ -1161,7 +1161,7 @@ Commencer l'analyse maintenant.`;
   /**
    * Agrège les analyses de plusieurs pages
    */
-  private aggregatePageAnalyses(analyses: ClaudeAnalysisResult[]): ClaudeAnalysisResult {
+  private aggregatePageAnalyses(analyses: ModèleAnalysisResult[]): ModèleAnalysisResult {
     const totalInputTokens = analyses.reduce((sum, a) => sum + a.metadata.inputTokens, 0);
     const totalOutputTokens = analyses.reduce((sum, a) => sum + a.metadata.outputTokens, 0);
     const totalCost = analyses.reduce((sum, a) => sum + a.metadata.cost, 0);
@@ -1190,8 +1190,8 @@ Commencer l'analyse maintenant.`;
    * Extrait les données architecturales structurées depuis le contenu JSON
    */
   private extractArchitecturalData(content: string): ArchitecturalPlanData {
-    // DEBUG: Afficher le contenu brut reçu de Claude
-    console.log('🔍 DEBUG - Contenu brut reçu de Claude (premiers 500 caractères):');
+    // DEBUG: Afficher le contenu brut reçu de Modèle
+    console.log('🔍 DEBUG - Contenu brut reçu de Modèle (premiers 500 caractères):');
     console.log(content.substring(0, 500));
     console.log('🔍 DEBUG - Longueur totale du contenu:', content.length);
     
@@ -1322,7 +1322,7 @@ Commencer l'analyse maintenant.`;
     }
 
     console.error('❌ Erreur parsing données architecturales: aucun JSON valide trouvé');
-    console.error('❌ DEBUG - Contenu complet reçu de Claude:');
+    console.error('❌ DEBUG - Contenu complet reçu de Modèle:');
     console.error(content);
 
     // Retourner structure par défaut en cas d'échec
@@ -1766,10 +1766,10 @@ Commencer l'analyse maintenant.`;
   }
 
   /**
-   * Calcule le coût d'une requête Claude
+   * Calcule le coût d'une requête Modèle
    */
   private calculateCost(inputTokens: number, outputTokens: number): number {
-    const costs = ClaudeServiceDirect.COSTS[this.config.model as keyof typeof ClaudeServiceDirect.COSTS];
+    const costs = ModèleServiceDirect.COSTS[this.config.model as keyof typeof ModèleServiceDirect.COSTS];
     
     if (!costs) {
       console.warn('⚠️ Coûts non définis pour le modèle:', this.config.model);
@@ -1800,7 +1800,7 @@ Commencer l'analyse maintenant.`;
 
       return response.content.length > 0;
     } catch (error) {
-      console.error('❌ Claude health check failed:', error);
+      console.error('❌ Modèle health check failed:', error);
       return false;
     }
   }
@@ -1809,14 +1809,14 @@ Commencer l'analyse maintenant.`;
    * Obtenir les modèles disponibles
    */
   static getAvailableModels() {
-    return ClaudeServiceDirect.MODELS;
+    return ModèleServiceDirect.MODELS;
   }
 
   /**
    * Obtenir les coûts par modèle
    */
   static getCosts() {
-    return ClaudeServiceDirect.COSTS;
+    return ModèleServiceDirect.COSTS;
   }
 }
 
@@ -1824,21 +1824,21 @@ Commencer l'analyse maintenant.`;
 // EXPORT INSTANCE SINGLETON
 // ============================================================================
 
-let claudeServiceDirectInstance: ClaudeServiceDirect | null = null;
+let ModèleServiceDirectInstance: ModèleServiceDirect | null = null;
 
-export function initializeClaudeServiceDirect(apiKey: string, model?: string): ClaudeServiceDirect {
-  claudeServiceDirectInstance = new ClaudeServiceDirect({
+export function initializeModèleServiceDirect(apiKey: string, model?: string): ModèleServiceDirect {
+  ModèleServiceDirectInstance = new ModèleServiceDirect({
     apiKey,
-    model: model || ClaudeServiceDirect.getAvailableModels().SONNET
+    model: model || ModèleServiceDirect.getAvailableModels().SONNET
   });
   
-  return claudeServiceDirectInstance;
+  return ModèleServiceDirectInstance;
 }
 
-export function getClaudeServiceDirect(): ClaudeServiceDirect {
-  if (!claudeServiceDirectInstance) {
-    throw new Error('❌ ClaudeServiceDirect non initialisé. Appelez initializeClaudeServiceDirect() d\'abord.');
+export function getModèleServiceDirect(): ModèleServiceDirect {
+  if (!ModèleServiceDirectInstance) {
+    throw new Error('❌ ModèleServiceDirect non initialisé. Appelez initializeModèleServiceDirect() d\'abord.');
   }
   
-  return claudeServiceDirectInstance;
+  return ModèleServiceDirectInstance;
 }

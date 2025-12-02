@@ -52,7 +52,7 @@ export interface DetailedAnalysisOptions {
   previous_signature?: string; // Pour analyses multi-étapes
 }
 
-export class ClaudeServiceDirectAdvanced {
+export class ModèleServiceDirectAdvanced {
   private client: Gemini3Client;
   private readonly ARCHITECTURAL_PROMPT: string;
 
@@ -192,7 +192,7 @@ Réponds en JSON avec cette structure exacte:
       thinkingLevel = thinkingLevel || scanResult.data.complexity.recommended_thinking_level;
       mediaResolution = mediaResolution || scanResult.data.complexity.recommended_media_resolution;
 
-      console.log('🎯 Paramètres optimaux déterminés:', {
+      console.log(' Paramètres optimaux déterminés:', {
         thinking_level: thinkingLevel,
         media_resolution: mediaResolution,
         complexity: scanResult.data.complexity.level
@@ -296,7 +296,7 @@ Réponds en JSON avec cette structure exacte:
     }
 
     // Pour gros documents: utiliser context window 1M
-    console.log('🚀 Utilisation context window 1M tokens pour cohérence maximale');
+    console.log(' Utilisation context window 1M tokens pour cohérence maximale');
 
     return this.analyzeArchitecturalPlan(planImages, metadata, {
       thinking_level: 'high', // Précision max pour gros documents
@@ -471,13 +471,13 @@ Répondre UNIQUEMENT en JSON structuré selon ce format:
 }
 
 // Instance singleton
-let instance: ClaudeServiceDirectAdvanced | null = null;
+let instance: ModèleServiceDirectAdvanced | null = null;
 
-export function getAdvancedAnalysisService(): ClaudeServiceDirectAdvanced {
+export function getAdvancedAnalysisService(): ModèleServiceDirectAdvanced {
   if (!instance) {
-    instance = new ClaudeServiceDirectAdvanced();
+    instance = new ModèleServiceDirectAdvanced();
   }
   return instance;
 }
 
-export default ClaudeServiceDirectAdvanced;
+export default ModèleServiceDirectAdvanced;

@@ -188,8 +188,6 @@ export const Planning: FC = () => {
     }
   };
 
-
-
   if (!projectContext.currentProject) {
     return (
       <div className="p-6">

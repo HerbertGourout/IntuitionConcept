@@ -289,7 +289,7 @@ const AutoInvoiceConfig: React.FC = () => {
                                             Traitement en cours...
                                         </span>
                                     ) : (
-                                        '⚡ Générer Factures Maintenant'
+                                        ' Générer Factures Maintenant'
                                     )}
                                 </button>
                             </div>

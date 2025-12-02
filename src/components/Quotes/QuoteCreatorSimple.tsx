@@ -440,7 +440,7 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
     toast.success('Template appliqué avec succès');
   };
 
-  // Fonction pour générer un devis avec l'IA
+  
   const handleGenerateWithAI = async (request: QuoteGenerationRequest) => {
     setIsGeneratingWithAI(true);
     try {
@@ -487,12 +487,12 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
       // Afficher les recommandations
       if (generatedQuote.recommendations.length > 0) {
         setTimeout(() => {
-          toast(`💡 ${generatedQuote.recommendations[0]}`);
+          toast(` ${generatedQuote.recommendations[0]}`);
         }, 2000);
       }
       
     } catch (error) {
-      console.error('Erreur génération IA:', error);
+      console.error('Erreur Génération:', error);
       toast.error('Erreur lors de la génération du devis IA');
     } finally {
       setIsGeneratingWithAI(false);
@@ -568,605 +568,290 @@ const QuoteCreatorSimple: React.FC<QuoteCreatorSimpleProps> = ({
         {isInitialized ? (
           <>
             {/* En-tête */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <FileText className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold">
-                        {editQuote ? 'Modifier le devis' : 'Nouveau devis'}
-                      </h2>
-                      <p className="text-blue-100">Créez un devis professionnel en quelques clics</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    {!editQuote && (
-                      <>
-                        <button
-                          onClick={() => setShowTemplates(true)}
-                          className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors backdrop-blur-sm"
-                          title="Utiliser un template"
-                        >
-                          <LayoutTemplate className="w-5 h-5" />
-                          <span>Templates</span>
-                        </button>
-                        <button
-                          onClick={() => setShowAIGenerator(true)}
-                          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-xl transition-all transform hover:scale-105 shadow-lg"
-                          title="Générer avec l'IA"
-                          disabled={isGeneratingWithAI}
-                        >
-                          <Sparkles className="w-5 h-5" />
-                          <span>{isGeneratingWithAI ? 'Génération...' : 'Générer IA'}</span>
-                        </button>
-                      </>
-                    )}
-                    <button
-                      onClick={onClose}
-                      className="p-2 hover:bg-white/20 rounded-xl transition-colors"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white">
+                  <FileText className="w-6 h-6" />
                 </div>
-            </div>
-
-        {/* Contenu principal */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          <div className="space-y-8">
-            {/* Section informations client */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">
-              <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-                Informations client
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Titre du devis *
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => {
-                      setTitle(e.target.value);
-                      if (errors.title) {
-                        setErrors(prev => ({ ...prev, title: '' }));
-                      }
-                    }}
-                    className={`w-full px-4 py-3 bg-white/80 border rounded-xl focus:ring-2 focus:border-transparent transition-all ${
-                      errors.title 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-gray-200 focus:ring-blue-500'
-                    }`}
-                    placeholder="Ex: Construction maison individuelle"
-                    required
-                  />
-                  {errors.title && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <span className="mr-1">⚠️</span>
-                      {errors.title}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Type de projet
-                  </label>
-                  <select
-                    value={projectType}
-                    onChange={(e) => setProjectType(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  >
-                    <option value="">Sélectionner un type</option>
-                    {BTP_TYPES.map((t) => (
-                      <option value={t} key={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom du client *
-                  </label>
-                  <input
-                    type="text"
-                    value={clientName}
-                    onChange={(e) => {
-                      setClientName(e.target.value);
-                      if (errors.clientName) {
-                        setErrors(prev => ({ ...prev, clientName: '' }));
-                      }
-                    }}
-                    className={`w-full px-4 py-3 bg-white/80 border rounded-xl focus:ring-2 focus:border-transparent transition-all ${
-                      errors.clientName 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-gray-200 focus:ring-blue-500'
-                    }`}
-                    placeholder="Nom complet du client"
-                    required
-                  />
-                  {errors.clientName && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <span className="mr-1">⚠️</span>
-                      {errors.clientName}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Entreprise
-                  </label>
-                  <input
-                    type="text"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="Nom de l'entreprise"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={clientEmail}
-                    onChange={(e) => {
-                      setClientEmail(e.target.value);
-                      if (errors.clientEmail) {
-                        setErrors(prev => ({ ...prev, clientEmail: '' }));
-                      }
-                    }}
-                    className={`w-full px-4 py-3 bg-white/80 border rounded-xl focus:ring-2 focus:border-transparent transition-all ${
-                      errors.clientEmail 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-gray-200 focus:ring-blue-500'
-                    }`}
-                    placeholder="email@exemple.com"
-                    required
-                  />
-                  {errors.clientEmail && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <span className="mr-1">⚠️</span>
-                      {errors.clientEmail}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone
-                  </label>
-                  <input
-                    type="tel"
-                    value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="+33 1 23 45 67 89"
-                  />
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {editQuote ? 'Modifier le devis' : 'Nouveau devis'}
+                  </h2>
+                  <p className="text-sm text-gray-500">Créez un devis professionnel</p>
                 </div>
               </div>
-            </div>
-
-            {/* Section Étude Structurale */}
-            {editQuote?.id && (
-              <StructuralStudyManager
-                quoteId={editQuote.id}
-                quoteType={quoteType}
-                structuralStudy={structuralStudy}
-                uncertaintyMargin={uncertaintyMargin}
-                onUpdate={() => {
-                  // Recharger le devis après mise à jour
-                  if (editQuote?.id) {
-                    QuotesService.getQuoteById(editQuote.id).then(updated => {
-                      if (updated) {
-                        setQuoteType((updated as any).quoteType || 'preliminary');
-                        setStructuralStudy((updated as any).structuralStudy || { status: 'none' });
-                        setUncertaintyMargin((updated as any).uncertaintyMargin || 35);
-                      }
-                    });
-                  }
-                }}
-              />
-            )}
-
-            {/* Section contenu du devis */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-800 flex items-center">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
-                  Contenu du devis
-                </h3>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={addPhase}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl"
+                  onClick={() => setShowTemplates(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>Ajouter une phase</span>
+                  <LayoutTemplate className="w-4 h-4" />
+                  Templates
+                </button>
+                <button
+                  onClick={() => setShowAIGenerator(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Générer IA
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <X className="w-5 h-5" />
                 </button>
               </div>
+            </div>
 
-              {isInitialized && phases.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                  <p className="text-lg mb-2">Aucune phase ajoutée</p>
-                  <p className="text-sm">Commencez par ajouter une phase pour structurer votre devis</p>
+            {/* Contenu principal */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              <div className="space-y-6">
+                {/* Informations client */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Titre du devis *
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg ${errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                      placeholder="Ex: Rénovation appartement"
+                    />
+                    {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Type de projet
+                    </label>
+                    <select
+                      value={projectType}
+                      onChange={(e) => setProjectType(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                    >
+                      <option value="">Sélectionner...</option>
+                      {BTP_TYPES.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nom du client *
+                    </label>
+                    <input
+                      type="text"
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg ${errors.clientName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                      placeholder="Nom du client"
+                    />
+                    {errors.clientName && <p className="text-red-500 text-sm mt-1">{errors.clientName}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Email du client *
+                    </label>
+                    <input
+                      type="email"
+                      value={clientEmail}
+                      onChange={(e) => setClientEmail(e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg ${errors.clientEmail ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                      placeholder="email@exemple.com"
+                    />
+                    {errors.clientEmail && <p className="text-red-500 text-sm mt-1">{errors.clientEmail}</p>}
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {phases.map((phase) => (
-                    <div key={phase.id} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200/50 overflow-hidden">
-                      {/* En-tête de phase */}
-                      <div className="p-4 bg-gradient-to-r from-blue-100/50 to-purple-100/50 border-b border-blue-200/30">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3 flex-1">
-                            <button
-                              onClick={() => updatePhase(phase.id, { expanded: !phase.expanded })}
-                              className="p-1 hover:bg-white/50 rounded-lg transition-colors"
-                            >
-                              {phase.expanded ? (
-                                <ChevronDown className="w-5 h-5 text-blue-600" />
-                              ) : (
-                                <ChevronUp className="w-5 h-5 text-blue-600" />
-                              )}
-                            </button>
-                            <input
-                              type="text"
-                              value={phase.name}
-                              onChange={(e) => updatePhase(phase.id, { name: e.target.value })}
-                              className="text-lg font-semibold bg-transparent border-none outline-none text-gray-800 flex-1"
-                              placeholder="Nom de la phase"
-                            />
-                            {(() => {
-                              const phaseTotal = phase.tasks?.reduce((sum: number, task: Task) => 
-                                sum + (task.articles?.reduce((taskSum: number, article: Article) => 
-                                  taskSum + ((article.quantity || 0) * (article.unitPrice || 0)), 0) || 0), 0) || 0;
-                              return phaseTotal > 0 ? (
-                                <div className="text-lg font-semibold text-blue-600">
-                                  {formatCurrency(phaseTotal)}
-                                </div>
-                              ) : null;
-                            })()}
 
+                {/* Phases */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Phases du devis</h3>
+                    <button
+                      onClick={addPhase}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Ajouter une phase
+                    </button>
+                  </div>
+                  {errors.phases && <p className="text-red-500 text-sm mb-2">{errors.phases}</p>}
+                  
+                  {phases.length === 0 ? (
+                    <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-gray-500">Aucune phase. Cliquez sur "Ajouter une phase" pour commencer.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {phases.map((phase) => (
+                        <div key={phase.id} className="border border-gray-200 dark:border-gray-700 rounded-lg">
+                          <div 
+                            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 cursor-pointer"
+                            onClick={() => updatePhase(phase.id, { expanded: !phase.expanded })}
+                          >
+                            <div className="flex items-center gap-2">
+                              {phase.expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              <input
+                                type="text"
+                                value={phase.name}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  updatePhase(phase.id, { name: e.target.value });
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-medium bg-transparent border-none focus:ring-0"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-500">{formatCurrency(phase.totalPrice || 0)}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deletePhase(phase.id);
+                                }}
+                                className="p-1 text-red-500 hover:bg-red-100 rounded"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-3 ml-4">
-                            <button
-                              onClick={() => addTask(phase.id)}
-                              className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium flex items-center space-x-1"
-                              title="Ajouter une tâche"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <span>Tâche</span>
-                            </button>
-                            <button
-                              onClick={() => deletePhase(phase.id)}
-                              className="p-1 hover:bg-red-100 rounded transition-colors text-red-500"
-                              title="Supprimer la phase"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tâches de la phase */}
-                      {phase.expanded && (
-                        <div className="p-4 space-y-3">
-                          {phase.tasks.map((task: Task) => (
-                            <div key={task.id} className="bg-white/70 rounded-lg border border-gray-200/50 overflow-hidden">
-                              {/* En-tête de tâche */}
-                              <div className="p-3 bg-gray-50/50 border-b border-gray-200/30">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-3 flex-1">
-                                    <button
-                                      onClick={() => updateTask(phase.id, task.id, { expanded: !task.expanded })}
-                                      className="p-1 hover:bg-white/50 rounded transition-colors"
-                                    >
-                                      {task.expanded ? (
-                                        <ChevronDown className="w-4 h-4 text-gray-600" />
-                                      ) : (
-                                        <ChevronUp className="w-4 h-4 text-gray-600" />
-                                      )}
-                                    </button>
+                          
+                          {phase.expanded && (
+                            <div className="p-4 space-y-4">
+                              <button
+                                onClick={() => addTask(phase.id)}
+                                className="text-sm text-blue-500 hover:text-blue-600"
+                              >
+                                + Ajouter une tâche
+                              </button>
+                              
+                              {phase.tasks.map((task) => (
+                                <div key={task.id} className="ml-4 border-l-2 border-gray-200 pl-4">
+                                  <div className="flex items-center justify-between">
                                     <input
                                       type="text"
                                       value={task.name}
                                       onChange={(e) => updateTask(phase.id, task.id, { name: e.target.value })}
-                                      className="font-medium bg-transparent border-none outline-none text-gray-700 flex-1"
-                                      placeholder="Nom de la tâche"
+                                      className="font-medium bg-transparent border-none focus:ring-0"
                                     />
-                                    {(() => {
-                                      const taskTotal = (task.articles ?? []).reduce<number>(
-                                        (sum: number, article: Article) =>
-                                          sum + ((article.quantity || 0) * (article.unitPrice || 0)),
-                                        0
-                                      );
-                                      return taskTotal > 0 ? (
-                                        <div className="text-sm text-gray-600">
-                                          {formatCurrency(taskTotal)}
-                                        </div>
-                                      ) : null;
-                                    })()}
-                                  </div>
-
-                                  <div className="flex items-center space-x-3 ml-4">
-                                    <button
-                                      onClick={() => addArticle(phase.id, task.id)}
-                                      className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition-colors text-xs font-medium flex items-center space-x-1"
-                                      title="Ajouter un article"
-                                    >
-                                      <Plus className="w-3 h-3" />
-                                      <span>Article</span>
-                                    </button>
                                     <button
                                       onClick={() => deleteTask(phase.id, task.id)}
-                                      className="p-1 hover:bg-red-100 rounded transition-colors text-red-500"
-                                      title="Supprimer la tâche"
+                                      className="p-1 text-red-500 hover:bg-red-100 rounded"
                                     >
                                       <X className="w-4 h-4" />
                                     </button>
                                   </div>
-                                </div>
-
-                                {task.expanded && task.description !== undefined && (
-                                  <div className="mt-2">
-                                    <textarea
-                                      value={task.description}
-                                      onChange={(e) => updateTask(phase.id, task.id, { description: e.target.value })}
-                                      className="w-full px-3 py-2 bg-white/70 border border-gray-200/50 rounded resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                                      placeholder="Description de la tâche..."
-                                      rows={1}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Articles de la tâche */}
-                              {task.expanded && (
-                                <div className="p-3">
-                                  {task.articles.length === 0 ? (
-                                    <div className="text-center py-4 text-gray-400 text-sm">
-                                      Aucun article. Cliquez sur + pour en ajouter.
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-2">
-                                      <div className="grid grid-cols-12 gap-3 items-center px-3 pt-1 pb-2 text-xs font-medium text-gray-500">
-                                        <div className="col-span-6">Description</div>
-                                        <div className="col-span-1 text-center">Quantité</div>
-                                        <div className="col-span-1 text-center">Unité</div>
-                                        <div className="col-span-2 text-right">Prix unitaire</div>
-                                        <div className="col-span-1 text-right">Total</div>
-                                        <div className="col-span-1 text-center"></div>
+                                  
+                                  <button
+                                    onClick={() => addArticle(phase.id, task.id)}
+                                    className="text-xs text-blue-500 hover:text-blue-600 mt-2"
+                                  >
+                                    + Ajouter un article
+                                  </button>
+                                  
+                                  {task.articles.map((article) => (
+                                    <div key={article.id} className="ml-4 mt-2 grid grid-cols-5 gap-2 items-center">
+                                      <input
+                                        type="text"
+                                        value={article.description}
+                                        onChange={(e) => updateArticle(phase.id, task.id, article.id, { description: e.target.value })}
+                                        className="col-span-2 px-2 py-1 border rounded text-sm"
+                                        placeholder="Description"
+                                      />
+                                      <input
+                                        type="number"
+                                        value={article.quantity}
+                                        onChange={(e) => updateArticle(phase.id, task.id, article.id, { quantity: parseFloat(e.target.value) || 0 })}
+                                        className="px-2 py-1 border rounded text-sm text-center"
+                                        placeholder="Qté"
+                                      />
+                                      <input
+                                        type="number"
+                                        value={article.unitPrice}
+                                        onChange={(e) => updateArticle(phase.id, task.id, article.id, { unitPrice: parseFloat(e.target.value) || 0 })}
+                                        className="px-2 py-1 border rounded text-sm text-right"
+                                        placeholder="Prix"
+                                      />
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">{formatCurrency(article.totalPrice || 0)}</span>
+                                        <button
+                                          onClick={() => deleteArticle(phase.id, task.id, article.id)}
+                                          className="p-1 text-red-500 hover:bg-red-100 rounded"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
                                       </div>
-                                      {task.articles.map((article) => (
-                                        <div key={article.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-white/80 rounded-lg border border-gray-100">
-                                          <div className="col-span-6">
-                                            <input
-                                              type="text"
-                                              value={article.description}
-                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { description: e.target.value })}
-                                              className="w-full px-2 py-1 text-sm bg-transparent border-none outline-none"
-                                              placeholder="Description"
-                                            />
-                                          </div>
-                                          <div className="col-span-1">
-                                            <input
-                                              type="number"
-                                              value={article.quantity || ''}
-                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { quantity: Number(e.target.value) || 0 })}
-                                              className="w-full px-2 py-1 text-sm text-center bg-transparent border-none outline-none"
-                                              placeholder="Quantité"
-                                              min="0"
-                                            />
-                                          </div>
-                                          <div className="col-span-1">
-                                            <select
-                                              value={article.unit}
-                                              onChange={(e) => {
-                                                const val = e.target.value;
-                                                if (val === '__custom') {
-                                                  const input = window.prompt('Entrez une unité personnalisée (ex: sac, l, pcs)', article.unit || '');
-                                                  const custom = (input || '').trim();
-                                                  updateArticle(phase.id, task.id, article.id, { unit: custom || 'u' });
-                                                } else {
-                                                  updateArticle(phase.id, task.id, article.id, { unit: val });
-                                                }
-                                              }}
-                                              className="w-full px-2 py-1 text-sm text-center bg-transparent border border-gray-200 rounded"
-                                            >
-                                              {[...BTP_UNITS, ...(article.unit && !BTP_UNITS.includes(article.unit) ? [article.unit] : [])].map(u => (
-                                                <option value={u} key={u}>{u}</option>
-                                              ))}
-                                              <option value="__custom">Autre…</option>
-                                            </select>
-                                          </div>
-                                          <div className="col-span-2">
-                                            <input
-                                              type="number"
-                                              value={article.unitPrice || ''}
-                                              onChange={(e) => updateArticle(phase.id, task.id, article.id, { unitPrice: Number(e.target.value) || 0 })}
-                                              className="w-full px-2 py-1 text-sm text-right bg-transparent border-none outline-none"
-                                              placeholder="Prix unitaire"
-                                              min="0"
-                                            />
-                                          </div>
-                                          <div className="col-span-1 text-sm text-right font-medium text-gray-700">
-                                            {formatCurrency((article.quantity || 0) * (article.unitPrice || 0))}
-                                          </div>
-                                          <div className="col-span-1 text-center">
-                                            <button
-                                              onClick={() => deleteArticle(phase.id, task.id, article.id)}
-                                              className="p-1 hover:bg-red-100 rounded transition-colors text-red-500"
-                                              title="Supprimer l'article"
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          </div>
-                                        </div>
-                                      ))}
                                     </div>
-                                  )}
+                                  ))}
                                 </div>
-                              )}
+                              ))}
                             </div>
-                          ))}
+                          )}
                         </div>
-                      )}
-
-                      {/* Message si aucune tâche */}
-                      {phase.tasks.length === 0 && (
-                        <div className="text-center py-6 text-gray-400">
-                          <p className="text-sm">Aucune tâche dans cette phase</p>
-                          <p className="text-xs">Cliquez sur + pour ajouter une tâche</p>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            
-            {phases.length > 0 && (
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 backdrop-blur-sm rounded-2xl p-6 border border-green-200/50 shadow-lg">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                  Récapitulatif financier
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white/70 rounded-xl p-4 border border-green-200/30">
-                    <div className="text-sm text-gray-600 mb-1">Sous-total HT</div>
-                    <div className="text-2xl font-bold text-gray-800">{formatCurrency(subtotal)}</div>
-                  </div>
-                  
-                  <div className="bg-white/70 rounded-xl p-4 border border-green-200/30">
-                    <div className="text-sm text-gray-600 mb-1 flex items-center justify-between">
-                      <span>TVA</span>
-                      <input
-                        type="number"
-                        value={taxRate}
-                        onChange={(e) => setTaxRate(Number(e.target.value) || 0)}
-                        className="w-16 px-2 py-1 text-xs bg-transparent border border-gray-300 rounded text-center"
-                        min="0"
-                        max="100"
-                      />
-                      <span className="text-xs">%</span>
-                    </div>
-                    <div className="text-2xl font-bold text-gray-800">{formatCurrency(taxAmount)}</div>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-xl p-4 border border-green-300/50">
-                    <div className="text-sm text-gray-700 mb-1 font-medium">Total TTC</div>
-                    <div className="text-3xl font-bold text-green-700">{formatCurrency(totalAmount)}</div>
-                  </div>
+                  )}
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes et conditions
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                      placeholder="Notes, conditions particulières..."
-                      rows={3}
-                    />
+                {/* Totaux */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div className="flex justify-between mb-2">
+                    <span>Sous-total HT</span>
+                    <span className="font-medium">{formatCurrency(subtotal)}</span>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Conditions de paiement
-                    </label>
-                    <textarea
-                      value={paymentTerms}
-                      onChange={(e) => setPaymentTerms(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                      placeholder="Conditions de paiement..."
-                      rows={3}
-                    />
+                  <div className="flex justify-between mb-2">
+                    <span>TVA ({taxRate}%)</span>
+                    <span className="font-medium">{formatCurrency(taxAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold border-t pt-2">
+                    <span>Total TTC</span>
+                    <span className="text-blue-600">{formatCurrency(totalAmount)}</span>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Pied de page */}
-        <div className="bg-gray-50/80 backdrop-blur-sm p-6 border-t border-gray-200/50">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                * Champs obligatoires
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                {isAutoSaving && <span>Sauvegarde automatique...</span>}
               </div>
-              {isAutoSaving && (
-                <div className="flex items-center text-sm text-blue-600">
-                  <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Sauvegarde automatique...
-                </div>
-              )}
-              {errors.phases && (
-                <div className="text-sm text-red-600 flex items-center">
-                  <span className="mr-1">⚠️</span>
-                  {errors.phases}
-                </div>
-              )}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleExportPdf}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Exporter PDF
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
+                </button>
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
-              <button
-                onClick={handleExportPdf}
-                className="px-4 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2 text-sm"
-              >
-                <FileText className="w-4 h-4" />
-                <span>PDF</span>
-              </button>
-              <button
-                onClick={onClose}
-                className="px-4 py-3 text-gray-600 hover:text-gray-800 transition-colors text-sm"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
-              >
-                <Save className="w-4 h-4" />
-                <span>{isSaving ? 'Enregistrement...' : 'Enregistrer'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-        </>
+          </>
         ) : (
-          <div className="flex items-center justify-center py-16 text-gray-600">
-            <svg className="animate-spin h-5 w-5 mr-3 text-gray-400" viewBox="0 0 24 24" />
-            <span>Chargement du devis…</span>
+          <div className="p-8 text-center">
+            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
+            <p>Chargement...</p>
           </div>
         )}
       </div>
-      
-      {/* Modal Templates */}
+
+      {/* Modals */}
       {showTemplates && (
         <QuoteTemplates
+          onSelect={handleSelectTemplate}
           onClose={() => setShowTemplates(false)}
-          onSelectTemplate={handleSelectTemplate}
         />
       )}
-
-      {/* Modal Générateur IA */}
+      
       {showAIGenerator && (
         <AIQuoteGenerator
           isOpen={showAIGenerator}

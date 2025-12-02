@@ -43,12 +43,12 @@ const GrokChatAssistant: React.FC = () => {
       role: 'assistant',
       content: `👋 Salut ! Je suis votre assistant BTP Grok, toujours à jour avec les dernières infos du marché !
 
-🚀 **Ce que je peux faire pour vous :**
+ **Ce que je peux faire pour vous :**
 • 📊 Veille marché temps réel (prix matériaux, tendances)
 • 💰 Estimations de coûts avec données actuelles
 • 📋 Conseils techniques et réglementaires
 • 🔍 Analyse de vos projets et documents
-• ⚡ Réponses rapides et directes (style Grok !)
+•  Réponses rapides et directes (style Grok !)
 
 **Essayez par exemple :**
 - "Quels sont les prix du béton cette semaine ?"
@@ -158,7 +158,7 @@ Alors, par quoi on commence ? 😎`,
   const getQuickActions = () => [
     {
       icon: <TrendingUp className="w-4 h-4" />,
-      label: "Prix matériaux",
+      labelux",
       action: "Quels sont les derniers prix des matériaux BTP ?"
     },
     {
@@ -180,35 +180,7 @@ Alors, par quoi on commence ? 😎`,
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-      {/* En-tête */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-            <Bot className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">
-              Assistant Grok BTP
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              IA conversationnelle avec données temps réel
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <div className="flex items-center gap-1">
-            <Zap className="w-4 h-4" />
-            <span>Coût total: {formatCost(totalCost)}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            <span>{messages.length - 1} messages</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Zone de messages */}
+      {}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div

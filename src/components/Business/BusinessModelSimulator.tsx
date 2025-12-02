@@ -34,7 +34,7 @@ interface CostStructure {
   };
   aiServices: {
     groq: number;
-    claude: number;
+    Modèle: number;
     googleVision: number;
   };
   communication: {
@@ -121,7 +121,7 @@ const BusinessModelSimulator: React.FC = () => {
     },
     aiServices: {
       groq: 120000, // API Groq (très abordable)
-      claude: 200000, // Anthropic Claude
+      Modèle: 200000, // Anthropic Modèle
       googleVision: 80000 // Google Vision API
     },
     communication: {
@@ -420,7 +420,7 @@ const BusinessModelSimulator: React.FC = () => {
                   <li>• Les coûts d'acquisition représentent un investissement initial important</li>
                   <li>• La rentabilité s'améliore avec l'échelle (plus de clients = meilleure marge)</li>
                   <li>• Le taux de churn impact directement la profitabilité long terme</li>
-                  <li>• Les coûts IA sont optimisés (Groq 90% moins cher qu'OpenAI)</li>
+                  <li>• Les coûts IA sont optimisés (Groq 90% moins cher qu'Service)</li>
                 </ul>
               </div>
             </div>

@@ -1,4 +1,4 @@
-// Plan de Développement Complet - Implémentation Système Hybride IA
+
 export const HYBRID_AI_DEVELOPMENT_PLAN = {
   
   // === PHASE 1: FONDATIONS (Semaine 1) ===
@@ -13,7 +13,7 @@ export const HYBRID_AI_DEVELOPMENT_PLAN = {
         name: "Configuration Variables d'Environnement",
         duration: "0.5 jour",
         files: [".env.example", "src/config/aiConfig.ts"],
-        description: "Ajouter clés API pour Groq, Claude, Google Vision",
+        description: "Ajouter clés API pour Groq, Modèle, Google Vision",
         dependencies: []
       },
       {
@@ -33,10 +33,10 @@ export const HYBRID_AI_DEVELOPMENT_PLAN = {
         dependencies: ["ai-router"]
       },
       {
-        id: "claude-service",
-        name: "Service Claude API",
+        id: "Modèle-service",
+        name: "Service Modèle API",
         duration: "1.5 jours",
-        files: ["src/services/ai/claudeService.ts"],
+        files: ["src/services/ai/ModèleService.ts"],
         description: "Analyse contrats, conformité, audit technique",
         dependencies: ["ai-router"]
       },
@@ -77,7 +77,7 @@ export const HYBRID_AI_DEVELOPMENT_PLAN = {
         duration: "2 jours",
         files: ["src/services/ai/hybridAIService.ts"],
         description: "Point d'entrée unifié + gestion fallback",
-        dependencies: ["groq-service", "claude-service", "vision-service"]
+        dependencies: ["groq-service", "Modèle-service", "vision-service"]
       },
       {
         id: "architectural-plan-service",
@@ -255,7 +255,7 @@ export const HYBRID_AI_DEVELOPMENT_PLAN = {
     ],
     
     infrastructure: [
-      "Clés API Groq, Claude, Google Vision",
+      "Clés API Groq, Modèle, Google Vision",
       "Environnement staging dédié",
       "Monitoring tools (Datadog/New Relic)",
       "CI/CD pipeline adapté"
@@ -335,7 +335,7 @@ export const HYBRID_AI_DEVELOPMENT_PLAN = {
     ],
     
     month6: [
-      "Machine Learning pour optimisation routage",
+      "Apprentissage automatique pour optimisation routage",
       "Prédiction coûts et usage",
       "Automatisation complète"
     ]
@@ -351,7 +351,7 @@ export const IMPLEMENTATION_FILES_DETAIL = {
   },
   
   "src/services/ai/aiRouter.ts": {
-    purpose: "Routage intelligent requêtes IA",
+    purpose: "Routag",
     content: "Logique sélection provider, fallback, métriques",
     priority: "CRITIQUE"
   },
@@ -362,8 +362,8 @@ export const IMPLEMENTATION_FILES_DETAIL = {
     priority: "CRITIQUE"
   },
   
-  "src/services/ai/claudeService.ts": {
-    purpose: "Interface Claude API",
+  "src/services/ai/ModèleService.ts": {
+    purpose: "Interface Modèle API",
     content: "Analyse contrats, conformité, audit",
     priority: "CRITIQUE"
   },

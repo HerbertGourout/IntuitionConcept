@@ -62,7 +62,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, document }) =>
 
   const sendByEmail = () => {
     const subject = `Partage de document: ${document.name}`;
-    const body = `Bonjour,\n\nJe partage avec vous le document "${document.name}".\n\nLien d'accès: ${shareLink}\n\nCordialement`;
+    const body = `Bonjour,\n\nJe partaglement`;
     const mailtoLink = `mailto:${emailList}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink);
   };

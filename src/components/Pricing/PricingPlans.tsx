@@ -198,60 +198,7 @@ const PricingPlans: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-6 space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium">
-          <TrendingUp className="w-4 h-4" />
-          <span>Plans Tarifaires IntuitionConcept BTP</span>
-        </div>
-        
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-          Choisissez le plan qui vous convient
-        </h1>
-        
-        <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-          Des solutions flexibles pour accompagner votre croissance, de l'artisan indépendant aux grandes entreprises du BTP
-        </p>
-
-        {/* Currency Selector */}
-        <div className="flex flex-col items-center space-y-3 mt-6">
-          <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Région & Devise:</span>
-            <select
-              value={selectedCurrency}
-              onChange={(e) => setSelectedCurrency(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {currencies.map((currency) => (
-                <option key={currency.code} value={currency.code}>
-                  {currency.flag} {currency.name} ({currency.symbol})
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Regional Pricing Info */}
-          {selectedCurrency !== 'EUR' && (
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg px-6 py-4">
-              <div className="text-center space-y-2">
-                <p className="text-sm text-green-800 dark:text-green-200">
-                  🚀 <strong>Tarification Intelligente Régionale</strong>
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Prix optimisés pour le marché {selectedCurrency === 'XOF' || selectedCurrency === 'XAF' ? 'africain' :
-                   selectedCurrency === 'MAD' ? 'marocain' :
-                   selectedCurrency === 'TND' ? 'tunisien' :
-                   selectedCurrency === 'DZD' ? 'algérien' :
-                   selectedCurrency === 'USD' ? 'américain' :
-                   selectedCurrency === 'CAD' ? 'canadien' :
-                   selectedCurrency === 'CHF' ? 'suisse' : 'local'} avec toutes les fonctionnalités IA révolutionnaires
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Billing Toggle */}
+      {}
         <div className="flex items-center justify-center space-x-4 mt-8">
           <span className={`text-sm font-medium ${billingPeriod === 'monthly' ? 'text-gray-900 dark:text-white' : 'text-gray-500'}`}>
             Mensuel
@@ -277,93 +224,7 @@ const PricingPlans: React.FC = () => {
         </div>
       </div>
 
-      {/* Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {plans.map((plan) => (
-          <div
-            key={plan.id}
-            className={`relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl border-2 transition-all duration-300 hover:shadow-2xl hover:scale-105 ${
-              plan.popular 
-                ? 'border-purple-500 ring-4 ring-purple-500/20' 
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {/* Popular Badge */}
-            {plan.popular && (
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1 rounded-full text-sm font-bold flex items-center space-x-1">
-                  <Star className="w-4 h-4" />
-                  <span>Plus Populaire</span>
-                </div>
-              </div>
-            )}
-
-            {/* Header */}
-            <div className={`bg-gradient-to-r ${plan.gradient} p-6 rounded-t-2xl text-white`}>
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-white/20 rounded-xl">
-                  {plan.icon}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">{plan.name}</h3>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                {plan.id !== 'custom' ? (
-                  <>
-                    <div className="flex items-baseline space-x-1">
-                      <span className="text-3xl font-bold">{formatPrice(plan.priceEUR)}</span>
-                      <span className="text-sm opacity-80">{plan.period}</span>
-                    </div>
-                    {billingPeriod === 'yearly' && (
-                      <p className="text-sm opacity-80">
-                        Soit {formatPrice(Math.round(plan.priceEUR / 12))}/mois
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-2xl font-bold">{plan.period}</div>
-                )}
-                <p className="text-sm opacity-90">{plan.description}</p>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Limits */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
-                  <Shield className="w-4 h-4 mr-2 text-blue-600" />
-                  Limites
-                </h4>
-                <div className="grid grid-cols-1 gap-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Projets:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {plan.limits.projects === 'unlimited' ? 'Illimité' : plan.limits.projects}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Utilisateurs:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {plan.limits.users === 'unlimited' ? 'Illimité' : plan.limits.users}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Stockage:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{plan.limits.storage}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Analyses IA:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {plan.limits.aiAnalysis === 'unlimited' ? 'Illimité' : `${plan.limits.aiAnalysis}/mois`}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Features (incremental) */}
+      {}
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
                   <Check className="w-4 h-4 mr-2 text-green-600" />

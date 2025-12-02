@@ -22,7 +22,6 @@ interface QuoteEmailSenderProps {
     onClose: () => void;
 }
 
-
 const QuoteEmailSender: React.FC<QuoteEmailSenderProps> = ({
     quote,
     onSend,

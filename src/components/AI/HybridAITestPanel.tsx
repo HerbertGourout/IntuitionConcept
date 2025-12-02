@@ -1,4 +1,4 @@
-// Panel de test IA simplifié
+
 import React, { useState } from 'react';
 import { Card, Button, Select, Input, Alert, Typography, Space, Tag } from 'antd';
 import { 
@@ -30,7 +30,7 @@ export const HybridAITestPanel: React.FC = () => {
     setLoading(true);
     setResult(null);
 
-    // Simulation d'un test IA
+    
     setTimeout(() => {
       const mockResult: TestResult = {
         success: true,
@@ -65,7 +65,7 @@ export const HybridAITestPanel: React.FC = () => {
             <Option value="quote">Génération de Devis</Option>
             <Option value="ocr">OCR Intelligent</Option>
             <Option value="anomaly">Détection d'Anomalies</Option>
-            <Option value="copilot">Assistant IA</Option>
+            <Option value="copilot">Assistant</Option>
           </Select>
         </div>
 

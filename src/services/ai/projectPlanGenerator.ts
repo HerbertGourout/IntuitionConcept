@@ -25,15 +25,15 @@ export interface ProjectPlan {
 
 class ProjectPlanGenerator {
   private apiKey: string;
-  private baseUrl = 'https://api.openai.com/v1';
+  private baseUrl = 'https://api.Service.com/v1';
 
   constructor() {
-    this.apiKey = aiConfig.openaiApiKey || '';
+    this.apiKey = aiConfig.ServiceApiKey || '';
   }
 
   async generatePlanFromPrompt(projectPrompt: string): Promise<ProjectPlan> {
     if (!this.apiKey) {
-      // OpenAI API key not configured, using mock plan
+      // Service API key not configured, using mock plan
       return this.getMockProjectPlan(projectPrompt);
     }
 
@@ -98,7 +98,7 @@ class ProjectPlanGenerator {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'Modèle-4o',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
@@ -109,7 +109,7 @@ class ProjectPlanGenerator {
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        throw new Error(`Service API error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -118,14 +118,14 @@ class ProjectPlanGenerator {
       // Nettoyer le contenu pour extraire le JSON
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('Invalid JSON response from OpenAI');
+        throw new Error('Invalid JSON response from Service');
       }
 
       const projectPlan = JSON.parse(jsonMatch[0]);
       return projectPlan;
 
     } catch {
-      // Erreur génération plan OpenAI
+      // Erreur génération plan Service
       return this.getMockProjectPlan(projectPrompt);
     }
   }

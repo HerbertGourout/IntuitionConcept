@@ -1,4 +1,4 @@
-// Stratégie complète d'intégration IA pour IntuitionConcept BTP
+
 export interface AIIntegrationIdea {
   id: string;
   module: string;
@@ -14,7 +14,6 @@ export interface AIIntegrationIdea {
   userBenefit: string;
 }
 
-// Analyse complète des modules existants avec propositions IA
 export const AI_INTEGRATION_OPPORTUNITIES: AIIntegrationIdea[] = [
   
   // === GESTION DE PROJETS ===
@@ -23,7 +22,7 @@ export const AI_INTEGRATION_OPPORTUNITIES: AIIntegrationIdea[] = [
     module: 'Projects',
     name: 'Prédicteur de Risques Projet IA',
     description: 'Analyse prédictive des risques basée sur historique, météo, fournisseurs, équipe',
-    aiTechnology: ['Machine Learning', 'Analyse prédictive', 'APIs météo'],
+    aiTechnology: ['Apprentissage automatique', 'Analyse prédictive', 'APIs météo'],
     businessValue: 'Réduction 30% des retards projet, anticipation des problèmes',
     implementationComplexity: 'high',
     estimatedDevelopmentTime: '3 mois',
@@ -329,7 +328,6 @@ export const AI_INTEGRATION_OPPORTUNITIES: AIIntegrationIdea[] = [
   }
 ];
 
-// Priorisation des intégrations IA
 export const AI_IMPLEMENTATION_ROADMAP = {
   phase1_immediate: [
     'ai_expense_categorizer',
@@ -370,7 +368,7 @@ export const calculateTotalAIROI = () => {
   );
   
   const estimatedAnnualRevenue = 2685000 * 12; // Revenue mensuel x 12
-  const aiRevenueBoost = estimatedAnnualRevenue * 0.4; // 40% boost avec IA
+  const aiRevenueBoost = estimatedAnnualRevenue * 0.4; 
   
   return {
     totalInvestment,

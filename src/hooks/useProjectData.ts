@@ -117,7 +117,6 @@ export function useProjectTransactions(projectId: string | null) {
   return { transactions, loading, addTransaction };
 }
 
-
 export function useProjectPurchaseOrders(projectId: string | null) {
   const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +144,6 @@ export function useProjectPurchaseOrders(projectId: string | null) {
 
   return { purchaseOrders, loading, addPurchaseOrder };
 }
-
 
 export function useProjectStats(projectId: string | null) {
   const [stats, setStats] = useState({

@@ -64,13 +64,13 @@ const CostAnalysis: React.FC = () => {
       estimatedUsage: { starter: 2, professional: 8, enterprise: 25 }
     },
     {
-      name: 'Claude AI (Anthropic)',
+      name: 'Modèle AI (Anthropic)',
       icon: <Brain className="w-5 h-5" />,
       category: 'ai',
       monthlyBase: 0,
       variableCost: 3.00,
       unit: 'par 1M tokens',
-      description: 'IA avancée pour analyses complexes, conformité',
+      description: 'Système avancé pour analyses complexes, conformité',
       provider: 'Anthropic',
       estimatedUsage: { starter: 0.5, professional: 2, enterprise: 8 }
     },
@@ -308,9 +308,9 @@ const CostAnalysis: React.FC = () => {
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
                 <Zap className="w-6 h-6 text-green-600" />
               </div>
-              <h4 className="font-semibold text-gray-900 dark:text-white">Groq vs OpenAI</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white">Groq vs Service</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                90% moins cher que GPT-4 pour la génération de texte
+                90% moins cher que Modèle-4 pour la génération de texte
               </p>
             </div>
             

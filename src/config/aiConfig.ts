@@ -1,8 +1,8 @@
-// Configuration centralisée pour le système hybride IA
+
 export const aiConfig = {
-  // Legacy OpenAI (Fallback)
-  openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
-  model: 'gpt-4o-mini',
+  // Legacy Service (Fallback)
+  ServiceApiKey: import.meta.env.VITE_Service_API_KEY || '',
+  model: 'Modèle-4o-mini',
   temperature: 0.7,
   maxTokens: 2000,
   
@@ -17,7 +17,7 @@ export const aiConfig = {
   // Groq Configuration
   groq: {
     apiKey: import.meta.env.GROQ_API_KEY || '',
-    baseUrl: 'https://api.groq.com/openai/v1',
+    baseUrl: 'https://api.groq.com/Service/v1',
     models: {
       fast: 'llama3-8b-8192',      // Classification, tâches simples
       balanced: 'llama3-70b-8192', // Génération devis, chat
@@ -26,12 +26,12 @@ export const aiConfig = {
     costPerToken: 0.0003 // FCFA
   },
   
-  // Anthropic Claude Configuration
-  claude: {
+  // Anthropic Modèle Configuration
+  Modèle: {
     apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
     // In dev, go through Vite proxy to avoid CORS; in prod, call Anthropic directly
     baseUrl: import.meta.env.DEV ? '/api/anthropic/v1' : 'https://api.anthropic.com/v1',
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'Modèle-3-5-sonnet-20241022',
     version: '2023-06-01',
     costPerToken: 0.0008 // FCFA
   },
@@ -47,7 +47,7 @@ export const aiConfig = {
   quoteGeneration: {
     enabled: true,
     primaryProvider: 'groq', // Économique
-    fallbackProvider: 'openai',
+    fallbackProvider: 'Service',
     model: 'llama3-70b-8192',
     temperature: 0.3,
     maxTokens: 3000
@@ -57,7 +57,7 @@ export const aiConfig = {
   ocrAnalysis: {
     enabled: true,
     primaryProvider: 'googleVision', // Précision maximale
-    fallbackProvider: 'openai',
+    fallbackProvider: 'Service',
     temperature: 0.2,
     maxTokens: 2000
   },
@@ -65,8 +65,8 @@ export const aiConfig = {
   // Configuration pour l'analyse de documents
   documentAnalysis: {
     enabled: true,
-    primaryProvider: 'claude', // Excellent pour analyse
-    fallbackProvider: 'openai',
+    primaryProvider: 'Modèle', // Excellent pour analyse
+    fallbackProvider: 'Service',
     temperature: 0.2,
     maxTokens: 4000
   },
@@ -75,7 +75,7 @@ export const aiConfig = {
   conversational: {
     enabled: true,
     primaryProvider: 'groq', // Rapide et économique
-    fallbackProvider: 'openai',
+    fallbackProvider: 'Service',
     temperature: 0.7,
     maxTokens: 1500
   }

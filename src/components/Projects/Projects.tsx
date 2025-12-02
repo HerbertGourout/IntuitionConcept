@@ -10,7 +10,6 @@ import type { Project } from '../../contexts/projectTypes';
 import PageContainer from '../Layout/PageContainer';
 import SectionHeader from '../UI/SectionHeader';
 
-
 const Projects: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterStatus, setFilterStatus] = useState<string>('all');

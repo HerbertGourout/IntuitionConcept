@@ -1,11 +1,11 @@
-// Configuration centralisée pour tous les services IA
+
 export interface AIConfig {
-  // Fournisseur IA principal
-  provider: 'openai' | 'claude' | 'local';
+  
+  provider: 'Service' | 'Modèle' | 'local';
   
   // Clés API (à stocker dans .env)
-  openaiApiKey?: string;
-  claudeApiKey?: string;
+  ServiceApiKey?: string;
+  ModèleApiKey?: string;
   
   // Configuration OCR
   ocr: {
@@ -16,7 +16,7 @@ export interface AIConfig {
     confidenceThreshold: number;
   };
   
-  // Configuration amélioration OCR avec IA
+  
   ocrEnhancement: {
     enabled: boolean;
     apiKey: string;
@@ -55,7 +55,7 @@ export interface AIConfig {
 
 // Configuration par défaut
 export const defaultAIConfig: AIConfig = {
-  provider: 'openai',
+  provider: 'Service',
   
   ocr: {
     enhancementEnabled: true,
@@ -67,15 +67,15 @@ export const defaultAIConfig: AIConfig = {
   
   ocrEnhancement: {
     enabled: true,
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
-    model: 'gpt-4-vision-preview',
+    apiKey: import.meta.env.VITE_Service_API_KEY || '',
+    model: 'Modèle-4-vision-preview',
     maxTokens: 1000,
     temperature: 0.1
   },
   
   quoteGeneration: {
     enabled: true, // Activé par défaut si clé API présente
-    model: 'gpt-3.5-turbo',
+    model: 'Modèle-3.5-turbo',
     maxTokens: 2000,
     temperature: 0.3
   },
@@ -91,10 +91,10 @@ export const defaultAIConfig: AIConfig = {
   
   copilot: {
     enabled: true, // Activé par défaut si clé API présente
-    model: 'gpt-3.5-turbo',
+    model: 'Modèle-3.5-turbo',
     maxTokens: 1000,
     temperature: 0.1,
-    systemPrompt: `Tu es un assistant IA spécialisé dans la gestion de projets BTP en Afrique.
+    systemPrompt: `Tu es un Assistant spécialisé dans la gestion de projets BTP en Afrique.
     Tu aides les utilisateurs avec leurs projets de construction, devis, finances et planning.
     Réponds toujours en français et de manière concise et professionnelle.
     Utilise les unités locales (FCFA, m², etc.) et tiens compte du contexte africain.`
@@ -106,16 +106,16 @@ export function loadAIConfigFromEnv(): AIConfig {
   const config = { ...defaultAIConfig };
   
   // Charger les clés API depuis .env
-  if (import.meta.env.VITE_OPENAI_API_KEY) {
-    config.openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    config.provider = 'openai';
+  if (import.meta.env.VITE_Service_API_KEY) {
+    config.ServiceApiKey = import.meta.env.VITE_Service_API_KEY;
+    config.provider = 'Service';
     config.quoteGeneration.enabled = true;
     config.copilot.enabled = true;
   }
   
   if (import.meta.env.VITE_ANTHROPIC_API_KEY) {
-    config.claudeApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-    config.provider = 'claude';
+    config.ModèleApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+    config.provider = 'Modèle';
     config.quoteGeneration.enabled = true;
     config.copilot.enabled = true;
   }

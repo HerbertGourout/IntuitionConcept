@@ -95,7 +95,7 @@ const useCases: UseCase[] = [
       'Gestion fournisseurs complexe'
     ],
     features: [
-      '🤖 Toutes les fonctionnalités IA (Devis, OCR, Plans, Anomalies)',
+      ' Toutes les fonctionnalités IA (Devis, OCR, Plans, Anomalies)',
       '📊 Dashboard financier complet',
       '👥 Gestion multi-équipes avec GPS',
       '📐 Analyse automatique de plans architecturaux',
@@ -107,7 +107,7 @@ const useCases: UseCase[] = [
       '🔄 Automatisations n8n (workflows)'
     ],
     results: [
-      { metric: 'Productivité', value: '+150%', icon: '🚀' },
+      { metric: 'Productivité', value: '+150%', icon: '' },
       { metric: 'Dépassements évités', value: '-60%', icon: '💰' },
       { metric: 'Projets livrés à temps', value: '85%', icon: '✅' }
     ],
@@ -139,7 +139,7 @@ const useCases: UseCase[] = [
       'Besoin de personnalisations'
     ],
     features: [
-      '🤖 Toutes les fonctionnalités Pro + IA Premium',
+      ' Toutes les fonctionnalités Pro + IA Premium',
       '🎤 Copilot Vocal IA (commandes vocales)',
       '📊 Analytics Prédictifs IA (coûts, délais, risques)',
       '📄 Rapports Automatisés IA personnalisés',
@@ -147,7 +147,7 @@ const useCases: UseCase[] = [
       '✍️ Signatures électroniques conformes',
       '🔒 Sécurité & Audit avancés',
       '👨‍💼 Support dédié 24/7 prioritaire',
-      '🎨 Rendus 3D photoréalistes illimités',
+      ' Rendus 3D photoréalistes illimités',
       '⚙️ Automatisations n8n avancées avec LLM',
       '📍 Géolocalisation multi-sites',
       '💼 Gestion paie équipes',
@@ -155,7 +155,7 @@ const useCases: UseCase[] = [
       '💾 1TB de stockage cloud'
     ],
     results: [
-      { metric: 'Efficacité globale', value: '+250%', icon: '⚡' },
+      { metric: 'Efficacité globale', value: '+250%', icon: '' },
       { metric: 'Coûts réduits', value: '-40%', icon: '💵' },
       { metric: 'Conformité', value: '100%', icon: '🛡️' }
     ],

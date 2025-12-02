@@ -59,7 +59,6 @@ const PurchaseOrders: React.FC = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [selectedDeliveryNote, setSelectedDeliveryNote] = useState<DeliveryNote | null>(null);
 
-
   // Filtrage des bons d'achat
   const filteredOrders = useMemo(() => {
     return purchaseOrders.filter(order => {

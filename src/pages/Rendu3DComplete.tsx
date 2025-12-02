@@ -356,7 +356,7 @@ const Rendu3DComplete: React.FC = () => {
                 </div>
 
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
-                  💡 {selectedPages.length} page(s) sélectionnée(s) • Les pages sont classifiées automatiquement
+                   {selectedPages.length} page(s) sélectionnée(s) • Les pages sont classifiées automatiquement
                 </p>
               </div>
 

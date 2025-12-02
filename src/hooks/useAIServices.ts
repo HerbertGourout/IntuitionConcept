@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { aiActivationService, AIServiceStatus } from '../services/ai/aiActivationService';
 
-/**
- * Hook pour gérer l'état des services IA
- */
 export const useAIServices = () => {
   const [status, setStatus] = useState<AIServiceStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +15,7 @@ export const useAIServices = () => {
       setLoading(true);
       setError(null);
       
-      console.log('🤖 Initialisation des services IA...');
+      console.log(' Initialisation des services IA...');
       const aiStatus = await aiActivationService.activateAIServices();
       setStatus(aiStatus);
       

@@ -330,7 +330,7 @@ const FinancesAdvanced: React.FC = () => {
       trend: financialSummary.cashFlow > 0 ? 'up' : 'down'
     },
     {
-      label: 'Marge Bénéficiaire',
+      labelire',
       value: `${financialSummary.profitMargin.toFixed(1)}%`,
       change: financialSummary.profitMargin,
       icon: LineChart,

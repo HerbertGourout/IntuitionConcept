@@ -1,6 +1,6 @@
-// Service GPT-4o - Analyse multimodale (texte + images) pour BTP
+// Service Modèle-4o - Analyse multimodale (texte + images) pour BTP
 import { aiBackendClient } from './aiBackendClient';
-export interface GPT4oResponse {
+export interface Modèle4oResponse {
   content: string;
   model: string;
   usage: {
@@ -52,13 +52,13 @@ export interface SiteAnalysisResult {
   confidence: number;
 }
 
-export class GPT4oService {
-  private readonly model = 'gpt-4o';
+export class Modèle4oService {
+  private readonly model = 'Modèle-4o';
 
   /**
    * Analyse d'image de chantier avec contexte BTP
    */
-  async analyzeSiteImage(base64Image: string, context?: string): Promise<GPT4oResponse> {
+  async analyzeSiteImage(base64Image: string, context?: string): Promise<Modèle4oResponse> {
     const prompt = `
 Analyse cette image de chantier BTP et fournis une évaluation technique détaillée.
 
@@ -78,7 +78,7 @@ Focus sur : sécurité, qualité, conformité, avancement des travaux.
 `;
 
     try {
-      const response = await this.callOpenAIChat({
+      const response = await this.callServiceChat({
         operation: 'image_analysis',
         payload: {
           image: {
@@ -92,7 +92,7 @@ Focus sur : sécurité, qualité, conformité, avancement des travaux.
       return this.mapToResponse(response);
 
     } catch (error) {
-      console.error('Erreur analyse image GPT-4o:', error);
+      console.error('Erreur analyse image Modèle-4o:', error);
       throw error;
     }
   }
@@ -100,7 +100,7 @@ Focus sur : sécurité, qualité, conformité, avancement des travaux.
   /**
    * Analyse de plan architectural avec vision
    */
-  async analyzePlan(base64Image: string, planType?: string, mimeType: string = 'image/jpeg'): Promise<GPT4oResponse> {
+  async analyzePlan(base64Image: string, planType?: string, mimeType: string = 'image/jpeg'): Promise<Modèle4oResponse> {
     const prompt = `
 Analyse ce plan architectural BTP et extrais toutes les informations techniques.
 
@@ -135,7 +135,7 @@ Analyse technique approfondie avec estimation de coûts réaliste.
 `;
 
     try {
-      const response = await this.callOpenAIChat({
+      const response = await this.callServiceChat({
         operation: 'plan_analysis',
         payload: {
           file: {
@@ -150,7 +150,7 @@ Analyse technique approfondie avec estimation de coûts réaliste.
       return this.mapToResponse(response);
 
     } catch (error) {
-      console.error('Erreur analyse plan GPT-4o:', error);
+      console.error('Erreur analyse plan Modèle-4o:', error);
       throw error;
     }
   }
@@ -158,7 +158,7 @@ Analyse technique approfondie avec estimation de coûts réaliste.
   /**
    * Analyse comparative de photos avant/après
    */
-  async compareProgress(beforeImage: string, afterImage: string, context?: string): Promise<GPT4oResponse> {
+  async compareProgress(beforeImage: string, afterImage: string, context?: string): Promise<Modèle4oResponse> {
     const prompt = `
 Compare ces deux images de chantier (avant/après) et analyse l'avancement des travaux.
 
@@ -179,7 +179,7 @@ Focus sur : qualité, conformité, respect du planning, problèmes potentiels.
 `;
 
     try {
-      const response = await this.callOpenAIChat({
+      const response = await this.callServiceChat({
         operation: 'progress_comparison',
         payload: {
           beforeImage: {
@@ -197,7 +197,7 @@ Focus sur : qualité, conformité, respect du planning, problèmes potentiels.
       return this.mapToResponse(response);
 
     } catch (error) {
-      console.error('Erreur comparaison images GPT-4o:', error);
+      console.error('Erreur comparaison images Modèle-4o:', error);
       throw error;
     }
   }
@@ -205,7 +205,7 @@ Focus sur : qualité, conformité, respect du planning, problèmes potentiels.
   /**
    * Génération de rapport avec images
    */
-  async generateVisualReport(images: string[], reportType: string, context?: Record<string, unknown>): Promise<GPT4oResponse> {
+  async generateVisualReport(images: string[], reportType: string, context?: Record<string, unknown>): Promise<Modèle4oResponse> {
     const prompt = `
 Génère un rapport ${reportType} professionnel basé sur ces images de chantier.
 
@@ -237,7 +237,7 @@ Rapport professionnel et actionnable.
 `;
 
     try {
-      const response = await this.callOpenAIChat({
+      const response = await this.callServiceChat({
         operation: 'visual_report',
         payload: {
           images: images.map((image) => ({
@@ -255,7 +255,7 @@ Rapport professionnel et actionnable.
       return this.mapToResponse(response);
 
     } catch (error) {
-      console.error('Erreur génération rapport GPT-4o:', error);
+      console.error('Erreur génération rapport Modèle-4o:', error);
       throw error;
     }
   }
@@ -263,7 +263,7 @@ Rapport professionnel et actionnable.
   /**
    * Analyse de conformité sécurité
    */
-  async analyzeSafetyCompliance(base64Image: string, regulations?: string[]): Promise<GPT4oResponse> {
+  async analyzeSafetyCompliance(base64Image: string, regulations?: string[]): Promise<Modèle4oResponse> {
     const prompt = `
 Analyse cette image de chantier pour la conformité sécurité et réglementaire.
 
@@ -296,7 +296,7 @@ Focus sur : EPI, signalisation, protection collective, accès, stockage.
 `;
 
     try {
-      const response = await this.callOpenAIChat({
+      const response = await this.callServiceChat({
         operation: 'safety_compliance',
         payload: {
           image: {
@@ -311,16 +311,16 @@ Focus sur : EPI, signalisation, protection collective, accès, stockage.
       return this.mapToResponse(response);
 
     } catch (error) {
-      console.error('Erreur analyse sécurité GPT-4o:', error);
+      console.error('Erreur analyse sécurité Modèle-4o:', error);
       throw error;
     }
   }
 
   /**
-   * Calcul du coût GPT-4o
+   * Calcul du coût Modèle-4o
    */
   private calculateCost(promptTokens: number, completionTokens: number): number {
-    // Prix GPT-4o : $2.50/1M tokens input, $10.00/1M tokens output
+    // Prix Modèle-4o : $2.50/1M tokens input, $10.00/1M tokens output
     const inputCost = (promptTokens / 1000000) * 2.50;
     const outputCost = (completionTokens / 1000000) * 10.00;
     return inputCost + outputCost;
@@ -343,7 +343,7 @@ Focus sur : EPI, signalisation, protection collective, accès, stockage.
     }
   }
 
-  private async callOpenAIChat({
+  private async callServiceChat({
     operation,
     payload
   }: {
@@ -354,9 +354,9 @@ Focus sur : EPI, signalisation, protection collective, accès, stockage.
       | 'visual_report'
       | 'safety_compliance';
     payload: Record<string, unknown>;
-  }): Promise<OpenAIChatResponse> {
-    const response = await aiBackendClient.proxy<OpenAIChatResponse>({
-      provider: 'openai',
+  }): Promise<ServiceChatResponse> {
+    const response = await aiBackendClient.proxy<ServiceChatResponse>({
+      provider: 'Service',
       operation,
       payload
     });
@@ -364,7 +364,7 @@ Focus sur : EPI, signalisation, protection collective, accès, stockage.
     return response.data;
   }
 
-  private mapToResponse(data: OpenAIChatResponse): GPT4oResponse {
+  private mapToResponse(data: ServiceChatResponse): Modèle4oResponse {
     const usage = data.usage ?? { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
     return {
@@ -376,23 +376,23 @@ Focus sur : EPI, signalisation, protection collective, accès, stockage.
   }
 }
 
-export const gpt4oService = new GPT4oService();
-export default gpt4oService;
+export const Modèle4oService = new Modèle4oService();
+export default Modèle4oService;
 
-interface OpenAIChatChoice {
+interface ServiceChatChoice {
   message?: {
     content?: string;
   };
 }
 
-interface OpenAIChatUsage {
+interface ServiceChatUsage {
   prompt_tokens?: number;
   completion_tokens?: number;
   total_tokens?: number;
 }
 
-interface OpenAIChatResponse {
+interface ServiceChatResponse {
   model?: string;
-  choices?: OpenAIChatChoice[];
-  usage?: OpenAIChatUsage;
+  choices?: ServiceChatChoice[];
+  usage?: ServiceChatUsage;
 }

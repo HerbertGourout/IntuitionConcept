@@ -9,7 +9,7 @@ interface BackendAIResponse {
   raw?: unknown;
 }
 
-// Types structurés pour l'analyse OCR d'une facture via OpenAI
+// Types structurés pour l'analyse OCR d'une facture via Service
 type AnalyzedAmount = { value: number; currency?: string; confidence: number };
 type AnalyzedDate = { value: string; confidence: number };
 type AnalyzedVendor = { value: string; normalized?: string; confidence: number };
@@ -25,11 +25,8 @@ interface AnalyzedOCR {
   validation?: AnalyzedValidation;
 }
 
-class OpenAIService {
-  /**
-   * Enrichit des données OCR brutes en utilisant l'analyse IA via le backend
-   * et retourne un objet conforme à AIEnhancementData (utilisé par OCREnhancer).
-   */
+class ServiceService {
+  
   async enhanceOCRData(originalText: string): Promise<AIEnhancementData | null> {
     try {
       const analyzed = await this.analyzeDocument(originalText, 'invoice');
@@ -37,7 +34,7 @@ class OpenAIService {
       const a = analyzed as Partial<AnalyzedOCR>;
       const total = a.total;
       const vendorName = a.vendorName;
-      // Si l'IA renvoie un seul objet date, on le supporte; sinon on peut prendre la première des dates[]
+      
       const date: AnalyzedDate | undefined = (a as unknown as { date?: AnalyzedDate })?.date || a.dates?.[0];
       const invoiceNumber = a.invoiceNumber;
       const validation = a.validation;
@@ -62,13 +59,13 @@ class OpenAIService {
 
       return aiData;
     } catch {
-      // OpenAI enhanceOCRData error
+      // Service enhanceOCRData error
       return null;
     }
   }
 
   /**
-   * Traitement d'une requête Copilot via OpenAI et retour d'un message texte.
+   * Traitement d'une requête Copilot via Service et retour d'un message texte.
    * Conserve la signature attendue par AICopilot (string simple).
    */
   async processCopilotQuery(message: string, context: unknown): Promise<string> {
@@ -85,7 +82,7 @@ class OpenAIService {
       const response = await apiClient.post<BackendAIResponse>('/ai/generate', payload);
       return response.content ?? "Désolé, je n'ai pas pu générer de réponse.";
     } catch (error) {
-      // OpenAI copilot query error
+      // Service copilot query error
       return 'Désolé, je rencontre une difficulté technique. Pouvez-vous réessayer ?';
     }
   }
@@ -109,7 +106,7 @@ class OpenAIService {
 
       return JSON.parse(response.content);
     } catch (error) {
-      // OpenAI OCR enhancement error
+      // Service OCR enhancement error
       return this.getMockEnhancedData(documentText);
     }
   }
@@ -131,7 +128,7 @@ class OpenAIService {
 
       return JSON.parse(response.content);
     } catch (error) {
-      // OpenAI quote generation error
+      // Service quote generation error
       return this.getMockQuoteData(projectData);
     }
   }
@@ -149,7 +146,7 @@ class OpenAIService {
 
       return { result: response.content || 'Désolé, je n\'ai pas pu traiter votre demande.' };
     } catch (error) {
-      // OpenAI copilot error
+      // Service copilot error
       return { error: 'Désolé, je rencontre une difficulté technique. Pouvez-vous réessayer ?' };
     }
   }
@@ -270,4 +267,4 @@ class OpenAIService {
   }
 }
 
-export const openaiService = new OpenAIService();
+export const ServiceService = new ServiceService();

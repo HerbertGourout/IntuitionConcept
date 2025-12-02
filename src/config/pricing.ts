@@ -15,7 +15,7 @@ export const PLAN_DISPLAY_MESSAGES = {
   },
   enterprise: {
     title: 'Tout Pro +', 
-    features: 'IA Avancée + Analytics + Automations n8n Avancées (LLM payants) + Support Premium'
+    features: 'Système avancé + Analytics + Automations n8n Avancées (LLM payants) + Support Premium'
   }
 };
 
@@ -90,7 +90,7 @@ export const PLAN_FEATURES: PlanFeature[] = [
   },
   {
     id: 'ai_quote_suggestions',
-    name: '🤖 Suggestions Devis IA',
+    name: ' Suggestions Devis IA',
     description: 'Suggestions intelligentes pour optimiser vos devis',
     requiredPermissions: ['ai.suggestions', 'quotes.create'],
     category: 'core'
@@ -143,35 +143,35 @@ export const PLAN_FEATURES: PlanFeature[] = [
   },
   {
     id: 'ocr_intelligent',
-    name: '🤖 Scanner OCR Multi-Documents IA',
+    name: ' Scanner OCR Multi-Documents IA',
     description: 'Extraction automatique factures, bons de livraison, contrats',
     requiredPermissions: ['finances.edit', 'documents.upload'],
     category: 'advanced'
   },
   {
     id: 'ai_arch_plan_reader_lite',
-    name: '🤖 Lecture Plans d’Architecture IA (Lite)',
+    name: ' Lecture Plans d’Architecture IA (Lite)',
     description: 'Extraction des surfaces/pièces depuis plans + pré-remplissage d’un devis brouillon',
     requiredPermissions: ['ai.plan.read', 'documents.upload'],
     category: 'advanced'
   },
   {
     id: 'ai_project_planner',
-    name: '🤖 Générateur Plans Projet IA',
+    name: ' Générateur Plans Projet IA',
     description: 'Génération automatique de plans de projet détaillés par IA',
     requiredPermissions: ['ai.planner', 'projects.create'],
     category: 'advanced'
   },
   {
     id: 'ai_copilot_basic',
-    name: '🤖 Assistant IA Conversationnel',
+    name: ' Assistant Conversationnel',
     description: 'Assistant intelligent pour questions BTP et aide à la décision',
     requiredPermissions: ['ai.copilot'],
     category: 'advanced'
   },
   {
     id: 'ai_anomaly_alerts',
-    name: '🤖 Alertes Anomalies Budget IA',
+    name: ' Alertes Anomalies Budget IA',
     description: 'Détection automatique dépassements et alertes préventives',
     requiredPermissions: ['ai.anomaly', 'reports.view'],
     category: 'advanced'
@@ -261,52 +261,52 @@ export const PLAN_FEATURES: PlanFeature[] = [
     category: 'advanced'
   },
   
-  // === PLAN ENTERPRISE - TOUT PRO + FONCTIONNALITÉS PREMIUM IA ===
+  
   {
     id: 'ai_anomaly_detection_advanced',
-    name: '🤖 IA - Détection Anomalies Avancée',
+    name: ' IA - Détection Anomalies Avancée',
     description: 'Détection prédictive complète : budget, délais, qualité, risques',
     requiredPermissions: ['ai.anomaly.advanced', 'reports.view'],
     category: 'premium'
   },
   {
     id: 'ai_vocal_copilot',
-    name: '🤖 Copilot Vocal IA',
+    name: ' Copilot Vocal IA',
     description: 'Commandes vocales intelligentes sur chantier',
     requiredPermissions: ['ai.vocal'],
     category: 'premium'
   },
   {
     id: 'ai_quote_generator_advanced',
-    name: '🤖 Générateur Devis IA Complet',
+    name: ' Générateur Devis IA Complet',
     description: 'Création automatique devis complexes avec optimisation prix',
     requiredPermissions: ['ai.quotes.advanced', 'quotes.create'],
     category: 'premium'
   },
   {
     id: 'ai_predictive_analytics',
-    name: '🤖 Analytics Prédictifs IA',
+    name: ' Analytics Prédictifs IA',
     description: 'Prédictions avancées coûts, délais, risques projet',
     requiredPermissions: ['ai.analytics', 'reports.advanced'],
     category: 'premium'
   },
   {
     id: 'ai_automated_reporting',
-    name: '🤖 Rapports Automatisés IA',
+    name: ' Rapports Automatisés IA',
     description: 'Génération automatique rapports exécutifs personnalisés',
     requiredPermissions: ['ai.reporting', 'reports.export'],
     category: 'premium'
   },
   {
     id: 'ai_ocr_advanced',
-    name: '🤖 OCR Avancé Multi-Formats IA',
+    name: ' OCR Avancé Multi-Formats IA',
     description: 'Extraction intelligente tous documents : plans, contrats, factures manuscrites',
     requiredPermissions: ['ai.ocr.advanced', 'documents.upload'],
     category: 'premium'
   },
   {
     id: 'ai_arch_plan_reader',
-    name: '🤖 Lecture Plans d’Architecture IA',
+    name: ' Lecture Plans d’Architecture IA',
     description: 'Analyse automatique de plans (surfaces, pièces, métrés) et préparation de devis',
     requiredPermissions: ['ai.ocr.advanced', 'ai.quotes.advanced', 'documents.upload', 'ai.plan.read'],
     category: 'premium'
@@ -385,7 +385,7 @@ export const PLANS: Plan[] = [
   {
     id: 'pro',
     name: '⭐ Pro BTP + IA',
-    description: '🤖 Toute la puissance de l\'IA : Devis auto, OCR, Plans, Anomalies',
+    description: ' Toute la puissance de l\'IA : Devis auto, OCR, Plans, Anomalies',
     color: 'green',
     popular: true, // Le plus populaire maintenant
     features: PLAN_FEATURES.filter(f => 
@@ -404,12 +404,12 @@ export const PLANS: Plan[] = [
       ocrPerPage: 120,
       planReaderPerPlan: 700
     },
-    trialDays: 7 // Essai pour tester l'IA
+    trialDays: 7 
   },
   {
     id: 'enterprise',
-    name: '🚀 Enterprise IA Premium',
-    description: '🤖 IA Avancée : Vocal, Analytics Prédictifs, Rapports Auto + API',
+    name: ' Enterprise IA Premium',
+    description: ' Système avancé : Vocal, Analytics Prédictifs, Rapports Auto + API',
     color: 'purple',
     popular: false,
     features: PLAN_FEATURES,
@@ -460,7 +460,6 @@ export const getPlanIncrementalFeatures = (planId: PlanId): PlanFeature[] => {
   }
 };
 
-// Tarification par devise (prix mensuel) - Stratégie aimant IA
 export const PRICING: Record<Currency, Record<PlanId, number>> = {
   XOF: { starter: 12000, pro: 35000, enterprise: 95000 }, // +33% Starter, +43% Pro, +54% Enterprise
   XAF: { starter: 12000, pro: 35000, enterprise: 95000 },

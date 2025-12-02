@@ -143,7 +143,7 @@ class VocalCopilotService {
     }
   }
 
-  // Analyser la commande vocale avec IA
+  
   private async analyzeIntent(transcript: string): Promise<VoiceCommand> {
     // Patterns de reconnaissance d'intentions
     const intentPatterns = [

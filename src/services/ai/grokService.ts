@@ -287,7 +287,7 @@ Réponds de manière précise et actionnable.`;
    * Calcul du coût basé sur les tokens
    */
   private calculateCost(totalTokens: number): number {
-    // Prix Grok estimé : $0.002 per 1K tokens (plus abordable que GPT-4)
+    // Prix Grok estimé : $0.002 per 1K tokens (plus abordable que Modèle-4)
     return (totalTokens / 1000) * 0.002;
   }
 

@@ -1,5 +1,5 @@
 import { ExtractedData } from '../ocrService';
-import { openaiService } from './openaiService';
+import { ServiceService } from './ServiceService';
 import { aiConfig } from './aiConfig';
 
 export interface EnhancedOCRData extends ExtractedData {
@@ -30,7 +30,7 @@ export interface EnhancedOCRData extends ExtractedData {
 
 export interface OCREnhancementConfig {
   apiKey?: string;
-  model: 'openai' | 'claude' | 'local';
+  model: 'Service' | 'Modèle' | 'local';
   validateAmounts: boolean;
   mapVendors: boolean;
   correctDates: boolean;
@@ -74,9 +74,9 @@ class OCREnhancer {
     }
 
     try {
-      // Utiliser OpenAI si configuré et texte original disponible
-      if (aiConfig.openaiApiKey && originalText && this.config.model === 'openai') {
-        const aiEnhanced = await openaiService.enhanceOCRData(originalText);
+      // Utiliser Service si configuré et texte original disponible
+      if (aiConfig.ServiceApiKey && originalText && this.config.model === 'Service') {
+        const aiEnhanced = await ServiceService.enhanceOCRData(originalText);
         return await this.mergeAIEnhancement(extractedData, aiEnhanced);
       }
       
@@ -137,9 +137,9 @@ class OCREnhancer {
     // 7. Détermination du statut de validation
     enhanced.validationStatus = this.determineValidationStatus(enhanced);
 
-    // 8. Enrichissement IA (si configuré)
-    if (this.config.model !== 'local' && aiConfig.openaiApiKey) {
-      enhanced.suggestions.push('Enrichissement IA OpenAI activé');
+    
+    if (this.config.model !== 'local' && aiConfig.ServiceApiKey) {
+      enhanced.suggestions.push('Enrichissement IA Service activé');
     } else if (this.config.model !== 'local') {
       enhanced.suggestions.push('Enrichissement IA disponible mais clé API manquante');
     }
@@ -307,27 +307,27 @@ class OCREnhancer {
   }
 
   private async performAIEnhancement(originalText: string, currentData: EnhancedOCRData): Promise<Partial<EnhancedOCRData>> {
-    // Placeholder pour l'enrichissement IA
-    // À implémenter avec OpenAI/Claude selon la configuration
     
-    if (this.config.model === 'openai' && this.config.apiKey) {
-      return await this.enhanceWithOpenAI(originalText, currentData);
+    // À implémenter avec Service/Modèle selon la configuration
+    
+    if (this.config.model === 'Service' && this.config.apiKey) {
+      return await this.enhanceWithService(originalText, currentData);
     }
     
     return {};
   }
 
-  private async enhanceWithOpenAI(originalText: string, currentData: EnhancedOCRData): Promise<Partial<EnhancedOCRData>> {
+  private async enhanceWithService(originalText: string, currentData: EnhancedOCRData): Promise<Partial<EnhancedOCRData>> {
     try {
-      const apiKey = aiConfig.openaiApiKey;
+      const apiKey = aiConfig.ServiceApiKey;
       if (!apiKey) {
-        console.warn('🔑 Clé API OpenAI non configurée');
+        console.warn('🔑 Clé API Service non configurée');
         return {
-          suggestions: ['Configuration OpenAI requise pour l\'enrichissement IA']
+          suggestions: ['Configuration Service requise pour l\'enrichissement IA']
         };
       }
 
-      console.log('🤖 Enrichissement OCR avec OpenAI...');
+      console.log(' Enrichissement OCR avec Service...');
 
       const prompt = `
 Analyse ce texte OCR d'une facture BTP et enrichis les données:
@@ -371,14 +371,14 @@ INSTRUCTIONS:
   "confidence": number
 }`;
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('https://api.Service.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'Modèle-4o-mini',
           messages: [
             {
               role: 'system',
@@ -396,18 +396,18 @@ INSTRUCTIONS:
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Erreur API OpenAI:', response.status, errorText);
-        throw new Error(`API OpenAI: ${response.status} - ${errorText}`);
+        console.error('❌ Erreur API Service:', response.status, errorText);
+        throw new Error(`API Service: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
       const enhancedContent = data.choices[0]?.message?.content;
 
       if (!enhancedContent) {
-        throw new Error('Réponse OpenAI vide');
+        throw new Error('Réponse Service vide');
       }
 
-      console.log('📝 Réponse OpenAI reçue:', enhancedContent.substring(0, 200) + '...');
+      console.log('📝 Réponse Service reçue:', enhancedContent.substring(0, 200) + '...');
 
       try {
         // Nettoyer la réponse (enlever markdown si présent)
@@ -418,31 +418,31 @@ INSTRUCTIONS:
 
         const parsedEnhancement = JSON.parse(cleanContent);
         
-        console.log('✅ Enrichissement OpenAI réussi');
+        console.log('✅ Enrichissement Service réussi');
         
         return {
           normalizedData: parsedEnhancement.normalizedData || currentData.normalizedData,
           items: parsedEnhancement.items || [],
           suggestions: [
             ...(parsedEnhancement.suggestions || []),
-            '🤖 Données enrichies par OpenAI GPT-4o-mini'
+            ' Données enrichies par Service Modèle-4o-mini'
           ],
           confidence: Math.max(currentData.confidence, parsedEnhancement.confidence || 85)
         };
       } catch (parseError) {
-        console.error('❌ Erreur parsing JSON OpenAI:', parseError);
+        console.error('❌ Erreur parsing JSON Service:', parseError);
         return {
           suggestions: [
-            '⚠️ Enrichissement OpenAI reçu mais format JSON invalide',
+            '⚠️ Enrichissement Service reçu mais format JSON invalide',
             `Réponse brute: ${enhancedContent.substring(0, 150)}...`
           ]
         };
       }
 
     } catch (error) {
-      console.error('❌ Erreur enrichissement OpenAI:', error);
+      console.error('❌ Erreur enrichissement Service:', error);
       return {
-        suggestions: [`❌ Erreur OpenAI: ${error instanceof Error ? error.message : 'Erreur inconnue'}`]
+        suggestions: [`❌ Erreur Service: ${error instanceof Error ? error.message : 'Erreur inconnue'}`]
       };
     }
   }
@@ -451,37 +451,37 @@ INSTRUCTIONS:
     // Créer les données de base
     const enhanced = await this.createFallbackEnhancedData(extractedData);
     
-    // Fusionner avec les données IA si disponibles
+    
     if (aiData && aiData.validation) {
-      // Utiliser les montants IA si plus fiables
+      
       if (aiData.total && aiData.total.confidence > 80) {
         enhanced.normalizedData.amount = aiData.total.value;
         enhanced.normalizedData.currency = aiData.total.currency || 'XAF';
       }
       
-      // Utiliser le fournisseur IA si plus fiable
+      
       if (aiData.vendorName && aiData.vendorName.confidence > 80) {
         enhanced.normalizedData.vendorName = aiData.vendorName.normalized || aiData.vendorName.value;
       }
       
-      // Utiliser la date IA si plus fiable
+      
       if (aiData.date && aiData.date.confidence > 80) {
         enhanced.normalizedData.date = aiData.date.value;
       }
       
-      // Utiliser le numéro de facture IA si plus fiable
+      
       if (aiData.invoiceNumber && aiData.invoiceNumber.confidence > 80) {
         enhanced.normalizedData.invoiceNumber = aiData.invoiceNumber.value;
       }
       
-      // Ajouter les suggestions IA
+      
       if (aiData.validation.suggestions) {
         enhanced.suggestions.push(...aiData.validation.suggestions);
       }
       
       // Recalculer la confiance
       enhanced.confidence = Math.max(enhanced.confidence, 85);
-      enhanced.suggestions.push('Données enrichies par IA OpenAI');
+      enhanced.suggestions.push('Données enrichies par IA Service');
     }
     
     return enhanced;
@@ -490,12 +490,12 @@ INSTRUCTIONS:
 
 // Configuration par défaut
 export const defaultOCREnhancementConfig: OCREnhancementConfig = {
-  model: aiConfig.openaiApiKey ? 'openai' : 'local',
+  model: aiConfig.ServiceApiKey ? 'Service' : 'local',
   validateAmounts: true,
   mapVendors: true,
   correctDates: true,
   enabled: true,
-  apiKey: aiConfig.openaiApiKey
+  apiKey: aiConfig.ServiceApiKey
 };
 
 // Instance par défaut

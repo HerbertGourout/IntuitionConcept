@@ -459,7 +459,7 @@ const Settings: React.FC = () => {
                     { key: 'taskReminders', label: 'Rappels de tâches', icon: Clock, desc: 'Rappels pour les tâches à venir' },
                     { key: 'projectUpdates', label: 'Mises à jour de projet', icon: RefreshCw, desc: 'Notifications des changements de projet' },
                     { key: 'budgetAlerts', label: 'Alertes budgétaires', icon: DollarSign, desc: 'Alertes de dépassement de budget' },
-                    { key: 'maintenanceAlerts', label: 'Alertes de maintenance', icon: AlertTriangle, desc: 'Notifications de maintenance' }
+                    { key: 'maintenanceAlerts', labelngle, desc: 'Notifications de maintenance' }
                   ] as const).map(item => (
                     <div key={item.key} className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
                       <div className="flex items-center space-x-3">
@@ -918,8 +918,4 @@ const Settings: React.FC = () => {
 };
 
 export default Settings;
-
-
-
-
 

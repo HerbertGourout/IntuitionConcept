@@ -14,7 +14,6 @@ interface QuoteCreatorProps {
     onQuoteCreated?: () => void;
 }
 
-
 const QuoteCreator: React.FC<QuoteCreatorProps> = ({ selectedQuoteId, onClose, onQuoteCreated }) => {
     const [editQuote, setEditQuote] = useState<Quote | null>(null);
     const [isLoading, setIsLoading] = useState(false);

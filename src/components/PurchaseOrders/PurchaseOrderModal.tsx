@@ -643,17 +643,6 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({ isOpen, onClose
                             }`}
                           >
                             <option value="custom">🆕 Saisie libre</option>
-                            <optgroup label="🔧 Équipements">
-                              <option value="eq-1">Pelleteuse CAT 320</option>
-                              <option value="eq-2">Grue mobile 50T</option>
-                              <option value="eq-3">Bétonnière 500L</option>
-                            </optgroup>
-                            <optgroup label="🧱 Matériaux">
-                              <option value="mat-1">Ciment Portland 50kg</option>
-                              <option value="mat-2">Sable fin m³</option>
-                              <option value="mat-3">Gravier 15/25 m³</option>
-                              <option value="mat-4">Fer à béton Ø12</option>
-                            </optgroup>
                           </select>
                           {formErrors[`item-name-${index}`] && (
                             <p className="mt-1 text-sm text-red-600">{formErrors[`item-name-${index}`]}</p>

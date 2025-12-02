@@ -134,7 +134,7 @@ export class ReportGeneratorAdvanced {
 
     // Étape 2: Générer visualisations si demandé
     if (options.include_visualizations) {
-      console.log('🎨 Génération visualisations 4K...');
+      console.log(' Génération visualisations 4K...');
       const visualizations = await this.generateVisualizations(
         data,
         report,

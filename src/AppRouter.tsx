@@ -19,7 +19,6 @@ import VocalCopilotDemo from './pages/ai/VocalCopilotDemo';
 import MaterialsDemo from './pages/ai/MaterialsDemo';
 import PredictionsDemo from './pages/ai/PredictionsDemo';
 
-// Pages IA - Analyse de plans et Rendu 3D
 // Pages d'analyse/rendu 3D sont redirigées vers leurs équivalents /app
 
 // Application principale (existante)
@@ -33,19 +32,19 @@ const AppRouter: React.FC = () => {
           <PurchaseOrderProvider>
             <Router>
           <Routes>
-            {/* Pages publiques */}
+            {/* Page d'accueil */}
             <Route path="/" element={<UltraModernHomePage />} />
-            <Route path="/classic-home" element={<ModernHomePage />} />
+            <Route path="/home" element={<ModernHomePage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/subscription" element={<Subscription />} />
-            <Route path="/auth-test" element={<AuthTestPage />} />
-            {/* Démos publiques IA */}
+            
+            {/* Démos IA */}
             <Route path="/demo/inspector" element={<InspectorDemo />} />
             <Route path="/demo/vocal" element={<VocalCopilotDemo />} />
             <Route path="/demo/materials" element={<MaterialsDemo />} />
             <Route path="/demo/predictions" element={<PredictionsDemo />} />
             
-            {/* Pages IA - redirigées vers l'interface /app pour conserver le shell */}
+            {/* Redirections analyse/rendu */}
             <Route path="/analyse-plan" element={<Navigate to="/app/analyse" replace />} />
             <Route path="/rendu-3d" element={<Navigate to="/app/rendu-3d" replace />} />
             

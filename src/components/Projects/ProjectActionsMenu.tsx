@@ -8,7 +8,6 @@ import ProjectDetailsModal from './ProjectDetailsModal';
 import ProjectTeamModal from './ProjectTeamModal';
 import ProjectHistoryModal from './ProjectHistoryModal';
 
-
 // Type partiel pour les propriétés du projet nécessaires au menu d'actions
 type ProjectForActions = Pick<Project, 'id' | 'name' | 'description' | 'status' | 'budget' | 'spent' | 'startDate' | 'endDate' | 'location' | 'manager' | 'client'> & {
   // Propriétés optionnelles spécifiques utilisées dans les modaux

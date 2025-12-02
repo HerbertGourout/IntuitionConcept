@@ -49,7 +49,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isAppMode = false }) => {
             { label: 'Tableau de Bord', href: '/app/dashboard', icon: <BarChart3 className="w-4 h-4" />, description: 'Vue d\'ensemble de vos projets' },
             { label: 'Projets', href: '/app/projects', icon: <Building2 className="w-4 h-4" />, description: 'Gérez vos projets de construction' },
             { label: 'Tâches', href: '/app/tasks', icon: <FileText className="w-4 h-4" />, description: 'Organisez et suivez les tâches' },
-            { label: 'Planning', href: '/app/planning', icon: <Calendar className="w-4 h-4" />, description: 'Diagrammes de Gantt interactifs' }
+            { labelgrammes de Gantt interactifs' }
           ]
         },
         {

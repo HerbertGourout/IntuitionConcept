@@ -217,12 +217,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     },
     { 
       id: 'tender-response', 
-      label: 'Appels d\'Offres IA', 
+      label', 
       icon: FileText, 
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
       description: 'Réponse automatique aux appels d\'offres',
-      badge: 'IA'
+      badge'
     },
     { 
       id: 'reports', 
@@ -276,7 +276,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     },
     { 
       id: 'ocr-scanner', 
-      label: 'Scanner OCR IA', 
+      label', 
       icon: Scan, 
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
@@ -304,7 +304,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: FileImage,
       color: 'text-indigo-400',
       bgColor: 'bg-indigo-400/10',
-      description: 'Page dédiée: analyse + devis (Claude)'
+      description: 'Page dédiée: analyse + devis (Modèle)'
     },
     { 
       id: 'rendu-3d',

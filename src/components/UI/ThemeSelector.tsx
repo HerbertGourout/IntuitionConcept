@@ -183,7 +183,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                   : 'bg-gray-50 border-gray-200 text-gray-500'
                 }
               `}>
-                💡 Le mode Auto s'adapte à vos préférences système
+                 Le mode Auto s'adapte à vos préférences système
               </div>
             </motion.div>
           </>

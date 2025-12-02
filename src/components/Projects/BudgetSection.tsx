@@ -117,7 +117,6 @@ const BudgetSection: React.FC<BudgetSectionProps> = ({ project }) => {
         </div>
       </div> */}
 
-
       {/* Dépenses réelles */}
 
       <div className="mt-12">

@@ -61,7 +61,7 @@ class BatchOCRService {
     let completed = 0;
     let failed = 0;
 
-    console.log(`🚀 Démarrage batch OCR: ${files.length} fichiers`);
+    console.log(` Démarrage batch OCR: ${files.length} fichiers`);
 
     // Fonction de traitement d'un fichier
     const processFile = async (file: File): Promise<BatchFileResult> => {

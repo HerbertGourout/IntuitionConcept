@@ -1,4 +1,4 @@
-// Business Plan Détaillé - Système Hybride IA pour IntuitionConcept BTP
+
 export const HYBRID_AI_BUSINESS_PLAN = {
   
   // === STRUCTURE TARIFAIRE ACTUELLE ===
@@ -21,19 +21,19 @@ export const HYBRID_AI_BUSINESS_PLAN = {
       monthlyPrice: 76900, // FCFA
       users: 'unlimited',
       projects: 'unlimited',
-      aiFeatures: 8, // Suite complète IA
+      aiFeatures: 8, 
       targetMarket: 'Grandes entreprises, promoteurs'
     }
   },
 
-  // === STRUCTURE DE COÛTS HYBRIDE IA ===
+  
   aiCostStructure: {
     // Coûts par requête (FCFA)
     providers: {
       groq: 3,           // 80% des requêtes
-      claude: 8,         // 10% des requêtes
+      Modèle: 8,         // 10% des requêtes
       googleVision: 12,  // 5% des requêtes
-      openai: 50         // 5% des requêtes (fallback)
+      Service: 50         // 5% des requêtes (fallback)
     },
     
     // Estimation usage mensuel par plan
@@ -42,9 +42,9 @@ export const HYBRID_AI_BUSINESS_PLAN = {
         totalRequests: 200,
         distribution: {
           groq: 160,      // 80%
-          claude: 20,     // 10%
+          Modèle: 20,     // 10%
           vision: 10,     // 5%
-          openai: 10      // 5%
+          Service: 10      // 5%
         },
         totalCost: 200 // FCFA/mois
       },
@@ -52,9 +52,9 @@ export const HYBRID_AI_BUSINESS_PLAN = {
         totalRequests: 1500,
         distribution: {
           groq: 1200,     // 80%
-          claude: 150,    // 10%
+          Modèle: 150,    // 10%
           vision: 75,     // 5%
-          openai: 75      // 5%
+          Service: 75      // 5%
         },
         totalCost: 1500 // FCFA/mois
       },
@@ -62,9 +62,9 @@ export const HYBRID_AI_BUSINESS_PLAN = {
         totalRequests: 5000,
         distribution: {
           groq: 4000,     // 80%
-          claude: 500,    // 10%
+          Modèle: 500,    // 10%
           vision: 250,    // 5%
-          openai: 250     // 5%
+          Service: 250     // 5%
         },
         totalCost: 5000 // FCFA/mois
       }
@@ -158,9 +158,9 @@ export const HYBRID_AI_BUSINESS_PLAN = {
     }
   },
 
-  // === COMPARAISON AVEC OPENAI PUR ===
+  // === COMPARAISON AVEC Service PUR ===
   costComparison: {
-    openaiOnly: {
+    ServiceOnly: {
       year1: {
         aiCosts: 7800000 * 12.5,        // 97,500,000 FCFA (25x plus cher)
         netProfit: 207420000 - 97500000 - 69000000 // 40,920,000 FCFA
@@ -221,7 +221,7 @@ export const HYBRID_AI_BUSINESS_PLAN = {
     
     optimizationOpportunities: [
       'Augmentation prix 10-15% possible (marge IA faible)',
-      'Plans premium avec IA avancée',
+      'Plans premium avec Système avancé',
       'Facturation usage IA pour gros consommateurs',
       'Offres spéciales marché entreprise'
     ],
@@ -272,7 +272,7 @@ export const HYBRID_AI_BUSINESS_PLAN = {
     
     year1: {
       aiOptimization: 5000000,        // Amélioration algorithmes
-      newFeatures: 8000000,           // Fonctionnalités IA avancées
+      newFeatures: 8000000,           
       scaling: 3000000,               // Infrastructure scaling
       total: 16000000 // FCFA
     },
@@ -294,7 +294,7 @@ export const HYBRID_AI_BUSINESS_PLAN = {
     },
     {
       priority: 'Court terme',
-      action: 'Communiquer avantage IA dans marketing',
+      action: 'Communiquer avantag dans marketing',
       impact: 'Différenciation concurrentielle',
       timeline: '1 mois'
     },
@@ -316,7 +316,7 @@ export const HYBRID_AI_BUSINESS_PLAN = {
   executiveSummary: {
     opportunity: 'Révolution coûts IA permet marges exceptionnelles',
     advantage: '87% économies vs concurrence = avantage compétitif majeur',
-    projection: '804M FCFA profit net année 3 vs 391M avec OpenAI',
+    projection: '804M FCFA profit net année 3 vs 391M avec Service',
     recommendation: 'Déploiement immédiat pour capture avantage premier entrant',
     timeline: 'ROI positif dès mois 3, domination marché possible année 2'
   }
@@ -325,7 +325,7 @@ export const HYBRID_AI_BUSINESS_PLAN = {
 // Export des métriques clés pour dashboards
 export const BUSINESS_METRICS_SUMMARY = {
   costSavings3Years: 723120000,    // FCFA
-  additionalProfit3Years: 414000000, // FCFA vs OpenAI
+  additionalProfit3Years: 414000000, // FCFA vs Service
   netMarginYear3: 81,              // %
   paybackPeriod: 2.1,              // mois
   roiYear3: 4500                   // %

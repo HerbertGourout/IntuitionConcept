@@ -297,7 +297,7 @@ class FinancialService {
       }
       const remainingBudget = allocatedBudget - projectedTotal;
       const variance = projectedTotal - estimatedBudget;
-      const variancePercentage = estimatedBudget > 0 ? (variance / estimatedBudget) * 100 : 0;
+      const variancePercentage = estimatedBudget !== 0 ? (variance / estimatedBudget) * 100 : 0;
 
       return {
         projectId,

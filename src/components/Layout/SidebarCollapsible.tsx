@@ -128,7 +128,7 @@ const SidebarCollapsible: React.FC<SidebarProps> = ({
         { id: 'approval-workflows', label: 'Workflows', icon: CheckCircle, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
         { id: 'external-engineers', label: 'Ingénieurs Externes', icon: UserCheck, color: 'text-cyan-500', bgColor: 'bg-cyan-500/10' },
         { id: 'study-costs', label: 'Coûts Études', icon: DollarSign, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
-        { id: 'tender-response', label: 'Appels d\'Offres IA', icon: FileText, color: 'text-blue-500', bgColor: 'bg-blue-500/10', badge: 'IA' },
+        { id: 'tender-response', label: 'Réponse Appels d\'Offres', icon: FileText, color: 'text-blue-500', bgColor: 'bg-blue-500/10', badge: 'IA' },
       ]
     },
     {
@@ -154,11 +154,11 @@ const SidebarCollapsible: React.FC<SidebarProps> = ({
     },
     {
       id: 'ai',
-      title: 'INTELLIGENCE ARTIFICIELLE',
+      title: 'Système automatisé',
       icon: Zap,
       color: 'text-yellow-400',
       items: [
-        { id: 'ocr-scanner', label: 'Scanner OCR IA', icon: Scan, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+        { id: 'ocr-scanner', label: 'Scanner OCR', icon: Scan, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
         { id: 'anomaly-detection', label: 'Détection Anomalies', icon: AlertTriangle, color: 'text-red-500', bgColor: 'bg-red-500/10' },
         { id: 'architectural-plan-analyzer', label: 'Analyseur Plans', icon: FileImage, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
         { id: 'analyse', label: 'Analyse Plan', icon: FileImage, color: 'text-indigo-400', bgColor: 'bg-indigo-400/10' },

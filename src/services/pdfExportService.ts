@@ -339,7 +339,7 @@ export class PDFExportService {
       this.doc.setFontSize(14);
       this.doc.setFont('helvetica', 'bold');
       this.doc.setTextColor(...this.colors.success);
-      this.doc.text('💡 Recommandations', this.margin, this.currentY);
+      this.doc.text(' Recommandations', this.margin, this.currentY);
       this.currentY += 10;
       
       report.recommendations.forEach((rec, index) => {

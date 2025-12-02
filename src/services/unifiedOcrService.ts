@@ -65,7 +65,7 @@ class UnifiedOCRService {
       // Sélection automatique du meilleur provider
       if (provider === 'auto') {
         provider = await this.selectBestProvider(file);
-        console.log(`🤖 Sélection automatique: ${provider}`);
+        console.log(` Sélection automatique: ${provider}`);
       }
 
       // Traiter avec le provider sélectionné

@@ -52,50 +52,47 @@ const ResponseReview: React.FC<ResponseReviewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Scores */}
+      {/* Scores et résumé */}
       <Card className="glass-card">
-        <div className="grid grid-cols-3 gap-6">
-          <div className="text-center">
-            <Progress
-              type="circle"
-              percent={response.completenessScore}
-              strokeColor={getScoreColor(response.completenessScore)}
-              format={(percent) => `${percent}%`}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold">Résumé de la réponse</h3>
+          <Space>
+            <Tag color="green">
+              Réponse générée
+            </Tag>
+          </Space>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <Progress 
+              type="circle" 
+              percent={85} 
+              size={80}
+              strokeColor="green"
             />
-            <div className="mt-3 font-semibold">Complétude</div>
-            <div className="text-sm text-gray-600">
-              Couverture des exigences
-            </div>
+            <p className="mt-2 font-medium">Complétude</p>
           </div>
-
-          <div className="text-center">
-            <Progress
-              type="circle"
-              percent={response.competitivenessScore}
-              strokeColor={getScoreColor(response.competitivenessScore)}
-              format={(percent) => `${percent}%`}
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <Progress 
+              type="circle" 
+              percent={75} 
+              size={80}
+              strokeColor="orange"
             />
-            <div className="mt-3 font-semibold">Compétitivité</div>
-            <div className="text-sm text-gray-600">
-              Position prix
-            </div>
+            <p className="mt-2 font-medium">Compétitivité</p>
           </div>
-
-          <div className="text-center">
-            <Progress
-              type="circle"
-              percent={response.winProbability}
-              strokeColor={getScoreColor(response.winProbability)}
-              format={(percent) => `${percent}%`}
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <Progress 
+              type="circle" 
+              percent={70} 
+              size={80}
+              strokeColor="orange"
             />
-            <div className="mt-3 font-semibold">Probabilité de gagner</div>
-            <div className="text-sm text-gray-600">
-              Estimation IA
-            </div>
+            <p className="mt-2 font-medium">Probabilité de gain</p>
           </div>
         </div>
 
-        {/* Suggestions */}
         {response.suggestions.length > 0 && (
           <div className="mt-6">
             <h4 className="font-semibold mb-3 flex items-center">

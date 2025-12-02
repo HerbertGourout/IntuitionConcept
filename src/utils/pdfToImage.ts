@@ -1,4 +1,4 @@
-// Service de conversion PDF vers image pour l'analyse IA
+
 export interface PDFToImageResult {
   success: boolean;
   imageBase64?: string;
@@ -33,10 +33,7 @@ export class PDFToImageService {
     return PDFToImageService.instance;
   }
 
-  /**
-   * Convertit un PDF en image pour l'analyse IA
-   * Utilise Canvas API côté client (pas de dépendances externes)
-   */
+  
   async convertPDFToImage(base64Data: string): Promise<PDFToImageResult> {
     const originalSizeMB = (base64Data.length * 3/4) / (1024 * 1024);
     

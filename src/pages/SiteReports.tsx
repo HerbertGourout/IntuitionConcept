@@ -1,11 +1,4 @@
-/**
- * Page de Gestion des Rapports de Chantier
- * 
- * Permet de:
- * - Générer des rapports automatiques avec IA
- * - Consulter l'historique des rapports
- * - Exporter et partager les rapports
- */
+
 
 import React, { useState } from 'react';
 import { useProjectContext } from '../contexts/ProjectContext';

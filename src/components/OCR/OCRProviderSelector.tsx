@@ -209,7 +209,7 @@ const OCRProviderSelector: React.FC<OCRProviderSelectorProps> = ({
                         className="w-full px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                       />
                       <p className="text-xs text-blue-700 dark:text-blue-400">
-                        💡 La clé sera sauvegardée localement et de manière sécurisée
+                         La clé sera sauvegardée localement et de manière sécurisée
                       </p>
                     </div>
                   )}
@@ -244,7 +244,7 @@ const OCRProviderSelector: React.FC<OCRProviderSelectorProps> = ({
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4">
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
-              <div className="text-2xl">🤖</div>
+              <div className="text-2xl"></div>
             </div>
             <div className="flex-1">
               <h4 className="font-semibold text-purple-900 dark:text-purple-300 mb-2">

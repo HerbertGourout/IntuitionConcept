@@ -1,15 +1,4 @@
-/**
- * Générateur de Plans de Projet Détaillés avec IA
- * 
- * Fonctionnalités:
- * - Génération automatique de plans de projet complets
- * - Visualisation Gantt interactive
- * - Export PDF professionnel
- * - Intégration avec projectPlanGenerator.ts
- * 
- * @author IntuitionConcept BTP Platform
- * @version 1.0.0
- */
+
 
 import React, { useState } from 'react';
 import {
@@ -47,9 +36,7 @@ const ProjectPlanGenerator: React.FC<ProjectPlanGeneratorProps> = ({
   const [expandedPhases, setExpandedPhases] = useState<Set<number>>(new Set());
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
-  /**
-   * Génère le plan de projet avec IA
-   */
+  
   const handleGeneratePlan = async () => {
     if (!projectPrompt.trim()) {
       setError('Veuillez décrire votre projet');
@@ -77,101 +64,65 @@ const ProjectPlanGenerator: React.FC<ProjectPlanGeneratorProps> = ({
     }
   };
 
-  /**
-   * Toggle phase expansion
-   */
-  const togglePhase = (index: number) => {
-    const newExpanded = new Set(expandedPhases);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedPhases(newExpanded);
+  const togglePhase = (phaseIndex: number) => {
+    setExpandedPhases(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(phaseIndex)) {
+        newSet.delete(phaseIndex);
+      } else {
+        newSet.add(phaseIndex);
+      }
+      return newSet;
+    });
   };
 
-  /**
-   * Toggle task expansion
-   */
   const toggleTask = (taskId: string) => {
-    const newExpanded = new Set(expandedTasks);
-    if (newExpanded.has(taskId)) {
-      newExpanded.delete(taskId);
-    } else {
-      newExpanded.add(taskId);
-    }
-    setExpandedTasks(newExpanded);
+    setExpandedTasks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
   };
 
-  /**
-   * Export plan as PDF
-   */
-  const handleExportPDF = () => {
+  const calculateTotalDuration = () => {
+    if (!generatedPlan) return '0 jours';
+    const totalDays = generatedPlan.phases.reduce((sum, phase) => {
+      // Extraire le nombre de la chaîne "X jours"
+      const days = parseInt(phase.duration) || 0;
+      return sum + days;
+    }, 0);
+    return `${totalDays} jours`;
+  };
+
+  const handleExportPDF = async () => {
     if (!generatedPlan) return;
     
     try {
       const pdfBlob = pdfExportService.exportProjectPlan(generatedPlan, {
-        title: 'Plan de Projet Détaillé',
-        subtitle: projectPrompt.substring(0, 100) + '...',
-        author: 'Chef de projet',
-        footer: 'IntuitionConcept BTP Platform - Plan généré automatiquement'
+        title: 'Plan de Projet Généré',
+        subtitle: `${generatedPlan.phases.length} phases - ${calculateTotalDuration()}`,
+        author: 'IntuitionConcept'
       });
       
-      const filename = `plan_projet_${Date.now()}.pdf`;
-      pdfExportService.downloadPDF(pdfBlob, filename);
-    } catch (error) {
-      console.error('Erreur export PDF:', error);
-      alert('Erreur lors de l\'export PDF');
-    }
-  };
-
-  /**
-   * Calculate total duration
-   */
-  const calculateTotalDuration = () => {
-    if (!generatedPlan) return '0';
-    
-    let totalWeeks = 0;
-    generatedPlan.phases.forEach(phase => {
-      const match = phase.duration.match(/(\d+)/);
-      if (match) {
-        const num = parseInt(match[1]);
-        if (phase.duration.includes('mois')) {
-          totalWeeks += num * 4;
-        } else if (phase.duration.includes('semaine')) {
-          totalWeeks += num;
-        }
-      }
-    });
-    
-    const months = Math.floor(totalWeeks / 4);
-    const weeks = totalWeeks % 4;
-    
-    if (months > 0 && weeks > 0) {
-      return `${months} mois ${weeks} semaines`;
-    } else if (months > 0) {
-      return `${months} mois`;
-    } else {
-      return `${weeks} semaines`;
+      // Télécharger le PDF
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `plan-projet-${Date.now()}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Erreur export PDF:', err);
+      setError('Erreur lors de l\'export PDF');
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* En-tête */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">🏗️ Générateur de Plans de Projet</h1>
-            <p className="text-purple-100">
-              Créez des plans de projet détaillés automatiquement avec l'IA
-            </p>
-          </div>
-          <BarChart3 className="w-16 h-16 opacity-50" />
-        </div>
-      </div>
-
-      {/* Formulaire de génération */}
+    <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <FileText className="w-5 h-5 text-purple-600" />
@@ -191,7 +142,7 @@ const ProjectPlanGenerator: React.FC<ProjectPlanGeneratorProps> = ({
               disabled={isGenerating}
             />
             <p className="text-sm text-gray-500 mt-2">
-              💡 Plus votre description est détaillée, plus le plan sera précis
+               Plus votre description est détaillée, plus le plan sera précis
             </p>
           </div>
 

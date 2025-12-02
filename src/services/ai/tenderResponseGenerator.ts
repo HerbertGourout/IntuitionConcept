@@ -1,4 +1,4 @@
-// Service de génération de réponses aux appels d'offres avec Claude AI
+// Service de génération de réponses aux appels d'offres avec Modèle AI
 
 import {
   Tender,
@@ -23,11 +23,11 @@ class TenderResponseGeneratorService {
   
   // Coûts par token (en FCFA)
   private readonly PRICING = {
-    'claude-haiku': {
+    'Modèle-haiku': {
       input: 0.00025 / 1000,  // 0.25 FCFA / 1M tokens
       output: 0.00125 / 1000  // 1.25 FCFA / 1M tokens
     },
-    'claude-sonnet': {
+    'Modèle-sonnet': {
       input: 0.003 / 1000,    // 3 FCFA / 1M tokens
       output: 0.015 / 1000    // 15 FCFA / 1M tokens
     }
@@ -52,7 +52,7 @@ class TenderResponseGeneratorService {
     const startTime = Date.now();
     
     try {
-      console.log('🤖 Génération de la réponse à l\'appel d\'offres...');
+      console.log(' Génération de la réponse à l\'appel d\'offres...');
       
       // 1. Générer la lettre de motivation
       const coverLetter = await this.generateCoverLetter(tender, companyProfile, config);
@@ -163,7 +163,7 @@ Rédige une lettre de motivation professionnelle et convaincante (300-400 mots) 
 Ton: ${config.tone === 'formal' ? 'Très formel et protocolaire' : 'Professionnel mais accessible'}
 Langue: Français`;
 
-    const response = await this.callClaude(prompt, config.aiModel);
+    const response = await this.callModèle(prompt, config.aiModel);
     return response;
   }
 
@@ -202,7 +202,7 @@ Structure:
 Ton: Professionnel et crédible
 Langue: Français`;
 
-    const response = await this.callClaude(prompt, config.aiModel);
+    const response = await this.callModèle(prompt, config.aiModel);
     return response;
   }
 
@@ -246,7 +246,7 @@ Réponds en JSON avec cette structure:
   ]
 }`;
 
-    const response = await this.callClaude(prompt, config.aiModel);
+    const response = await this.callModèle(prompt, config.aiModel);
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
@@ -546,12 +546,12 @@ Réponds en JSON avec cette structure:
   }
 
   /**
-   * Appelle l'API Claude
+   * Appelle l'API Modèle
    */
-  private async callClaude(prompt: string, model: 'claude-haiku' | 'claude-sonnet'): Promise<string> {
-    const modelName = model === 'claude-haiku' 
-      ? 'claude-3-haiku-20240307'
-      : 'claude-3-sonnet-20240229';
+  private async callModèle(prompt: string, model: 'Modèle-haiku' | 'Modèle-sonnet'): Promise<string> {
+    const modelName = model === 'Modèle-haiku' 
+      ? 'Modèle-3-haiku-20240307'
+      : 'Modèle-3-sonnet-20240229';
 
     // En développement, le proxy Vite gère les headers automatiquement
     const headers: HeadersInit = {
@@ -579,8 +579,8 @@ Réponds en JSON avec cette structure:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Erreur API Claude (ResponseGenerator):', response.status, errorText);
-      throw new Error(`Erreur API Claude: ${response.status} - ${errorText}`);
+      console.error('❌ Erreur API Modèle (ResponseGenerator):', response.status, errorText);
+      throw new Error(`Erreur API Modèle: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -590,7 +590,7 @@ Réponds en JSON avec cette structure:
   /**
    * Estime le coût de génération
    */
-  private estimateCost(model: 'claude-haiku' | 'claude-sonnet', tender: Tender): number {
+  private estimateCost(model: 'Modèle-haiku' | 'Modèle-sonnet', tender: Tender): number {
     // Estimation grossière: ~10k tokens input, ~5k tokens output
     const pricing = this.PRICING[model];
     const inputTokens = 10000;

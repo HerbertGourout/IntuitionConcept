@@ -420,7 +420,7 @@ class SupportService {
 
   // Obtenir les suggestions automatiques basées sur le contenu
   async getSuggestedSolutions(description: string): Promise<KnowledgeBaseArticle[]> {
-    // Simulation d'IA pour suggérer des solutions
+    
     const keywords = description.toLowerCase().split(' ');
     const articles = await this.searchKnowledgeBase('');
     

@@ -38,12 +38,12 @@ export const BTP_SPECIALTIES = {
   'terrassier': '⛏️ Terrassier',
   
   // Second Œuvre
-  'electricien': '⚡ Électricien',
+  'electricien': ' Électricien',
   'plombier': '🔧 Plombier',
   'chauffagiste': '🔥 Chauffagiste',
   'menuisier': '🪚 Menuisier',
   'carreleur': '🔲 Carreleur',
-  'peintre': '🎨 Peintre',
+  'peintre': ' Peintre',
   'platrier': '🏠 Plâtrier',
   'couvreur': '🏠 Couvreur',
   'etancheur': '💧 Étancheur',
@@ -69,7 +69,7 @@ export const BTP_DEPARTMENTS = {
   'bureau_etudes': '📐 Bureau d\'Études',
   'gros_oeuvre': '🏗️ Gros Œuvre',
   'second_oeuvre': '🔧 Second Œuvre',
-  'finitions': '🎨 Finitions',
+  'finitions': ' Finitions',
   'vrd': '🛣️ VRD (Voirie et Réseaux)',
   'qualite_securite': '🛡️ Qualité & Sécurité',
   'logistique': '📦 Logistique',

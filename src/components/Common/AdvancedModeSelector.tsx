@@ -80,7 +80,7 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
               Standard
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              Claude + Replicate
+              Modèle + Replicate
             </div>
           </div>
           {currentMode === 'standard' && (
@@ -161,7 +161,7 @@ export const AdvancedModeSelector: React.FC<AdvancedModeSelectorProps> = ({
           <div>
             <div className="font-semibold text-gray-700 mb-1">Mode Standard</div>
             <ul className="text-gray-600 space-y-1 ml-4 list-disc">
-              <li>Claude Sonnet 3.5 pour analyse</li>
+              <li>Modèle Sonnet 3.5 pour analyse</li>
               <li>Replicate pour rendus 3D</li>
               <li>Qualité éprouvée</li>
               <li>Coût fixe</li>

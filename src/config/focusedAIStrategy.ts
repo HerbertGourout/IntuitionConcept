@@ -1,4 +1,4 @@
-// Stratégie IA focalisée - Optimisation des fonctionnalités existantes
+
 export interface ExistingAIFeature {
   id: string;
   name: string;
@@ -12,10 +12,9 @@ export interface ExistingAIFeature {
   expectedROI: string;
 }
 
-// Focus sur l'optimisation des fonctionnalités IA existantes
 export const EXISTING_AI_OPTIMIZATION_ROADMAP: ExistingAIFeature[] = [
   
-  // === GÉNÉRATEUR DE DEVIS IA ===
+  
   {
     id: 'optimize_quote_generator',
     name: 'Optimisation Générateur Devis IA',
@@ -26,7 +25,7 @@ export const EXISTING_AI_OPTIMIZATION_ROADMAP: ExistingAIFeature[] = [
       'Enrichir la base de données de prix matériaux BTP africains',
       'Ajouter des templates de devis par type de projet',
       'Intégrer l\'historique des devis pour améliorer les suggestions',
-      'Optimiser les prompts OpenAI pour plus de précision',
+      'Optimiser les prompts Service pour plus de précision',
       'Ajouter la génération de métrés détaillés'
     ],
     businessImpact: 'Devis 50% plus précis, réduction 30% temps création',

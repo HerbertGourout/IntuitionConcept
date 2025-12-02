@@ -26,7 +26,7 @@ const SEVERITY_CONFIG = {
     color: 'text-yellow-600', 
     bgColor: 'bg-yellow-50', 
     borderColor: 'border-yellow-200',
-    icon: '⚡'
+    icon: ''
   },
   low: { 
     color: 'text-blue-600', 
@@ -198,37 +198,7 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
 
   return (
     <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-4 border border-gray-200 dark:border-gray-600 shadow-lg backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
-      {/* Header compact */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <div className={`p-2 rounded-lg ${totalAnomalies > 0 ? 'bg-gradient-to-r from-red-500 to-pink-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'}`}>
-            <AlertTriangle className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Anomalies</h3>
-            <p className="text-xs text-gray-600 dark:text-gray-300">
-              IA temps réel
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={loadAnomalies}
-            disabled={isLoading}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-xl transition-all duration-300 hover:scale-110 disabled:opacity-50"
-            title="Actualiser"
-          >
-            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-          {totalAnomalies > 0 && (
-            <div className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full text-sm font-medium">
-              {totalAnomalies} anomalie{totalAnomalies !== 1 ? 's' : ''}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Résumé des anomalies */}
+      {}
       {totalAnomalies > 0 && (
         <div className="grid grid-cols-4 gap-3 mb-6">
           {Object.entries(summary).map(([severity, count]) => {
@@ -274,7 +244,7 @@ export const AnomalyDetectionWidget: React.FC<AnomalyDetectionWidgetProps> = ({
                 <RefreshCw className="w-6 h-6 text-white animate-spin" />
               </div>
               <div>
-                <h4 className="font-semibold text-gray-900 dark:text-white">Analyse IA en cours</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-white">Analyse en cours</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Détection des anomalies financières...</p>
               </div>
             </div>

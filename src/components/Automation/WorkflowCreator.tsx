@@ -105,7 +105,6 @@ export const WorkflowCreator: React.FC<WorkflowCreatorProps> = ({
     setActions(newActions);
   };
 
-
   const renderTriggerConfig = () => {
     switch (trigger.type) {
       case 'webhook':

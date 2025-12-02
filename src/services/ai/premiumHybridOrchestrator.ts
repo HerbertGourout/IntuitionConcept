@@ -1,4 +1,4 @@
-import { ClaudeService } from './claudeService';
+import { ModèleService } from './ModèleService';
 
 // Types pour les requêtes et réponses
 export interface AIUsage {
@@ -38,20 +38,14 @@ export interface PremiumAIResponse {
   nextActions?: string[];
 }
 
-/**
- * Orchestrateur IA Premium - VERSION CLAUDE UNIQUEMENT
- * Analyse des plans architecturaux avec Claude PDF natif seulement
- */
 export class PremiumHybridOrchestrator {
-  private claudeService: ClaudeService;
+  private ModèleService: ModèleService;
 
   constructor() {
-    this.claudeService = new ClaudeService();
+    this.ModèleService = new ModèleService();
   }
 
-  /**
-   * Point d'entrée principal pour toutes les requêtes IA
-   */
+  
   async processRequest(request: PremiumAIRequest): Promise<PremiumAIResponse> {
     const startTime = Date.now();
 
@@ -62,7 +56,7 @@ export class PremiumHybridOrchestrator {
         default:
           return {
             success: false,
-            content: `Type de requête non supporté: ${request.type}. Seule l'analyse de plans est disponible avec Claude.`,
+            content: `Type de requête non supporté: ${request.type}. Seule l'analyse de plans est disponible avec Modèle.`,
             provider: 'none',
             cost: 0,
             processingTime: Date.now() - startTime,
@@ -85,7 +79,7 @@ export class PremiumHybridOrchestrator {
   }
 
   /**
-   * Analyse de plan avec Claude PDF natif UNIQUEMENT
+   * Analyse de plan avec Modèle PDF natif UNIQUEMENT
    */
   private async analyzePlan(request: PremiumAIRequest): Promise<PremiumAIResponse> {
     const startTime = Date.now();
@@ -97,31 +91,31 @@ export class PremiumHybridOrchestrator {
     const file = request.files[0];
     const planType = request.context?.planType as string;
     
-    // CLAUDE UNIQUEMENT - Tous les autres modèles désactivés
-    if (file.mimeType === 'application/pdf' && await this.claudeService.healthCheck()) {
+    // Modèle UNIQUEMENT - Tous les autres modèles désactivés
+    if (file.mimeType === 'application/pdf' && await this.ModèleService.healthCheck()) {
       try {
-        console.log('📄 Analyse PDF native avec Claude (modèle unique)...');
-        const claudeResponse = await this.claudeService.analyzePlanPDF(file.base64, planType);
+        console.log('📄 Analyse PDF native avec Modèle (modèle unique)...');
+        const ModèleResponse = await this.ModèleService.analyzePlanPDF(file.base64, planType);
         
         return {
           success: true,
-          content: claudeResponse.content,
-          provider: 'claude-pdf',
-          cost: claudeResponse.cost,
+          content: ModèleResponse.content,
+          provider: 'Modèle-pdf',
+          cost: ModèleResponse.cost,
           processingTime: Date.now() - startTime,
           confidence: 95,
           metadata: { 
-            model: claudeResponse.model,
-            usage: claudeResponse.usage,
+            model: ModèleResponse.model,
+            usage: ModèleResponse.usage,
             supports_pdf: true
           }
         };
       } catch (error) {
-        console.error('❌ Erreur Claude PDF:', error);
+        console.error('❌ Erreur Modèle PDF:', error);
         return {
           success: false,
-          content: `Analyse Claude échouée: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-          provider: 'claude-pdf',
+          content: `Analyse Modèle échouée: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+          provider: 'Modèle-pdf',
           processingTime: Date.now() - startTime,
           confidence: 0,
           cost: 0,
@@ -130,10 +124,10 @@ export class PremiumHybridOrchestrator {
       }
     }
 
-    // Si pas de PDF ou Claude indisponible
+    // Si pas de PDF ou Modèle indisponible
     return {
       success: false,
-      content: 'Claude PDF natif requis. Vérifiez la configuration de la clé API.',
+      content: 'Modèle PDF natif requis. Vérifiez la configuration de la clé API.',
       provider: 'none',
       processingTime: Date.now() - startTime,
       confidence: 0,
@@ -147,7 +141,7 @@ export class PremiumHybridOrchestrator {
    */
   async getServiceStatus() {
     return {
-      claude: await this.claudeService.healthCheck(),
+      Modèle: await this.ModèleService.healthCheck(),
       others: 'disabled'
     };
   }

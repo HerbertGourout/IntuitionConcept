@@ -2,7 +2,7 @@
  * Types pour l'analyse architecturale et la génération multi-vues 3D
  */
 
-// Résultat de l'analyse Claude d'un plan architectural
+// Résultat de l'analyse Modèle d'un plan architectural
 export interface ArchitecturalAnalysis {
   project: ProjectInfo;
   facades: FacadeInfo[];

@@ -330,9 +330,9 @@ class OCRValidationService {
 
     // Suggestions basées sur confiance
     if (data.confidence < 70) {
-      suggestions.push('💡 Confiance OCR faible : Vérifier attentivement toutes les données');
+      suggestions.push(' Confiance OCR faible : Vérifier attentivement toutes les données');
     } else if (data.confidence < 85) {
-      suggestions.push('💡 Confiance OCR moyenne : Vérifier les montants et dates');
+      suggestions.push(' Confiance OCR moyenne : Vérifier les montants et dates');
     }
 
     // Suggestions basées sur erreurs
@@ -357,7 +357,7 @@ class OCRValidationService {
       }
     }
 
-    // Suggestions IA existantes
+    
     if (data.suggestions && data.suggestions.length > 0) {
       suggestions.push(...data.suggestions);
     }

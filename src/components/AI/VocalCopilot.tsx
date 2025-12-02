@@ -135,19 +135,7 @@ const VocalCopilot: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      {/* Interface principale */}
-      <Card
-        title={
-          <Space>
-            <RobotOutlined />
-            Copilot Vocal IA
-            {isListening && <Badge status="processing" text="En écoute" />}
-          </Space>
-        }
-        style={{ marginBottom: 16 }}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          {/* Contrôles vocaux */}
+      {}
           <div style={{ textAlign: 'center' }}>
             <Space size="large">
               <Button
@@ -168,78 +156,7 @@ const VocalCopilot: React.FC = () => {
             </Space>
           </div>
 
-          {/* Transcript en cours */}
-          {currentTranscript && (
-            <Alert
-              message="Transcription en cours"
-              description={currentTranscript}
-              type="info"
-              showIcon
-              icon={<SoundOutlined />}
-            />
-          )}
-
-          {/* Dernière réponse */}
-          {lastResponse && (
-            <Alert
-              message="Réponse du Copilot"
-              description={lastResponse}
-              type="success"
-              showIcon
-              icon={<MessageOutlined />}
-            />
-          )}
-
-          {/* Commandes de test */}
-          <div>
-            <Title level={5}>Commandes de test :</Title>
-            <Space wrap>
-              <Button 
-                size="small" 
-                onClick={() => handleTestCommand('Créer un devis pour Marie Martin')}
-              >
-                "Créer un devis pour Marie Martin"
-              </Button>
-              <Button 
-                size="small" 
-                onClick={() => handleTestCommand('Prix du carrelage')}
-              >
-                "Prix du carrelage"
-              </Button>
-              <Button 
-                size="small" 
-                onClick={() => handleTestCommand('Nouveau projet Villa ABC')}
-              >
-                "Nouveau projet Villa ABC"
-              </Button>
-              <Button 
-                size="small" 
-                onClick={() => handleTestCommand('Combien j\'ai dépensé')}
-              >
-                "Combien j'ai dépensé"
-              </Button>
-            </Space>
-          </div>
-
-          {/* Guide d'utilisation */}
-          <div style={{ backgroundColor: '#f6ffed', padding: 12, borderRadius: 6, border: '1px solid #b7eb8f' }}>
-            <Title level={5} style={{ margin: 0, marginBottom: 8, color: '#52c41a' }}>
-              💡 Comment utiliser le Copilot Vocal :
-            </Title>
-            <Paragraph style={{ margin: 0, fontSize: '13px' }}>
-              • <strong>"Créer un devis pour [client]"</strong> - Démarre la création d'un devis<br/>
-              • <strong>"Prix du [matériau]"</strong> - Recherche dans la bibliothèque de prix<br/>
-              • <strong>"Nouveau projet [nom]"</strong> - Crée un nouveau projet<br/>
-              • <strong>"Ajouter une tâche [nom]"</strong> - Ajoute une tâche au projet<br/>
-              • <strong>"Quel est mon budget"</strong> - Affiche l'état financier<br/>
-              • <strong>"Générer un plan pour [description]"</strong> - Génère un plan IA<br/>
-              • <strong>"Aide"</strong> - Liste toutes les commandes disponibles
-            </Paragraph>
-          </div>
-        </Space>
-      </Card>
-
-      {/* Historique des commandes */}
+          {}
       <Card
         title={
           <Space>
@@ -268,7 +185,7 @@ const VocalCopilot: React.FC = () => {
                   <Space direction="vertical" size="small">
                     {command.response && (
                       <Text style={{ color: '#52c41a' }}>
-                        🤖 {command.response}
+                         {command.response}
                       </Text>
                     )}
                     <Text type="secondary" style={{ fontSize: '11px' }}>

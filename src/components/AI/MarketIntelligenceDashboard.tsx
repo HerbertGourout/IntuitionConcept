@@ -191,7 +191,7 @@ const MarketIntelligenceDashboard: React.FC = () => {
                         </div>
                         <p className="font-medium mb-1">{alert.message}</p>
                         <p className="text-sm opacity-90 mb-2">{alert.impact}</p>
-                        <p className="text-sm font-medium">💡 {alert.recommendation}</p>
+                        <p className="text-sm font-medium"> {alert.recommendation}</p>
                       </div>
                       <div className="text-xs text-gray-500 ml-4">
                         {new Date(alert.timestamp).toLocaleTimeString('fr-FR')}
@@ -237,7 +237,7 @@ const MarketIntelligenceDashboard: React.FC = () => {
                         material.changePercent > 0 ? 'text-red-600' : 
                         material.changePercent < 0 ? 'text-green-600' : 'text-gray-600'
                       }`}>
-                        {formatPercentage(material.changePercent)}
+                        {formatPercentagl.changePercent)}
                       </span>
                     </div>
                     
@@ -267,7 +267,7 @@ const MarketIntelligenceDashboard: React.FC = () => {
           {marketData.recommendations.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                💡 Recommandations Stratégiques
+                 Recommandations Stratégiques
               </h3>
               
               <div className="space-y-3">

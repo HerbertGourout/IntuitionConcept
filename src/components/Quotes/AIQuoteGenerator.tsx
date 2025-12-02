@@ -34,7 +34,7 @@ export const AIQuoteGenerator: React.FC<AIQuoteGeneratorProps> = ({
     
     setIsGeneratingPlan(true);
     try {
-      // Appel à OpenAI pour générer le plan de projet
+      // Appel à Service pour générer le plan de projet
       const plan = await projectPlanGenerator.generatePlanFromPrompt(projectPrompt);
       setProjectPlan(plan);
       setCurrentStep('plan');
@@ -90,29 +90,7 @@ export const AIQuoteGenerator: React.FC<AIQuoteGeneratorProps> = ({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-white/20 rounded-xl">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">Générateur IA de Devis</h2>
-                <p className="text-purple-100">Créez un devis intelligent en quelques clics</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-xl transition-colors"
-              disabled={isGenerating}
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
+        {}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           {/* Étapes de progression */}
           <div className="flex items-center justify-center mb-6">
@@ -161,7 +139,7 @@ export const AIQuoteGenerator: React.FC<AIQuoteGeneratorProps> = ({
                   Description détaillée du projet de bâtiment *
                 </label>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <h4 className="font-medium text-blue-800 mb-2">💡 Informations à inclure :</h4>
+                  <h4 className="font-medium text-blue-800 mb-2"> Informations à inclure :</h4>
                   <ul className="text-sm text-blue-700 space-y-1">
                     <li>• <strong>Type :</strong> Maison, immeuble, bureau, entrepôt...</li>
                     <li>• <strong>Surface :</strong> Surface totale et par niveau</li>
@@ -224,7 +202,7 @@ export const AIQuoteGenerator: React.FC<AIQuoteGeneratorProps> = ({
                                   🔧 <strong>Outils:</strong> {task.tools?.join(', ') || 'Non spécifié'}
                                 </p>
                                 <p className="text-blue-600">
-                                  🎨 <strong>Activités:</strong> {task.activities?.join(', ') || 'Non spécifié'}
+                                   <strong>Activités:</strong> {task.activities?.join(', ') || 'Non spécifié'}
                                 </p>
                               </div>
                             </div>

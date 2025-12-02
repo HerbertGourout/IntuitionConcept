@@ -1,4 +1,4 @@
-// Configuration d'implémentation du système hybride IA
+
 export const HYBRID_AI_IMPLEMENTATION_PLAN = {
   
   // === RÉPARTITION DES RÔLES PAR API ===
@@ -7,7 +7,7 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
       name: 'Groq API - Provider Principal',
       percentage: '80%',
       cost: '3 FCFA/requête',
-      speed: 'Ultra-rapide (10x OpenAI)',
+      speed: 'Ultra-rapide (10x Service)',
       responsibilities: [
         '🏗️ Génération de devis standards BTP',
         '💬 Assistant conversationnel basique',
@@ -25,8 +25,8 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
       ]
     },
 
-    claude: {
-      name: 'Anthropic Claude - Analyse Complexe',
+    Modèle: {
+      name: 'Anthropic Modèle - Analyse Complexe',
       percentage: '10%',
       cost: '8 FCFA/requête',
       speed: 'Rapide',
@@ -34,7 +34,7 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
         '📋 Analyse contrats BTP complexes',
         '⚖️ Vérification conformité réglementaire',
         '🔍 Audit documents techniques',
-        '🧠 Raisonnement logique avancé',
+        ' Raisonnement logique avancé',
         '⚠️ Analyse de risques projets',
         '📑 Questions techniques spécialisées'
       ],
@@ -69,13 +69,13 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
       ]
     },
 
-    openai: {
-      name: 'OpenAI GPT-4 - Fallback Premium',
+    Service: {
+      name: 'Service Modèle-4 - Fallback Premium',
       percentage: '5%',
       cost: '50 FCFA/requête',
       speed: 'Moyen',
       responsibilities: [
-        '🎯 Décisions business critiques',
+        ' Décisions business critiques',
         '🔧 Intégrations personnalisées complexes',
         '🆘 Cas d\'échec autres providers',
         '👑 Fonctionnalités premium clients',
@@ -117,8 +117,8 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
       ]
     },
     {
-      file: 'claudeService.ts',
-      description: 'Service Claude analyse avancée',
+      file: 'ModèleService.ts',
+      description: 'Service Modèle analyse avancée',
       features: [
         'Analyse contrats complexes',
         'Vérification conformité',
@@ -154,7 +154,7 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
   // === ÉCONOMIES RÉALISÉES ===
   costSavings: {
     current: {
-      provider: 'OpenAI GPT-4 uniquement',
+      provider: 'Service Modèle-4 uniquement',
       costPerRequest: 50, // FCFA
       monthlyEstimate: 750000, // 15k requêtes
       annualCost: 9000000
@@ -162,9 +162,9 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
     hybrid: {
       breakdown: {
         groq80: { requests: 12000, cost: 36000 }, // 80% * 15k * 3 FCFA
-        claude10: { requests: 1500, cost: 12000 }, // 10% * 15k * 8 FCFA
+        Modèle10: { requests: 1500, cost: 12000 }, // 10% * 15k * 8 FCFA
         vision5: { requests: 750, cost: 9000 },    // 5% * 15k * 12 FCFA
-        openai5: { requests: 750, cost: 37500 }    // 5% * 15k * 50 FCFA
+        Service5: { requests: 750, cost: 37500 }    // 5% * 15k * 50 FCFA
       },
       monthlyTotal: 94500, // FCFA
       annualTotal: 1134000, // FCFA
@@ -206,7 +206,7 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
       duration: 'Semaine 3',
       title: 'Providers Spécialisés',
       tasks: [
-        'Intégration Claude Haiku',
+        'Intégration Modèle Haiku',
         'Configuration Google Vision',
         'Tests cas d\'usage complexes',
         'Optimisation finale'
@@ -240,9 +240,9 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
   // === VARIABLES D'ENVIRONNEMENT REQUISES ===
   requiredEnvVars: [
     'GROQ_API_KEY=your_groq_api_key_here',
-    'ANTHROPIC_API_KEY=your_claude_api_key_here', 
+    'ANTHROPIC_API_KEY=your_Modèle_api_key_here', 
     'GOOGLE_VISION_API_KEY=your_google_vision_key_here',
-    'OPENAI_API_KEY=existing_openai_key' // Garde comme fallback
+    'Service_API_KEY=existing_Service_key' // Garde comme fallback
   ],
 
   // === CONFIGURATION RECOMMANDÉE ===
@@ -252,8 +252,8 @@ export const HYBRID_AI_IMPLEMENTATION_PLAN = {
       temperature: 0.3, // Précision pour devis
       maxTokens: 2000
     },
-    claude: {
-      model: 'claude-3-haiku-20240307', // Coût optimisé
+    Modèle: {
+      model: 'Modèle-3-haiku-20240307', // Coût optimisé
       temperature: 0.2, // Précision analyse
       maxTokens: 3000
     },

@@ -1,4 +1,4 @@
-// Stratégie Multi-Provider IA : Hybride vs Remplacement Complet
+
 export interface AIProviderStrategy {
   approach: 'hybrid' | 'complete_replacement' | 'gradual_migration';
   description: string;
@@ -26,14 +26,14 @@ export const AI_PROVIDER_STRATEGIES: Record<string, AIProviderStrategy> = {
   // === APPROCHE HYBRIDE (RECOMMANDÉE) ===
   hybrid_smart_routing: {
     approach: 'hybrid',
-    description: 'Garder OpenAI pour les cas critiques, utiliser alternatives pour 80% des cas',
+    description: 'Garder Service pour les cas critiques, utiliser alternatives pour 80% des cas',
     providers: {
       primary: 'groq_api', // 80% des cas
-      fallback: ['openai_gpt35', 'anthropic_claude'],
+      fallback: ['Service_Modèle35', 'anthropic_Modèle'],
       specialized: {
         'simple_quotes': 'groq_api',
-        'complex_analysis': 'anthropic_claude_haiku', 
-        'critical_documents': 'openai_gpt4',
+        'complex_analysis': 'anthropic_Modèle_haiku', 
+        'critical_documents': 'Service_Modèle4',
         'ocr_tasks': 'google_vision_api',
         'classification': 'huggingface_inference'
       }
@@ -50,7 +50,7 @@ export const AI_PROVIDER_STRATEGIES: Record<string, AIProviderStrategy> = {
     },
     pros: [
       'Réduction coûts massive immédiate',
-      'Garde OpenAI pour cas critiques',
+      'Garde Service pour cas critiques',
       'Risque minimal (fallback garanti)',
       'Performance optimisée par cas d\'usage',
       'Flexibilité maximale',
@@ -66,13 +66,13 @@ export const AI_PROVIDER_STRATEGIES: Record<string, AIProviderStrategy> = {
   // === REMPLACEMENT COMPLET ===
   complete_replacement: {
     approach: 'complete_replacement',
-    description: 'Remplacer entièrement OpenAI par Groq + alternatives spécialisées',
+    description: 'Remplacer entièrement Service par Groq + alternatives spécialisées',
     providers: {
       primary: 'groq_api',
-      fallback: ['anthropic_claude_haiku', 'together_ai'],
+      fallback: ['anthropic_Modèle_haiku', 'together_ai'],
       specialized: {
         'text_generation': 'groq_api',
-        'document_analysis': 'anthropic_claude_haiku',
+        'document_analysis': 'anthropic_Modèle_haiku',
         'ocr_tasks': 'google_vision_api',
         'classification': 'cohere_api'
       }
@@ -90,12 +90,12 @@ export const AI_PROVIDER_STRATEGIES: Record<string, AIProviderStrategy> = {
     pros: [
       'Économies maximales (-90%+)',
       'Simplicité technique',
-      'Pas de dépendance OpenAI',
+      'Pas de dépendance Service',
       'Implémentation rapide',
       'Coûts prévisibles'
     ],
     cons: [
-      'Perte accès GPT-4 pour cas complexes',
+      'Perte accès Modèle-4 pour cas complexes',
       'Risque qualité sur certains cas d\'usage',
       'Pas de fallback premium',
       'Dépendance à nouveaux providers'
@@ -107,12 +107,12 @@ export const AI_PROVIDER_STRATEGIES: Record<string, AIProviderStrategy> = {
     approach: 'gradual_migration',
     description: 'Migration progressive par module, test et validation étape par étape',
     providers: {
-      primary: 'openai_gpt35', // Initialement
+      primary: 'Service_Modèle35', // Initialement
       fallback: ['groq_api'],
       specialized: {
         'phase1_quotes': 'groq_api',
         'phase2_ocr': 'google_vision_api',
-        'phase3_analysis': 'anthropic_claude_haiku',
+        'phase3_analysis': 'anthropic_Modèle_haiku',
         'phase4_remaining': 'groq_api'
       }
     },
@@ -145,7 +145,7 @@ export const RECOMMENDED_STRATEGY = {
   choice: 'hybrid_smart_routing',
   reasoning: [
     'Maximise les économies (-75% immédiat)',
-    'Garde OpenAI comme filet de sécurité',
+    'Garde Service comme filet de sécurité',
     'Optimise performance par cas d\'usage',
     'Permet évolution future',
     'Risque minimal pour un SaaS'
@@ -164,13 +164,13 @@ export const RECOMMENDED_STRATEGY = {
     },
     week3: {
       action: 'Ajouter providers spécialisés',
-      code: 'Intégrer Google Vision + Claude Haiku',
+      code: 'Intégrer Google Vision + Modèle Haiku',
       impact: 'Couverture complète tous cas d\'usage'
     }
   },
 
   cost_breakdown: {
-    current_openai: {
+    current_Service: {
       monthly: 750000, // FCFA pour 15k requêtes
       per_request: 50
     },
@@ -179,7 +179,7 @@ export const RECOMMENDED_STRATEGY = {
       per_request_avg: 12.5,
       breakdown: {
         groq_80_percent: 36000, // 12k requêtes * 3 FCFA
-        openai_20_percent: 150000, // 3k requêtes * 50 FCFA
+        Service_20_percent: 150000, // 3k requêtes * 50 FCFA
         total: 186000
       }
     },
@@ -203,9 +203,9 @@ export const HYBRID_IMPLEMENTATION_CONFIG = {
       expected_volume: '80%'
     },
     
-    // Cas complexes → OpenAI (qualité maximale)
+    // Cas complexes → Service (qualité maximale)
     complex_cases: {
-      provider: 'openai_gpt4',
+      provider: 'Service_Modèle4',
       conditions: [
         'complex_document_analysis',
         'critical_business_decisions',
@@ -232,8 +232,8 @@ export const HYBRID_IMPLEMENTATION_CONFIG = {
   },
 
   fallback_strategy: {
-    primary_failure: 'openai_gpt35',
-    secondary_failure: 'anthropic_claude_haiku',
+    primary_failure: 'Service_Modèle35',
+    secondary_failure: 'anthropic_Modèle_haiku',
     emergency: 'cached_responses'
   },
 
@@ -245,12 +245,12 @@ export const HYBRID_IMPLEMENTATION_CONFIG = {
 };
 
 // Réponse à votre question
-export const OPENAI_REPLACEMENT_ANSWER = {
+export const Service_REPLACEMENT_ANSWER = {
   short_answer: 'Non, approche hybride recommandée',
   
   detailed_explanation: {
     why_not_complete_replacement: [
-      'OpenAI GPT-4 reste supérieur pour cas complexes',
+      'Service Modèle-4 reste supérieur pour cas complexes',
       'Risque qualité sur fonctionnalités critiques',
       'Clients premium attendent excellence',
       'Fallback de sécurité nécessaire'
@@ -263,7 +263,7 @@ export const OPENAI_REPLACEMENT_ANSWER = {
       'Risque minimal pour SaaS'
     ],
     
-    openai_usage_reduced_to: [
+    Service_usage_reduced_to: [
       '15% des requêtes (cas complexes)',
       'Fonctionnalités critiques uniquement',
       'Fallback de sécurité',
@@ -274,7 +274,7 @@ export const OPENAI_REPLACEMENT_ANSWER = {
   business_impact: {
     cost_reduction: '75% immédiat, 85% à terme',
     quality_maintained: 'Oui, via routage intelligent',
-    risk_level: 'Faible (fallback OpenAI)',
+    risk_level: 'Faible (fallback Service)',
     customer_impact: 'Transparent (même qualité perçue)'
   }
 };

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { CostItem } from '../../contexts/projectTypes';
 
-
 interface CostManagementProps {
   costItems: CostItem[];
   onCostItemsChange: (items: CostItem[]) => void;

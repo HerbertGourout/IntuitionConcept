@@ -176,7 +176,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       
       // Mettre à jour l'ID du projet actuel pour pointer vers le nouveau projet
       if ('id' in project && currentProjectId === project.id) {
-        console.log('🎯 [ProjectContext] Mise à jour currentProjectId:', project.id, '->', docRef.id);
+        console.log(' [ProjectContext] Mise à jour currentProjectId:', project.id, '->', docRef.id);
         setCurrentProjectId(docRef.id);
       }
       
@@ -238,7 +238,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       
       // Réinitialiser le projet actuel si c'est celui supprimé
       if (currentProjectId === id) {
-        console.log('🎯 [ProjectContext] Réinitialisation currentProjectId');
+        console.log(' [ProjectContext] Réinitialisation currentProjectId');
         setCurrentProjectId(null);
       }
       
@@ -323,7 +323,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       
       if (!projectSnap.exists()) {
         console.error('❌ [addPhase] Le projet n\'existe pas dans Firestore:', projectId);
-        console.log('💡 [addPhase] Ce projet a probablement un ID temporaire qui n\'a jamais été synchronisé.');
+        console.log(' [addPhase] Ce projet a probablement un ID temporaire qui n\'a jamais été synchronisé.');
         console.log('🔍 [addPhase] Projets dans l\'état local:', projects.map(p => ({ id: p.id, name: p.name })));
         
         // Chercher le projet dans l'état local
@@ -701,9 +701,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     : 0;
 
   // Debug logs pour vérifier les changements de projet
-  console.log('🎯 ProjectContext - currentProjectId:', currentProjectId);
-  console.log('🎯 ProjectContext - currentProject:', currentProject?.name || 'Aucun');
-  console.log('🎯 ProjectContext - Nombre de projets:', projects.length);
+  console.log(' ProjectContext - currentProjectId:', currentProjectId);
+  console.log(' ProjectContext - currentProject:', currentProject?.name || 'Aucun');
+  console.log(' ProjectContext - Nombre de projets:', projects.length);
 
   return (
     <ProjectContext.Provider

@@ -124,7 +124,7 @@ const SupportCenter: React.FC = () => {
     const icons: Record<SupportTicket['category'], string> = {
       technical: '🔧',
       billing: '💰',
-      feature_request: '💡',
+      feature_request: '',
       bug_report: '🐛',
       general: '❓',
       training: '📚'
@@ -437,7 +437,7 @@ const SupportCenter: React.FC = () => {
             <Select placeholder="Sélectionnez une catégorie">
               <Option value="technical">🔧 Problème Technique</Option>
               <Option value="billing">💰 Facturation</Option>
-              <Option value="feature_request">💡 Demande de Fonctionnalité</Option>
+              <Option value="feature_request"> Demande de Fonctionnalité</Option>
               <Option value="bug_report">🐛 Signaler un Bug</Option>
               <Option value="training">📚 Formation/Aide</Option>
               <Option value="general">❓ Question Générale</Option>

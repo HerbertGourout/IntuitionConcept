@@ -1,6 +1,5 @@
 // Service Google Document AI - OCR Premium pour documents BTP
 
-
 // Types pour les réponses Google Document AI
 interface DocumentAIEntity {
   type: string;

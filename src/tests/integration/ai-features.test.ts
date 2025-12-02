@@ -1,11 +1,4 @@
-/**
- * Tests d'Intégration : Fonctionnalités IA
- * 
- * Tests end-to-end pour toutes les fonctionnalités IA
- * 
- * @author IntuitionConcept BTP Platform
- * @version 1.0.0
- */
+
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { projectPlanGenerator } from '../../services/ai/projectPlanGenerator';

@@ -46,8 +46,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import './index.css';
 
-
-
 const AppContent: React.FC = () => {
   // Router hooks (doivent être à l'intérieur d'un composant React)
   const location = useLocation();
@@ -129,7 +127,7 @@ const AppContent: React.FC = () => {
     loadCopilotData();
   }, [currentProject]);
 
-  // Contexte pour le copilote IA basé sur le projet actuel
+  
   const copilotContext = React.useMemo(() => ({
     currentProject: currentProject || null,
     projects: projects,
@@ -150,11 +148,8 @@ const AppContent: React.FC = () => {
 
   // Configuration des commandes rapides (à activer ultérieurement)
 
-
-
   // Configuration des raccourcis clavier globaux
   // Removed useKeyboardShortcuts hook as it's not defined
-
 
   const handleNavigate = (section: string, id?: string) => {
     // Éviter la navigation si on est déjà sur la section
@@ -177,7 +172,7 @@ const AppContent: React.FC = () => {
   const handleCreateProject = async (
     projectData: Omit<Project, 'id' | 'phases' | 'spent'> & { createdAt: string; updatedAt: string }
   ) => {
-    console.log('🚀 Création du projet:', projectData);
+    console.log(' Création du projet:', projectData);
     
     const newProject: Project = {
       ...projectData,
@@ -196,7 +191,7 @@ const AppContent: React.FC = () => {
     
     // Sélectionner automatiquement le nouveau projet créé
     setCurrentProject(newProjectId);
-    console.log('🎯 Projet sélectionné:', newProjectId);
+    console.log(' Projet sélectionné:', newProjectId);
     
     success('Projet créé', 'Le nouveau projet a été créé avec succès');
     setIsCreateProjectOpen(false);
@@ -356,45 +351,7 @@ const AppContent: React.FC = () => {
         >
           <div className="app">
 
-          {/* Session Monitor */}
-          <SessionMonitor 
-            warningThreshold={5 * 60 * 1000} // 5 minutes avant expiration
-            autoRefresh={true}
-          />
-
-          {/* AI Copilot Widget - Assistant flottant global */}
-          <AICopilotWidget 
-            context={copilotContext}
-            onActionRequested={(action) => {
-              console.log('Action demandée par le copilote:', action);
-              // Gérer les actions du copilote (navigation, création, etc.)
-              if (action.type === 'navigate') {
-                setActiveSection((action.params?.section as string) || 'dashboard');
-              } else if (action.type === 'create_project') {
-                setIsCreateProjectOpen(true);
-              }
-            }}
-          />
-
-          {/* Bouton d'alerte anomalies */}
-          <div className="fixed top-4 right-4 z-50">
-            <AnomalyAlertButton />
-          </div>
-
-          {/* VocalCopilot - Bouton flottant et modal */}
-          <div className="fixed bottom-20 right-4 z-50">
-            <button
-              onClick={() => setShowVocalCopilot(!showVocalCopilot)}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              title="Assistant Vocal IA"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-            </button>
-          </div>
-
-          {/* VocalCopilot Modal */}
+          {}
           {showVocalCopilot && (
             <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">

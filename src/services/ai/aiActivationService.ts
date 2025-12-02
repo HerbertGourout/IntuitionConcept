@@ -1,12 +1,9 @@
-/**
- * Service d'activation des fonctionnalités IA
- * Active automatiquement les services IA quand une clé API est détectée
- */
+
 
 import { aiConfig } from './aiConfig';
 import { ocrEnhancer } from './ocrEnhancer';
 import { quoteGenerator } from './quoteGenerator';
-import { openaiService } from './openaiService';
+import { ServiceService } from './ServiceService';
 
 export interface AIServiceStatus {
   ocrEnhancement: {
@@ -40,9 +37,7 @@ class AIActivationService {
     return AIActivationService.instance;
   }
 
-  /**
-   * Vérifie et active automatiquement les services IA
-   */
+  
   async activateAIServices(): Promise<AIServiceStatus> {
     console.log('🔍 Vérification des services IA...');
     
@@ -63,27 +58,27 @@ class AIActivationService {
         message: 'Service non activé'
       },
       apiKey: {
-        configured: !!aiConfig.openaiApiKey,
+        configured: !!aiConfig.ServiceApiKey,
         provider: aiConfig.provider
       }
     };
 
     // Vérifier la clé API
-    if (!aiConfig.openaiApiKey) {
-      console.warn('⚠️ Aucune clé API OpenAI configurée');
-      status.ocrEnhancement.message = 'Clé API OpenAI requise';
-      status.quoteGeneration.message = 'Clé API OpenAI requise';
-      status.copilotAssistant.message = 'Clé API OpenAI requise';
+    if (!aiConfig.ServiceApiKey) {
+      console.warn('⚠️ Aucune clé API Service configurée');
+      status.ocrEnhancement.message = 'Clé API Service requise';
+      status.quoteGeneration.message = 'Clé API Service requise';
+      status.copilotAssistant.message = 'Clé API Service requise';
       return status;
     }
 
-    console.log('✅ Clé API OpenAI détectée, activation des services...');
+    console.log('✅ Clé API Service détectée, activation des services...');
 
     // 1. Activer OCR Enhancement
     try {
       status.ocrEnhancement.enabled = true;
       status.ocrEnhancement.status = 'active';
-      status.ocrEnhancement.message = '🤖 OCR IA activé avec GPT-4 Vision';
+      status.ocrEnhancement.message = ' OCR IA activé avec Modèle-4 Vision';
       console.log('✅ OCR Enhancement activé');
     } catch (error) {
       status.ocrEnhancement.status = 'error';
@@ -95,7 +90,7 @@ class AIActivationService {
     try {
       status.quoteGeneration.enabled = true;
       status.quoteGeneration.status = 'active';
-      status.quoteGeneration.message = '🤖 Génération devis IA activée avec GPT-3.5';
+      status.quoteGeneration.message = ' Génération devis IA activée avec Modèle-3.5';
       console.log('✅ Quote Generation activé');
     } catch (error) {
       status.quoteGeneration.status = 'error';
@@ -107,7 +102,7 @@ class AIActivationService {
     try {
       status.copilotAssistant.enabled = true;
       status.copilotAssistant.status = 'active';
-      status.copilotAssistant.message = '🤖 Assistant IA activé avec GPT-3.5';
+      status.copilotAssistant.message = ' Assistant activé avec Modèle-3.5';
       console.log('✅ Copilot Assistant activé');
     } catch (error) {
       status.copilotAssistant.status = 'error';
@@ -115,106 +110,47 @@ class AIActivationService {
       console.error('❌ Erreur activation Copilot:', error);
     }
 
-    // 4. Test de connectivité OpenAI
-    await this.testOpenAIConnectivity(status);
+    // 4. Test de connectivité Service
+    await this.testServiceConnectivity(status);
 
     return status;
   }
 
-  /**
-   * Test de connectivité avec OpenAI
-   */
-  private async testOpenAIConnectivity(status: AIServiceStatus): Promise<void> {
-    try {
-      console.log('🔗 Test de connectivité OpenAI...');
-      
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${aiConfig.openaiApiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        console.log('✅ Connectivité OpenAI confirmée');
-        // Mettre à jour les statuts pour confirmer la connectivité
-        if (status.ocrEnhancement.status === 'active') {
-          status.ocrEnhancement.message += ' - Connectivité confirmée';
-        }
-        if (status.quoteGeneration.status === 'active') {
-          status.quoteGeneration.message += ' - Connectivité confirmée';
-        }
-        if (status.copilotAssistant.status === 'active') {
-          status.copilotAssistant.message += ' - Connectivité confirmée';
-        }
-      } else {
-        console.warn('⚠️ Problème de connectivité OpenAI:', response.status);
-        const errorSuffix = ' - Problème de connectivité API';
-        if (status.ocrEnhancement.status === 'active') {
-          status.ocrEnhancement.message += errorSuffix;
-        }
-        if (status.quoteGeneration.status === 'active') {
-          status.quoteGeneration.message += errorSuffix;
-        }
-        if (status.copilotAssistant.status === 'active') {
-          status.copilotAssistant.message += errorSuffix;
-        }
-      }
-    } catch (error) {
-      console.error('❌ Erreur test connectivité:', error);
-      const errorSuffix = ' - Test de connectivité échoué';
-      if (status.ocrEnhancement.status === 'active') {
-        status.ocrEnhancement.message += errorSuffix;
-      }
-      if (status.quoteGeneration.status === 'active') {
-        status.quoteGeneration.message += errorSuffix;
-      }
-      if (status.copilotAssistant.status === 'active') {
-        status.copilotAssistant.message += errorSuffix;
-      }
-    }
-  }
-
-  /**
-   * Obtient le statut actuel des services IA
-   */
+  
   getAIServicesStatus(): AIServiceStatus {
     return {
       ocrEnhancement: {
-        enabled: aiConfig.ocr.enhancementEnabled && !!aiConfig.openaiApiKey,
-        status: aiConfig.ocr.enhancementEnabled && !!aiConfig.openaiApiKey ? 'active' : 'inactive',
-        message: aiConfig.ocr.enhancementEnabled && !!aiConfig.openaiApiKey 
-          ? '🤖 OCR IA activé' 
+        enabled: aiConfig.ocr.enhancementEnabled && !!aiConfig.ServiceApiKey,
+        status: aiConfig.ocr.enhancementEnabled && !!aiConfig.ServiceApiKey ? 'active' : 'inactive',
+        message: aiConfig.ocr.enhancementEnabled && !!aiConfig.ServiceApiKey 
+          ? ' OCR IA activé' 
           : 'OCR IA inactif'
       },
       quoteGeneration: {
-        enabled: aiConfig.quoteGeneration.enabled && !!aiConfig.openaiApiKey,
-        status: aiConfig.quoteGeneration.enabled && !!aiConfig.openaiApiKey ? 'active' : 'inactive',
-        message: aiConfig.quoteGeneration.enabled && !!aiConfig.openaiApiKey 
-          ? '🤖 Génération devis IA activée' 
+        enabled: aiConfig.quoteGeneration.enabled && !!aiConfig.ServiceApiKey,
+        status: aiConfig.quoteGeneration.enabled && !!aiConfig.ServiceApiKey ? 'active' : 'inactive',
+        message: aiConfig.quoteGeneration.enabled && !!aiConfig.ServiceApiKey 
+          ? ' Génération devis IA activée' 
           : 'Génération devis IA inactive'
       },
       copilotAssistant: {
-        enabled: aiConfig.copilot.enabled && !!aiConfig.openaiApiKey,
-        status: aiConfig.copilot.enabled && !!aiConfig.openaiApiKey ? 'active' : 'inactive',
-        message: aiConfig.copilot.enabled && !!aiConfig.openaiApiKey 
-          ? '🤖 Assistant IA activé' 
-          : 'Assistant IA inactif'
+        enabled: aiConfig.copilot.enabled && !!aiConfig.ServiceApiKey,
+        status: aiConfig.copilot.enabled && !!aiConfig.ServiceApiKey ? 'active' : 'inactive',
+        message: aiConfig.copilot.enabled && !!aiConfig.ServiceApiKey 
+          ? ' Assistant activé' 
+          : 'Assistant inactif'
       },
       apiKey: {
-        configured: !!aiConfig.openaiApiKey,
+        configured: !!aiConfig.ServiceApiKey,
         provider: aiConfig.provider
       }
     };
   }
 
-  /**
-   * Test rapide d'un service IA spécifique
-   */
+  
   async testAIService(serviceName: 'ocr' | 'quote' | 'copilot'): Promise<{ success: boolean; message: string }> {
-    if (!aiConfig.openaiApiKey) {
-      return { success: false, message: 'Clé API OpenAI non configurée' };
+    if (!aiConfig.ServiceApiKey) {
+      return { success: false, message: 'Clé API Service non configurée' };
     }
 
     try {
@@ -252,13 +188,13 @@ class AIActivationService {
 
         case 'copilot': {
           // Test assistant simple
-          await openaiService.processDocumentWithAI(
-            'Test message pour l\'assistant IA',
+          await ServiceService.processDocumentWithAI(
+            'Test message pour l\'Assistant',
             { type: 'test' }
           );
           return { 
             success: true, 
-            message: 'Assistant IA testé avec succès' 
+            message: 'Assistant testé avec succès' 
           };
         }
 

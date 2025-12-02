@@ -1,4 +1,4 @@
-// Composant de génération de réponse avec IA
+
 
 import React, { useState } from 'react';
 import { Card, Button, Space, Switch, Select, Alert, Spin, Progress, Radio, Tag } from 'antd';
@@ -26,7 +26,7 @@ const ResponseGeneration: React.FC<ResponseGenerationProps> = ({
   const [progress, setProgress] = useState(0);
   const [config, setConfig] = useState<ResponseGenerationConfig>({
     useAI: true,
-    aiModel: 'claude-haiku',
+    aiModel: 'Modèle-haiku',
     tone: 'professional',
     language: 'fr',
     includeInnovations: true,
@@ -89,7 +89,7 @@ const ResponseGeneration: React.FC<ResponseGenerationProps> = ({
         }
       }, 1000);
 
-      console.log('🤖 Génération de la réponse avec IA...');
+      console.log(' Génération de la réponse avec IA...');
       
       const result = await tenderResponseGenerator.generateResponse(
         tender,
@@ -115,204 +115,12 @@ const ResponseGeneration: React.FC<ResponseGenerationProps> = ({
     }
   };
 
-  const estimatedCost = config.aiModel === 'claude-haiku' ? 50 : 200;
-  const estimatedTime = config.aiModel === 'claude-haiku' ? '2-3 min' : '3-5 min';
+  const estimatedCost = config.aiModel === 'Modèle-haiku' ? 50 : 200;
+  const estimatedTime = config.aiModel === 'Modèle-haiku' ? '2-3 min' : '3-5 min';
 
   return (
     <div className="space-y-6">
-      {/* Configuration */}
-      <Card 
-        className="glass-card"
-        title={
-          <Space>
-            <RobotOutlined />
-            <span>Configuration de la Génération IA</span>
-          </Space>
-        }
-      >
-        <div className="space-y-6">
-          {/* Modèle IA */}
-          <div>
-            <label className="block font-semibold mb-3">Modèle d'IA</label>
-            <Radio.Group 
-              value={config.aiModel}
-              onChange={(e) => setConfig({ ...config, aiModel: e.target.value })}
-              className="w-full"
-            >
-              <Space direction="vertical" className="w-full">
-                <Card 
-                  className={`cursor-pointer ${config.aiModel === 'claude-haiku' ? 'border-blue-500 border-2' : ''}`}
-                  onClick={() => setConfig({ ...config, aiModel: 'claude-haiku' })}
-                >
-                  <Radio value="claude-haiku">
-                    <div className="ml-2">
-                      <div className="flex items-center justify-between">
-                        <strong>Claude Haiku (Recommandé)</strong>
-                        <Space>
-                          <Tag color="green">~50 FCFA</Tag>
-                          <Tag color="blue">Rapide</Tag>
-                        </Space>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Génération rapide et économique. Idéal pour la plupart des appels d'offres.
-                      </p>
-                    </div>
-                  </Radio>
-                </Card>
-
-                <Card 
-                  className={`cursor-pointer ${config.aiModel === 'claude-sonnet' ? 'border-blue-500 border-2' : ''}`}
-                  onClick={() => setConfig({ ...config, aiModel: 'claude-sonnet' })}
-                >
-                  <Radio value="claude-sonnet">
-                    <div className="ml-2">
-                      <div className="flex items-center justify-between">
-                        <strong>Claude Sonnet (Premium)</strong>
-                        <Space>
-                          <Tag color="orange">~200 FCFA</Tag>
-                          <Tag color="purple">Qualité maximale</Tag>
-                        </Space>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Analyse approfondie et rédaction de très haute qualité. Pour les appels d'offres complexes.
-                      </p>
-                    </div>
-                  </Radio>
-                </Card>
-              </Space>
-            </Radio.Group>
-          </div>
-
-          {/* Options */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold mb-2">Ton</label>
-              <Select
-                value={config.tone}
-                onChange={(value) => setConfig({ ...config, tone: value })}
-                className="w-full"
-              >
-                <Select.Option value="formal">Très formel</Select.Option>
-                <Select.Option value="professional">Professionnel</Select.Option>
-                <Select.Option value="friendly">Accessible</Select.Option>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block font-semibold mb-2">Langue</label>
-              <Select
-                value={config.language}
-                onChange={(value) => setConfig({ ...config, language: value })}
-                className="w-full"
-              >
-                <Select.Option value="fr">Français</Select.Option>
-                <Select.Option value="en">Anglais</Select.Option>
-              </Select>
-            </div>
-          </div>
-
-          {/* Switches */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-              <div>
-                <strong>Inclure des innovations</strong>
-                <p className="text-sm text-gray-600">Proposer des solutions innovantes</p>
-              </div>
-              <Switch
-                checked={config.includeInnovations}
-                onChange={(checked) => setConfig({ ...config, includeInnovations: checked })}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-              <div>
-                <strong>Mettre en avant l'expérience</strong>
-                <p className="text-sm text-gray-600">Souligner nos réalisations passées</p>
-              </div>
-              <Switch
-                checked={config.emphasizeExperience}
-                onChange={(checked) => setConfig({ ...config, emphasizeExperience: checked })}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-              <div>
-                <strong>Prix compétitif</strong>
-                <p className="text-sm text-gray-600">Optimiser les prix pour être compétitif</p>
-              </div>
-              <Switch
-                checked={config.competitivePricing}
-                onChange={(checked) => setConfig({ ...config, competitivePricing: checked })}
-              />
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Estimation */}
-      <Card className="glass-card bg-blue-50 border-blue-200">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-blue-600">
-              <DollarOutlined /> {estimatedCost} FCFA
-            </div>
-            <div className="text-sm text-gray-600">Coût estimé</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-green-600">
-              <ThunderboltOutlined /> {estimatedTime}
-            </div>
-            <div className="text-sm text-gray-600">Temps estimé</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-600">
-              📄 8-12 pages
-            </div>
-            <div className="text-sm text-gray-600">Document généré</div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Génération en cours */}
-      {loading && (
-        <Card className="glass-card">
-          <div className="text-center py-8">
-            <Spin size="large" />
-            <h3 className="text-lg font-semibold mt-4 mb-4">
-              Génération en cours...
-            </h3>
-            <Progress 
-              percent={progress} 
-              status="active"
-              strokeColor={{
-                '0%': '#108ee9',
-                '100%': '#87d068',
-              }}
-            />
-            <p className="text-sm text-gray-600 mt-4">
-              {progress < 20 && '📝 Génération de la lettre de motivation...'}
-              {progress >= 20 && progress < 35 && '🏢 Rédaction de la présentation entreprise...'}
-              {progress >= 35 && progress < 50 && '🔧 Élaboration de la proposition technique...'}
-              {progress >= 50 && progress < 65 && '💰 Calcul de la proposition financière...'}
-              {progress >= 65 && progress < 80 && '📅 Création du planning...'}
-              {progress >= 80 && progress < 90 && '👥 Composition de l\'équipe...'}
-              {progress >= 90 && '✅ Finalisation...'}
-            </p>
-          </div>
-        </Card>
-      )}
-
-      {/* Info */}
-      {!loading && (
-        <Alert
-          message="Prêt à générer"
-          description="L'IA va générer une réponse complète incluant : lettre de motivation, présentation entreprise, proposition technique et financière, planning, équipe et références."
-          type="info"
-          showIcon
-        />
-      )}
-
-      {/* Actions */}
+      {}
       <div className="flex justify-between">
         <Button 
           icon={<ArrowLeftOutlined />}

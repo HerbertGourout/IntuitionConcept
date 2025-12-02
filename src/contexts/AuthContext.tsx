@@ -22,7 +22,6 @@ import { UserRole, ROLE_PERMISSIONS } from '../config/permissions';
 import { auditLogger } from '../services/auditLogger';
 import { sessionManager } from '../services/sessionManager';
 
-
 export interface UserProfile {
   uid: string;
   email: string;
@@ -63,7 +62,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 interface AuthProviderProps {
   children: ReactNode;
 }
-
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);

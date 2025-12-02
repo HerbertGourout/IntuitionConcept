@@ -1,104 +1,4 @@
-/**
- * Page de démonstration des fonctionnalités Advanced
- * Intègre tous les services et composants Advanced
- */
-
-import React, { useState } from 'react';
-import { useAdvancedFeatures } from '../hooks/useAdvancedFeatures';
-import { AdvancedModeSelector, ServiceMode } from '../components/Common/AdvancedModeSelector';
-import { AdvancedAnalyticsDashboard } from '../components/Analytics/AdvancedAnalyticsDashboard';
-import { AdvancedFeaturesSettings } from '../components/Settings/AdvancedFeaturesSettings';
-import { 
-  Sparkles, 
-  FileText, 
-  DollarSign, 
-  Image, 
-  ScanText, 
-  MessageSquare, 
-  AlertTriangle,
-  FileBarChart,
-  Search,
-  Settings,
-  BarChart3
-} from 'lucide-react';
-
-type DemoTab = 'overview' | 'analysis' | 'quote' | 'render' | 'ocr' | 'copilot' | 'anomaly' | 'reports' | 'search' | 'analytics' | 'settings';
-
-export const AdvancedFeaturesDemo: React.FC = () => {
-  const { currentMode, changeMode, isAdvancedAvailable, settings } = useAdvancedFeatures();
-  const [activeTab, setActiveTab] = useState<DemoTab>('overview');
-  const [demoMode, setDemoMode] = useState<ServiceMode>('advanced');
-
-  const services = [
-    {
-      id: 'analysis' as DemoTab,
-      name: 'Analyse de Plans',
-      icon: FileText,
-      description: 'Quick scan + résolution adaptative',
-      savings: '99%',
-      color: 'blue'
-    },
-    {
-      id: 'quote' as DemoTab,
-      name: 'Génération Devis',
-      icon: DollarSign,
-      description: 'Prix temps réel + optimisation',
-      savings: '50%',
-      color: 'green'
-    },
-    {
-      id: 'render' as DemoTab,
-      name: 'Rendus 3D',
-      icon: Image,
-      description: 'Génération 4K + ancrage réalité',
-      savings: '85%',
-      color: 'purple'
-    },
-    {
-      id: 'ocr' as DemoTab,
-      name: 'OCR Intelligent',
-      icon: ScanText,
-      description: 'Extraction + validation temps réel',
-      savings: '90%',
-      color: 'orange'
-    },
-    {
-      id: 'copilot' as DemoTab,
-      name: 'Copilot IA',
-      icon: MessageSquare,
-      description: 'Assistant conversationnel',
-      savings: '500%',
-      color: 'pink'
-    },
-    {
-      id: 'anomaly' as DemoTab,
-      name: 'Détection Anomalies',
-      icon: AlertTriangle,
-      description: 'Analyse contextuelle marché',
-      savings: '300%',
-      color: 'red'
-    },
-    {
-      id: 'reports' as DemoTab,
-      name: 'Rapports',
-      icon: FileBarChart,
-      description: 'Génération automatique + viz 4K',
-      savings: '10x',
-      color: 'indigo'
-    },
-    {
-      id: 'search' as DemoTab,
-      name: 'Recherche',
-      icon: Search,
-      description: 'Recherche sémantique intelligente',
-      savings: '5x',
-      color: 'cyan'
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+}
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
         <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
@@ -255,7 +155,7 @@ export const AdvancedFeaturesDemo: React.FC = () => {
             {/* Getting Started */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                🚀 Pour Commencer
+                 Pour Commencer
               </h3>
               <ol className="space-y-3 text-sm text-blue-800">
                 <li className="flex items-start gap-2">

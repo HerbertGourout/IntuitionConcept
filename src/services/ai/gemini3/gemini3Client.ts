@@ -103,7 +103,7 @@ export class Gemini3Client {
         Object.assign(body.generationConfig, { imageConfig: request.config.image_config });
       }
 
-      console.log('🚀 Gemini 3 Request:', {
+      console.log(' Gemini 3 Request:', {
         model: request.model,
         thinking_level: request.config?.thinking_level,
         tools: request.config?.tools?.length || 0,

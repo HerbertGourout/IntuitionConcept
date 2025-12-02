@@ -104,7 +104,7 @@ export const generateQuotePdf = (
   // Determine header bottom from the lower of logo or text block, add padding
   headerBottomY = Math.max(logoBottom, textBottom) + 14;
 
-  // Centered pill title with subtle shadow and badges row (Variant A - sobre/premium)
+  // Centered pill title with subtle shadow and badgent A - sobre/premium)
   const title = 'Devis Commercial';
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);

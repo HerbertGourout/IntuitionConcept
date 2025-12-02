@@ -89,8 +89,6 @@ const AnalyticsWidget: React.FC = () => {
     const weeklyAverage = currentVelocity; // Même valeur car pas d'historique
     const velocityTrend = 'stable'; // Stable par défaut sans historique
 
-
-
     // Analyse des retards
     const delayedTasks = allTasks.filter(task => {
       if (!task.dueDate) return false;
@@ -209,8 +207,6 @@ const AnalyticsWidget: React.FC = () => {
     }
   };
 
-
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
@@ -233,8 +229,6 @@ const AnalyticsWidget: React.FC = () => {
           </div>
         </div>
       </div>
-
-
 
       {/* KPIs */}
       <div className="mb-6">

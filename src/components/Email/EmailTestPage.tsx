@@ -150,7 +150,7 @@ const EmailTestPage: React.FC = () => {
       case 'resend':
         return {
           name: 'Resend',
-          icon: '🚀',
+          icon: '',
           color: 'purple',
           configured: !!import.meta.env.VITE_RESEND_API_KEY
         };

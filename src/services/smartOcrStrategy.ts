@@ -6,7 +6,7 @@ import { unifiedOcrService } from './unifiedOcrService';
 export interface OCRStrategyResult {
   text: string;
   confidence: number;
-  provider: 'native_pdf' | 'tesseract' | 'google_vision' | 'claude';
+  provider: 'native_pdf' | 'tesseract' | 'google_vision' | 'Modèle';
   cost: number; // en FCFA
   processingTime: number; // en ms
   quality: 'low' | 'medium' | 'high' | 'premium';
@@ -29,8 +29,8 @@ class SmartOCRStrategy {
     native_pdf: 0,           // Gratuit
     tesseract: 0,            // Gratuit
     google_vision: 0.90,     // $0.0015 par page
-    claude_sonnet: 8.10,     // $0.0135 par page
-    claude_haiku: 0.48,      // $0.0008 par page (nouveau modèle économique)
+    Modèle_sonnet: 8.10,     // $0.0135 par page
+    Modèle_haiku: 0.48,      // $0.0008 par page (nouveau modèle économique)
   };
 
   // Seuils de qualité
@@ -154,7 +154,7 @@ class SmartOCRStrategy {
 
   /**
    * Stratégie Niveau 2 : ÉCONOMIQUE (0.48-0.90 FCFA)
-   * - Claude Haiku (nouveau) : 0.48 FCFA - Rapide et économique
+   * - Modèle Haiku (nouveau) : 0.48 FCFA - Rapide et économique
    * - Google Vision : 0.90 FCFA - Spécialisé OCR
    */
   private async tryEconomicStrategy(
@@ -164,14 +164,14 @@ class SmartOCRStrategy {
     const startTime = Date.now();
 
     try {
-      // Choix intelligent entre Claude Haiku et Google Vision
-      const useClaudeHaiku = 
+      // Choix intelligent entre Modèle Haiku et Google Vision
+      const useModèleHaiku = 
         analysis.hasStructuredData && 
         analysis.estimatedComplexity === 'medium';
 
-      if (useClaudeHaiku) {
-        console.log('💰 Stratégie ÉCONOMIQUE : Claude Haiku (0.48 FCFA)');
-        // TODO: Implémenter Claude Haiku
+      if (useModèleHaiku) {
+        console.log('💰 Stratégie ÉCONOMIQUE : Modèle Haiku (0.48 FCFA)');
+        // TODO: Implémenter Modèle Haiku
         // Pour l'instant, fallback sur Google Vision
       }
 
@@ -196,7 +196,7 @@ class SmartOCRStrategy {
 
   /**
    * Stratégie Niveau 3 : PREMIUM (8.10 FCFA)
-   * - Claude Sonnet : Analyse intelligente complète
+   * - Modèle Sonnet : Analyse intelligente complète
    * - Réservé aux documents complexes critiques
    */
   private async tryPremiumStrategy(
@@ -205,21 +205,21 @@ class SmartOCRStrategy {
   ): Promise<OCRStrategyResult> {
     const startTime = Date.now();
 
-    console.log('💎 Stratégie PREMIUM : Claude Sonnet (8.10 FCFA)');
+    console.log('💎 Stratégie PREMIUM : Modèle Sonnet (8.10 FCFA)');
     console.log('📊 Analyse document:', analysis.estimatedComplexity);
     
-    // TODO: Implémenter Claude Sonnet avec analyse contextuelle
+    // TODO: Implémenter Modèle Sonnet avec analyse contextuelle
     // Pour l'instant, fallback sur Google Vision
     const result = await unifiedOcrService.processImage(file);
     
     return {
       text: result.text,
       confidence: Math.min(result.confidence + 5, 98), // Boost de confiance
-      provider: 'claude',
-      cost: this.PRICING.claude_sonnet,
+      provider: 'Modèle',
+      cost: this.PRICING.Modèle_sonnet,
       processingTime: Date.now() - startTime,
       quality: 'premium',
-      recommendation: '💎 Claude Sonnet - Analyse premium avec contexte'
+      recommendation: '💎 Modèle Sonnet - Analyse premium avec contexte'
     };
   }
 
@@ -242,7 +242,7 @@ class SmartOCRStrategy {
       allowPremium = false
     } = options;
 
-    console.log('🎯 Démarrage stratégie OCR intelligente...');
+    console.log(' Démarrage stratégie OCR intelligente...');
     console.log(`   Budget max: ${maxCost} FCFA | Qualité min: ${minQuality}%`);
 
     // 1. Analyser le document
@@ -272,7 +272,7 @@ class SmartOCRStrategy {
     }
 
     // 5. Stratégie PREMIUM (dernier recours)
-    if (allowPremium && maxCost >= this.PRICING.claude_sonnet) {
+    if (allowPremium && maxCost >= this.PRICING.Modèle_sonnet) {
       console.log('⚠️ Passage en stratégie PREMIUM...');
       return await this.tryPremiumStrategy(file, analysis);
     }
@@ -313,7 +313,7 @@ class SmartOCRStrategy {
     const freePercentage = (freeUsage / results.length) * 100;
     
     if (freePercentage < 50) {
-      recommendations.push(`💡 ${freePercentage.toFixed(0)}% de documents traités gratuitement. Optimisez vos PDFs pour augmenter ce taux.`);
+      recommendations.push(` ${freePercentage.toFixed(0)}% de documents traités gratuitement. Optimisez vos PDFs pour augmenter ce taux.`);
     }
     
     if (averageConfidence < 85) {

@@ -49,7 +49,7 @@ const calculateAverageApiCosts = (planId: PlanId): number => {
   // OCR
   totalApiCost += (limits.ocrScansPerMonth * utilizationRate) * API_UNIT_COSTS.ocrScan;
   
-  // IA
+  
   totalApiCost += (limits.aiQueriesPerMonth * utilizationRate) * API_UNIT_COSTS.aiQuery;
   totalApiCost += (limits.aiQuoteGenerationsPerMonth * utilizationRate) * API_UNIT_COSTS.aiQuoteGeneration;
   

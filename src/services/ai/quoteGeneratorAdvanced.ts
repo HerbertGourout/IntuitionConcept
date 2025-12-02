@@ -366,7 +366,7 @@ Réponds UNIQUEMENT en JSON selon le schéma fourni.`;
     optimization_goals: string[],
     previous_signature?: string
   ): Promise<AnalysisResult<AdvancedQuote>> {
-    console.log('⚡ Optimisation devis...');
+    console.log(' Optimisation devis...');
 
     const prompt = `Optimise ce devis selon les objectifs suivants:
 ${optimization_goals.map((g, i) => `${i + 1}. ${g}`).join('\n')}

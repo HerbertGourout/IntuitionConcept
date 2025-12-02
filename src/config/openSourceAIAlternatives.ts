@@ -1,4 +1,4 @@
-// Alternatives IA Open Source pour réduire les coûts API
+
 export interface OpenSourceAIOption {
   id: string;
   name: string;
@@ -71,7 +71,7 @@ export const OPEN_SOURCE_AI_ALTERNATIVES: OpenSourceAIOption[] = [
     cons: [
       'Investissement initial élevé',
       'Maintenance technique requise',
-      'Performance moindre qu\'OpenAI GPT-4',
+      'Performance moindre qu\'Service Modèle-4',
       'Mise à jour manuelle'
     ],
     bestFor: [
@@ -172,7 +172,7 @@ export const OPEN_SOURCE_AI_ALTERNATIVES: OpenSourceAIOption[] = [
     cons: [
       'Précision moindre que solutions payantes',
       'Difficile avec écriture manuscrite',
-      'Pas d\'IA avancée'
+      'Pas d\'Système avancé'
     ],
     bestFor: [
       'OCR factures imprimées',
@@ -183,7 +183,7 @@ export const OPEN_SOURCE_AI_ALTERNATIVES: OpenSourceAIOption[] = [
     roi: '500% dès 3 mois'
   },
 
-  // === SERVICES IA ABORDABLES ===
+  
   {
     id: 'groq_api',
     name: 'Groq API (Ultra-rapide)',
@@ -198,12 +198,12 @@ export const OPEN_SOURCE_AI_ALTERNATIVES: OpenSourceAIOption[] = [
     costStructure: {
       setup: 100000, // Intégration simple
       monthly: 25000, // Quota de base
-      perRequest: 5, // 10x moins cher qu\'OpenAI
+      perRequest: 5, // 10x moins cher qu\'Service
       scaling: 'linear'
     },
     performance: {
       accuracy: 82,
-      speed: 'fast', // 10x plus rapide qu\'OpenAI
+      speed: 'fast', // 10x plus rapide qu\'Service
       reliability: 88
     },
     technicalRequirements: {
@@ -215,12 +215,12 @@ export const OPEN_SOURCE_AI_ALTERNATIVES: OpenSourceAIOption[] = [
     pros: [
       'Extrêmement rapide',
       'Prix très compétitif',
-      'API compatible OpenAI',
+      'API compatible Service',
       'Pas d\'infrastructure',
       'Modèles récents'
     ],
     cons: [
-      'Moins précis qu\'OpenAI GPT-4',
+      'Moins précis qu\'Service Modèle-4',
       'Quotas limités',
       'Dépendance externe'
     ],
@@ -234,10 +234,10 @@ export const OPEN_SOURCE_AI_ALTERNATIVES: OpenSourceAIOption[] = [
   },
 
   {
-    id: 'anthropic_claude',
-    name: 'Anthropic Claude (Haiku)',
+    id: 'anthropic_Modèle',
+    name: 'Anthropic Modèle (Haiku)',
     type: 'api_service',
-    description: 'Modèle Claude Haiku, plus abordable que GPT-4, excellent pour l\'analyse',
+    description: 'Modèle Modèle Haiku, plus abordable que Modèle-4, excellent pour l\'analyse',
     capabilities: [
       'Analyse documents complexes',
       'Raisonnement logique',
@@ -247,7 +247,7 @@ export const OPEN_SOURCE_AI_ALTERNATIVES: OpenSourceAIOption[] = [
     costStructure: {
       setup: 150000,
       monthly: 40000,
-      perRequest: 8, // 5x moins cher que GPT-4
+      perRequest: 8, // 5x moins cher que Modèle-4
       scaling: 'linear'
     },
     performance: {
@@ -263,12 +263,12 @@ export const OPEN_SOURCE_AI_ALTERNATIVES: OpenSourceAIOption[] = [
     },
     pros: [
       'Excellent pour analyse documents',
-      'Plus sûr qu\'OpenAI',
+      'Plus sûr qu\'Service',
       'Moins de hallucinations',
       'Bon rapport qualité/prix'
     ],
     cons: [
-      'Moins créatif qu\'OpenAI',
+      'Moins créatif qu\'Service',
       'Disponibilité limitée',
       'API moins mature'
     ],
@@ -333,9 +333,9 @@ export const OPEN_SOURCE_AI_ALTERNATIVES: OpenSourceAIOption[] = [
 
 // Analyse comparative des coûts
 export const COST_COMPARISON_ANALYSIS = {
-  currentOpenAICost: {
-    gpt4: 50, // FCFA par requête
-    gpt35: 15, // FCFA par requête
+  currentServiceCost: {
+    Modèle4: 50, // FCFA par requête
+    Modèle35: 15, // FCFA par requête
     monthlyEstimate: 750000 // Pour 15000 requêtes/mois
   },
   
@@ -385,13 +385,13 @@ export const COST_COMPARISON_ANALYSIS = {
 export const USE_CASE_RECOMMENDATIONS = {
   'quote_generation': {
     simple: 'ollama_llama', // Devis standards
-    complex: 'anthropic_claude', // Devis sur mesure
+    complex: 'anthropic_Modèle', // Devis sur mesure
     volume: 'groq_api' // Gros volumes
   },
   'document_analysis': {
     ocr: 'tesseract_ocr',
     understanding: 'huggingface_transformers',
-    legal: 'anthropic_claude'
+    legal: 'anthropic_Modèle'
   },
   'conversational_ai': {
     basic: 'ollama_llama',
@@ -409,7 +409,7 @@ export const USE_CASE_RECOMMENDATIONS = {
 export const IMPLEMENTATION_ROADMAP = {
   immediate: [
     {
-      action: 'Intégrer Groq API comme alternative à OpenAI',
+      action: 'Intégrer Groq API comme alternative à Service',
       timeline: '1 semaine',
       cost: 100000,
       impact: 'Réduction 70% coûts IA'

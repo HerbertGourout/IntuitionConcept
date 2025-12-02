@@ -1,5 +1,5 @@
 import { aiConfig } from './aiConfig';
-import { openaiService } from './openaiService';
+import { ServiceService } from './ServiceService';
 
 export interface QuoteGenerationRequest {
   projectType: string;
@@ -70,12 +70,12 @@ class QuoteGenerator {
       throw new Error('Génération de devis IA non activée. Configurez une clé API.');
     }
 
-    // Utiliser OpenAI si configuré, sinon templates
-    if (aiConfig.openaiApiKey) {
+    // Utiliser Service si configuré, sinon templates
+    if (aiConfig.ServiceApiKey) {
       try {
-        return await this.generateWithOpenAI(request);
+        return await this.generateWithService(request);
       } catch {
-        // Erreur OpenAI, fallback vers templates
+        // Erreur Service, fallback vers templates
         return this.generateFromTemplate(request);
       }
     }
@@ -345,12 +345,12 @@ class QuoteGenerator {
     ];
   }
 
-  private async generateWithOpenAI(request: QuoteGenerationRequest): Promise<GeneratedQuote> {
-    // openaiService.generateQuote expects (projectData, requirements). Provide an empty requirements object
+  private async generateWithService(request: QuoteGenerationRequest): Promise<GeneratedQuote> {
+    // ServiceService.generateQuote expects (projectData, requirements). Provide an empty requirements object
     // and cast request to a broad object type compatible with the service signature.
-    const aiQuoteRaw = await openaiService.generateQuote(request as unknown as Record<string, unknown>, {});
+    const aiQuoteRaw = await ServiceService.generateQuote(request as unknown as Record<string, unknown>, {});
 
-    // Runtime narrowing because openaiService returns Record<string, unknown>
+    // Runtime narrowing because ServiceService returns Record<string, unknown>
     const title = typeof (aiQuoteRaw as Record<string, unknown>).title === 'string'
       ? (aiQuoteRaw as Record<string, unknown>).title as string
       : `${request.projectType} - ${request.description}`;

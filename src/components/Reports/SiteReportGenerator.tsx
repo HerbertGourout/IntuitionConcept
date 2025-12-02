@@ -1,13 +1,4 @@
-/**
- * Composant de Génération Automatique de Rapports de Chantier
- * 
- * Fonctionnalités:
- * - Collecte automatique des données du projet
- * - Génération de rapports avec IA (Claude)
- * - Prévisualisation du rapport
- * - Export PDF professionnel
- * - Envoi automatique par email
- */
+
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -72,73 +63,7 @@ const SiteReportGenerator: React.FC<SiteReportGeneratorProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project]);
   
-  /**
-   * Pré-remplit automatiquement les données depuis le projet
-   */
-  const autoFillProjectData = () => {
-    if (!project) return;
-    
-    // Calculer l'avancement global
-    const overallProgress = project.phases.reduce((acc: number, phase) => 
-      acc + (phase.progress || 0), 0) / (project.phases.length || 1);
-    
-    // Extraire les phases avec leur progression
-    const phaseProgress = project.phases.map((phase) => ({
-      phaseName: phase.name,
-      progress: phase.progress || 0,
-      status: phase.progress === 100 ? 'completed' as const : 
-              phase.progress > 0 ? 'in_progress' as const : 'not_started' as const
-    }));
-    
-    // Extraire les tâches complétées aujourd'hui
-    const completedTasks = project.phases.flatMap((phase) =>
-      phase.tasks
-        .filter((task) => task.status === 'done')
-        .map((task) => ({
-          taskName: task.title,
-          description: task.description || 'Tâche complétée',
-          progress: 100,
-          assignedTo: task.assignedTo || 'Équipe',
-          photos: []
-        }))
-    );
-    
-    setFormData(prev => ({
-      ...prev,
-      projectId: project.id,
-      projectName: project.name,
-      projectAddress: project.location || 'Adresse non spécifiée',
-      reportDate,
-      reportType,
-      overallProgress: Math.round(overallProgress),
-      phaseProgress,
-      completedTasks: completedTasks.slice(0, 10), // Limiter à 10 tâches
-      teamPresence: {
-        totalWorkers: 12,
-        present: 10,
-        absent: 2,
-        absentees: []
-      },
-      weather: {
-        condition: 'Ensoleillé',
-        temperature: 28,
-        impact: 'none' as const
-      },
-      nextDayPlan: {
-        plannedTasks: ['Continuer les travaux en cours'],
-        expectedDeliveries: [],
-        requiredWorkers: 10
-      },
-      reportedBy: {
-        name: 'Chef de chantier',
-        role: 'Superviseur'
-      }
-    }));
-  };
   
-  /**
-   * Génère le rapport avec IA
-   */
   const handleGenerateReport = async () => {
     if (!formData.projectId || !formData.projectName) {
       setError('Données du projet manquantes');
@@ -205,9 +130,7 @@ const SiteReportGenerator: React.FC<SiteReportGeneratorProps> = ({
     }
   };
   
-  /**
-   * Génère un rapport rapide (sans IA) pour tests
-   */
+  
   const handleQuickGenerate = () => {
     if (!formData.projectId || !formData.projectName) {
       setError('Données du projet manquantes');
@@ -260,206 +183,107 @@ const SiteReportGenerator: React.FC<SiteReportGeneratorProps> = ({
     }
   };
   
-  /**
-   * Exporte le rapport en PDF
-   */
-  const handleExportPDF = () => {
-    if (!generatedReport || !formData.projectName) return;
+  // Fonction pour pré-remplir les données du projet
+  const autoFillProjectData = () => {
+    if (!project) return;
     
-    try {
-      const pdfBlob = pdfExportService.exportSiteReport(generatedReport, {
-        title: 'Rapport de Chantier',
-        subtitle: formData.projectName,
-        author: formData.reportedBy?.name || 'Chef de chantier',
-        footer: 'IntuitionConcept BTP Platform - Rapport généré automatiquement'
-      });
-      
-      const filename = `rapport_${formData.projectName.replace(/\s+/g, '_')}_${reportDate}.pdf`;
-      pdfExportService.downloadPDF(pdfBlob, filename);
-    } catch (error) {
-      console.error('Erreur export PDF:', error);
-      alert('Erreur lors de l\'export PDF');
-    }
+    setFormData(prev => ({
+      ...prev,
+      projectId: project.id,
+      projectName: project.name,
+      projectAddress: project.location || '',
+      overallProgress: project.progress || 0,
+      phaseProgress: project.phases?.map(phase => ({
+        phaseName: phase.name,
+        progress: phase.progress || 0,
+        status: phase.status || 'in_progress'
+      })) || [],
+      teamPresence: {
+        totalWorkers: project.team?.length || 0,
+        present: project.team?.length || 0,
+        absent: 0,
+        absentees: []
+      }
+    }));
   };
-  
-  /**
-   * Envoie le rapport par email
-   */
-  const handleSendEmail = () => {
-    if (!generatedReport) return;
-    
-    // TODO: Implémenter l'envoi par email
-    alert('Envoi email en cours de développement');
-  };
-  
-  if (!project) {
-    return (
-      <div className="p-6 text-center">
-        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-yellow-500" />
-        <p className="text-gray-600 dark:text-gray-400">Projet non trouvé</p>
-      </div>
-    );
-  }
-  
+
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       {/* En-tête */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">📋 Génération Automatique de Rapports</h1>
-            <p className="text-blue-100">
-              Rapport de chantier professionnel généré par IA en 30 secondes
-            </p>
-          </div>
-          <FileText className="w-16 h-16 opacity-50" />
-        </div>
-      </div>
-      
-      {/* Configuration du rapport */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-blue-600" />
-          Configuration du Rapport
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Type de rapport */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Type de rapport</label>
-            <select
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value as 'daily' | 'weekly' | 'monthly')}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Générateur de Rapports</h1>
+              <p className="text-gray-600 dark:text-gray-400">Créez des rapports de chantier détaillés</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Sélection du type de rapport */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {(['daily', 'weekly', 'monthly'] as const).map((type) => (
+            <button
+              key={type}
+              onClick={() => setReportType(type)}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                reportType === type
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+              }`}
             >
-              <option value="daily">Journalier</option>
-              <option value="weekly">Hebdomadaire</option>
-              <option value="monthly">Mensuel</option>
-            </select>
-          </div>
-          
-          {/* Date */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Date du rapport</label>
-            <input
-              type="date"
-              value={reportDate}
-              onChange={(e) => setReportDate(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-            />
-          </div>
-          
-          {/* Projet */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Projet</label>
-            <input
-              type="text"
-              value={formData.projectName || ''}
-              readOnly
-              className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600"
-            />
-          </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                <span className="font-medium">
+                  {type === 'daily' ? 'Journalier' : type === 'weekly' ? 'Hebdomadaire' : 'Mensuel'}
+                </span>
+              </div>
+            </button>
+          ))}
         </div>
-      </div>
-      
-      {/* Résumé des données collectées */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Avancement */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-          <div className="flex items-center justify-between mb-2">
-            <TrendingUp className="w-5 h-5 text-green-600" />
-            <span className="text-2xl font-bold text-green-600">
-              {formData.overallProgress || 0}%
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Avancement global</p>
+
+        {/* Date du rapport */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Date du rapport
+          </label>
+          <input
+            type="date"
+            value={reportDate}
+            onChange={(e) => setReportDate(e.target.value)}
+            className="w-full md:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
+          />
         </div>
-        
-        {/* Équipe */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-          <div className="flex items-center justify-between mb-2">
-            <Users className="w-5 h-5 text-blue-600" />
-            <span className="text-2xl font-bold text-blue-600">
-              {formData.teamPresence?.present || 0}/{formData.teamPresence?.totalWorkers || 0}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Ouvriers présents</p>
-        </div>
-        
-        {/* Tâches */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-          <div className="flex items-center justify-between mb-2">
-            <CheckCircle className="w-5 h-5 text-purple-600" />
-            <span className="text-2xl font-bold text-purple-600">
-              {formData.completedTasks?.length || 0}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Tâches complétées</p>
-        </div>
-        
-        {/* Météo */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
-          <div className="flex items-center justify-between mb-2">
-            <CloudRain className="w-5 h-5 text-orange-600" />
-            <span className="text-2xl font-bold text-orange-600">
-              {formData.weather?.temperature || 25}°C
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{formData.weather?.condition || 'Ensoleillé'}</p>
-        </div>
-      </div>
-      
-      {/* Boutons d'action */}
-      <div className="flex flex-wrap gap-4">
-        <button
-          onClick={handleGenerateReport}
-          disabled={isGenerating}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg"
-        >
-          {isGenerating ? (
-            <>
+
+        {/* Boutons d'action */}
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={handleGenerateReport}
+            disabled={isGenerating || !project}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 transition-all"
+          >
+            {isGenerating ? (
               <Loader2 className="w-5 h-5 animate-spin" />
-              Génération en cours...
-            </>
-          ) : (
-            <>
+            ) : (
               <Zap className="w-5 h-5" />
-              Générer avec IA (Claude)
-            </>
-          )}
-        </button>
-        
-        <button
-          onClick={handleQuickGenerate}
-          disabled={isGenerating}
-          className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-        >
-          <Clock className="w-5 h-5" />
-          Génération Rapide (Test)
-        </button>
-        
-        {generatedReport && (
-          <>
-            <button
-              onClick={handleExportPDF}
-              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
-            >
-              <Download className="w-5 h-5" />
-              Exporter PDF
-            </button>
-            
-            <button
-              onClick={handleSendEmail}
-              className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
-            >
-              <Mail className="w-5 h-5" />
-              Envoyer par Email
-            </button>
-          </>
-        )}
+            )}
+            Générer avec IA
+          </button>
+          
+          <button
+            onClick={handleQuickGenerate}
+            disabled={!project}
+            className="flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-all"
+          >
+            <Clock className="w-5 h-5" />
+            Génération Rapide
+          </button>
+        </div>
       </div>
-      
-      {/* Erreur */}
+
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start gap-3">
           <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />

@@ -1,7 +1,7 @@
-// Service de routage intelligent pour les APIs IA
+// Service de routag
 import { aiConfig } from '../../config/aiConfig';
 
-export type AIProvider = 'groq' | 'claude' | 'google_vision' | 'openai';
+export type AIProvider = 'groq' | 'Modèle' | 'google_vision' | 'Service';
 export type RequestType = 
   | 'simple_generation' 
   | 'complex_analysis' 
@@ -49,20 +49,20 @@ export class AIRouter {
       case 'simple_generation':
       case 'quote_generation':
       case 'conversational':
-        return this.isProviderAvailable('groq') ? 'groq' : 'openai';
+        return this.isProviderAvailable('groq') ? 'groq' : 'Service';
 
       case 'complex_analysis':
       case 'document_analysis':
         if (request.priority === 'critical') {
-          return 'openai';
+          return 'Service';
         }
-        return this.isProviderAvailable('claude') ? 'claude' : 'openai';
+        return this.isProviderAvailable('Modèle') ? 'Modèle' : 'Service';
 
       case 'ocr_task':
-        return this.isProviderAvailable('google_vision') ? 'google_vision' : 'openai';
+        return this.isProviderAvailable('google_vision') ? 'google_vision' : 'Service';
 
       case 'critical_decision':
-        return 'openai'; // Toujours OpenAI pour décisions critiques
+        return 'Service'; // Toujours Service pour décisions critiques
 
       case 'classification':
         return 'groq'; // Groq excellent pour classification
@@ -78,9 +78,9 @@ export class AIRouter {
   private isProviderAvailable(provider: AIProvider): boolean {
     const configs = {
       groq: import.meta.env.VITE_GROQ_API_KEY,
-      claude: import.meta.env.VITE_ANTHROPIC_API_KEY,
+      Modèle: import.meta.env.VITE_ANTHROPIC_API_KEY,
       google_vision: import.meta.env.VITE_GOOGLE_VISION_API_KEY,
-      openai: aiConfig.openaiApiKey
+      Service: aiConfig.ServiceApiKey
     };
 
     return !!configs[provider];
@@ -92,9 +92,9 @@ export class AIRouter {
   getEstimatedCost(provider: AIProvider, requestLength: number): number {
     const costPerToken = {
       groq: 0.0003, // FCFA par token
-      claude: 0.0008,
+      Modèle: 0.0008,
       google_vision: 0.012, // Par requête
-      openai: 0.005
+      Service: 0.005
     };
 
     const tokens = Math.ceil(requestLength / 4); // Approximation
@@ -120,7 +120,7 @@ export class AIRouter {
   getUsageStats(): Record<AIProvider, { cost: number; requests: number }> {
     const stats: Partial<Record<AIProvider, { cost: number; requests: number }>> = {};
     
-    (['groq', 'claude', 'google_vision', 'openai'] as AIProvider[]).forEach(provider => {
+    (['groq', 'Modèle', 'google_vision', 'Service'] as AIProvider[]).forEach(provider => {
       stats[provider] = {
         cost: this.costTracker.get(provider) || 0,
         requests: this.requestCount.get(provider) || 0
@@ -137,10 +137,10 @@ export class AIRouter {
     // Mark parameter as intentionally unused to satisfy eslint/no-unused-vars
     void _requestType;
     const fallbackChain: Record<AIProvider, AIProvider[]> = {
-      groq: ['openai', 'claude'],
-      claude: ['openai', 'groq'],
-      google_vision: ['openai'],
-      openai: ['claude', 'groq']
+      groq: ['Service', 'Modèle'],
+      Modèle: ['Service', 'groq'],
+      google_vision: ['Service'],
+      Service: ['Modèle', 'groq']
     };
 
     const fallbacks = fallbackChain[failedProvider];
@@ -150,7 +150,7 @@ export class AIRouter {
       }
     }
 
-    return 'openai'; // Dernier recours
+    return 'Service'; // Dernier recours
   }
 
   /**
@@ -167,12 +167,12 @@ export class AIRouter {
     console.log(`💰 Coût total IA: ${totalCost.toFixed(2)} FCFA`);
     
     // Recommandations automatiques
-    if (stats.openai.cost > totalCost * 0.3) {
-      console.log('⚠️ Recommandation: Réduire l\'usage OpenAI, coût > 30% du total');
+    if (stats.Service.cost > totalCost * 0.3) {
+      console.log('⚠️ Recommandation: Réduire l\'usage Service, coût > 30% du total');
     }
     
-    if (stats.groq.requests < stats.openai.requests) {
-      console.log('💡 Recommandation: Augmenter l\'usage Groq pour réduire les coûts');
+    if (stats.groq.requests < stats.Service.requests) {
+      console.log(' Recommandation: Augmenter l\'usage Groq pour réduire les coûts');
     }
   }
 }

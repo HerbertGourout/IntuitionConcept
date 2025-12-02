@@ -131,7 +131,7 @@ export const clearAllLocalData = async (): Promise<void> => {
  */
 export const initializeAllFirebaseTestData = async (): Promise<void> => {
   try {
-    console.log('🚀 Initialisation des données de test Firebase...');
+    console.log(' Initialisation des données de test Firebase...');
 
     // Importer dynamiquement les services pour éviter les dépendances circulaires
     const { TaskService } = await import('../services/taskService');

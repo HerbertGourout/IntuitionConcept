@@ -1,4 +1,4 @@
-// Stratégie IA basée sur APIs existantes - Pas d'entraînement de modèles
+
 export interface APIBasedAIIdea {
   id: string;
   module: string;
@@ -15,7 +15,6 @@ export interface APIBasedAIIdea {
   userBenefit: string;
 }
 
-// Intégrations IA via APIs existantes
 export const API_BASED_AI_OPPORTUNITIES: APIBasedAIIdea[] = [
   
   // === ANALYSE DE DOCUMENTS & OCR ===
@@ -39,8 +38,8 @@ export const API_BASED_AI_OPPORTUNITIES: APIBasedAIIdea[] = [
     id: 'api_contract_analyzer',
     module: 'Documents',
     name: 'Analyseur Contrats IA',
-    description: 'Analyse contrats BTP via OpenAI GPT-4 pour extraction clauses',
-    apiProviders: ['OpenAI GPT-4', 'Claude API', 'Gemini Pro'],
+    description: 'Analyse contrats BTP via Service Modèle-4 pour extraction clauses',
+    apiProviders: ['Service Modèle-4', 'Modèle API', 'Gemini Pro'],
     businessValue: 'Réduction 80% temps analyse, détection risques juridiques',
     implementationComplexity: 'medium',
     estimatedDevelopmentTime: '3 semaines',
@@ -56,8 +55,8 @@ export const API_BASED_AI_OPPORTUNITIES: APIBasedAIIdea[] = [
     id: 'api_btp_copilot',
     module: 'Support',
     name: 'Copilot BTP Conversationnel',
-    description: 'Assistant IA spécialisé BTP via OpenAI + base connaissances',
-    apiProviders: ['OpenAI GPT-4', 'Pinecone Vector DB', 'Langchain'],
+    description: 'Assistant spécialisé BTP via Service + base connaissances',
+    apiProviders: ['Service Modèle-4', 'Pinecone Vector DB', 'Langchain'],
     businessValue: 'Support 24/7, résolution 70% questions automatiquement',
     implementationComplexity: 'medium',
     estimatedDevelopmentTime: '4 semaines',
@@ -72,8 +71,8 @@ export const API_BASED_AI_OPPORTUNITIES: APIBasedAIIdea[] = [
     id: 'api_vocal_assistant',
     module: 'Mobile',
     name: 'Assistant Vocal Chantier',
-    description: 'Commandes vocales via Google Speech-to-Text + OpenAI',
-    apiProviders: ['Google Speech API', 'Azure Speech', 'OpenAI Whisper'],
+    description: 'Commandes vocales via Google Speech-to-Text + Service',
+    apiProviders: ['Google Speech API', 'Azure Speech', 'Service Whisper'],
     businessValue: 'Productivité chantier +30%, mains libres',
     implementationComplexity: 'medium',
     estimatedDevelopmentTime: '3 semaines',
@@ -89,8 +88,8 @@ export const API_BASED_AI_OPPORTUNITIES: APIBasedAIIdea[] = [
     id: 'api_quote_generator',
     module: 'Quotes',
     name: 'Générateur Devis IA',
-    description: 'Génération devis automatique via GPT-4 + base prix BTP',
-    apiProviders: ['OpenAI GPT-4', 'Claude API'],
+    description: 'Génération devis automatique via Modèle-4 + base prix BTP',
+    apiProviders: ['Service Modèle-4', 'Modèle API'],
     businessValue: 'Génération devis 10x plus rapide, cohérence prix',
     implementationComplexity: 'medium',
     estimatedDevelopmentTime: '3 semaines',
@@ -105,8 +104,8 @@ export const API_BASED_AI_OPPORTUNITIES: APIBasedAIIdea[] = [
     id: 'api_report_generator',
     module: 'Reports',
     name: 'Générateur Rapports IA',
-    description: 'Génération rapports projet automatique via GPT-4',
-    apiProviders: ['OpenAI GPT-4', 'Gemini Pro'],
+    description: 'Génération rapports projet automatique via Modèle-4',
+    apiProviders: ['Service Modèle-4', 'Gemini Pro'],
     businessValue: 'Rapports professionnels automatiques, gain temps',
     implementationComplexity: 'low',
     estimatedDevelopmentTime: '2 semaines',
@@ -139,7 +138,7 @@ export const API_BASED_AI_OPPORTUNITIES: APIBasedAIIdea[] = [
     module: 'Planning',
     name: 'Analyseur Impact Météo IA',
     description: 'Ajustement planning selon prévisions météo via APIs',
-    apiProviders: ['OpenWeatherMap', 'AccuWeather API', 'GPT-4'],
+    apiProviders: ['OpenWeatherMap', 'AccuWeather API', 'Modèle-4'],
     businessValue: 'Réduction 25% retards météo, planning optimisé',
     implementationComplexity: 'low',
     estimatedDevelopmentTime: '1 semaine',

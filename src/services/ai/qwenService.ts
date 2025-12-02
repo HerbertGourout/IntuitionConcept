@@ -444,7 +444,7 @@ IMPORTANT : Pour un R+3, la totalArea DOIT être minimum 300-500 m². Compte TOU
    */
   private getDetailedQuotePrompt(): string {
     return `
-🧠 Tu es un métreur-expert en bâtiment. On te fournit un plan d'architecture (PDF, image ou dessin technique).
+ Tu es un métreur-expert en bâtiment. On te fournit un plan d'architecture (PDF, image ou dessin technique).
 À partir uniquement de ce que tu vois ou peux déduire avec certitude dans ce plan, tu dois produire un devis quantitatif et estimatif rigoureux.
 
 🔹 RÈGLES STRICTES - Aucune invention
@@ -539,7 +539,7 @@ IMPORTANT : Pour un R+3, la totalArea DOIT être minimum 300-500 m². Compte TOU
 • Si localisation visible (ex: "Brazzaville", "Dakar") : prix du marché local 2024-2025
 • N'invente jamais un prix. Si incertain : "[PRIX À CONFIRMER AUPRÈS DES FOURNISSEURS LOCAUX]"
 
-🎯 OBJECTIF : Devis fiable, auditable, directement utilisable par un entrepreneur local.
+ OBJECTIF : Devis fiable, auditable, directement utilisable par un entrepreneur local.
 `;
   }
 }

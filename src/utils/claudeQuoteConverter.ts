@@ -2,10 +2,10 @@ import type { Quote } from '../services/quotesService';
 import type { Phase, Task, Article } from '../types/StructuredQuote';
 
 /**
- * Convertit le devis généré par Claude vers le format Quote de l'application
+ * Convertit le devis généré par Modèle vers le format Quote de l'application
  */
-export function convertClaudeQuoteToAppQuote(
-  claudeQuote: any,
+export function convertModèleQuoteToAppQuote(
+  ModèleQuote: any,
   planMetadata: {
     fileName: string;
     clientName?: string;
@@ -16,16 +16,16 @@ export function convertClaudeQuoteToAppQuote(
   // Générer les phases au format de l'application
   const phases: Phase[] = [];
   
-  // Support des deux formats : claudeQuote.detailedQuote.phases OU claudeQuote.phases
-  const sourcePhasesarray = claudeQuote.detailedQuote?.phases || claudeQuote.phases;
+  // Support des deux formats : ModèleQuote.detailedQuote.phases OU ModèleQuote.phases
+  const sourcePhasesarray = ModèleQuote.detailedQuote?.phases || ModèleQuote.phases;
   
   if (sourcePhasesarray && Array.isArray(sourcePhasesarray)) {
-    // Cas 1 : Claude a généré un devis détaillé (ou format generatedQuote)
-    sourcePhasesarray.forEach((claudePhase: any, phaseIndex: number) => {
+    // Cas 1 : Modèle a généré un devis détaillé (ou format generatedQuote)
+    sourcePhasesarray.forEach((ModèlePhase: any, phaseIndex: number) => {
       const tasks: Task[] = [];
       
       // Support des deux formats : items OU lignes
-      const sourceItems = claudePhase.items || claudePhase.lignes;
+      const sourceItems = ModèlePhase.items || ModèlePhase.lignes;
       
       // Convertir chaque item en tâche avec articles
       if (sourceItems && Array.isArray(sourceItems)) {
@@ -55,8 +55,8 @@ export function convertClaudeQuoteToAppQuote(
       
       const phase: Phase = {
         id: `phase-${Date.now()}-${phaseIndex}`,
-        name: claudePhase.name || claudePhase.poste || `Phase ${phaseIndex + 1}`,
-        description: claudePhase.description || '',
+        name: ModèlePhase.name || ModèlePhase.poste || `Phase ${phaseIndex + 1}`,
+        description: ModèlePhase.description || '',
         tasks,
         totalPrice: tasks.reduce((sum, task) => sum + task.totalPrice, 0),
         expanded: true
@@ -64,10 +64,10 @@ export function convertClaudeQuoteToAppQuote(
       
       phases.push(phase);
     });
-  } else if (claudeQuote.measurements?.floors && Array.isArray(claudeQuote.measurements.floors)) {
+  } else if (ModèleQuote.measurements?.floors && Array.isArray(ModèleQuote.measurements.floors)) {
     // Cas 2 : Pas de devis détaillé, créer des phases depuis les mesures (measurements.floors)
     // Créer une phase par étage
-    claudeQuote.measurements.floors.forEach((floorData: any, floorIndex: number) => {
+    ModèleQuote.measurements.floors.forEach((floorData: any, floorIndex: number) => {
       const tasks: Task[] = [];
       
       if (floorData.rooms && Array.isArray(floorData.rooms)) {
@@ -119,11 +119,11 @@ export function convertClaudeQuoteToAppQuote(
   const quote: Omit<Quote, 'id'> = {
     projectId: '', // À remplir par l'application
     reference: undefined, // Sera généré automatiquement
-    title: claudeQuote.projectInfo?.title || planMetadata.fileName.replace('.pdf', ''),
-    clientName: claudeQuote.projectInfo?.client || planMetadata.clientName || 'Client à définir',
+    title: ModèleQuote.projectInfo?.title || planMetadata.fileName.replace('.pdf', ''),
+    clientName: ModèleQuote.projectInfo?.client || planMetadata.clientName || 'Client à définir',
     clientEmail: '',
-    clientPhone: claudeQuote.projectInfo?.contact || '',
-    companyName: claudeQuote.projectInfo?.architect || '',
+    clientPhone: ModèleQuote.projectInfo?.contact || '',
+    companyName: ModèleQuote.projectInfo?.architect || '',
     projectType: planMetadata.projectType || 'construction',
     phases,
     subtotal,
@@ -137,8 +137,8 @@ export function convertClaudeQuoteToAppQuote(
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     paymentTerms: 'Paiement en 3 fois : 30% à la commande, 40% à mi-parcours, 30% à la livraison',
     notes: `Devis généré automatiquement depuis le plan architectural.\n\n` +
-           `${claudeQuote.hypotheses ? `Hypothèses retenues :\n${claudeQuote.hypotheses.join('\n')}\n\n` : ''}` +
-           `${claudeQuote.elementsAbsents ? `Éléments non visibles sur le plan :\n${claudeQuote.elementsAbsents.join('\n')}\n\n` : ''}` +
+           `${ModèleQuote.hypotheses ? `Hypothèses retenues :\n${ModèleQuote.hypotheses.join('\n')}\n\n` : ''}` +
+           `${ModèleQuote.elementsAbsents ? `Éléments non visibles sur le plan :\n${ModèleQuote.elementsAbsents.join('\n')}\n\n` : ''}` +
            `⚠️ Les prix sont à vérifier et ajuster selon le marché local.`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

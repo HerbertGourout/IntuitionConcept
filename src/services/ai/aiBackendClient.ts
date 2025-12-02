@@ -1,7 +1,7 @@
 import { apiClient } from '../api/httpClient';
 
 export type BackendAIProvider =
-  | 'openai'
+  | 'Service'
   | 'anthropic'
   | 'groq'
   | 'grok'

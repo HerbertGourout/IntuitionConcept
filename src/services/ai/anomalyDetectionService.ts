@@ -159,7 +159,7 @@ class AnomalyDetectionService {
       case 'deviation_from_average': {
         const average = await this.getHistoricalAverage(rule.metric, metrics.projectId);
         const deviation = Math.abs(value - average);
-        const deviationPercentage = (deviation / average) * 100;
+        const deviationPercentagtion / average) * 100;
         isAnomaly = deviationPercentage > rule.threshold;
         expectedValue = average;
         break;
@@ -169,7 +169,7 @@ class AnomalyDetectionService {
     if (!isAnomaly) return null;
 
     const deviation = Math.abs(value - expectedValue);
-    const deviationPercentage = expectedValue > 0 ? (deviation / expectedValue) * 100 : 0;
+    const deviationPercentagtion / expectedValue) * 100 : 0;
 
     return {
       type: rule.type,
@@ -216,7 +216,7 @@ class AnomalyDetectionService {
     }
   }
 
-  // Calculer la sévérité basée sur le pourcentage de déviation
+  // Calculer la sévérité basée sur le pourcentagtion
   private calculateSeverity(deviationPercentage: number): Anomaly['severity'] {
     if (deviationPercentage >= 100) return 'critical';
     if (deviationPercentage >= 50) return 'high';
@@ -678,12 +678,12 @@ class AnomalyDetectionService {
       // 1. Détecter dépassements budgétaires
       if (project.spent > project.budget * 1.2) {
         const deviation = project.spent - project.budget;
-        const deviationPercentage = (deviation / project.budget) * 100;
+        const deviationPercentagtion / project.budget) * 100;
         
         anomalies.push({
           id: `budget_${project.id}_${Date.now()}`,
           type: 'budget_overrun',
-          severity: deviationPercentage > 50 ? 'critical' : deviationPercentage > 30 ? 'high' : 'medium',
+          severity: deviationPercentagtionPercentage > 30 ? 'high' : 'medium',
           projectId: project.id,
           title: `Dépassement budgétaire : +${deviationPercentage.toFixed(1)}%`,
           description: `Le projet "${project.name}" a dépassé son budget de ${deviationPercentage.toFixed(1)}%`,
@@ -761,7 +761,7 @@ class AnomalyDetectionService {
         if (similarHistorical.length > 0) {
           const avgHistorical = similarHistorical.reduce((sum, h) => sum + h.amount, 0) / similarHistorical.length;
           const deviation = transaction.amount - avgHistorical;
-          const deviationPercentage = (deviation / avgHistorical) * 100;
+          const deviationPercentagtion / avgHistorical) * 100;
           
           if (deviationPercentage > 50) {
             anomalies.push({

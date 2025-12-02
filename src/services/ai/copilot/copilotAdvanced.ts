@@ -1,11 +1,4 @@
-/**
- * Service Advanced Copilot IA avec Gemini 3
- * Fonctionnalités:
- * - Compréhension naturelle du langage
- * - Mémoire de conversation (thought_signatures)
- * - Actions complexes (code_execution, google_search)
- * - Qualité +500%
- */
+
 
 import { Gemini3Client, getDefaultClient } from '../gemini3';
 import type { AnalysisResult, GenerateContentRequest } from '../gemini3';
@@ -215,7 +208,7 @@ Effectue les recherches et calculs nécessaires. Explique ton raisonnement.`;
    * Construit le prompt système
    */
   private buildSystemPrompt(context?: Partial<ConversationContext>): string {
-    return `Tu es un assistant IA expert en BTP (Bâtiment et Travaux Publics) pour la plateforme IntuitionConcept.
+    return `Tu es un Assistant expert en BTP (Bâtiment et Travaux Publics) pour la plateforme IntuitionConcept.
 
 **Tes capacités:**
 - Analyse de plans architecturaux

@@ -228,8 +228,6 @@ const Tasks: React.FC = () => {
     setIsModalVisible(true);
   };
 
-
-
   const handleSaveTask = async (taskData: Partial<ProjectTask>) => {
     if (!selectedPhase || !project) {
       console.error('❌ Impossible de sauvegarder: phase ou projet manquant', { selectedPhase, project });

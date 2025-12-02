@@ -18,7 +18,7 @@ declare global {
  * Exécuter la migration complète
  */
 export const executeMigration = async (): Promise<void> => {
-  console.log('🚀 Démarrage de la migration complète vers Firebase...');
+  console.log(' Démarrage de la migration complète vers Firebase...');
   
   try {
     // 1. Vérifier l'état actuel
@@ -33,7 +33,7 @@ export const executeMigration = async (): Promise<void> => {
       const health = await MigrationService.checkMigrationHealth();
       if (!health.isHealthy) {
         console.warn('⚠️ Problèmes détectés malgré la migration terminée:', health.issues);
-        console.log('💡 Recommandations:', health.recommendations);
+        console.log(' Recommandations:', health.recommendations);
       }
       
       return;

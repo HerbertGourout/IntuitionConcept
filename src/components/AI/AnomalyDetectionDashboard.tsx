@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Card, Table, Tag, Button, Space, Alert, Statistic, Row, Col, Modal, List } from 'antd';
 import { 
   WarningOutlined, 
@@ -140,282 +140,82 @@ const AnomalyDetectionDashboard: React.FC = () => {
       // Utiliser uniquement les anomalies réelles basées sur les données du projet
       const combinedAnomalies = [...realAnomalies];
       
-      // Plus de données fictives - afficher seulement les vraies anomalies
-      /*
-      if (combinedAnomalies.length < 2) {
-        const mockAnomalies: Anomaly[] = [
-          {
-            id: 'anom_1',
-            type: 'budget_overrun',
-            severity: 'high',
-            projectId: 'project_villa_abc',
-            title: 'Dépassement budgétaire: 23% vs 20% prévu',
-            description: 'Le budget alloué a été dépassé de 350 000 XOF sur la phase gros œuvre.',
-            detectedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // Il y a 2h
-            expectedValue: 1500000,
-            actualValue: 1850000,
-            deviation: 350000,
-            deviationPercentage: 23.3,
-            impact: {
-              financial: 350000,
-              timeline: 2,
-              quality: 0
-            },
-            recommendations: [
-              'Réviser le budget prévisionnel et identifier les postes de dépassement',
-              'Négocier avec les fournisseurs pour réduire les coûts',
-              'Optimiser les ressources et éliminer les gaspillages'
-            ],
-            status: 'active'
-          },
-          {
-            id: 'anom_2',
-            type: 'timeline_delay',
-            severity: 'medium',
-            projectId: 'project_villa_abc',
-            title: 'Retard planning: 5 jours vs 40 jours prévus',
-            description: 'Le projet accuse un retard de 5 jours sur le planning initial.',
-            detectedAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // Il y a 4h
-            expectedValue: 40,
-            actualValue: 45,
-            deviation: 5,
-            deviationPercentage: 12.5,
-            impact: {
-              financial: 250000,
-              timeline: 5,
-              quality: 0
-            },
-            recommendations: [
-              'Réorganiser le planning et prioriser les tâches critiques',
-              'Augmenter temporairement les effectifs sur les tâches en retard',
-              'Identifier et résoudre les blocages opérationnels'
-            ],
-            status: 'active'
-          },
-          {
-            id: 'anom_3',
-            type: 'quality_issue',
-            severity: 'high',
-            projectId: 'project_villa_abc',
-            title: 'Chute qualité: 65% vs 85% requis',
-            description: 'Le score qualité est tombé sous le seuil acceptable de 70%.',
-            detectedAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // Il y a 6h
-            expectedValue: 85,
-            actualValue: 65,
-            deviation: 20,
-            deviationPercentage: 23.5,
-            impact: {
-              financial: 200000,
-              timeline: 3,
-              quality: 20
-            },
-            recommendations: [
-              'Effectuer un contrôle qualité approfondi',
-              'Former les équipes aux bonnes pratiques',
-              'Renforcer la supervision sur site',
-              'Prévoir des reprises si nécessaire'
-            ],
-            status: 'acknowledged'
-          },
-          {
-            id: 'anom_4',
-            type: 'cost_spike',
-            severity: 'medium',
-            projectId: 'project_bureau_xyz',
-            title: 'Pic de coût: 45% au-dessus de la moyenne',
-            description: 'Le coût journalier a augmenté de 45% par rapport à la moyenne des 7 derniers jours.',
-            detectedAt: new Date(Date.now() - 8 * 60 * 60 * 1000), // Il y a 8h
-            expectedValue: 35000,
-            actualValue: 50750,
-            deviation: 15750,
-            deviationPercentage: 45,
-            impact: {
-              financial: 15750,
-              timeline: 0,
-              quality: 5
-            },
-            recommendations: [
-              'Analyser les causes du pic de coût',
-              "Vérifier les factures et détecter d'éventuelles erreurs",
-              'Mettre en place un contrôle budgétaire quotidien'
-            ],
-            status: 'resolved'
-          }
-        ];
-        combinedAnomalies.push(...mockAnomalies);
-      }
-      */
-
+      // Mettre à jour l'état avec les anomalies
       setAnomalies(combinedAnomalies);
     } catch (error) {
-      console.error('Erreur chargement anomalies:', error);
+      console.error('Erreur lors du chargement des anomalies:', error);
     } finally {
       setLoading(false);
     }
   }, [generateRealAnomalies]);
 
-  const runAnalysis = async () => {
-    setLoading(true);
-    try {
-      // Simuler l'analyse de tous les projets
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      await loadAnomalies();
-    } catch (error) {
-      console.error('Erreur analyse:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fonction pour lancer l'analyse
+  const runAnalysis = useCallback(() => {
+    loadAnomalies();
+  }, [loadAnomalies]);
 
-  const getSeverityColor = (severity: Anomaly['severity']) => {
-    const colors = {
-      low: 'blue',
-      medium: 'orange',
-      high: 'red',
-      critical: 'purple'
-    };
-    return colors[severity];
-  };
-
-  const getSeverityIcon = (severity: Anomaly['severity']) => {
-    const icons = {
-      low: <ClockCircleOutlined />,
-      medium: <WarningOutlined />,
-      high: <ExclamationCircleOutlined />,
-      critical: <ExclamationCircleOutlined />
-    };
-    return icons[severity];
-  };
-
-  const getStatusColor = (status: Anomaly['status']) => {
-    const colors = {
-      active: 'red',
-      acknowledged: 'orange',
-      resolved: 'green',
-      ignored: 'gray'
-    };
-    return colors[status];
-  };
-
-  const getTypeIcon = (type: Anomaly['type']) => {
-    const icons = {
-      budget_overrun: <DollarOutlined />,
-      timeline_delay: <CalendarOutlined />,
-      cost_spike: <DollarOutlined />,
-      resource_conflict: <WarningOutlined />,
-      quality_issue: <SafetyCertificateOutlined />,
-      weather_impact: <CloudOutlined />
-    };
-    return icons[type] || <WarningOutlined />;
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const getStats = () => {
+  // Calcul des statistiques
+  const stats = useMemo(() => {
     const total = anomalies.length;
     const active = anomalies.filter(a => a.status === 'active').length;
     const critical = anomalies.filter(a => a.severity === 'critical').length;
     const high = anomalies.filter(a => a.severity === 'high').length;
-    const totalFinancialImpact = anomalies
-      .filter(a => a.status === 'active')
-      .reduce((sum, a) => sum + a.impact.financial, 0);
-
+    const totalFinancialImpact = anomalies.reduce((sum, a) => sum + (a.impact?.financial || 0), 0);
     return { total, active, critical, high, totalFinancialImpact };
-  };
+  }, [anomalies]);
 
-  const stats = getStats();
+  // Formater les montants
+  const formatCurrency = useCallback((amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: currency || 'XOF'
+    }).format(amount);
+  }, [currency]);
 
+  // Colonnes du tableau
   const columns = [
     {
       title: 'Type',
       dataIndex: 'type',
       key: 'type',
-      render: (type: Anomaly['type']) => (
-        <Space>
-          {getTypeIcon(type)}
-          <span style={{ textTransform: 'capitalize' }}>
-            {type.replace('_', ' ')}
-          </span>
-        </Space>
-      )
+      render: (type: string) => {
+        const typeLabels: Record<string, string> = {
+          'budget_overrun': 'Dépassement budget',
+          'timeline_delay': 'Retard planning',
+          'quality_issue': 'Problème qualité',
+          'resource_shortage': 'Manque ressources'
+        };
+        return typeLabels[type] || type;
+      }
     },
     {
       title: 'Sévérité',
       dataIndex: 'severity',
       key: 'severity',
-      render: (severity: Anomaly['severity']) => (
-        <Tag 
-          color={getSeverityColor(severity)} 
-          icon={getSeverityIcon(severity)}
-        >
-          {severity.toUpperCase()}
-        </Tag>
-      )
+      render: (severity: string) => {
+        const colors: Record<string, string> = {
+          'critical': 'red',
+          'high': 'orange',
+          'medium': 'gold',
+          'low': 'green'
+        };
+        return <Tag color={colors[severity] || 'default'}>{severity.toUpperCase()}</Tag>;
+      }
     },
     {
       title: 'Titre',
       dataIndex: 'title',
       key: 'title',
-      render: (title: string) => (
-        <span style={{ fontWeight: 500 }}>{title}</span>
-      )
     },
     {
-      title: 'Impact',
-      key: 'impact',
-      render: (record: Anomaly) => (
-        <Space direction="vertical" size="small">
-          {record.impact.financial > 0 && (
-            <span style={{ fontSize: '12px' }}>
-              💰 {formatCurrency(record.impact.financial)}
-            </span>
-          )}
-          {record.impact.timeline > 0 && (
-            <span style={{ fontSize: '12px' }}>
-              📅 +{record.impact.timeline} jours
-            </span>
-          )}
-          {record.impact.quality > 0 && (
-            <span style={{ fontSize: '12px' }}>
-              🎯 -{record.impact.quality}% qualité
-            </span>
-          )}
-        </Space>
-      )
-    },
-    {
-      title: 'Statut',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: Anomaly['status']) => (
-        <Tag color={getStatusColor(status)}>
-          {status === 'active' && 'Actif'}
-          {status === 'acknowledged' && 'Pris en compte'}
-          {status === 'resolved' && 'Résolu'}
-          {status === 'ignored' && 'Ignoré'}
-        </Tag>
-      )
-    },
-    {
-      title: 'Détecté',
-      dataIndex: 'detectedAt',
-      key: 'detectedAt',
-      render: (date: Date) => (
-        <span style={{ fontSize: '12px' }}>
-          {new Date(date).toLocaleString('fr-FR')}
-        </span>
-      )
+      title: 'Impact Financier',
+      key: 'financial',
+      render: (_: unknown, record: Anomaly) => formatCurrency(record.impact?.financial || 0)
     },
     {
       title: 'Actions',
       key: 'actions',
-      render: (record: Anomaly) => (
+      render: (_: unknown, record: Anomaly) => (
         <Button
           icon={<EyeOutlined />}
           size="small"
@@ -431,17 +231,13 @@ const AnomalyDetectionDashboard: React.FC = () => {
   ];
 
   return (
-    <PageContainer className="space-y-6">
-      {/* Header harmonisé */}
-      <div className="glass-card p-6 rounded-xl">
-        <SectionHeader
-          icon={<WarningOutlined className="text-orange-600" />}
-          title="Détection d'anomalies IA"
-          subtitle="Analyse des projets, retards et dépassements budgétaires"
-        />
-      </div>
+    <PageContainer>
+      <SectionHeader
+        title="Détection d'Anomalies"
+        subtitle="Surveillance intelligente des projets"
+        icon={<CloudOutlined />}
+      />
 
-      {/* Statistiques globales */}
       <Row gutter={16} className="mb-4">
         <Col span={6}>
           <Card className="glass-card">

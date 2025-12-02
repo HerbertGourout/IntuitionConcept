@@ -223,7 +223,7 @@ export interface CompanyProfile {
  */
 export interface ResponseGenerationConfig {
   useAI: boolean;
-  aiModel: 'claude-haiku' | 'claude-sonnet';
+  aiModel: 'Modèle-haiku' | 'Modèle-sonnet';
   tone: 'formal' | 'professional' | 'friendly';
   language: 'fr' | 'en';
   includeInnovations: boolean;

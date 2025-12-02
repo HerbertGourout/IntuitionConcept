@@ -1,7 +1,7 @@
 import { PlanId } from './pricing';
 
 export interface ApiLimits {
-  // OCR & IA
+  
   ocrScansPerMonth: number;
   aiQueriesPerMonth: number;
   aiQuoteGenerationsPerMonth: number;
@@ -27,8 +27,8 @@ export interface ApiLimits {
 export const PLAN_API_LIMITS: Record<PlanId, ApiLimits> = {
   basic: {
     ocrScansPerMonth: 50,           // ~2500 FCFA de coût OCR
-    aiQueriesPerMonth: 100,         // ~1500 FCFA de coût IA
-    aiQuoteGenerationsPerMonth: 10, // ~1000 FCFA de coût IA
+    aiQueriesPerMonth: 100,         
+    aiQuoteGenerationsPerMonth: 10, 
     emailsPerMonth: 200,            // ~300 FCFA de coût email
     smsNotificationsPerMonth: 50,   // ~500 FCFA de coût SMS
     gpsTrackingHours: 100,          // ~800 FCFA de coût GPS
@@ -41,8 +41,8 @@ export const PLAN_API_LIMITS: Record<PlanId, ApiLimits> = {
   
   pro: {
     ocrScansPerMonth: 350,          // ~8750 FCFA de coût OCR
-    aiQueriesPerMonth: 700,         // ~5250 FCFA de coût IA
-    aiQuoteGenerationsPerMonth: 70, // ~3500 FCFA de coût IA
+    aiQueriesPerMonth: 700,         
+    aiQuoteGenerationsPerMonth: 70, 
     emailsPerMonth: 1500,           // ~1125 FCFA de coût email
     smsNotificationsPerMonth: 350,  // ~1750 FCFA de coût SMS
     gpsTrackingHours: 700,          // ~2800 FCFA de coût GPS
@@ -55,8 +55,8 @@ export const PLAN_API_LIMITS: Record<PlanId, ApiLimits> = {
   
   enterprise: {
     ocrScansPerMonth: 1500,         // ~18750 FCFA de coût OCR
-    aiQueriesPerMonth: 3500,        // ~14000 FCFA de coût IA
-    aiQuoteGenerationsPerMonth: 350,// ~10500 FCFA de coût IA
+    aiQueriesPerMonth: 3500,        
+    aiQuoteGenerationsPerMonth: 350,
     emailsPerMonth: 7500,           // ~3750 FCFA de coût email
     smsNotificationsPerMonth: 1500, // ~6000 FCFA de coût SMS
     gpsTrackingHours: 3500,         // ~10500 FCFA de coût GPS
@@ -71,8 +71,8 @@ export const PLAN_API_LIMITS: Record<PlanId, ApiLimits> = {
 // Coûts unitaires pour calcul des dépassements
 export const API_UNIT_COSTS = {
   ocrScan: 50,              // 50 FCFA par scan OCR
-  aiQuery: 15,              // 15 FCFA par requête IA
-  aiQuoteGeneration: 100,   // 100 FCFA par génération devis IA
+  aiQuery: 15,              
+  aiQuoteGeneration: 100,   
   email: 0.75,              // 0.75 FCFA par email
   smsNotification: 10,      // 10 FCFA par SMS
   gpsTrackingHour: 4,       // 4 FCFA par heure GPS

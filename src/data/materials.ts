@@ -57,7 +57,7 @@ export const MATERIALS_EQUIPMENTS: MaterialOrEquipment[] = [
   { name: 'Pique de terre', category: 'Électricité', unit: 'pièce', priceMin: 25000 },
   { name: 'Barrette de terre', category: 'Électricité', unit: 'pièce', priceMin: 25000 },
   { name: 'Fil cuivre nu', category: 'Électricité', unit: 'ml', priceMin: 35000 },
-  // 🎨 Peinture et finition
+  //  Peinture et finition
   { name: 'Peinture à l’eau', category: 'Peinture', unit: 'litre/rouleau', priceMin: 2500 },
   { name: 'Peinture à l’huile', category: 'Peinture', unit: 'sceau', priceMin: 28000, priceMax: 35000 },
   { name: 'Mastique', category: 'Peinture', unit: 'pièce', priceMin: 18000 },

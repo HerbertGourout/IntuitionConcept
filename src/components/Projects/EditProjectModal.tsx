@@ -3,7 +3,6 @@ import { X } from 'lucide-react';
 import ProjectContext from '../../contexts/ProjectContext';
 import type { Project } from '../../contexts/projectTypes';
 
-
 // Type partiel pour les propriétés du projet nécessaires à l'édition
 type ProjectForEdit = Pick<Project, 'id' | 'name' | 'description' | 'location' | 'startDate' | 'endDate' | 'status' | 'budget' | 'manager' | 'client'> & {
     // Propriétés optionnelles
@@ -22,7 +21,6 @@ interface EditProjectModalProps {
 
 const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, isOpen, onClose }) => {
     const projectContext = useContext(ProjectContext);
-
 
     const [formData, setFormData] = useState({
         name: '',

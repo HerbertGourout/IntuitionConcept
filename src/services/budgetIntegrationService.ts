@@ -216,8 +216,6 @@ export class BudgetIntegrationService {
     }
   }
 
-
-
   /**
    * Calcule le montant réellement livré basé sur les quantités reçues
    */
