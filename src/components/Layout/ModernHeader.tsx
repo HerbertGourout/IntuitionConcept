@@ -81,30 +81,32 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
 
   const baseMenuItems: MenuItem[] = [
     {
-      name: 'Fonctionnalités',
+      name: 'Solutions',
       href: '#',
       hasDropdown: true,
       dropdownItems: [
-        { name: 'Gestion de Projets', href: '/app/projects', icon: BarChart3, description: 'Organisez vos projets efficacement' },
-        { name: 'Équipes & Collaboration', href: '/app/team', icon: Users, description: 'Travaillez en équipe facilement' },
-        { name: 'Planning & Gantt', href: '/app/planning', icon: Calendar, description: 'Planifiez avec des diagrammes Gantt' },
-        { name: 'Documents', href: '/app/documents', icon: FileText, description: 'Gérez vos documents en un lieu' },
-        { name: 'Finances & Paiements', href: '/app/finances', icon: Smartphone, description: 'Gestion financière et paiements' },
+        { name: 'Artisans & Indépendants', href: '/solutions/artisan', icon: Users, description: 'Devis mobile, Mobile Money, simplicité' },
+        { name: 'PME du BTP', href: '/solutions/pme', icon: BarChart3, description: 'Multi-projets, équipes, planning' },
+        { name: 'Grandes Entreprises', href: '/solutions/enterprise', icon: Shield, description: 'Multi-sites, API, sécurité enterprise' },
+        { name: 'Toutes les solutions', href: '/solutions', icon: FileText, description: 'Comparer les offres' },
       ]
     },
     {
-      name: 'Outils',
+      name: 'Fonctionnalités',
+      href: '/features',
+      hasDropdown: false
+    },
+    { name: 'Tarifs', href: '/pricing' },
+    {
+      name: 'Ressources',
       href: '#',
       hasDropdown: true,
       dropdownItems: [
-        { name: 'Tableau de Bord', href: '/app/dashboard', icon: BarChart3, description: 'Vue d\'ensemble de vos projets' },
-        { name: 'Tâches', href: '/app/tasks', icon: Calendar, description: 'Gestion des tâches' },
-        { name: 'Équipements', href: '/app/equipment', icon: Shield, description: 'Gestion des équipements' },
-        { name: 'Bons de Commande', href: '/app/purchase-orders', icon: FileText, description: 'Gestion des commandes' },
+        { name: 'À propos', href: '/about', icon: Users, description: 'Notre histoire et notre équipe' },
+        { name: 'Support', href: '/support', icon: Shield, description: 'FAQ et aide' },
+        { name: 'Contact', href: '/contact', icon: Smartphone, description: 'Nous contacter' },
       ]
     },
-    { name: 'Tarification', href: '/pricing' },
-    { name: "Base d'ouvrages (BETA)", href: '/app/country-pricing' },
   ];
 
   const menuItems: MenuItem[] = React.useMemo(() => {

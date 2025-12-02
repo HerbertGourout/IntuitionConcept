@@ -25,39 +25,39 @@ import {
 const ModernFooter: React.FC = () => {
   const footerSections = [
     {
-      title: 'Produit',
+      title: 'Solutions',
       links: [
-        { name: 'Fonctionnalités', href: '/features', icon: BarChart3 },
-        { name: 'Tarification', href: '/pricing', icon: CreditCard },
-        { name: 'Mobile Money', href: '/features/payments', icon: Smartphone },
-        { name: 'Sécurité', href: '/security', icon: Shield },
+        { name: 'Artisans & Indépendants', href: '/solutions/artisan', icon: Users },
+        { name: 'PME du BTP', href: '/solutions/pme', icon: BarChart3 },
+        { name: 'Grandes Entreprises', href: '/solutions/enterprise', icon: Shield },
+        { name: 'Toutes les solutions', href: '/solutions', icon: Globe },
       ]
     },
     {
-      title: 'Solutions',
+      title: 'Produit',
       links: [
-        { name: 'PME & Startups', href: '/solutions/sme', icon: Users },
-        { name: 'Grandes Entreprises', href: '/solutions/enterprise', icon: BarChart3 },
-        { name: 'Afrique Francophone', href: '/solutions/francophone', icon: Globe },
-        { name: 'Intégrations', href: '/integrations', icon: Calendar },
+        { name: 'Fonctionnalités', href: '/features', icon: BarChart3 },
+        { name: 'Tarifs', href: '/pricing', icon: CreditCard },
+        { name: 'Mobile Money', href: '/features', icon: Smartphone },
+        { name: 'Mode hors-ligne', href: '/features', icon: Calendar },
       ]
     },
     {
       title: 'Ressources',
       links: [
-        { name: 'Documentation', href: '/docs', icon: FileText },
-        { name: 'API', href: '/api', icon: BarChart3 },
-        { name: 'Support', href: '/support', icon: Users },
-        { name: 'Blog', href: '/blog', icon: FileText },
+        { name: 'Support & FAQ', href: '/support', icon: Users },
+        { name: 'Contact', href: '/contact', icon: Mail },
+        { name: 'Démo', href: '/contact', icon: FileText },
+        { name: 'Blog', href: '/support', icon: FileText },
       ]
     },
     {
       title: 'Entreprise',
       links: [
         { name: 'À propos', href: '/about', icon: Users },
-        { name: 'Carrières', href: '/careers', icon: Heart },
-        { name: 'Contact', href: '/contact', icon: Mail },
-        { name: 'Partenaires', href: '/partners', icon: Globe },
+        { name: 'Notre équipe', href: '/about', icon: Heart },
+        { name: 'Nos bureaux', href: '/contact', icon: Globe },
+        { name: 'Partenaires', href: '/about', icon: Globe },
       ]
     }
   ];
@@ -156,16 +156,16 @@ const ModernFooter: React.FC = () => {
               </div>
               
               <p className="text-gray-300 leading-relaxed mb-6">
-                La plateforme de gestion de projets conçue spécialement pour l'Afrique francophone. 
-                Gérez vos projets, équipes et paiements Mobile Money en toute simplicité.
+                La plateforme de gestion BTP conçue pour l'Afrique francophone. 
+                Pilotez vos chantiers, équipes et paiements Mobile Money simplement.
               </p>
 
               {/* Statistiques animées */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 {[
-                  { number: '10K+', label: 'Utilisateurs' },
-                  { number: '25+', label: 'Pays' },
-                  { number: '99.9%', label: 'Uptime' }
+                  { number: '850+', label: 'Entreprises' },
+                  { number: '12', label: 'Pays' },
+                  { number: '24h', label: 'Support' }
                 ].map((stat, index) => (
                   <motion.div
                     key={stat.label}

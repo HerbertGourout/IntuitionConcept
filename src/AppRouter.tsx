@@ -18,6 +18,10 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import FeaturesPage from './pages/FeaturesPage';
 import SupportPage from './pages/SupportPage';
+import SolutionsIndex from './pages/solutions/SolutionsIndex';
+import PMESolution from './pages/solutions/PMESolution';
+import ArtisanSolution from './pages/solutions/ArtisanSolution';
+import EnterpriseSolution from './pages/solutions/EnterpriseSolution';
 import InspectorDemo from './pages/ai/InspectorDemo';
 import VocalCopilotDemo from './pages/ai/VocalCopilotDemo';
 import MaterialsDemo from './pages/ai/MaterialsDemo';
@@ -47,6 +51,12 @@ const AppRouter: React.FC = () => {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/support" element={<SupportPage />} />
+            
+            {/* Solutions par segment */}
+            <Route path="/solutions" element={<SolutionsIndex />} />
+            <Route path="/solutions/pme" element={<PMESolution />} />
+            <Route path="/solutions/artisan" element={<ArtisanSolution />} />
+            <Route path="/solutions/enterprise" element={<EnterpriseSolution />} />
             
             {/* Démos IA */}
             <Route path="/demo/inspector" element={<InspectorDemo />} />
