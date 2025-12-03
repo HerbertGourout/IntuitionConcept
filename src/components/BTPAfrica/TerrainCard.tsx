@@ -123,19 +123,19 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
         )}
         
         {/* Titre */}
-        <h3 className={`font-bold text-gray-900 mb-2 ${variant === 'postit' ? 'font-["Caveat",cursive] text-xl' : 'text-lg'}`}>
+        <h3 className={`font-bold text-gray-900 mb-2 ${variant === 'postit' ? 'font-handwritten text-xl' : 'text-lg'}`}>
           {title}
         </h3>
         
         {/* Description */}
-        <p className={`text-gray-600 text-sm leading-relaxed ${variant === 'postit' ? 'font-["Caveat",cursive] text-base' : ''}`}>
+        <p className={`text-gray-600 text-sm leading-relaxed ${variant === 'postit' ? 'font-handwritten text-base' : ''}`}>
           {description}
         </p>
         
         {/* Annotation manuscrite */}
         {annotation && (
           <p 
-            className="mt-4 text-[#C45C3E] font-['Caveat',cursive] text-lg"
+            className="mt-4 text-[#C45C3E] font-handwritten text-lg"
             style={{ transform: 'rotate(-1deg)' }}
           >
             → {annotation}

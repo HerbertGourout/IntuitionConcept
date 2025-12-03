@@ -117,7 +117,7 @@ const SplitHeroSection: React.FC<SplitHeroSectionProps> = ({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="font-['Caveat',cursive] text-2xl text-[#C45C3E] mb-4 transform -rotate-2"
+                className="font-handwritten text-2xl text-[#C45C3E] mb-4 transform -rotate-2"
               >
                 {annotation}
               </motion.p>

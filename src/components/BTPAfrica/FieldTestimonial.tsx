@@ -73,7 +73,7 @@ const FieldTestimonial: React.FC<FieldTestimonialProps> = ({
         )}
         
         {/* Citation */}
-        <p className="text-gray-800 font-['Caveat',cursive] text-xl leading-relaxed mb-4">
+        <p className="text-gray-800 font-handwritten text-xl leading-relaxed mb-4">
           "{quote}"
         </p>
         

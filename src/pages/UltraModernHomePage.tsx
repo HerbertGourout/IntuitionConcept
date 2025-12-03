@@ -172,7 +172,7 @@ const UltraModernHomePage: React.FC = () => {
                   style={{ transform: `rotate(${index % 2 === 0 ? -1 : 1}deg)` }}
                 >
                   <Icon className="w-8 h-8 mx-auto mb-3 text-[#C45C3E]" />
-                  <div className="text-3xl font-bold text-gray-900 font-['Bebas_Neue',sans-serif] tracking-wide">{stat.number}</div>
+                  <div className="text-3xl font-bold text-gray-900 font-display tracking-wide">{stat.number}</div>
                   <div className="text-gray-600 text-sm">{stat.label}</div>
                 </motion.div>
               );
@@ -189,7 +189,7 @@ const UltraModernHomePage: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
-            <p className="font-['Caveat',cursive] text-xl text-[#C45C3E] mb-2" style={{ transform: 'rotate(-1deg)' }}>
+            <p className="font-handwritten text-xl text-[#C45C3E] mb-2" style={{ transform: 'rotate(-1deg)' }}>
               → 15 ans sur les chantiers
             </p>
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -334,10 +334,10 @@ const UltraModernHomePage: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
-            <p className="font-['Caveat',cursive] text-2xl text-[#C45C3E] mb-4" style={{ transform: 'rotate(-1deg)' }}>
+            <p className="font-handwritten text-2xl text-[#C45C3E] mb-4" style={{ transform: 'rotate(-1deg)' }}>
               → Conversations réelles avec nos clients
             </p>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 font-['Bebas_Neue',sans-serif] tracking-wide uppercase">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 font-display tracking-wide uppercase">
               Ce que disent nos clients
             </h2>
             <p className="text-xl text-gray-600">

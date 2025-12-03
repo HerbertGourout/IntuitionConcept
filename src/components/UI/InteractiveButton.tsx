@@ -1,12 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LucideIcon } from 'lucide-react';
 
 interface InteractiveButtonProps {
   children: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'whatsapp';
   size?: 'sm' | 'md' | 'lg';
-  icon?: LucideIcon;
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   iconPosition?: 'left' | 'right';
   onClick?: () => void;
   href?: string;

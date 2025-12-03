@@ -5,10 +5,14 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        // Polices principales
         primary: ['Outfit', 'sans-serif'],
         secondary: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
-        heading: ['Outfit', 'sans-serif'], // Backward compatibility
+        heading: ['Outfit', 'sans-serif'],
+        // Polices BTP Africa - accents visuels
+        display: ['Bebas Neue', 'sans-serif'],  // Titres impact, stats
+        handwritten: ['Caveat', 'cursive'],      // Annotations manuscrites
       },
       colors: {
         // Gradients as CSS variables
