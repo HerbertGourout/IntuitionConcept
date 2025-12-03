@@ -9,14 +9,21 @@ import CompetitorComparison from '../components/Homepage/CompetitorComparison';
 import VideoTestimonials from '../components/Homepage/VideoTestimonials';
 import VideoDemo from '../components/Homepage/VideoDemo';
 
+// Composants BTP Afrique - Design authentique
+import { 
+  SplitHeroSection, 
+  WhatsAppTestimonial, 
+  FieldTestimonial,
+  TerrainCard,
+  AfricanPatternDivider 
+} from '../components/BTPAfrica';
+
 // Images
 import heroConstructionTeam from '../assets/images/homepage/hero-construction-team.jpg';
 import dashboardInterface from '../assets/images/homepage/dashboard-interface.jpg';
 import collaborativeProjectManagement from '../assets/images/homepage/collaborative-project-management.jpg';
 import intelligentQuoteSystem from '../assets/images/homepage/intelligent-quote-system.jpg';
-import aiOcrProcessing from '../assets/images/homepage/ai-ocr-processing.jpg';
 import teamGpsTracking from '../assets/images/homepage/team-gps-tracking.jpg';
-import trainingSupport from '../assets/images/homepage/training-support.jpg';
 import mobileMoneyPayment from '../assets/images/homepage/mobile-money-payment.jpg';
 import satisfiedCustomer from '../assets/images/homepage/satisfied-customer.jpg';
 import digitalConstructionTeam from '../assets/images/homepage/digital-construction-team.jpg';
@@ -30,11 +37,8 @@ import {
   BarChart3,
   Calendar,
   FileText,
-  Star,
   CheckCircle,
-  TrendingUp,
   Award,
-  ChevronRight,
   MapPin,
   DollarSign,
   Truck,
@@ -42,7 +46,6 @@ import {
   ClipboardList,
   Clock,
   Phone,
-  MessageCircle,
   Wifi
 } from 'lucide-react';
 
@@ -114,37 +117,6 @@ const UltraModernHomePage: React.FC = () => {
     }
   ];
 
-  // Témoignages authentiques - verbatims courts
-  const testimonials = [
-    {
-      name: 'Saliou Mbaye',
-      role: 'Gérant, BTP Thiès',
-      country: 'Sénégal',
-      content: 'Je gère 8 chantiers sans stress. Avant, c\'était le chaos.',
-      rating: 5,
-      avatar: satisfiedCustomer,
-      metric: '8 chantiers gérés'
-    },
-    {
-      name: 'Adjoua Kouamé',
-      role: 'Directrice, Construction CI',
-      country: 'Côte d\'Ivoire',
-      content: 'Les devis automatiques me font gagner 10h par semaine.',
-      rating: 5,
-      avatar: satisfiedCustomer,
-      metric: '10h gagnées/semaine'
-    },
-    {
-      name: 'Moussa Traoré',
-      role: 'Chef de projet, Bamako BTP',
-      country: 'Mali',
-      content: 'Le mode hors-ligne est parfait pour nos chantiers en zone rurale.',
-      rating: 5,
-      avatar: satisfiedCustomer,
-      metric: 'Fonctionne partout'
-    }
-  ];
-
   // Chiffres réalistes
   const stats = [
     { number: '850+', label: 'Entreprises utilisatrices', icon: Users },
@@ -168,101 +140,46 @@ const UltraModernHomePage: React.FC = () => {
         description="IntuitionConcept - Logiciel de gestion BTP tout-en-un. Devis, factures, suivi chantier, paiements Mobile Money. Essai gratuit 14 jours."
         keywords="BTP, gestion chantier, devis, facture, Sénégal, Afrique, construction, artisan, PME, Mobile Money"
       />
-      {/* Hero Section - Cas client */}
-      <section className="relative min-h-screen overflow-hidden">
-        <div className="absolute inset-0">
-          <img 
-            src={heroConstructionTeam} 
-            alt="Équipe de construction" 
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-900/95 via-blue-900/90 to-gray-900/95"></div>
-        </div>
+      {/* Hero Section - Split Screen BTP Afrique */}
+      <SplitHeroSection
+        title="Ce logiciel, on l'a codé parce qu'on n'en trouvait pas sur nos chantiers à"
+        highlightText="Dakar"
+        subtitle="PME de 12 personnes à Thiès. Avant IntuitionConcept : retards, budgets dépassés, documents perdus. Aujourd'hui : tout est sous contrôle."
+        annotation="→ Témoignage de Saliou, gérant BTP Thiès"
+        ctaText="Essayer gratuitement 14 jours"
+        ctaLink="/register"
+        secondaryCta={{ text: "Demander une démo", link: "/contact" }}
+        imageSrc={heroConstructionTeam}
+        imageAlt="Équipe de construction sur chantier africain"
+        badge="850+ entreprises"
+      />
 
-        <div className="relative z-10 container mx-auto px-6 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-4xl mx-auto text-white"
-          >
-            {/* Cas client en accroche */}
-            <div className="mb-8">
-              <span className="inline-block px-4 py-2 bg-yellow-400/20 text-yellow-400 rounded-full text-sm font-medium mb-6">
-                Témoignage client
-              </span>
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight">
-                "Comment Saliou gère 
-                <span className="text-yellow-400"> 8 chantiers</span> au Sénégal 
-                sans perdre le sommeil"
-              </h1>
-              <p className="text-xl text-blue-100 mb-8 max-w-2xl">
-                PME de 12 personnes à Thiès. Avant IntuitionConcept : retards, budgets dépassés, 
-                documents perdus. Aujourd'hui : tout est sous contrôle.
-              </p>
-            </div>
+      {/* Séparateur africain */}
+      <AfricanPatternDivider variant="wax" height="md" />
 
-            {/* CTA multiples */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <Link to="/register">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-yellow-400 text-gray-900 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all"
-                >
-                  Essayer gratuitement 14 jours <ArrowRight className="inline w-5 h-5 ml-2" />
-                </motion.button>
-              </Link>
-              <Link to="/contact">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl font-bold text-lg hover:bg-white/20 transition-all"
-                >
-                  Demander une démo <ChevronRight className="inline w-5 h-5 ml-2" />
-                </motion.button>
-              </Link>
-              <a href="https://wa.me/221771234567" target="_blank" rel="noopener noreferrer">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-green-500 rounded-xl font-bold text-lg hover:bg-green-600 transition-all flex items-center gap-2"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  WhatsApp
-                </motion.button>
-              </a>
-            </div>
-
-            <p className="text-blue-200 text-sm">
-              Sans carte bancaire • Paiement Mobile Money accepté • Support en français
-            </p>
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto"
-          >
+      {/* Stats avec style terrain */}
+      <section className="py-12 bg-[#F5F0E8]">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
             {stats.map((stat, index) => {
               const Icon = stat.icon;
               return (
                 <motion.div
                   key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 + index * 0.1 }}
-                  className="text-center p-4 bg-white/10 backdrop-blur-sm rounded-xl text-white"
+                  initial={{ opacity: 0, y: 20, rotate: -2 }}
+                  whileInView={{ opacity: 1, y: 0, rotate: index % 2 === 0 ? -1 : 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="text-center p-5 bg-white rounded-xl shadow-md border-2 border-gray-100"
+                  style={{ transform: `rotate(${index % 2 === 0 ? -1 : 1}deg)` }}
                 >
-                  <Icon className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
-                  <div className="text-2xl font-bold">{stat.number}</div>
-                  <div className="text-blue-200 text-xs">{stat.label}</div>
+                  <Icon className="w-8 h-8 mx-auto mb-3 text-[#C45C3E]" />
+                  <div className="text-3xl font-bold text-gray-900 font-['Bebas_Neue',sans-serif] tracking-wide">{stat.number}</div>
+                  <div className="text-gray-600 text-sm">{stat.label}</div>
                 </motion.div>
               );
             })}
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -429,57 +346,66 @@ const UltraModernHomePage: React.FC = () => {
       {/* Competitor Comparison */}
       <CompetitorComparison />
 
-      {/* Témoignages */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-6">
+      {/* Séparateur */}
+      <AfricanPatternDivider variant="gradient" height="sm" />
+
+      {/* Témoignages terrain - Style authentique */}
+      <section className="py-20 bg-[#F5F0E8] relative overflow-hidden">
+        {/* Pattern background subtil */}
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: `repeating-linear-gradient(45deg, #C45C3E 0px, #C45C3E 2px, transparent 2px, transparent 20px)`
+        }} />
+        
+        <div className="container mx-auto px-6 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            <p className="font-['Caveat',cursive] text-2xl text-[#C45C3E] mb-4" style={{ transform: 'rotate(-1deg)' }}>
+              → Conversations réelles avec nos clients
+            </p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 font-['Bebas_Neue',sans-serif] tracking-wide uppercase">
               Ce que disent nos clients
             </h2>
             <p className="text-xl text-gray-600">
-              Des professionnels du BTP comme vous
+              Des professionnels du BTP comme vous, sur le terrain
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-2xl p-6 shadow-lg"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <img
-                    src={testimonial.avatar}
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-sm">{testimonial.name}</h3>
-                    <p className="text-gray-500 text-xs">{testimonial.role}</p>
-                    <p className="text-gray-400 text-xs">{testimonial.country}</p>
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto items-start">
+            {/* WhatsApp Testimonial */}
+            <WhatsAppTestimonial
+              contactName="Saliou Mbaye"
+              contactRole="Gérant, BTP Thiès 🇸🇳"
+              messages={[
+                { id: '1', text: "Bonjour ! Je voulais vous remercier pour l'application", time: '09:32', isOwn: false },
+                { id: '2', text: "Avant je perdais des heures à chercher mes documents. Maintenant tout est là 📱", time: '09:33', isOwn: false },
+                { id: '3', text: "Merci Saliou ! Comment ça se passe sur vos chantiers ?", time: '09:45', isOwn: true },
+                { id: '4', text: "Je gère 8 chantiers sans stress. Le mode hors-ligne c'est top pour Thiès 💪", time: '09:47', isOwn: false },
+              ]}
+            />
 
-                <div className="flex mb-3">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-
-                <p className="text-gray-700 font-medium mb-3">"{testimonial.content}"</p>
-                
-                <div className="bg-green-50 text-green-700 text-xs font-medium px-3 py-1 rounded-full inline-block">
-                  {testimonial.metric}
-                </div>
-              </motion.div>
-            ))}
+            {/* Field Testimonials */}
+            <div className="space-y-6">
+              <FieldTestimonial
+                quote="Les devis automatiques me font gagner 10h par semaine. Je peux enfin me concentrer sur mes chantiers."
+                authorName="Adjoua Kouamé"
+                authorRole="Directrice"
+                authorCompany="Construction CI"
+                authorLocation="Abidjan, Côte d'Ivoire"
+                authorPhoto={satisfiedCustomer}
+                rating={5}
+              />
+              
+              <TerrainCard
+                title="Le mode hors-ligne est parfait"
+                description="Pour nos chantiers en zone rurale au Mali, c'est indispensable. Synchronisation automatique au retour."
+                annotation="Moussa Traoré, Chef de projet"
+                variant="postit"
+                rotation={2}
+              />
+            </div>
           </div>
         </div>
       </section>
