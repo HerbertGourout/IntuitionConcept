@@ -169,7 +169,7 @@ const FeaturesPage: React.FC = () => {
   return (
     <GlobalLayout showHero={false}>
       {/* Hero */}
-      <section className="py-20 bg-gradient-to-br from-blue-900 to-purple-900 text-white">
+      <section className="py-20 bg-[#1E4B6E] text-white">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -179,7 +179,7 @@ const FeaturesPage: React.FC = () => {
             <h1 className="text-4xl lg:text-5xl font-bold mb-6">
               La suite d'outils pensée pour vos réalités BTP
             </h1>
-            <p className="text-xl text-blue-100">
+            <p className="text-xl text-gray-200">
               Devis, suivi terrain, finance, équipes, Mobile Money... 
               Tout ce dont vous avez besoin pour piloter vos chantiers efficacement.
             </p>
@@ -197,7 +197,7 @@ const FeaturesPage: React.FC = () => {
                 onClick={() => setActiveCategory(cat.id)}
                 className={`px-6 py-2 rounded-full font-medium transition-all ${
                   activeCategory === cat.id
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-[#C45C3E] text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -209,7 +209,7 @@ const FeaturesPage: React.FC = () => {
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-[#F5F0E8]">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {filteredFeatures.map((feature, index) => {
@@ -233,7 +233,7 @@ const FeaturesPage: React.FC = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                       <div className="absolute bottom-4 left-4">
                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                          <Icon className="w-6 h-6 text-blue-600" />
+                          <Icon className="w-6 h-6 text-[#1E4B6E]" />
                         </div>
                       </div>
                     </div>
@@ -254,7 +254,7 @@ const FeaturesPage: React.FC = () => {
                         </ul>
                       </div>
 
-                      <p className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-block">
+                      <p className="text-xs text-[#1E4B6E] bg-[#1E4B6E]/10 px-3 py-1 rounded-full inline-block">
                         Pour : {feature.forWho}
                       </p>
                     </div>
@@ -288,8 +288,8 @@ const FeaturesPage: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               className="text-center p-6"
             >
-              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Smartphone className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 bg-[#4A7C59]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Smartphone className="w-8 h-8 text-[#4A7C59]" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Mobile Money natif</h3>
               <p className="text-gray-600">
@@ -303,8 +303,8 @@ const FeaturesPage: React.FC = () => {
               transition={{ delay: 0.1 }}
               className="text-center p-6"
             >
-              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Wifi className="w-8 h-8 text-blue-600" />
+              <div className="w-16 h-16 bg-[#1E4B6E]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Wifi className="w-8 h-8 text-[#1E4B6E]" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Mode hors-ligne</h3>
               <p className="text-gray-600">
@@ -318,8 +318,8 @@ const FeaturesPage: React.FC = () => {
               transition={{ delay: 0.2 }}
               className="text-center p-6"
             >
-              <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Lock className="w-8 h-8 text-purple-600" />
+              <div className="w-16 h-16 bg-[#C45C3E]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-[#C45C3E]" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Support local</h3>
               <p className="text-gray-600">
@@ -331,7 +331,7 @@ const FeaturesPage: React.FC = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-gradient-to-br from-blue-900 to-purple-900 text-white">
+      <section className="py-20 bg-[#1E4B6E] text-white">
         <div className="container mx-auto px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -340,14 +340,14 @@ const FeaturesPage: React.FC = () => {
             <h2 className="text-3xl lg:text-4xl font-bold mb-6">
               Prêt à simplifier votre quotidien ?
             </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
               Essayez gratuitement pendant 14 jours, sans engagement ni carte bancaire.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/register">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
-                  className="px-8 py-4 bg-yellow-400 text-gray-900 rounded-xl font-bold text-lg"
+                  className="px-8 py-4 bg-[#C45C3E] text-white rounded-xl font-bold text-lg"
                 >
                   Essayer gratuitement <ArrowRight className="inline w-5 h-5 ml-2" />
                 </motion.button>

@@ -77,28 +77,28 @@ const SupportPage: React.FC = () => {
       title: 'Documentation',
       description: 'Guides complets pour chaque fonctionnalité',
       link: '/docs',
-      color: 'bg-blue-500'
+      color: 'bg-[#1E4B6E]'
     },
     {
       icon: Video,
       title: 'Tutoriels vidéo',
       description: 'Apprenez en regardant nos démos',
       link: '/tutorials',
-      color: 'bg-red-500'
+      color: 'bg-[#C45C3E]'
     },
     {
       icon: MessageCircle,
       title: 'Chat en direct',
       description: 'Parlez à un conseiller maintenant',
       link: '#chat',
-      color: 'bg-green-500'
+      color: 'bg-[#4A7C59]'
     },
     {
       icon: Mail,
       title: 'Email support',
       description: 'Réponse sous 24h garantie',
       link: 'mailto:support@intuitionconcept.com',
-      color: 'bg-purple-500'
+      color: 'bg-[#E5A832]'
     }
   ];
 
@@ -112,18 +112,18 @@ const SupportPage: React.FC = () => {
   return (
     <GlobalLayout showHero={false}>
       {/* Hero */}
-      <section className="py-20 bg-gradient-to-br from-blue-900 to-purple-900 text-white">
+      <section className="py-20 bg-[#1E4B6E] text-white">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <HelpCircle className="w-16 h-16 mx-auto mb-6 text-yellow-400" />
+            <HelpCircle className="w-16 h-16 mx-auto mb-6 text-[#E5A832]" />
             <h1 className="text-4xl lg:text-5xl font-bold mb-6">
               Comment pouvons-nous vous aider ?
             </h1>
-            <p className="text-xl text-blue-100 mb-8">
+            <p className="text-xl text-gray-200 mb-8">
               Trouvez des réponses rapides ou contactez notre équipe support
             </p>
 
@@ -135,7 +135,7 @@ const SupportPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Rechercher dans l'aide..."
-                className="w-full pl-12 pr-4 py-4 rounded-xl text-gray-900 focus:ring-2 focus:ring-yellow-400 focus:outline-none"
+                className="w-full pl-12 pr-4 py-4 rounded-xl text-gray-900 focus:ring-2 focus:ring-[#E5A832] focus:outline-none"
               />
             </div>
           </motion.div>
@@ -171,7 +171,7 @@ const SupportPage: React.FC = () => {
       </section>
 
       {/* FAQ */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-[#F5F0E8]">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -199,7 +199,7 @@ const SupportPage: React.FC = () => {
                   className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                    <span className="text-xs bg-[#1E4B6E]/10 text-[#1E4B6E] px-2 py-1 rounded-full">
                       {faq.category}
                     </span>
                     <span className="font-medium text-gray-900">{faq.question}</span>
@@ -242,28 +242,28 @@ const SupportPage: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-8 md:p-12 text-white"
+              className="bg-[#1E4B6E] rounded-2xl p-8 md:p-12 text-white"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                 <div>
                   <h2 className="text-2xl lg:text-3xl font-bold mb-4">
                     Besoin d'aide personnalisée ?
                   </h2>
-                  <p className="text-blue-100 mb-6">
+                  <p className="text-gray-200 mb-6">
                     Notre équipe support est disponible du lundi au vendredi, 8h-18h (GMT).
                     Réponse garantie sous 24h.
                   </p>
-                  <ul className="space-y-2 text-blue-100">
+                  <ul className="space-y-2 text-gray-200">
                     <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-yellow-400" />
+                      <CheckCircle className="w-5 h-5 text-[#E5A832]" />
                       Support en français
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-yellow-400" />
+                      <CheckCircle className="w-5 h-5 text-[#E5A832]" />
                       Équipe basée en Afrique
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-yellow-400" />
+                      <CheckCircle className="w-5 h-5 text-[#E5A832]" />
                       WhatsApp disponible
                     </li>
                   </ul>
@@ -274,7 +274,7 @@ const SupportPage: React.FC = () => {
                     href="https://wa.me/221771234567"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 w-full py-4 bg-green-500 rounded-xl font-bold hover:bg-green-600 transition-colors"
+                    className="flex items-center justify-center gap-3 w-full py-4 bg-[#4A7C59] rounded-xl font-bold hover:bg-[#3d6549] transition-colors"
                   >
                     <MessageCircle className="w-5 h-5" />
                     WhatsApp

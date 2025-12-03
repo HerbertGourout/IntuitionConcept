@@ -75,7 +75,7 @@ export const Pricing: React.FC = () => {
       showHero={true}
       heroTitle="Tarifs Transparents"
       heroSubtitle="Choisissez le plan parfait pour votre équipe. Paiements Mobile Money inclus pour l'Afrique francophone."
-      heroBackground="bg-gradient-to-br from-green-900 via-blue-900 to-purple-900"
+      heroBackground="bg-[#1E4B6E]"
     >
       <div className="mx-auto px-4 md:px-10 lg:px-14 max-w-[1920px]">
         {/* Calculateur de prix interactif */}
@@ -89,12 +89,12 @@ export const Pricing: React.FC = () => {
             <div
               key={plan.id}
               className={`relative bg-white rounded-2xl shadow-lg p-8 ${
-                plan.popular ? 'ring-2 ring-green-500 transform scale-105' : ''
+                plan.popular ? 'ring-2 ring-[#C45C3E] transform scale-105' : ''
               }`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  <span className="bg-[#C45C3E] text-white px-4 py-1 rounded-full text-sm font-semibold">
                     Populaire
                   </span>
                 </div>
@@ -161,8 +161,8 @@ export const Pricing: React.FC = () => {
                 disabled={!selectedCountry}
                 className={`w-full py-3.5 px-7 rounded-lg font-semibold transition-all duration-200 ${
                   plan.popular
-                    ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl'
-                    : 'bg-gray-900 hover:bg-gray-800 text-white'
+                    ? 'bg-[#C45C3E] hover:bg-[#a84d33] text-white shadow-lg hover:shadow-xl'
+                    : 'bg-[#1E4B6E] hover:bg-[#163a54] text-white'
                 } ${!selectedCountry ? 'opacity-60 cursor-not-allowed hover:bg-inherit' : ''}`}
               >
                 {plan.trialDays ? `Commencer l'essai gratuit` : 'S\'abonner'} <ChevronRight className="inline w-5 h-5 ml-2" />
@@ -180,15 +180,15 @@ export const Pricing: React.FC = () => {
         <div className="bg-white rounded-2xl shadow-lg p-10 mb-14">
           <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Méthodes de paiement acceptées</h3>
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="flex items-center p-4 border-2 border-orange-200 rounded-lg bg-orange-50">
-              <Smartphone className="w-8 h-8 text-orange-600 mr-4" />
+            <div className="flex items-center p-4 border-2 border-[#C45C3E]/30 rounded-lg bg-[#C45C3E]/5">
+              <Smartphone className="w-8 h-8 text-[#C45C3E] mr-4" />
               <div>
                 <h4 className="font-semibold text-gray-900">Mobile Money</h4>
                 <p className="text-sm text-gray-600">Orange Money, MTN Money, Moov Money, Airtel Money</p>
               </div>
             </div>
-            <div className="flex items-center p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
-              <CreditCard className="w-8 h-8 text-blue-600 mr-4" />
+            <div className="flex items-center p-4 border-2 border-[#1E4B6E]/30 rounded-lg bg-[#1E4B6E]/5">
+              <CreditCard className="w-8 h-8 text-[#1E4B6E] mr-4" />
               <div>
                 <h4 className="font-semibold text-gray-900">Cartes bancaires</h4>
                 <p className="text-sm text-gray-600">Visa, Mastercard, cartes locales</p>
@@ -200,7 +200,7 @@ export const Pricing: React.FC = () => {
         {/* Sécurité & FAQ */}
         <div className="bg-gray-100 rounded-2xl p-10 mb-14">
           <div className="flex items-center mb-4">
-            <ShieldCheck className="w-6 h-6 text-green-600 mr-2" />
+            <ShieldCheck className="w-6 h-6 text-[#4A7C59] mr-2" />
             <h4 className="text-lg font-semibold text-gray-900">Sécurité & Confiance</h4>
           </div>
           <ul className="text-gray-700 space-y-2 mb-4">

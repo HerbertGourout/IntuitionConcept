@@ -72,7 +72,7 @@ const ContactPage: React.FC = () => {
       description: 'Réponse rapide en moins de 2h',
       action: '+242 06 500 00 00',
       link: 'https://wa.me/242065000000',
-      color: 'bg-green-500'
+      color: 'bg-[#4A7C59]'
     },
     {
       icon: Mail,
@@ -80,7 +80,7 @@ const ContactPage: React.FC = () => {
       description: 'Pour les demandes détaillées',
       action: 'contact@intuitionconcept.com',
       link: 'mailto:contact@intuitionconcept.com',
-      color: 'bg-blue-500'
+      color: 'bg-[#1E4B6E]'
     },
     {
       icon: Calendar,
@@ -88,7 +88,7 @@ const ContactPage: React.FC = () => {
       description: 'Réservez un créneau avec un expert',
       action: 'Choisir un horaire',
       link: '#booking',
-      color: 'bg-purple-500'
+      color: 'bg-[#E5A832]'
     },
     {
       icon: Phone,
@@ -96,14 +96,14 @@ const ContactPage: React.FC = () => {
       description: 'Lun-Ven, 8h-18h (GMT)',
       action: '+221 33 123 45 67',
       link: 'tel:+221331234567',
-      color: 'bg-orange-500'
+      color: 'bg-[#C45C3E]'
     }
   ];
 
   return (
     <GlobalLayout showHero={false}>
       {/* Hero */}
-      <section className="py-20 bg-gradient-to-br from-blue-900 to-purple-900 text-white">
+      <section className="py-20 bg-[#1E4B6E] text-white">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -113,7 +113,7 @@ const ContactPage: React.FC = () => {
             <h1 className="text-4xl lg:text-5xl font-bold mb-6">
               Parlons de votre projet
             </h1>
-            <p className="text-xl text-blue-100">
+            <p className="text-xl text-gray-200">
               Notre équipe est disponible pour répondre à vos questions et vous accompagner. 
               Réponse garantie sous 24h.
             </p>
@@ -144,7 +144,7 @@ const ContactPage: React.FC = () => {
                   </div>
                   <h3 className="font-bold text-gray-900 mb-1">{method.title}</h3>
                   <p className="text-gray-500 text-sm mb-2">{method.description}</p>
-                  <p className="text-blue-600 font-medium">{method.action}</p>
+                  <p className="text-[#1E4B6E] font-medium">{method.action}</p>
                 </motion.a>
               );
             })}
@@ -153,7 +153,7 @@ const ContactPage: React.FC = () => {
       </section>
 
       {/* Form + Offices */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-[#F5F0E8]">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Formulaire */}
@@ -172,7 +172,7 @@ const ContactPage: React.FC = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-12"
                 >
-                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                  <CheckCircle className="w-16 h-16 text-[#4A7C59] mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Message envoyé !</h3>
                   <p className="text-gray-600">Nous vous répondrons sous 24h.</p>
                 </motion.div>
@@ -189,7 +189,7 @@ const ContactPage: React.FC = () => {
                         required
                         value={formData.name}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent"
                         placeholder="Votre nom"
                       />
                     </div>
@@ -203,7 +203,7 @@ const ContactPage: React.FC = () => {
                         required
                         value={formData.email}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent"
                         placeholder="votre@email.com"
                       />
                     </div>
@@ -219,7 +219,7 @@ const ContactPage: React.FC = () => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent"
                         placeholder="+221 77 123 45 67"
                       />
                     </div>
@@ -232,7 +232,7 @@ const ContactPage: React.FC = () => {
                         name="company"
                         value={formData.company}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent"
                         placeholder="Nom de votre entreprise"
                       />
                     </div>

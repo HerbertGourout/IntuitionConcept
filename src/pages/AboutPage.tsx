@@ -90,7 +90,7 @@ const AboutPage: React.FC = () => {
             alt="Notre équipe" 
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/95 to-purple-900/80"></div>
+          <div className="absolute inset-0 bg-[#1E4B6E]/90"></div>
         </div>
 
         <div className="relative z-10 container mx-auto px-6">
@@ -102,9 +102,9 @@ const AboutPage: React.FC = () => {
           >
             <h1 className="text-4xl lg:text-6xl font-bold mb-6">
               Construits par des pros du BTP,
-              <span className="text-yellow-400"> pour des pros du BTP</span>
+              <span className="text-[#E5A832]"> pour des pros du BTP</span>
             </h1>
-            <p className="text-xl text-blue-100 mb-8">
+            <p className="text-xl text-gray-200 mb-8">
               Après 15 ans sur les chantiers d'Afrique, nous avons créé l'outil que nous aurions aimé avoir. 
               Simple, adapté au terrain, et qui fonctionne même sans connexion.
             </p>
@@ -161,7 +161,7 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* Timeline */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-[#F5F0E8]">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -182,7 +182,7 @@ const AboutPage: React.FC = () => {
                 transition={{ delay: index * 0.1 }}
                 className="flex items-start gap-6 mb-8"
               >
-                <div className="flex-shrink-0 w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                <div className="flex-shrink-0 w-20 h-20 bg-[#1E4B6E] rounded-full flex items-center justify-center text-white font-bold text-lg">
                   {milestone.year}
                 </div>
                 <div className="pt-5">
@@ -221,8 +221,8 @@ const AboutPage: React.FC = () => {
                   transition={{ delay: index * 0.1 }}
                   className="text-center p-6"
                 >
-                  <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Icon className="w-8 h-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-[#1E4B6E]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Icon className="w-8 h-8 text-[#1E4B6E]" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{value.title}</h3>
                   <p className="text-gray-600">{value.description}</p>
@@ -234,7 +234,7 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* L'Équipe */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -258,13 +258,13 @@ const AboutPage: React.FC = () => {
                 transition={{ delay: index * 0.1 }}
                 className="bg-white rounded-2xl p-8 shadow-lg text-center"
               >
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-24 h-24 bg-[#1E4B6E] rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-3xl font-bold text-white">
                     {member.name.split(' ').map(n => n[0]).join('')}
                   </span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900">{member.name}</h3>
-                <p className="text-blue-600 font-medium mb-3">{member.role}</p>
+                <p className="text-[#C45C3E] font-medium mb-3">{member.role}</p>
                 <p className="text-gray-600 text-sm mb-3">{member.bio}</p>
                 <div className="flex items-center justify-center gap-1 text-gray-500 text-sm">
                   <MapPin className="w-4 h-4" />
@@ -299,12 +299,12 @@ const AboutPage: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-gray-50 rounded-xl p-6 text-center"
+                className="bg-[#F5F0E8] rounded-xl p-6 text-center"
               >
-                <MapPin className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                <MapPin className="w-8 h-8 text-[#C45C3E] mx-auto mb-3" />
                 <h3 className="font-bold text-gray-900">{office.city}</h3>
                 <p className="text-gray-600 text-sm">{office.country}</p>
-                <p className="text-blue-600 text-xs mt-1">{office.type}</p>
+                <p className="text-[#1E4B6E] text-xs mt-1">{office.type}</p>
               </motion.div>
             ))}
           </div>
@@ -312,24 +312,24 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-gradient-to-br from-blue-900 to-purple-900 text-white">
+      <section className="py-20 bg-[#1E4B6E] text-white">
         <div className="container mx-auto px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
           >
-            <Award className="w-16 h-16 mx-auto mb-6 text-yellow-400" />
+            <Award className="w-16 h-16 mx-auto mb-6 text-[#E5A832]" />
             <h2 className="text-3xl lg:text-4xl font-bold mb-6">
               Rejoignez les 850+ entreprises qui nous font confiance
             </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
               Découvrez comment IntuitionConcept peut simplifier votre quotidien sur les chantiers
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/register">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
-                  className="px-8 py-4 bg-yellow-400 text-gray-900 rounded-xl font-bold text-lg"
+                  className="px-8 py-4 bg-[#C45C3E] text-white rounded-xl font-bold text-lg"
                 >
                   Essayer gratuitement <ArrowRight className="inline w-5 h-5 ml-2" />
                 </motion.button>

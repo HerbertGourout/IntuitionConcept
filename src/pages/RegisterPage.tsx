@@ -94,7 +94,7 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F5F0E8] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-lg w-full space-y-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -104,7 +104,7 @@ const RegisterPage: React.FC = () => {
           {/* Logo et titre */}
           <div className="text-center">
             <Link to="/" className="inline-flex items-center space-x-2 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-[#1E4B6E] rounded-xl flex items-center justify-center">
                 <Building2 className="w-7 h-7 text-white" />
               </div>
               <span className="text-2xl font-bold text-gray-900">IntuitionBTP</span>
@@ -149,7 +149,7 @@ const RegisterPage: React.FC = () => {
                     required
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent transition-colors"
                     placeholder="Votre prénom"
                   />
                 </div>
@@ -171,7 +171,7 @@ const RegisterPage: React.FC = () => {
                     required
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent transition-colors"
                     placeholder="Votre nom"
                   />
                 </div>
@@ -217,7 +217,7 @@ const RegisterPage: React.FC = () => {
                     type="tel"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent transition-colors"
                     placeholder="+221 77 123 45 67"
                   />
                 </div>
@@ -238,7 +238,7 @@ const RegisterPage: React.FC = () => {
                     required
                     value={formData.country}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none bg-white"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent transition-colors appearance-none bg-white"
                   >
                     <option value="">Sélectionnez votre pays</option>
                     {countries.map((country) => (
@@ -289,7 +289,7 @@ const RegisterPage: React.FC = () => {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent transition-colors"
                     placeholder="••••••••"
                   />
                   <button
@@ -322,7 +322,7 @@ const RegisterPage: React.FC = () => {
                     required
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E4B6E] focus:border-transparent transition-colors"
                     placeholder="••••••••"
                   />
                   <button
@@ -347,15 +347,15 @@ const RegisterPage: React.FC = () => {
                 name="terms"
                 type="checkbox"
                 required
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+                className="h-4 w-4 text-[#1E4B6E] focus:ring-[#1E4B6E] border-gray-300 rounded mt-1"
               />
               <label htmlFor="terms" className="ml-3 block text-sm text-gray-700">
                 J'accepte les{' '}
-                <Link to="/terms" className="text-blue-600 hover:text-blue-500">
+                <Link to="/terms" className="text-[#C45C3E] hover:text-[#a84d33]">
                   conditions d'utilisation
                 </Link>{' '}
                 et la{' '}
-                <Link to="/privacy" className="text-blue-600 hover:text-blue-500">
+                <Link to="/privacy" className="text-[#C45C3E] hover:text-[#a84d33]">
                   politique de confidentialité
                 </Link>
               </label>
@@ -365,7 +365,7 @@ const RegisterPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-[#C45C3E] hover:bg-[#a84d33] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#C45C3E] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -378,8 +378,8 @@ const RegisterPage: React.FC = () => {
             </button>
 
             {/* Mode développement */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="text-yellow-800 text-sm">
+            <div className="bg-[#E5A832]/10 border border-[#E5A832]/30 rounded-lg p-4">
+              <div className="text-[#1E4B6E] text-sm">
                 <strong>Mode Développement :</strong> Vous pouvez créer un compte avec n'importe quelles informations. 
                 L'inscription vous redirigera automatiquement vers l'application.
               </div>
@@ -434,7 +434,7 @@ const RegisterPage: React.FC = () => {
               Déjà un compte ?{' '}
               <Link
                 to="/login"
-                className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                className="font-medium text-[#C45C3E] hover:text-[#a84d33] transition-colors"
               >
                 Se connecter
               </Link>
