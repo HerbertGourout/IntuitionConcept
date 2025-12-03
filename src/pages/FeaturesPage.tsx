@@ -10,17 +10,14 @@ import {
   MapPin,
   DollarSign,
   Truck,
-  Shield,
   Brain,
-  Sparkles,
   ClipboardList,
   PieChart,
   Smartphone,
   Wifi,
   Bell,
   Lock,
-  ArrowRight,
-  CheckCircle
+  ArrowRight
 } from 'lucide-react';
 
 // Images
@@ -250,8 +247,7 @@ const FeaturesPage: React.FC = () => {
                         <p className="text-sm text-gray-500 mb-2">Avantages :</p>
                         <ul className="space-y-1">
                           {feature.benefits.map((benefit) => (
-                            <li key={benefit} className="flex items-center gap-2 text-sm text-gray-700">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
+                            <li key={benefit} className="text-sm text-gray-700 pl-3 border-l-2 border-[#4A7C59]/40">
                               {benefit}
                             </li>
                           ))}

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Hammer, Building2, Rocket, Check, ArrowRight, Users, 
-  TrendingUp, Shield, Zap, Star, DollarSign 
+  Hammer, Building2, Rocket, ArrowRight, Users, 
+  TrendingUp, Shield, DollarSign 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -53,25 +53,25 @@ const useCases: UseCase[] = [
       'Oublie souvent des matériaux dans les devis'
     ],
     features: [
-      '📝 Devis IA rapides (10 min au lieu de 2h)',
-      '📅 Planning simple des chantiers',
-      '💳 Paiements Mobile Money instantanés',
-      '📱 Mode hors-ligne sur chantier',
-      '📊 Suivi budget par projet',
-      '📄 Documents et photos centralisés',
-      '🔔 Rappels automatiques',
-      '👥 Gestion équipe basique'
+      'Devis IA rapides (10 min au lieu de 2h)',
+      'Planning simple des chantiers',
+      'Paiements Mobile Money instantanés',
+      'Mode hors-ligne sur chantier',
+      'Suivi budget par projet',
+      'Documents et photos centralisés',
+      'Rappels automatiques',
+      'Gestion équipe basique'
     ],
     results: [
-      { metric: 'Temps économisé', value: '15h/mois', icon: '⏱️' },
-      { metric: 'Devis créés', value: '+200%', icon: '📈' },
-      { metric: 'Clients satisfaits', value: '95%', icon: '⭐' }
+      { metric: 'Temps économisé', value: '15h/mois', icon: '' },
+      { metric: 'Devis créés', value: '+200%', icon: '' },
+      { metric: 'Clients satisfaits', value: '95%', icon: '' }
     ],
     testimonial: {
       name: 'Jean-Baptiste Ngoma',
       role: 'Maçon Indépendant',
       company: 'Ngoma Construction',
-      country: 'Congo 🇨🇬',
+      country: 'Congo',
       quote: 'Avant, je passais 2h par devis. Maintenant avec l\'IA, c\'est 10 minutes ! Je peux traiter 3× plus de clients et mes devis sont plus professionnels.',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
     }
@@ -95,27 +95,27 @@ const useCases: UseCase[] = [
       'Gestion fournisseurs complexe'
     ],
     features: [
-      ' Toutes les fonctionnalités IA (Devis, OCR, Plans, Anomalies)',
-      '📊 Dashboard financier complet',
-      '👥 Gestion multi-équipes avec GPS',
-      '📐 Analyse automatique de plans architecturaux',
-      '⚠️ Détection anomalies budget en temps réel',
-      '🛒 Gestion bons d\'achat et fournisseurs',
-      '📈 Rapports avancés et analytics',
-      '💰 Facturation et encaissement automatisés',
-      '📱 Application mobile PWA',
-      '🔄 Automatisations n8n (workflows)'
+      'Toutes les fonctionnalités IA (Devis, OCR, Plans, Anomalies)',
+      'Dashboard financier complet',
+      'Gestion multi-équipes avec GPS',
+      'Analyse automatique de plans architecturaux',
+      'Détection anomalies budget en temps réel',
+      'Gestion bons d\'achat et fournisseurs',
+      'Rapports avancés et analytics',
+      'Facturation et encaissement automatisés',
+      'Application mobile PWA',
+      'Automatisations n8n (workflows)'
     ],
     results: [
       { metric: 'Productivité', value: '+150%', icon: '' },
-      { metric: 'Dépassements évités', value: '-60%', icon: '💰' },
-      { metric: 'Projets livrés à temps', value: '85%', icon: '✅' }
+      { metric: 'Dépassements évités', value: '-60%', icon: '' },
+      { metric: 'Projets livrés à temps', value: '85%', icon: '' }
     ],
     testimonial: {
       name: 'Clément Makosso',
       role: 'Directeur Général',
       company: 'BTP Solutions Kinshasa',
-      country: 'RDC 🇨🇩',
+      country: 'RDC',
       quote: 'L\'IA de détection d\'anomalies nous a fait économiser 15M FCFA en 6 mois en évitant les dépassements. Le ROI est incroyable !',
       avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face'
     }
@@ -139,31 +139,31 @@ const useCases: UseCase[] = [
       'Besoin de personnalisations'
     ],
     features: [
-      ' Toutes les fonctionnalités Pro + IA Premium',
-      '🎤 Copilot Vocal IA (commandes vocales)',
-      '📊 Analytics Prédictifs IA (coûts, délais, risques)',
-      '📄 Rapports Automatisés IA personnalisés',
-      '🔌 API complète & Intégrations tierces',
-      '✍️ Signatures électroniques conformes',
-      '🔒 Sécurité & Audit avancés',
-      '👨‍💼 Support dédié 24/7 prioritaire',
-      ' Rendus 3D photoréalistes illimités',
-      '⚙️ Automatisations n8n avancées avec LLM',
-      '📍 Géolocalisation multi-sites',
-      '💼 Gestion paie équipes',
-      '∞ Projets et utilisateurs illimités',
-      '💾 1TB de stockage cloud'
+      'Toutes les fonctionnalités Pro + IA Premium',
+      'Copilot Vocal IA (commandes vocales)',
+      'Analytics Prédictifs IA (coûts, délais, risques)',
+      'Rapports Automatisés IA personnalisés',
+      'API complète & Intégrations tierces',
+      'Signatures électroniques conformes',
+      'Sécurité & Audit avancés',
+      'Support dédié 24/7 prioritaire',
+      'Rendus 3D photoréalistes illimités',
+      'Automatisations n8n avancées avec LLM',
+      'Géolocalisation multi-sites',
+      'Gestion paie équipes',
+      'Projets et utilisateurs illimités',
+      '1TB de stockage cloud'
     ],
     results: [
       { metric: 'Efficacité globale', value: '+250%', icon: '' },
-      { metric: 'Coûts réduits', value: '-40%', icon: '💵' },
-      { metric: 'Conformité', value: '100%', icon: '🛡️' }
+      { metric: 'Coûts réduits', value: '-40%', icon: '' },
+      { metric: 'Conformité', value: '100%', icon: '' }
     ],
     testimonial: {
       name: 'Jean-Baptiste Kouamé',
       role: 'Directeur des Opérations',
       company: 'Groupe BTP Ivoire',
-      country: 'Côte d\'Ivoire 🇨🇮',
+      country: 'Côte d\'Ivoire',
       quote: 'Les analytics prédictifs nous permettent d\'anticiper les problèmes avant qu\'ils n\'arrivent. Nous avons réduit nos coûts de 40% en 1 an.',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
     }
@@ -278,9 +278,8 @@ const UseCases: React.FC = () => {
                 </div>
 
                 {/* Pain Points */}
-                <div className="bg-white rounded-3xl shadow-xl p-8">
-                  <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                    <span className="text-2xl mr-3">😰</span>
+                <div className="bg-white rounded-3xl shadow-xl p-8 border-l-4 border-[#C45C3E]">
+                  <h4 className="text-xl font-bold text-[#8B3D2A] mb-6">
                     Problèmes Rencontrés
                   </h4>
                   <ul className="space-y-3">
@@ -290,32 +289,29 @@ const UseCases: React.FC = () => {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="flex items-start space-x-3 text-gray-700"
+                        className="text-[#8B3D2A] line-through decoration-[#C45C3E]/40"
                       >
-                        <span className="text-red-500 mt-1">✗</span>
-                        <span>{point}</span>
+                        {point}
                       </motion.li>
                     ))}
                   </ul>
                 </div>
 
                 {/* Features */}
-                <div className="bg-white rounded-3xl shadow-xl p-8">
-                  <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                    <Zap className="w-6 h-6 text-yellow-500 mr-3" />
+                <div className="bg-white rounded-3xl shadow-xl p-8 border-l-4 border-[#4A7C59]">
+                  <h4 className="text-xl font-bold text-gray-900 mb-6">
                     Fonctionnalités Incluses
                   </h4>
-                  <ul className="space-y-3">
+                  <ul className="space-y-2">
                     {currentCase.features.map((feature, index) => (
                       <motion.li
                         key={index}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="flex items-start space-x-3"
+                        className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]/30 hover:border-[#4A7C59] transition-colors"
                       >
-                        <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{feature}</span>
+                        {feature}
                       </motion.li>
                     ))}
                   </ul>
@@ -339,12 +335,9 @@ const UseCases: React.FC = () => {
                         transition={{ delay: index * 0.2 }}
                         className="bg-white/20 backdrop-blur-sm rounded-2xl p-6"
                       >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-sm text-green-100 mb-1">{result.metric}</div>
-                            <div className="text-4xl font-extrabold">{result.value}</div>
-                          </div>
-                          <div className="text-5xl">{result.icon}</div>
+                        <div>
+                          <div className="text-sm text-green-100 mb-1">{result.metric}</div>
+                          <div className="text-4xl font-extrabold">{result.value}</div>
                         </div>
                       </motion.div>
                     ))}
@@ -365,9 +358,9 @@ const UseCases: React.FC = () => {
                       <div className="text-sm text-gray-500">{currentCase.testimonial.company} • {currentCase.testimonial.country}</div>
                     </div>
                   </div>
-                  <div className="flex mb-4">
+                  <div className="flex mb-4 gap-1">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                      <span key={i} className="text-[#E5A832] text-lg">★</span>
                     ))}
                   </div>
                   <p className="text-gray-700 italic leading-relaxed">
