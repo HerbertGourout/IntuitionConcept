@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, Zap, Brain, Smartphone, Globe, Shield, Clock } from 'lucide-react';
+// Icons removed - using text styling instead
 
 interface Competitor {
   name: string;
@@ -48,12 +48,12 @@ const CompetitorComparison: React.FC = () => {
   ];
 
   const features = [
-    { id: 'features', label: 'Fonctionnalités', icon: Zap, type: 'number' },
-    { id: 'aiModules', label: 'Modules IA', icon: Brain, type: 'number' },
-    { id: 'mobileMoney', label: 'Mobile Money', icon: Smartphone, type: 'boolean' },
-    { id: 'offlineMode', label: 'Mode Hors-Ligne', icon: Clock, type: 'boolean' },
-    { id: 'africanSupport', label: 'Support Afrique', icon: Globe, type: 'boolean' },
-    { id: 'localCurrency', label: 'Devises Locales', icon: Shield, type: 'boolean' }
+    { id: 'features', label: 'Fonctionnalités', type: 'number' },
+    { id: 'aiModules', label: 'Modules IA', type: 'number' },
+    { id: 'mobileMoney', label: 'Mobile Money', type: 'boolean' },
+    { id: 'offlineMode', label: 'Mode Hors-Ligne', type: 'boolean' },
+    { id: 'africanSupport', label: 'Support Afrique', type: 'boolean' },
+    { id: 'localCurrency', label: 'Devises Locales', type: 'boolean' }
   ];
 
   const renderValue = (competitor: Competitor, featureId: string, type: string) => {
@@ -61,9 +61,9 @@ const CompetitorComparison: React.FC = () => {
     
     if (type === 'boolean') {
       return value ? (
-        <Check className="w-6 h-6 text-green-500" />
+        <span className="text-[#4A7C59] font-bold">✓</span>
       ) : (
-        <X className="w-6 h-6 text-red-400" />
+        <span className="text-[#C45C3E] font-bold">✗</span>
       );
     }
     
@@ -113,15 +113,10 @@ const CompetitorComparison: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {features.map((feature) => {
-                const Icon = feature.icon;
-                return (
+              {features.map((feature) => (
                   <tr key={feature.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-5 h-5 text-gray-400" />
-                        <span className="font-medium text-gray-700">{feature.label}</span>
-                      </div>
+                      <span className="font-medium text-gray-700">{feature.label}</span>
                     </td>
                     {competitors.map((competitor, index) => (
                       <td
@@ -134,8 +129,7 @@ const CompetitorComparison: React.FC = () => {
                       </td>
                     ))}
                   </tr>
-                );
-              })}
+              ))}
               <tr className="border-t-2 border-gray-200 bg-gray-50">
                 <td className="py-4 px-6 font-bold text-gray-900">Prix</td>
                 {competitors.map((competitor, index) => (

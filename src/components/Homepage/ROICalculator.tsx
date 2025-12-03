@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, TrendingUp, Clock, DollarSign } from 'lucide-react';
+// Icons removed for cleaner design
 
 const ROICalculator: React.FC = () => {
   const [employees, setEmployees] = useState(5);
@@ -25,11 +25,8 @@ const ROICalculator: React.FC = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Calculator className="w-8 h-8 text-white" />
-          </div>
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Calculez votre <span className="text-green-600">Retour sur Investissement</span>
+            Calculez votre <span className="text-[#4A7C59]">Retour sur Investissement</span>
           </h2>
           <p className="text-xl text-gray-600">
             Découvrez combien vous pouvez économiser avec IntuitionConcept
@@ -105,28 +102,19 @@ const ROICalculator: React.FC = () => {
             >
               <h3 className="text-xl font-bold mb-6">Vos économies estimées</h3>
               
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-6 h-6" />
-                    <span>Temps économisé/mois</span>
-                  </div>
+                  <span className="text-white/80">Temps économisé/mois</span>
                   <span className="text-2xl font-bold">{totalTimeSaved}h</span>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <DollarSign className="w-6 h-6" />
-                    <span>Économies mensuelles</span>
-                  </div>
+                  <span className="text-white/80">Économies mensuelles</span>
                   <span className="text-2xl font-bold">{monthlySavings.toLocaleString()} FCFA</span>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="w-6 h-6" />
-                    <span>Économies annuelles</span>
-                  </div>
+                  <span className="text-white/80">Économies annuelles</span>
                   <span className="text-2xl font-bold">{annualSavings.toLocaleString()} FCFA</span>
                 </div>
 

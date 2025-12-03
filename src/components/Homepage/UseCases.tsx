@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Hammer, Building2, Rocket, ArrowRight,
-  TrendingUp, Shield
+  Hammer, Building2, Rocket, ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -292,10 +291,9 @@ const UseCases: React.FC = () => {
 
               {/* Right: Results & Testimonial */}
               <div className="space-y-8">
-                {/* Results */}
-                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl shadow-2xl p-8 text-white">
-                  <h4 className="text-2xl font-bold mb-6 flex items-center">
-                    <TrendingUp className="w-6 h-6 mr-3" />
+                {/* Results - Sans icône */}
+                <div className="bg-[#4A7C59] rounded-2xl p-8 text-white">
+                  <h4 className="text-2xl font-bold mb-6">
                     Résultats Obtenus
                   </h4>
                   <div className="space-y-4">
@@ -340,14 +338,11 @@ const UseCases: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Plan Card */}
-                <div className={`bg-gradient-to-br ${currentCase.color} rounded-3xl shadow-2xl p-8 text-white`}>
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <div className="text-sm opacity-80 mb-1">Plan Recommandé</div>
-                      <div className="text-3xl font-bold">{currentCase.plan}</div>
-                    </div>
-                    <Shield className="w-12 h-12 opacity-80" />
+                {/* Plan Card - Sans icône */}
+                <div className="bg-[#1E4B6E] rounded-2xl p-8 text-white">
+                  <div className="mb-6">
+                    <div className="text-sm opacity-80 mb-1">Plan Recommandé</div>
+                    <div className="text-3xl font-bold">{currentCase.plan}</div>
                   </div>
                   <div className="mb-6">
                     <div className="text-5xl font-extrabold mb-2">
@@ -366,7 +361,7 @@ const UseCases: React.FC = () => {
                     </motion.button>
                   </Link>
                   <p className="text-center text-sm opacity-80 mt-4">
-                    🎁 Essai gratuit 14 jours
+                    Essai gratuit 14 jours
                   </p>
                 </div>
               </div>
