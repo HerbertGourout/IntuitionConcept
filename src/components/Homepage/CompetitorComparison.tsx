@@ -250,7 +250,7 @@ const CompetitorComparison: React.FC = () => {
   // Catégories de fonctionnalités
   const featureCategories = [
     {
-      name: '🌍 Adapté à l\'Afrique',
+      name: 'Adapté à l\'Afrique',
       features: [
         { id: 'mobileMoney', label: 'Mobile Money', description: 'Orange, MTN, Wave, Moov' },
         { id: 'offlineMode', label: 'Mode Hors-Ligne', description: 'Fonctionne sans internet' },
@@ -259,7 +259,7 @@ const CompetitorComparison: React.FC = () => {
       ]
     },
     {
-      name: '🤖 Intelligence Artificielle',
+      name: 'Intelligence Artificielle',
       features: [
         { id: 'aiPlanAnalysis', label: 'Analyse de plans', description: 'OCR + extraction auto' },
         { id: 'aiQuoteGeneration', label: 'Devis automatiques', description: 'Génération IA' },
@@ -270,7 +270,7 @@ const CompetitorComparison: React.FC = () => {
       ]
     },
     {
-      name: '📍 Terrain & Mobile',
+      name: 'Terrain & Mobile',
       features: [
         { id: 'gpsTracking', label: 'Suivi GPS équipes', description: 'Localisation temps réel' },
         { id: 'geofencing', label: 'Géofencing', description: 'Zones de chantier' },
@@ -280,7 +280,7 @@ const CompetitorComparison: React.FC = () => {
       ]
     },
     {
-      name: '📊 Gestion de projet',
+      name: 'Gestion de projet',
       features: [
         { id: 'ganttPlanning', label: 'Planning Gantt', description: 'Diagramme interactif' },
         { id: 'priceLibrary', label: 'Bibliothèque prix', description: 'Tarifs locaux' },
@@ -379,7 +379,7 @@ const CompetitorComparison: React.FC = () => {
               ))}
               {/* Ligne Prix */}
               <tr className="border-t-2 border-gray-200 bg-gray-100">
-                <td className="py-4 px-4 font-bold text-gray-900">💰 Prix mensuel</td>
+                <td className="py-4 px-4 font-bold text-gray-900">Prix mensuel</td>
                 {mainCompetitors.map((competitor, index) => (
                   <td
                     key={`${competitor.name}-price`}
@@ -405,7 +405,7 @@ const CompetitorComparison: React.FC = () => {
           className="mb-12 bg-gradient-to-r from-[#1E4B6E] to-[#2d6a9f] rounded-2xl p-8 text-white"
         >
           <h3 className="text-2xl font-bold mb-6 text-center">
-            🤖 Modules IA : IntuitionConcept vs Concurrence
+            Modules IA : IntuitionConcept vs Concurrence
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {competitors.slice(0, 6).map((competitor) => {
