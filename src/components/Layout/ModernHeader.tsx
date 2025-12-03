@@ -5,10 +5,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  Zap,
   Users,
   BarChart3,
-  Calendar,
   FileText,
   Smartphone,
   Shield,
@@ -266,7 +264,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                           >
                             <Link
                               to={dropdownItem.href}
-                              className={`flex items-start space-x-3 group ${sectionFromHref(dropdownItem.href) === currentSection ? 'text-blue-600' : ''}`}
+                              className={`flex items-start group ${sectionFromHref(dropdownItem.href) === currentSection ? 'text-blue-600' : ''}`}
                               onClick={(e) => {
                                 const section = sectionFromHref(dropdownItem.href);
                                 if (section && onNavigate) {
@@ -277,20 +275,15 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({ forceSolid = false, onNavig
                                 }
                               }}
                             >
-                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                                {dropdownItem.icon
-                                  ? React.createElement(dropdownItem.icon, { className: 'w-5 h-5 text-white' })
-                                  : null}
-                              </div>
                               <div className="flex-1">
-                                <h4 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                <h4 className="font-semibold text-gray-900 group-hover:text-[#1E4B6E] transition-colors">
                                   {dropdownItem.name}
                                 </h4>
                                 <p className="text-sm text-gray-500 mt-1">
                                   {dropdownItem.description}
                                 </p>
                               </div>
-                              <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                              <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#1E4B6E] group-hover:translate-x-1 transition-all mt-1" />
                             </Link>
                           </motion.div>
                         ))}
