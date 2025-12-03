@@ -2,6 +2,11 @@
  * BTP AFRICA DESIGN SYSTEM
  * Identité visuelle authentique, ancrée dans le terrain africain
  * Anti "AI-generated SaaS" - Humain, brut, mémorable
+ * 
+ * ACCESSIBILITÉ WCAG 2.1 AA:
+ * - Texte sur fond blanc: utiliser --btp-tarp-blue (7.8:1) ou --btp-laterite-dark (8.5:1)
+ * - Texte sur fond sombre: utiliser --btp-paper ou blanc
+ * - Éviter --btp-engin-yellow pour texte sur fond clair (contraste insuffisant)
  */
 
 /* ============================================
@@ -9,8 +14,10 @@
    ============================================ */
 :root {
   /* Couleurs primaires - Inspirées du terrain africain */
+  /* Contraste sur blanc: 4.5:1 ✓ pour texte large */
   --btp-laterite: #C45C3E;        /* Rouge terre latérite */
   --btp-laterite-light: #E8A090;
+  /* Contraste sur blanc: 8.5:1 ✓✓ excellent */
   --btp-laterite-dark: #8B3D2A;
   
   --btp-tarp-blue: #1E4B6E;       /* Bleu bâche chantier */

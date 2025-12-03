@@ -4,7 +4,6 @@ import { motion, type Variants } from 'framer-motion';
 
 import {
   Zap,
-  Mail,
   Facebook,
   Twitter,
   Linkedin,
@@ -12,14 +11,7 @@ import {
   Youtube,
   ArrowRight,
   Heart,
-  Globe,
-  Shield,
-  Smartphone,
-  Users,
-  BarChart3,
-  Calendar,
-  FileText,
-  CreditCard
+  Globe
 } from 'lucide-react';
 
 const ModernFooter: React.FC = () => {
@@ -27,37 +19,37 @@ const ModernFooter: React.FC = () => {
     {
       title: 'Solutions',
       links: [
-        { name: 'Artisans & Indépendants', href: '/solutions/artisan', icon: Users },
-        { name: 'PME du BTP', href: '/solutions/pme', icon: BarChart3 },
-        { name: 'Grandes Entreprises', href: '/solutions/enterprise', icon: Shield },
-        { name: 'Toutes les solutions', href: '/solutions', icon: Globe },
+        { name: 'Artisans & Indépendants', href: '/solutions/artisan' },
+        { name: 'PME du BTP', href: '/solutions/pme' },
+        { name: 'Grandes Entreprises', href: '/solutions/enterprise' },
+        { name: 'Toutes les solutions', href: '/solutions' },
       ]
     },
     {
       title: 'Produit',
       links: [
-        { name: 'Fonctionnalités', href: '/features', icon: BarChart3 },
-        { name: 'Tarifs', href: '/pricing', icon: CreditCard },
-        { name: 'Mobile Money', href: '/features', icon: Smartphone },
-        { name: 'Mode hors-ligne', href: '/features', icon: Calendar },
+        { name: 'Fonctionnalités', href: '/features' },
+        { name: 'Tarifs', href: '/pricing' },
+        { name: 'Mobile Money', href: '/features' },
+        { name: 'Mode hors-ligne', href: '/features' },
       ]
     },
     {
       title: 'Ressources',
       links: [
-        { name: 'Support & FAQ', href: '/support', icon: Users },
-        { name: 'Contact', href: '/contact', icon: Mail },
-        { name: 'Démo', href: '/contact', icon: FileText },
-        { name: 'Blog', href: '/support', icon: FileText },
+        { name: 'Support & FAQ', href: '/support' },
+        { name: 'Contact', href: '/contact' },
+        { name: 'Démo', href: '/contact' },
+        { name: 'Blog', href: '/support' },
       ]
     },
     {
       title: 'Entreprise',
       links: [
-        { name: 'À propos', href: '/about', icon: Users },
-        { name: 'Notre équipe', href: '/about', icon: Heart },
-        { name: 'Nos bureaux', href: '/contact', icon: Globe },
-        { name: 'Partenaires', href: '/about', icon: Globe },
+        { name: 'À propos', href: '/about' },
+        { name: 'Notre équipe', href: '/about' },
+        { name: 'Nos bureaux', href: '/contact' },
+        { name: 'Partenaires', href: '/about' },
       ]
     }
   ];
@@ -228,11 +220,9 @@ const ModernFooter: React.FC = () => {
                       >
                         <Link
                           to={link.href}
-                          className="flex items-center space-x-2 text-gray-300 hover:text-blue-400 transition-colors group"
+                          className="text-gray-300 hover:text-white transition-colors"
                         >
-                          <link.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                          <span>{link.name}</span>
-                          <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                          {link.name}
                         </Link>
                       </motion.div>
                     </motion.li>

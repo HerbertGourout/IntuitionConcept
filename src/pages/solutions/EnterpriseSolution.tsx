@@ -3,25 +3,11 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import GlobalLayout from '../../components/Layout/GlobalLayout';
 import { 
-  Building2,
-  BarChart3,
-  Users,
-  Shield,
-  Globe,
-  Lock,
-  Headphones,
-  CheckCircle,
-  ArrowRight,
-  Star,
-  FileText,
-  Settings,
-  Database,
-  Plug
+  ArrowRight
 } from 'lucide-react';
 
 // Images
 import heroConstructionTeam from '../../assets/images/homepage/hero-construction-team.jpg';
-import dashboardInterface from '../../assets/images/homepage/dashboard-interface.jpg';
 import performanceMetric from '../../assets/images/homepage/performance-metric.jpg';
 import satisfiedCustomer from '../../assets/images/homepage/satisfied-customer.jpg';
 
@@ -47,32 +33,26 @@ const EnterpriseSolution: React.FC = () => {
 
   const features = [
     {
-      icon: Building2,
       title: 'Multi-entités',
       description: 'Gérez plusieurs filiales, pays et devises depuis une seule plateforme.'
     },
     {
-      icon: BarChart3,
       title: 'Reporting avancé',
       description: 'Tableaux de bord personnalisables, exports automatiques, BI intégrée.'
     },
     {
-      icon: Users,
       title: 'Gestion des rôles',
       description: 'Permissions granulaires par projet, équipe et fonctionnalité.'
     },
     {
-      icon: Plug,
       title: 'API & Intégrations',
       description: 'Connectez votre ERP, comptabilité, RH et outils existants.'
     },
     {
-      icon: Shield,
       title: 'Sécurité enterprise',
       description: 'SSO, 2FA, audit logs, chiffrement, hébergement dédié possible.'
     },
     {
-      icon: Headphones,
       title: 'Support dédié',
       description: 'Account manager, SLA garanti, formation sur site.'
     }
@@ -93,10 +73,10 @@ const EnterpriseSolution: React.FC = () => {
   };
 
   const securityFeatures = [
-    { icon: Lock, label: 'Chiffrement AES-256' },
-    { icon: Shield, label: 'Conformité RGPD' },
-    { icon: Database, label: 'Sauvegardes quotidiennes' },
-    { icon: Settings, label: 'SSO / SAML 2.0' }
+    { label: 'Chiffrement AES-256' },
+    { label: 'Conformité RGPD' },
+    { label: 'Sauvegardes quotidiennes' },
+    { label: 'SSO / SAML 2.0' }
   ];
 
   return (
@@ -180,8 +160,7 @@ const EnterpriseSolution: React.FC = () => {
                 <p className="text-gray-500 font-medium mb-3">
                   {item.problem}
                 </p>
-                <p className="text-blue-600 font-medium flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <p className="text-[#4A7C59] font-medium pl-3 border-l-2 border-[#4A7C59]">
                   {item.solution}
                 </p>
               </motion.div>
@@ -207,24 +186,18 @@ const EnterpriseSolution: React.FC = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-xl p-6 shadow-lg"
-                >
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-                    <Icon className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
-                </motion.div>
-              );
-            })}
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-[#1E4B6E]"
+              >
+                <h3 className="text-lg font-bold text-[#1E4B6E] mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -244,21 +217,17 @@ const EnterpriseSolution: React.FC = () => {
                 Agrégez les données de toutes vos entités dans des tableaux de bord 
                 personnalisables. Exports automatiques vers votre BI.
               </p>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-3 text-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+              <ul className="space-y-2">
+                <li className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]">
                   Vue consolidée multi-entités
                 </li>
-                <li className="flex items-center gap-3 text-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                <li className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]">
                   KPIs personnalisables par rôle
                 </li>
-                <li className="flex items-center gap-3 text-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                <li className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]">
                   Exports Excel, PDF, API
                 </li>
-                <li className="flex items-center gap-3 text-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                <li className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]">
                   Rapports automatiques par email
                 </li>
               </ul>
@@ -317,7 +286,6 @@ const EnterpriseSolution: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
-            <Shield className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
             <h2 className="text-3xl font-bold mb-4">
               Sécurité de niveau enterprise
             </h2>
@@ -327,23 +295,17 @@ const EnterpriseSolution: React.FC = () => {
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
-            {securityFeatures.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={feature.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="text-center"
-                >
-                  <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <Icon className="w-6 h-6 text-yellow-400" />
-                  </div>
-                  <p className="text-sm text-gray-300">{feature.label}</p>
-                </motion.div>
-              );
-            })}
+            {securityFeatures.map((feature, index) => (
+              <motion.div
+                key={feature.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="text-center bg-white/5 rounded-xl p-4"
+              >
+                <p className="text-sm text-gray-300 font-medium">{feature.label}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -370,9 +332,9 @@ const EnterpriseSolution: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex mb-4">
+              <div className="flex mb-4 gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                  <span key={i} className="text-[#E5A832] text-lg">★</span>
                 ))}
               </div>
 
@@ -396,7 +358,6 @@ const EnterpriseSolution: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             className="max-w-2xl mx-auto text-center"
           >
-            <Globe className="w-12 h-12 mx-auto mb-4 text-blue-600" />
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Tarification sur mesure
             </h2>
@@ -404,25 +365,20 @@ const EnterpriseSolution: React.FC = () => {
               Chaque grande organisation a des besoins spécifiques. 
               Contactez-nous pour une offre adaptée à votre structure.
             </p>
-            <ul className="text-left max-w-md mx-auto space-y-3 mb-8">
-              <li className="flex items-center gap-3 text-gray-700">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+            <ul className="text-left max-w-md mx-auto space-y-2 mb-8">
+              <li className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]">
                 Utilisateurs illimités
               </li>
-              <li className="flex items-center gap-3 text-gray-700">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+              <li className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]">
                 Intégrations personnalisées
               </li>
-              <li className="flex items-center gap-3 text-gray-700">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+              <li className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]">
                 Account manager dédié
               </li>
-              <li className="flex items-center gap-3 text-gray-700">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+              <li className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]">
                 SLA et support prioritaire
               </li>
-              <li className="flex items-center gap-3 text-gray-700">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+              <li className="text-gray-700 pl-3 border-l-2 border-[#4A7C59]">
                 Formation sur site
               </li>
             </ul>
