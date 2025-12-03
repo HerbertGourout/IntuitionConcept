@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Hammer, Building2, Rocket, ArrowRight, Users, 
-  TrendingUp, Shield, DollarSign 
+  Hammer, Building2, Rocket, ArrowRight,
+  TrendingUp, Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -174,12 +174,11 @@ const UseCases: React.FC = () => {
   const [activeCase, setActiveCase] = useState<string>('pme');
 
   const currentCase = useCases.find(uc => uc.id === activeCase) || useCases[1];
-  const Icon = currentCase.icon;
 
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-6">
-        {/* Header */}
+        {/* Header - Sans icône */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -187,55 +186,35 @@ const UseCases: React.FC = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6"
-          >
-            <Users className="w-8 h-8 text-white" />
-          </motion.div>
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
             Une Solution pour
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Chaque Profil</span>
+            <span className="text-[#1E4B6E]"> Chaque Profil</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Que vous soyez artisan, PME ou grande entreprise, IntuitionConcept s'adapte à vos besoins
           </p>
         </motion.div>
 
-        {/* Tabs */}
+        {/* Tabs - Sans icônes */}
         <div className="flex flex-col md:flex-row justify-center gap-4 mb-12">
-          {useCases.map((useCase) => {
-            const TabIcon = useCase.icon;
-            return (
-              <motion.button
-                key={useCase.id}
-                onClick={() => setActiveCase(useCase.id)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`relative px-8 py-6 rounded-2xl font-bold text-lg transition-all duration-300 ${
-                  activeCase === useCase.id
-                    ? `bg-gradient-to-r ${useCase.color} text-white shadow-2xl`
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <TabIcon className="w-6 h-6" />
-                  <div className="text-left">
-                    <div>{useCase.title}</div>
-                    <div className="text-xs opacity-80">{useCase.employees}</div>
-                  </div>
-                </div>
-                {activeCase === useCase.id && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-white/20 rounded-2xl"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
-              </motion.button>
-            );
-          })}
+          {useCases.map((useCase) => (
+            <motion.button
+              key={useCase.id}
+              onClick={() => setActiveCase(useCase.id)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`relative px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 ${
+                activeCase === useCase.id
+                  ? 'bg-[#1E4B6E] text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+              }`}
+            >
+              <div className="text-left">
+                <div>{useCase.title}</div>
+                <div className="text-sm font-normal opacity-80">{useCase.employees}</div>
+              </div>
+            </motion.button>
+          ))}
         </div>
 
         {/* Content */}
@@ -251,27 +230,20 @@ const UseCases: React.FC = () => {
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Left: Info & Features */}
               <div className="space-y-8">
-                {/* Header Card */}
-                <div className={`bg-gradient-to-br ${currentCase.gradient} rounded-3xl p-8 shadow-xl`}>
-                  <div className="flex items-center space-x-4 mb-6">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${currentCase.color} rounded-2xl flex items-center justify-center shadow-lg`}>
-                      <Icon className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-3xl font-bold text-gray-900">{currentCase.title}</h3>
-                      <p className="text-gray-600">{currentCase.subtitle}</p>
-                    </div>
+                {/* Header Card - Sans icône */}
+                <div className="bg-[#F5F0E8] rounded-2xl p-8">
+                  <div className="mb-6">
+                    <h3 className="text-3xl font-bold text-gray-900">{currentCase.title}</h3>
+                    <p className="text-gray-600">{currentCase.subtitle}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4">
-                      <Users className="w-5 h-5 text-gray-600 mb-2" />
-                      <div className="text-sm text-gray-600">Équipe</div>
+                    <div className="bg-white rounded-xl p-4">
+                      <div className="text-sm text-gray-500">Équipe</div>
                       <div className="text-lg font-bold text-gray-900">{currentCase.employees}</div>
                     </div>
-                    <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4">
-                      <DollarSign className="w-5 h-5 text-gray-600 mb-2" />
-                      <div className="text-sm text-gray-600">Budget</div>
+                    <div className="bg-white rounded-xl p-4">
+                      <div className="text-sm text-gray-500">Budget</div>
                       <div className="text-lg font-bold text-gray-900">{currentCase.budget}</div>
                     </div>
                   </div>

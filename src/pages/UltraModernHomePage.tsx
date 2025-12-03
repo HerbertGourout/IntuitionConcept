@@ -44,9 +44,7 @@ import {
   Truck,
   PieChart,
   ClipboardList,
-  Clock,
-  Phone,
-  Wifi
+  Clock
 } from 'lucide-react';
 
 const UltraModernHomePage: React.FC = () => {
@@ -231,9 +229,7 @@ const UltraModernHomePage: React.FC = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
+            {features.map((feature, index) => (
                 <motion.div
                   key={feature.title}
                   initial={{ opacity: 0, y: 30 }}
@@ -247,12 +243,7 @@ const UltraModernHomePage: React.FC = () => {
                       alt={feature.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className={`absolute inset-0 bg-gradient-to-t ${feature.color} opacity-60`}></div>
-                    <div className="absolute bottom-3 left-3">
-                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-lg">
-                        <Icon className="w-5 h-5 text-gray-800" />
-                      </div>
-                    </div>
+                    <div className={`absolute inset-0 bg-gradient-to-t ${feature.color} opacity-40`}></div>
                   </div>
                   
                   <div className="p-5">
@@ -260,8 +251,7 @@ const UltraModernHomePage: React.FC = () => {
                     <p className="text-gray-600 text-sm">{feature.description}</p>
                   </div>
                 </motion.div>
-              );
-            })}
+            ))}
           </div>
 
           <div className="text-center mt-12">
@@ -277,19 +267,16 @@ const UltraModernHomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Différenciateurs */}
-      <section className="py-16 bg-white">
+      {/* Différenciateurs - Style épuré sans icônes */}
+      <section className="py-16 bg-[#F5F0E8]">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="text-center p-6"
+              className="text-center p-6 bg-white rounded-xl shadow-sm"
             >
-              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <DollarSign className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Mobile Money natif</h3>
+              <h3 className="text-xl font-bold text-[#1E4B6E] mb-3">Mobile Money natif</h3>
               <p className="text-gray-600">
                 Orange Money, MTN, Wave, Airtel... Paiements intégrés sans configuration.
               </p>
@@ -299,12 +286,9 @@ const UltraModernHomePage: React.FC = () => {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-center p-6"
+              className="text-center p-6 bg-white rounded-xl shadow-sm"
             >
-              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Wifi className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Mode hors-ligne</h3>
+              <h3 className="text-xl font-bold text-[#1E4B6E] mb-3">Mode hors-ligne</h3>
               <p className="text-gray-600">
                 Travaillez sans internet, synchronisation automatique au retour.
               </p>
@@ -314,12 +298,9 @@ const UltraModernHomePage: React.FC = () => {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-center p-6"
+              className="text-center p-6 bg-white rounded-xl shadow-sm"
             >
-              <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Phone className="w-8 h-8 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Support local</h3>
+              <h3 className="text-xl font-bold text-[#1E4B6E] mb-3">Support local</h3>
               <p className="text-gray-600">
                 Équipe francophone à Brazzaville, Kinshasa, Douala. Réponse sous 24h.
               </p>
