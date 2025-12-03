@@ -10,7 +10,8 @@ import {
   FileText,
   Smartphone,
   Shield,
-  ArrowRight
+  ArrowRight,
+  Zap
 } from 'lucide-react';
 import NotificationBell from '../Notifications/NotificationBell';
 import { useAuth } from '../../contexts/AuthContext';
