@@ -7,13 +7,12 @@ import {
   Calculator,
   Smartphone,
   Clock,
-  CheckCircle,
   ArrowRight,
-  Star,
   Camera,
   Receipt,
   Wallet
 } from 'lucide-react';
+import { TerrainCheck, ProblemSolutionBlock } from '../../components/BTPAfrica';
 
 // Images
 import heroConstructionTeam from '../../assets/images/homepage/hero-construction-team.jpg';
@@ -165,26 +164,11 @@ const ArtisanSolution: React.FC = () => {
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {painPoints.map((item, index) => (
-              <motion.div
-                key={item.problem}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gray-50 rounded-xl p-6"
-              >
-                <p className="text-red-500 font-medium mb-3 flex items-start gap-2">
-                  <span className="text-red-400">✗</span>
-                  {item.problem}
-                </p>
-                <p className="text-green-600 font-medium flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  {item.solution}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+          <ProblemSolutionBlock 
+            items={painPoints}
+            variant="cards"
+            className="max-w-4xl mx-auto"
+          />
         </div>
       </section>
 
@@ -208,19 +192,19 @@ const ArtisanSolution: React.FC = () => {
               </p>
               <ul className="space-y-3">
                 <li className="flex items-center gap-3 text-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <TerrainCheck variant="pencil" color="vegetation" size="sm" />
                   Fonctionne même sans internet
                 </li>
                 <li className="flex items-center gap-3 text-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <TerrainCheck variant="pencil" color="vegetation" size="sm" />
                   Interface simple et rapide
                 </li>
                 <li className="flex items-center gap-3 text-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <TerrainCheck variant="pencil" color="vegetation" size="sm" />
                   Envoi direct par WhatsApp
                 </li>
                 <li className="flex items-center gap-3 text-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <TerrainCheck variant="pencil" color="vegetation" size="sm" />
                   Paiement Mobile Money intégré
                 </li>
               </ul>
@@ -349,9 +333,9 @@ const ArtisanSolution: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex mb-4">
+              <div className="flex mb-4 gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                  <span key={i} className="text-yellow-500 text-xl">★</span>
                 ))}
               </div>
 
@@ -385,7 +369,7 @@ const ArtisanSolution: React.FC = () => {
               <ul className="space-y-3 text-left mb-8">
                 {pricing.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-yellow-300" />
+                    <TerrainCheck variant="pencil" color="engin" size="sm" />
                     {feature}
                   </li>
                 ))}

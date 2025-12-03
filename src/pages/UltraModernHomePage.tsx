@@ -15,7 +15,8 @@ import {
   WhatsAppTestimonial, 
   FieldTestimonial,
   TerrainCard,
-  AfricanPatternDivider 
+  AfricanPatternDivider,
+  ProblemSolutionBlock
 } from '../components/BTPAfrica';
 
 // Images
@@ -37,7 +38,6 @@ import {
   BarChart3,
   Calendar,
   FileText,
-  CheckCircle,
   Award,
   MapPin,
   DollarSign,
@@ -183,7 +183,7 @@ const UltraModernHomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Problématiques terrain */}
+      {/* Problématiques terrain - Sans icônes stock */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-6">
           <motion.div
@@ -191,31 +191,22 @@ const UltraModernHomePage: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
+            <p className="font-['Caveat',cursive] text-xl text-[#C45C3E] mb-2" style={{ transform: 'rotate(-1deg)' }}>
+              → 15 ans sur les chantiers
+            </p>
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
               Les défis du BTP en Afrique, on connaît
             </h2>
             <p className="text-xl text-gray-600">
-              Après 15 ans sur les chantiers, on a créé l'outil qu'on aurait aimé avoir
+              On a créé l'outil qu'on aurait aimé avoir
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            {challenges.map((item, index) => (
-              <motion.div
-                key={item.problem}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gray-50 rounded-xl p-6"
-              >
-                <p className="text-red-500 font-medium mb-2 line-through">{item.problem}</p>
-                <p className="text-green-600 font-medium flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  {item.solution}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+          <ProblemSolutionBlock 
+            items={challenges}
+            variant="default"
+            className="max-w-5xl mx-auto"
+          />
         </div>
       </section>
 
@@ -479,8 +470,7 @@ const UltraModernHomePage: React.FC = () => {
                 </motion.button>
               </Link>
             </div>
-            <p className="mt-6 text-blue-200 flex items-center justify-center gap-2">
-              <CheckCircle className="w-5 h-5" />
+            <p className="mt-6 text-blue-200 text-center">
               14 jours gratuits • Sans engagement • Support en français
             </p>
           </motion.div>

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { message } from 'antd';
 import GlobalLayout from '../components/Layout/GlobalLayout';
 import PricingCalculator from '../components/Pricing/PricingCalculator';
-import { Check, Smartphone, CreditCard, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Smartphone, CreditCard, ShieldCheck, ChevronRight } from 'lucide-react';
+import { TerrainCheck } from '../components/BTPAfrica';
 import { useNavigate } from 'react-router-dom';
 import { PLANS, PRICING, CURRENCY_SYMBOLS, PlanId, Currency, getPlanIncrementalFeatures } from '../config/pricing';
 import { useAuth } from '../contexts/AuthContext';
@@ -114,16 +115,16 @@ export const Pricing: React.FC = () => {
               {/* Fonctionnalités principales */}
               <div className="mb-8">
                 {plan.id === 'pro' && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
                     <p className="text-sm text-blue-800 font-medium">
-                      ✓ Toutes les fonctionnalités Starter incluses
+                      Toutes les fonctionnalités Starter incluses
                     </p>
                   </div>
                 )}
                 {plan.id === 'enterprise' && (
-                  <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="mb-4 p-3 bg-purple-50 border-l-4 border-purple-400 rounded-r-lg">
                     <p className="text-sm text-purple-800 font-medium">
-                      ✓ Toutes les fonctionnalités Pro BTP incluses
+                      Toutes les fonctionnalités Pro BTP incluses
                     </p>
                   </div>
                 )}
@@ -140,7 +141,7 @@ export const Pricing: React.FC = () => {
                       <ul className="space-y-3">
                         {feats.map((feature, idx: number) => (
                           <li key={feature.id ?? idx} className="flex items-start">
-                            <Check className="w-4 h-4 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
+                            <TerrainCheck variant="pencil" color="vegetation" size="sm" className="mr-3 mt-0.5 flex-shrink-0" />
                             <div>
                               <span className="text-gray-900 font-medium text-sm">{feature.name}</span>
                               {showFeatureDetails && feature.description && (
@@ -222,13 +223,28 @@ export const Pricing: React.FC = () => {
 
         {/* Pourquoi choisir notre solution */}
         <div className="text-center py-12">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Pourquoi choisir notre plateforme ?</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-6">Pourquoi choisir notre plateforme ?</h3>
           <ul className="inline-block text-left text-lg text-gray-700 space-y-3">
-            <li>🇫🇷 Interface 100% française et adaptée à l'Afrique</li>
-            <li>💸 Tarification locale abordable</li>
-            <li>📱 Paiement Mobile Money ultra-simple</li>
-            <li>🔒 Sécurité et confidentialité garanties</li>
-            <li>👩‍💼 Support client réactif basé en Afrique</li>
+            <li className="flex items-center gap-3">
+              <TerrainCheck variant="pencil" color="laterite" size="md" />
+              <span>Interface 100% française et adaptée à l'Afrique</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <TerrainCheck variant="pencil" color="laterite" size="md" />
+              <span>Tarification locale abordable</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <TerrainCheck variant="pencil" color="laterite" size="md" />
+              <span>Paiement Mobile Money ultra-simple</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <TerrainCheck variant="pencil" color="laterite" size="md" />
+              <span>Sécurité et confidentialité garanties</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <TerrainCheck variant="pencil" color="laterite" size="md" />
+              <span>Support client réactif basé en Afrique</span>
+            </li>
           </ul>
         </div>
       </div>
