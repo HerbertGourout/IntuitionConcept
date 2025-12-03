@@ -30,7 +30,7 @@ const AboutPage: React.FC = () => {
     {
       icon: Heart,
       title: 'Proximité client',
-      description: 'Notre équipe support est présente à Dakar, Abidjan, Douala et Paris. Nous parlons votre langue.'
+      description: 'Notre équipe support est présente à Brazzaville, Kinshasa, Douala et Paris. Nous parlons votre langue.'
     },
     {
       icon: Globe,
@@ -46,16 +46,16 @@ const AboutPage: React.FC = () => {
 
   const team = [
     {
-      name: 'Ousmane Diallo',
+      name: 'Patrick Moungali',
       role: 'Fondateur & CEO',
-      bio: '15 ans d\'expérience dans le BTP en Afrique de l\'Ouest. Ancien directeur de chantier chez Bouygues.',
-      location: 'Dakar, Sénégal'
+      bio: '15 ans d\'expérience dans le BTP en Afrique centrale. Ancien directeur de chantier chez Bouygues.',
+      location: 'Brazzaville, Congo'
     },
     {
-      name: 'Aminata Koné',
-      role: 'Directrice Produit',
-      bio: 'Ex-consultante McKinsey, spécialisée dans la digitalisation des PME africaines.',
-      location: 'Abidjan, Côte d\'Ivoire'
+      name: 'Clément Makosso',
+      role: 'Directeur Produit',
+      bio: 'Ex-consultant, spécialisé dans la digitalisation des PME africaines.',
+      location: 'Kinshasa, RDC'
     },
     {
       name: 'Jean-Pierre Mbarga',
@@ -66,16 +66,16 @@ const AboutPage: React.FC = () => {
   ];
 
   const milestones = [
-    { year: '2021', event: 'Création d\'IntuitionConcept à Dakar' },
-    { year: '2022', event: 'Premiers clients PME au Sénégal et Côte d\'Ivoire' },
-    { year: '2023', event: 'Expansion au Cameroun, Maroc et Tunisie' },
+    { year: '2021', event: 'Création d\'IntuitionConcept à Brazzaville' },
+    { year: '2022', event: 'Premiers clients PME au Congo et RDC' },
+    { year: '2023', event: 'Expansion au Cameroun, Gabon et Afrique de l\'Ouest' },
     { year: '2024', event: 'Lancement des modules IA et Mobile Money' },
     { year: '2025', event: '+850 entreprises utilisatrices dans 12 pays' }
   ];
 
   const offices = [
-    { city: 'Dakar', country: 'Sénégal', type: 'Siège social' },
-    { city: 'Abidjan', country: 'Côte d\'Ivoire', type: 'Bureau régional' },
+    { city: 'Brazzaville', country: 'Congo', type: 'Siège social' },
+    { city: 'Kinshasa', country: 'RDC', type: 'Bureau régional' },
     { city: 'Douala', country: 'Cameroun', type: 'Bureau régional' },
     { city: 'Paris', country: 'France', type: 'Partenariats Europe' }
   ];

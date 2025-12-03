@@ -20,30 +20,30 @@ const VideoTestimonials: React.FC = () => {
   const testimonials: Testimonial[] = [
     {
       id: '1',
-      name: 'Aminata Diallo',
-      role: 'Directrice Générale',
-      company: 'BTP Dakar',
-      country: 'Sénégal 🇸🇳',
+      name: 'Patrick Moungali',
+      role: 'Directeur Général',
+      company: 'BTP Brazzaville',
+      country: 'Congo 🇨🇬',
       quote: 'IntuitionConcept a transformé notre façon de gérer les chantiers. Les devis automatiques nous font gagner des heures chaque semaine.',
       rating: 5,
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face'
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
     },
     {
       id: '2',
-      name: 'Kouadio Jean-Baptiste',
+      name: 'Clément Makosso',
       role: 'Chef de Projet',
-      company: 'Construction CI',
-      country: 'Côte d\'Ivoire 🇨🇮',
+      company: 'Construction Kinshasa',
+      country: 'RDC 🇨🇩',
       quote: 'Le suivi GPS de nos équipes et le mode hors-ligne sont parfaits pour nos chantiers en zone rurale.',
       rating: 5,
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
     },
     {
       id: '3',
-      name: 'Fatima El Mansouri',
+      name: 'Jean-Pierre Mbarga',
       role: 'Architecte',
-      company: 'Studio Archi',
-      country: 'Maroc 🇲🇦',
+      company: 'Studio Archi Douala',
+      country: 'Cameroun 🇨🇲',
       quote: 'L\'analyse de plans par IA est révolutionnaire. Je génère des devis précis en quelques minutes.',
       rating: 5,
       avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face'

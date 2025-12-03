@@ -77,9 +77,9 @@ const PMESolution: React.FC = () => {
   ];
 
   const testimonial = {
-    name: 'Mamadou Diop',
-    role: 'Gérant, Diop Construction',
-    company: '12 employés • Dakar, Sénégal',
+    name: 'Patrick Moungali',
+    role: 'Gérant, Moungali BTP',
+    company: '15 employés • Brazzaville, Congo',
     content: 'Avant IntuitionConcept, je passais mes soirées à faire des devis et mes week-ends à courir après les équipes. Maintenant, je gère 8 chantiers sereinement et je rentre dîner avec ma famille.',
     metric: '8 chantiers gérés • 15h gagnées/semaine',
     avatar: satisfiedCustomer

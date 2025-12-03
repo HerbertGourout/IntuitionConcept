@@ -74,9 +74,9 @@ const ArtisanSolution: React.FC = () => {
   ];
 
   const testimonial = {
-    name: 'Ibrahima Sow',
+    name: 'Jean-Baptiste Ngoma',
     role: 'Artisan plombier',
-    company: 'Travailleur indépendant • Thiès, Sénégal',
+    company: 'Travailleur indépendant • Pointe-Noire, Congo',
     content: 'Avant, je faisais mes devis sur des bouts de papier. Maintenant, j\'envoie des devis pro par WhatsApp en 5 minutes. Mes clients me prennent plus au sérieux.',
     metric: '3x plus de devis acceptés',
     avatar: satisfiedCustomer

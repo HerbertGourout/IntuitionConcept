@@ -68,10 +68,10 @@ const useCases: UseCase[] = [
       { metric: 'Clients satisfaits', value: '95%', icon: '⭐' }
     ],
     testimonial: {
-      name: 'Mamadou Traoré',
+      name: 'Jean-Baptiste Ngoma',
       role: 'Maçon Indépendant',
-      company: 'Traoré Construction',
-      country: 'Mali 🇲🇱',
+      company: 'Ngoma Construction',
+      country: 'Congo 🇨🇬',
       quote: 'Avant, je passais 2h par devis. Maintenant avec l\'IA, c\'est 10 minutes ! Je peux traiter 3× plus de clients et mes devis sont plus professionnels.',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
     }
@@ -112,10 +112,10 @@ const useCases: UseCase[] = [
       { metric: 'Projets livrés à temps', value: '85%', icon: '✅' }
     ],
     testimonial: {
-      name: 'Aminata Diallo',
-      role: 'Directrice Générale',
-      company: 'BTP Solutions Dakar',
-      country: 'Sénégal 🇸🇳',
+      name: 'Clément Makosso',
+      role: 'Directeur Général',
+      company: 'BTP Solutions Kinshasa',
+      country: 'RDC 🇨🇩',
       quote: 'L\'IA de détection d\'anomalies nous a fait économiser 15M FCFA en 6 mois en évitant les dépassements. Le ROI est incroyable !',
       avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face'
     }

@@ -138,14 +138,14 @@ const UltraModernHomePage: React.FC = () => {
       <PageMeta 
         title="Gestion BTP pour l'Afrique Francophone"
         description="IntuitionConcept - Logiciel de gestion BTP tout-en-un. Devis, factures, suivi chantier, paiements Mobile Money. Essai gratuit 14 jours."
-        keywords="BTP, gestion chantier, devis, facture, Sénégal, Afrique, construction, artisan, PME, Mobile Money"
+        keywords="BTP, gestion chantier, devis, facture, Congo, RDC, Afrique centrale, construction, artisan, PME, Mobile Money"
       />
       {/* Hero Section - Split Screen BTP Afrique */}
       <SplitHeroSection
         title="Ce logiciel, on l'a codé parce qu'on n'en trouvait pas sur nos chantiers à"
-        highlightText="Dakar"
-        subtitle="PME de 12 personnes à Thiès. Avant IntuitionConcept : retards, budgets dépassés, documents perdus. Aujourd'hui : tout est sous contrôle."
-        annotation="→ Témoignage de Saliou, gérant BTP Thiès"
+        highlightText="Brazzaville"
+        subtitle="PME de 15 personnes à Pointe-Noire. Avant IntuitionConcept : retards, budgets dépassés, documents perdus. Aujourd'hui : tout est sous contrôle."
+        annotation="→ Témoignage de Patrick, gérant BTP Pointe-Noire"
         ctaText="Essayer gratuitement 14 jours"
         ctaLink="/register"
         secondaryCta={{ text: "Demander une démo", link: "/contact" }}
@@ -321,7 +321,7 @@ const UltraModernHomePage: React.FC = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Support local</h3>
               <p className="text-gray-600">
-                Équipe francophone à Dakar, Abidjan, Douala. Réponse sous 24h.
+                Équipe francophone à Brazzaville, Kinshasa, Douala. Réponse sous 24h.
               </p>
             </motion.div>
           </div>
@@ -367,13 +367,13 @@ const UltraModernHomePage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto items-start">
             {/* WhatsApp Testimonial */}
             <WhatsAppTestimonial
-              contactName="Saliou Mbaye"
-              contactRole="Gérant, BTP Thiès 🇸🇳"
+              contactName="Patrick Moungali"
+              contactRole="Gérant, BTP Pointe-Noire 🇨🇬"
               messages={[
                 { id: '1', text: "Bonjour ! Je voulais vous remercier pour l'application", time: '09:32', isOwn: false },
                 { id: '2', text: "Avant je perdais des heures à chercher mes documents. Maintenant tout est là 📱", time: '09:33', isOwn: false },
-                { id: '3', text: "Merci Saliou ! Comment ça se passe sur vos chantiers ?", time: '09:45', isOwn: true },
-                { id: '4', text: "Je gère 8 chantiers sans stress. Le mode hors-ligne c'est top pour Thiès 💪", time: '09:47', isOwn: false },
+                { id: '3', text: "Merci Patrick ! Comment ça se passe sur vos chantiers ?", time: '09:45', isOwn: true },
+                { id: '4', text: "Je gère 8 chantiers sans stress. Le mode hors-ligne c'est top pour Pointe-Noire 💪", time: '09:47', isOwn: false },
               ]}
             />
 
@@ -381,18 +381,18 @@ const UltraModernHomePage: React.FC = () => {
             <div className="space-y-6">
               <FieldTestimonial
                 quote="Les devis automatiques me font gagner 10h par semaine. Je peux enfin me concentrer sur mes chantiers."
-                authorName="Adjoua Kouamé"
-                authorRole="Directrice"
-                authorCompany="Construction CI"
-                authorLocation="Abidjan, Côte d'Ivoire"
+                authorName="Clément Makosso"
+                authorRole="Directeur"
+                authorCompany="Makosso BTP"
+                authorLocation="Kinshasa, RDC"
                 authorPhoto={satisfiedCustomer}
                 rating={5}
               />
               
               <TerrainCard
                 title="Le mode hors-ligne est parfait"
-                description="Pour nos chantiers en zone rurale au Mali, c'est indispensable. Synchronisation automatique au retour."
-                annotation="Moussa Traoré, Chef de projet"
+                description="Pour nos chantiers en zone rurale au Congo, c'est indispensable. Synchronisation automatique au retour."
+                annotation="Jean-Claude Ngoma, Chef de projet"
                 variant="postit"
                 rotation={2}
               />
@@ -417,7 +417,7 @@ const UltraModernHomePage: React.FC = () => {
             </h2>
             <p className="text-gray-600 mb-6">
               Créé par des professionnels du BTP, pour des professionnels du BTP. 
-              Notre équipe est présente à Dakar, Abidjan, Douala et Paris pour vous accompagner.
+              Notre équipe est présente à Brazzaville, Kinshasa, Douala et Paris pour vous accompagner.
             </p>
             <Link to="/about">
               <span className="text-blue-600 font-medium hover:underline">

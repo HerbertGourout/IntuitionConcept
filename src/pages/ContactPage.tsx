@@ -40,19 +40,19 @@ const ContactPage: React.FC = () => {
 
   const offices = [
     {
-      city: 'Dakar',
-      country: 'Sénégal',
-      address: 'Immeuble Keur Gorgui, Rue KG-52',
-      phone: '+221 33 123 45 67',
-      email: 'dakar@intuitionconcept.com',
+      city: 'Brazzaville',
+      country: 'Congo',
+      address: 'Centre-ville, Avenue Amilcar Cabral',
+      phone: '+242 06 123 45 67',
+      email: 'brazzaville@intuitionconcept.com',
       type: 'Siège social'
     },
     {
-      city: 'Abidjan',
-      country: 'Côte d\'Ivoire',
-      address: 'Plateau, Avenue Noguès',
-      phone: '+225 27 20 21 22 23',
-      email: 'abidjan@intuitionconcept.com',
+      city: 'Kinshasa',
+      country: 'RDC',
+      address: 'Gombe, Boulevard du 30 Juin',
+      phone: '+243 81 123 45 67',
+      email: 'kinshasa@intuitionconcept.com',
       type: 'Bureau régional'
     },
     {
@@ -70,8 +70,8 @@ const ContactPage: React.FC = () => {
       icon: MessageCircle,
       title: 'WhatsApp',
       description: 'Réponse rapide en moins de 2h',
-      action: '+221 77 123 45 67',
-      link: 'https://wa.me/221771234567',
+      action: '+242 06 500 00 00',
+      link: 'https://wa.me/242065000000',
       color: 'bg-green-500'
     },
     {
