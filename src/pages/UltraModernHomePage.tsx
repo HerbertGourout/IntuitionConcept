@@ -8,6 +8,7 @@ import UseCases from '../components/Homepage/UseCases';
 import CompetitorComparison from '../components/Homepage/CompetitorComparison';
 import VideoTestimonials from '../components/Homepage/VideoTestimonials';
 import VideoDemo from '../components/Homepage/VideoDemo';
+import CaseStudies from '../components/Homepage/CaseStudies';
 
 // Composants BTP Afrique - Design authentique
 import { 
@@ -408,6 +409,9 @@ const UltraModernHomePage: React.FC = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Études de cas */}
+      <CaseStudies />
 
       {/* CTA Final */}
       <section className="relative py-20 overflow-hidden">

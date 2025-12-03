@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ModernHeader from './ModernHeader';
 import ModernFooter from './ModernFooter';
+import WhatsAppButton from '../UI/WhatsAppButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -215,6 +216,9 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({
 
       {/* Footer moderne global */}
       <ModernFooter />
+
+      {/* Bouton WhatsApp flottant - visible sur toutes les pages publiques */}
+      {!firebaseUser && <WhatsAppButton />}
     </div>
   );
 };

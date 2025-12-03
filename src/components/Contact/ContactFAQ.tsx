@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, HelpCircle, Clock, Shield, CreditCard, Users } from 'lucide-react';
+import { ChevronDown, HelpCircle, Clock, Shield, CreditCard, Users, Smartphone, Wifi, FileText, MapPin } from 'lucide-react';
 
 interface FAQItem {
   question: string;
@@ -17,23 +17,43 @@ const ContactFAQ: React.FC = () => {
 
   const faqs: FAQItem[] = [
     {
+      question: 'Comment recevoir un paiement Mobile Money ?',
+      answer: 'C\'est automatique ! Quand vous envoyez une facture, le client reçoit un lien de paiement. Il clique, choisit Orange Money, MTN ou Wave, et paie en 2 clics. L\'argent arrive sur votre compte en quelques minutes.',
+      icon: Smartphone,
+    },
+    {
+      question: 'Ça marche sans internet sur le chantier ?',
+      answer: 'Oui ! L\'application fonctionne hors-ligne. Vous pouvez créer des rapports, prendre des photos, saisir des dépenses... Tout se synchronise automatiquement dès que vous retrouvez une connexion.',
+      icon: Wifi,
+    },
+    {
+      question: 'Comment créer un devis rapidement ?',
+      answer: 'Vous pouvez utiliser vos modèles de devis, ou laisser l\'IA analyser vos plans pour générer un devis automatique. En moyenne, nos clients créent un devis complet en 10 minutes au lieu de 2 heures.',
+      icon: FileText,
+    },
+    {
+      question: 'Comment suivre mes équipes sur le terrain ?',
+      answer: 'Chaque membre de l\'équipe a l\'application mobile. Vous voyez leur position en temps réel sur la carte, recevez leurs rapports photo, et pouvez leur assigner des tâches à distance.',
+      icon: MapPin,
+    },
+    {
       question: 'Quel est le délai de réponse du support ?',
-      answer: 'Notre équipe répond sous 24h maximum en jours ouvrés. Pour les clients Enterprise, le support prioritaire garantit une réponse sous 4h. En cas d\'urgence, utilisez WhatsApp pour une réponse immédiate.',
+      answer: 'Notre équipe répond sous 24h maximum. Pour une réponse immédiate, utilisez le bouton WhatsApp en bas à droite. Nous avons des équipes à Brazzaville, Kinshasa et Douala.',
       icon: Clock,
     },
     {
       question: 'Comment fonctionne l\'essai gratuit ?',
-      answer: 'L\'essai gratuit de 14 jours vous donne accès à toutes les fonctionnalités Pro sans engagement. Aucune carte bancaire n\'est requise. À la fin de l\'essai, vous choisissez le plan qui vous convient ou continuez gratuitement avec des fonctionnalités limitées.',
+      answer: 'L\'essai gratuit de 14 jours vous donne accès à toutes les fonctionnalités Pro sans engagement. Aucune carte bancaire n\'est requise. À la fin, vous choisissez le plan qui vous convient.',
       icon: Shield,
     },
     {
       question: 'Quels moyens de paiement acceptez-vous ?',
-      answer: 'Nous acceptons les paiements par Mobile Money (Orange Money, Wave, MTN Money, Moov Money), carte bancaire (Visa, Mastercard), et virement bancaire pour les entreprises. Les paiements sont sécurisés et conformes aux normes PCI-DSS.',
+      answer: 'Mobile Money (Orange Money, Wave, MTN Money, Moov Money), carte bancaire (Visa, Mastercard), et virement bancaire pour les entreprises. Tous les paiements sont sécurisés.',
       icon: CreditCard,
     },
     {
       question: 'Proposez-vous des formations ?',
-      answer: 'Oui ! Chaque nouveau client bénéficie d\'une session de formation gratuite (1h en visio). Pour les équipes plus grandes, nous proposons des formations sur site dans nos bureaux de Dakar, Abidjan, Douala et Paris. Des tutoriels vidéo sont également disponibles 24/7.',
+      answer: 'Oui ! Chaque nouveau client bénéficie d\'une session de formation gratuite (1h en visio). Pour les équipes, nous proposons des formations sur site à Brazzaville, Kinshasa, Douala et Paris.',
       icon: Users,
     },
   ];

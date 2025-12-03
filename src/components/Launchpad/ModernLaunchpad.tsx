@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   LayoutGrid, 
@@ -23,6 +23,7 @@ import {
 // Link disponible si besoin de navigation directe
 import { useAuth } from '../../contexts/AuthContext';
 import { useProjects } from '../../hooks/useProjects';
+import { OnboardingWizard } from '../Onboarding';
 
 interface ModernLaunchpadProps {
   onOpenSection: (section: string) => void;
@@ -31,6 +32,22 @@ interface ModernLaunchpadProps {
 const ModernLaunchpad: React.FC<ModernLaunchpadProps> = ({ onOpenSection }) => {
   const { firebaseUser } = useAuth();
   const { projects } = useProjects();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Afficher l'onboarding pour les nouveaux utilisateurs
+  useEffect(() => {
+    const hasCompletedOnboarding = localStorage.getItem('onboarding_completed');
+    if (!hasCompletedOnboarding && firebaseUser) {
+      // Délai pour laisser le temps au dashboard de se charger
+      const timer = setTimeout(() => setShowOnboarding(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [firebaseUser]);
+
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('onboarding_completed', 'true');
+    setShowOnboarding(false);
+  };
 
   // Calculer les stats
   const stats = useMemo(() => {
@@ -322,6 +339,14 @@ const ModernLaunchpad: React.FC<ModernLaunchpadProps> = ({ onOpenSection }) => {
           </div>
         </div>
       </motion.div>
+
+      {/* Onboarding Wizard */}
+      <OnboardingWizard
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onComplete={handleOnboardingComplete}
+        userName={userName}
+      />
     </div>
   );
 };
