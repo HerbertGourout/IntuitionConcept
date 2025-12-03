@@ -1,19 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion, type Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { MapPin, Phone, Mail, ArrowRight } from 'lucide-react';
 
-import {
-  Zap,
-  Facebook,
-  Twitter,
-  Linkedin,
-  Instagram,
-  Youtube,
-  ArrowRight,
-  Heart,
-  Globe
-} from 'lucide-react';
-
+/**
+ * Footer avec empreinte africaine authentique
+ * Design cohérent avec le header et le design system BTP Africa
+ */
 const ModernFooter: React.FC = () => {
   const footerSections = [
     {
@@ -22,7 +15,6 @@ const ModernFooter: React.FC = () => {
         { name: 'Artisans & Indépendants', href: '/solutions/artisan' },
         { name: 'PME du BTP', href: '/solutions/pme' },
         { name: 'Grandes Entreprises', href: '/solutions/enterprise' },
-        { name: 'Toutes les solutions', href: '/solutions' },
       ]
     },
     {
@@ -30,8 +22,7 @@ const ModernFooter: React.FC = () => {
       links: [
         { name: 'Fonctionnalités', href: '/features' },
         { name: 'Tarifs', href: '/pricing' },
-        { name: 'Mobile Money', href: '/features' },
-        { name: 'Mode hors-ligne', href: '/features' },
+        { name: 'Démo gratuite', href: '/contact' },
       ]
     },
     {
@@ -39,271 +30,154 @@ const ModernFooter: React.FC = () => {
       links: [
         { name: 'Support & FAQ', href: '/support' },
         { name: 'Contact', href: '/contact' },
-        { name: 'Démo', href: '/contact' },
-        { name: 'Blog', href: '/support' },
-      ]
-    },
-    {
-      title: 'Entreprise',
-      links: [
         { name: 'À propos', href: '/about' },
-        { name: 'Notre équipe', href: '/about' },
-        { name: 'Nos bureaux', href: '/contact' },
-        { name: 'Partenaires', href: '/about' },
       ]
     }
   ];
 
-  const socialLinks = [
-    { name: 'Facebook', href: '#', icon: Facebook, color: 'hover:text-blue-600' },
-    { name: 'Twitter', href: '#', icon: Twitter, color: 'hover:text-sky-500' },
-    { name: 'LinkedIn', href: '#', icon: Linkedin, color: 'hover:text-blue-700' },
-    { name: 'Instagram', href: '#', icon: Instagram, color: 'hover:text-pink-600' },
-    { name: 'YouTube', href: '#', icon: Youtube, color: 'hover:text-red-600' },
+  const offices = [
+    { city: 'Brazzaville', country: 'Congo' },
+    { city: 'Kinshasa', country: 'RDC' },
+    { city: 'Douala', country: 'Cameroun' },
+    { city: 'Paris', country: 'France' },
   ];
 
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2
-      }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6, ease: [0.16, 0.84, 0.44, 1] as const }
-    }
-  };
-
-  const linkHoverVariants = {
-    hover: {
-      x: 5,
-      color: "#3B82F6",
-      transition: { duration: 0.2 }
-    }
-  };
   return (
-    <footer className="bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white relative overflow-hidden">
-      {/* Animations de fond */}
-      <div className="absolute inset-0">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 180, 360],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute -top-20 -right-20 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            rotate: [360, 180, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute -bottom-20 -left-20 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl"
-        />
-      </div>
+    <footer className="relative overflow-hidden">
+      {/* Motif africain en fond */}
+      <div 
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30L30 0z' fill='%23C45C3E' fill-opacity='1'/%3E%3C/svg%3E")`,
+          backgroundSize: '30px 30px'
+        }}
+      />
 
-      <div className="relative">
-        {/* Section principale */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="container mx-auto px-6 py-16"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-6 gap-12">
+      {/* Bande latérite en haut */}
+      <div className="h-2 bg-gradient-to-r from-[#C45C3E] via-[#E5A832] to-[#4A7C59]" />
+
+      {/* Section principale */}
+      <div className="bg-[#1E4B6E] text-white relative">
+        <div className="container mx-auto px-6 py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+            
             {/* Logo et description */}
-            <motion.div variants={itemVariants} className="lg:col-span-2">
-              <div className="flex items-center space-x-3 mb-6">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                  className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center"
-                >
-                  <Zap className="w-7 h-7 text-white" />
-                </motion.div>
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-3 mb-6">
+                {/* Logo avec couleurs terrain */}
+                <div className="w-12 h-12 bg-[#C45C3E] rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">IC</span>
+                </div>
                 <div>
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    IntuitionConcept
-                  </h3>
-                  <p className="text-sm text-gray-400">SaaS pour l'Afrique</p>
+                  <h3 className="text-xl font-bold text-white">IntuitionConcept</h3>
+                  <p className="text-sm text-[#E5A832]">Gestion BTP pour l'Afrique</p>
                 </div>
               </div>
               
-              <p className="text-gray-300 leading-relaxed mb-6">
-                La plateforme de gestion BTP conçue pour l'Afrique francophone. 
-                Pilotez vos chantiers, équipes et paiements Mobile Money simplement.
+              <p className="text-gray-300 leading-relaxed mb-8 max-w-md">
+                La plateforme de gestion de chantiers conçue pour les réalités du terrain africain. 
+                Mobile Money, mode hors-ligne, support local.
               </p>
 
-              {/* Statistiques animées */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                {[
-                  { number: '850+', label: 'Entreprises' },
-                  { number: '12', label: 'Pays' },
-                  { number: '24h', label: 'Support' }
-                ].map((stat, index) => (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.2, duration: 0.6 }}
-                    className="text-center"
-                  >
-                    <motion.div
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: index * 0.5 }}
-                      className="text-2xl font-bold text-blue-400"
-                    >
-                      {stat.number}
-                    </motion.div>
-                    <div className="text-xs text-gray-400">{stat.label}</div>
-                  </motion.div>
-                ))}
+              {/* Bureaux */}
+              <div className="mb-8">
+                <h4 className="text-sm font-semibold text-[#E5A832] uppercase tracking-wider mb-4">
+                  Nos bureaux
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {offices.map((office) => (
+                    <div key={office.city} className="flex items-center gap-2 text-gray-300 text-sm">
+                      <MapPin className="w-3 h-3 text-[#C45C3E]" />
+                      <span>{office.city}, {office.country}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Réseaux sociaux */}
-              <div className="flex space-x-4">
-                {socialLinks.map((social, index) => (
-                  <motion.a
-                    key={social.name}
-                    href={social.href}
-                    initial={{ opacity: 0, scale: 0 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1, duration: 0.4 }}
-                    whileHover={{ scale: 1.2, rotate: 5 }}
-                    className={`w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-gray-400 ${social.color} transition-all duration-300 backdrop-blur-sm`}
-                  >
-                    <social.icon className="w-5 h-5" />
-                  </motion.a>
-                ))}
+              {/* Contact direct */}
+              <div className="space-y-2">
+                <a href="tel:+242065000000" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-sm">
+                  <Phone className="w-4 h-4 text-[#4A7C59]" />
+                  <span>+242 06 500 00 00</span>
+                </a>
+                <a href="mailto:contact@intuitionconcept.com" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-sm">
+                  <Mail className="w-4 h-4 text-[#4A7C59]" />
+                  <span>contact@intuitionconcept.com</span>
+                </a>
               </div>
-            </motion.div>
+            </div>
 
             {/* Liens de navigation */}
-            {footerSections.map((section, sectionIndex) => (
-              <motion.div
-                key={section.title}
-                variants={itemVariants}
-                className="lg:col-span-1"
-              >
-                <h4 className="text-lg font-semibold mb-6 text-white">
+            {footerSections.map((section) => (
+              <div key={section.title}>
+                <h4 className="text-sm font-semibold text-[#E5A832] uppercase tracking-wider mb-4">
                   {section.title}
                 </h4>
                 <ul className="space-y-3">
-                  {section.links.map((link, linkIndex) => (
-                    <motion.li
-                      key={link.name}
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ delay: (sectionIndex * 0.1) + (linkIndex * 0.05), duration: 0.4 }}
-                    >
-                      <motion.div
-                        variants={linkHoverVariants}
-                        whileHover="hover"
+                  {section.links.map((link) => (
+                    <li key={link.name}>
+                      <Link
+                        to={link.href}
+                        className="text-gray-300 hover:text-white transition-colors text-sm"
                       >
-                        <Link
-                          to={link.href}
-                          className="text-gray-300 hover:text-white transition-colors"
-                        >
-                          {link.name}
-                        </Link>
-                      </motion.div>
-                    </motion.li>
+                        {link.name}
+                      </Link>
+                    </li>
                   ))}
                 </ul>
-              </motion.div>
+              </div>
             ))}
           </div>
 
-          {/* Newsletter */}
-          <motion.div
-            variants={itemVariants}
-            className="mt-16 p-8 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10"
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          {/* CTA Newsletter - Style terrain */}
+          <div className="mt-16 p-6 bg-[#C45C3E]/10 border border-[#C45C3E]/30 rounded-xl">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <h4 className="text-2xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  Restez informé
+                <h4 className="text-lg font-bold text-white mb-1">
+                  Prêt à simplifier vos chantiers ?
                 </h4>
-                <p className="text-gray-300">
-                  Recevez les dernières nouvelles sur nos fonctionnalités et l'écosystème SaaS africain.
+                <p className="text-gray-300 text-sm">
+                  Essai gratuit 14 jours, sans carte bancaire
                 </p>
               </div>
-              <div className="flex space-x-3">
-                <input
-                  type="email"
-                  placeholder="Votre adresse email"
-                  className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+              <Link to="/register">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-6 py-3 bg-[#C45C3E] text-white rounded-lg font-semibold flex items-center gap-2 hover:bg-[#a84d33] transition-colors"
                 >
-                  <span>S'abonner</span>
+                  Commencer gratuitement
                   <ArrowRight className="w-4 h-4" />
                 </motion.button>
-              </div>
+              </Link>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
 
         {/* Barre de copyright */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="border-t border-white/10 py-8"
-        >
+        <div className="border-t border-white/10 py-6">
           <div className="container mx-auto px-6">
-            <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
-              <div className="flex items-center space-x-2 text-gray-400">
-                <span>© 2024 IntuitionConcept. Fait avec</span>
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                >
-                  <Heart className="w-4 h-4 text-red-500 fill-current" />
-                </motion.div>
-                <span>pour l'Afrique francophone.</span>
-              </div>
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
+              <p>
+                © 2024 IntuitionConcept. Conçu en Afrique, pour l'Afrique.
+              </p>
               
-              <div className="flex items-center space-x-6 text-sm text-gray-400">
-                <Link to="/privacy" className="hover:text-blue-400 transition-colors">
+              <div className="flex items-center gap-6">
+                <Link to="/privacy" className="hover:text-white transition-colors">
                   Confidentialité
                 </Link>
-                <Link to="/terms" className="hover:text-blue-400 transition-colors">
-                  Conditions
+                <Link to="/terms" className="hover:text-white transition-colors">
+                  CGU
                 </Link>
-                <Link to="/cookies" className="hover:text-blue-400 transition-colors">
-                  Cookies
-                </Link>
-                <div className="flex items-center space-x-2">
-                  <Globe className="w-4 h-4" />
-                  <span>Français</span>
-                </div>
+                <span className="text-[#E5A832]">FR</span>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
+
+      {/* Bande végétation en bas */}
+      <div className="h-1 bg-[#4A7C59]" />
     </footer>
   );
 };

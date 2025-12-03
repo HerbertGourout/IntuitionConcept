@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GlobalLayout from '../components/Layout/GlobalLayout';
 import PageMeta from '../components/SEO/PageMeta';
-import ROICalculator from '../components/Homepage/ROICalculator';
+// ROICalculator removed - not needed for target audience
 import UseCases from '../components/Homepage/UseCases';
 import CompetitorComparison from '../components/Homepage/CompetitorComparison';
 import VideoTestimonials from '../components/Homepage/VideoTestimonials';
@@ -312,9 +312,6 @@ const UltraModernHomePage: React.FC = () => {
 
       {/* Use Cases */}
       <UseCases />
-
-      {/* ROI Calculator */}
-      <ROICalculator />
 
       {/* Competitor Comparison */}
       <CompetitorComparison />
